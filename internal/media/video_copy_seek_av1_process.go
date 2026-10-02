@@ -6,7 +6,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"math/big"
@@ -93,11 +92,12 @@ func runVideoCopySeekAV1Command(ctx context.Context, timeout time.Duration, maxO
 	command.Env = mediaProbeEnvironment()
 	command.Stdout, command.Stderr = stdout, stderr
 	command.WaitDelay = time.Second
-	retired, err := startMediaProcess(command)
+	process, err := startMediaProcess(processContext, command)
 	if err != nil {
 		return nil, err
 	}
-	waitErr := errors.Join(<-retired, command.Wait())
+	defer process.Close()
+	waitErr := process.Wait()
 	if stdout.exceeded || stderr.exceeded {
 		return nil, ErrOutputLimit
 	}

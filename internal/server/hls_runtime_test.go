@@ -23,12 +23,13 @@ type hlsRuntimeOpenCall struct {
 }
 
 type hlsRuntimeTestJobs struct {
-	mu      sync.Mutex
-	ensured []transcode.Spec
-	cancels []hlsRuntimeOpenCall
-	opens   chan hlsRuntimeOpenCall
-	release chan struct{}
-	once    sync.Once
+	mu              sync.Mutex
+	ensured         []transcode.Spec
+	cancels         []hlsRuntimeOpenCall
+	playbackCancels []hlsRuntimeOpenCall
+	opens           chan hlsRuntimeOpenCall
+	release         chan struct{}
+	once            sync.Once
 }
 
 func newHLSRuntimeTestJobs() *hlsRuntimeTestJobs {
@@ -75,6 +76,13 @@ func (jobs *hlsRuntimeTestJobs) CancelJob(id string, scope transcode.Scope) erro
 	return nil
 }
 
+func (jobs *hlsRuntimeTestJobs) CancelPlayback(authID, playID string) {
+	jobs.mu.Lock()
+	defer jobs.mu.Unlock()
+	jobs.playbackCancels = append(jobs.playbackCancels, hlsRuntimeOpenCall{
+		scope: transcode.Scope{AuthSessionID: authID, PlaySessionID: playID}})
+}
+
 func (jobs *hlsRuntimeTestJobs) Close(context.Context) error {
 	jobs.releaseAll()
 	return nil
@@ -88,7 +96,7 @@ func hlsRuntimeTestFixture(t *testing.T) (*hlsRuntime, *hlsRuntimeTestJobs) {
 	t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
 	jobs := newHLSRuntimeTestJobs()
-	h := &hlsRuntime{manager: jobs, ctx: ctx, cancel: cancel, sessions: make(map[string]*hlsSession), byKey: make(map[hlsKey]*hlsSession)}
+	h := &hlsRuntime{manager: jobs, ctx: ctx, cancel: cancel, sessions: make(map[string]*hlsSession), byKey: make(map[hlsKey]*hlsSession), done: make(chan struct{})}
 	t.Cleanup(func() { cancel(); jobs.releaseAll() })
 	return h, jobs
 }
@@ -111,10 +119,26 @@ func hlsRuntimeTestSession(t *testing.T, h *hlsRuntime, id string, active bool) 
 		principal: identity.Principal{User: identity.User{ID: scope.UserID}, SessionID: scope.AuthSessionID,
 			Client: identity.Client{DeviceID: scope.DeviceID}, Kind: "emby"}}
 	if active {
-		session.producers = []hlsProducer{{id: id + "-producer", first: 0, last: 3}}
+		hlsRuntimeTestOwnProducer(t, h, session)
 	}
 	h.sessions[id], h.byKey[session.key] = session, session
+	if h.byScope == nil {
+		h.byScope = make(map[transcode.Scope]map[string]*hlsSession)
+	}
+	if h.byScope[scope] == nil {
+		h.byScope[scope] = make(map[string]*hlsSession)
+	}
+	h.byScope[scope][session.id] = session
 	return session
+}
+
+func hlsRuntimeTestOwnProducer(t *testing.T, h *hlsRuntime, session *hlsSession) {
+	t.Helper()
+	producer, err := h.ownProducer(session.key.scope, session.id+"-producer", 0, 3)
+	if err != nil {
+		t.Fatalf("register controlled HLS producer ownership: %v", err)
+	}
+	session.producers = []hlsProducer{producer}
 }
 
 func hlsRuntimeInput(t *testing.T) *os.File {
@@ -226,9 +250,12 @@ func TestHLSRuntimeMaintenanceBudgetDoesNotRetireUnverifiedSessions(t *testing.T
 	second := hlsRuntimeTestSession(t, h, "unverified", true)
 	cycle := &hlsRuntimeExpiryContext{Context: context.Background(), done: make(chan struct{})}
 	entered, finished := make(chan struct{}), make(chan struct{})
-	var verified []string
+	var verifiedMu sync.Mutex
+	verified := make(map[string]bool)
 	h.verify = func(ctx context.Context, _ identity.Principal, scope transcode.Scope, _ string, _ transcode.Plan) (*os.File, library.MediaFile, error) {
-		verified = append(verified, scope.PlaySessionID)
+		verifiedMu.Lock()
+		verified[scope.PlaySessionID] = true
+		verifiedMu.Unlock()
 		if scope == first.key.scope {
 			close(entered)
 			// Wait for the controlled parent expiration before returning, even
@@ -262,8 +289,8 @@ func TestHLSRuntimeMaintenanceBudgetDoesNotRetireUnverifiedSessions(t *testing.T
 	case <-time.After(5 * time.Second):
 		t.Fatal("maintenance did not stop after exhausting its cycle budget")
 	}
-	if len(verified) != 1 || verified[0] != first.key.scope.PlaySessionID {
-		t.Errorf("maintenance continued verification after its cycle expired: %v", verified)
+	if !verified[first.key.scope.PlaySessionID] || len(verified) > 2 {
+		t.Errorf("maintenance missed its first verification or duplicated a check: %v", verified)
 	}
 	if first.closed || second.closed || len(h.sessions) != 2 || len(h.byKey) != 2 {
 		t.Error("a transient timeout retired a valid or unverified HLS session")
@@ -280,16 +307,19 @@ func TestHLSRuntimeMaintenanceRetiresOnlyTheForbiddenSession(t *testing.T) {
 	first := hlsRuntimeTestSession(t, h, "forbidden", true)
 	second := hlsRuntimeTestSession(t, h, "permitted", true)
 	verifiedFile := hlsRuntimeInput(t)
-	var verified []string
+	var verifiedMu sync.Mutex
+	verified := make(map[string]bool)
 	h.verify = func(_ context.Context, _ identity.Principal, scope transcode.Scope, _ string, _ transcode.Plan) (*os.File, library.MediaFile, error) {
-		verified = append(verified, scope.PlaySessionID)
+		verifiedMu.Lock()
+		verified[scope.PlaySessionID] = true
+		verifiedMu.Unlock()
 		if scope == first.key.scope {
 			return nil, library.MediaFile{}, library.ErrForbidden
 		}
 		return verifiedFile, library.MediaFile{}, nil
 	}
 	h.maintainSessions(context.Background(), []*hlsSession{first, second})
-	if len(verified) != 2 || verified[0] != first.key.scope.PlaySessionID || verified[1] != second.key.scope.PlaySessionID {
+	if len(verified) != 2 || !verified[first.key.scope.PlaySessionID] || !verified[second.key.scope.PlaySessionID] {
 		t.Errorf("permanent denial prevented verification of the next session: %v", verified)
 	}
 	if !first.closed || first.ctx.Err() == nil || second.closed || second.ctx.Err() != nil ||
@@ -303,5 +333,147 @@ func TestHLSRuntimeMaintenanceRetiresOnlyTheForbiddenSession(t *testing.T) {
 	defer jobs.mu.Unlock()
 	if len(jobs.cancels) != 1 || jobs.cancels[0].id != first.producers[0].id || jobs.cancels[0].scope != first.key.scope {
 		t.Errorf("permanent denial cancelled the wrong producer scope: %+v", jobs.cancels)
+	}
+}
+
+func TestHLSRuntimeMaintenanceBoundsConcurrencyAndPrioritizesUncheckedSessions(t *testing.T) {
+	h, _ := hlsRuntimeTestFixture(t)
+	sessions := make([]*hlsSession, 0, hlsMaintenanceWorkers*2)
+	for index := range hlsMaintenanceWorkers * 2 {
+		sessions = append(sessions, hlsRuntimeTestSession(t, h, fmt.Sprintf("fair-%02d", index), true))
+	}
+	for iteration := range 2 {
+		cycle := &hlsRuntimeExpiryContext{Context: context.Background(), done: make(chan struct{})}
+		entered := make(chan string, len(sessions))
+		finished := make(chan struct{})
+		h.verify = func(ctx context.Context, _ identity.Principal, scope transcode.Scope, _ string, _ transcode.Plan) (*os.File, library.MediaFile, error) {
+			entered <- scope.PlaySessionID
+			<-cycle.Done()
+			<-ctx.Done()
+			return nil, library.MediaFile{}, ctx.Err()
+		}
+		go func() {
+			defer close(finished)
+			h.maintainSessions(cycle, sessions)
+		}()
+		t.Cleanup(func() {
+			cycle.expire()
+			select {
+			case <-finished:
+			case <-time.After(5 * time.Second):
+				t.Error("maintenance workers did not stop during cleanup")
+			}
+		})
+		seen := make(map[string]bool)
+		for range hlsMaintenanceWorkers {
+			select {
+			case id := <-entered:
+				seen[id] = true
+			case <-time.After(5 * time.Second):
+				t.Fatal("a slow verification blocked the bounded worker group")
+			}
+		}
+		for index := iteration * hlsMaintenanceWorkers; index < (iteration+1)*hlsMaintenanceWorkers; index++ {
+			if !seen[sessions[index].key.scope.PlaySessionID] {
+				t.Errorf("maintenance cycle %d starved unchecked session %s", iteration, sessions[index].id)
+			}
+		}
+		cycle.expire()
+		select {
+		case <-finished:
+		case <-time.After(5 * time.Second):
+			t.Fatal("maintenance did not respect its expired cycle budget")
+		}
+		select {
+		case id := <-entered:
+			t.Fatalf("maintenance exceeded its concurrency budget or dispatched after expiration: %s", id)
+		default:
+		}
+	}
+}
+
+func TestHLSRuntimeMaintenanceSweepsIdleSessionsBeforeSlowAuthorization(t *testing.T) {
+	h, jobs := hlsRuntimeTestFixture(t)
+	slow := hlsRuntimeTestSession(t, h, "slow-authority", true)
+	idle := hlsRuntimeTestSession(t, h, "abandoned", true)
+	idle.accessed = time.Now().Add(-hlsIdleTTL - time.Second)
+	cycle := &hlsRuntimeExpiryContext{Context: context.Background(), done: make(chan struct{})}
+	entered, finished := make(chan struct{}), make(chan struct{})
+	h.verify = func(ctx context.Context, _ identity.Principal, _ transcode.Scope, _ string, _ transcode.Plan) (*os.File, library.MediaFile, error) {
+		close(entered)
+		<-cycle.Done()
+		<-ctx.Done()
+		return nil, library.MediaFile{}, ctx.Err()
+	}
+	go func() {
+		defer close(finished)
+		h.maintainSessions(cycle, []*hlsSession{slow, idle})
+	}()
+	t.Cleanup(func() {
+		cycle.expire()
+		select {
+		case <-finished:
+		case <-time.After(5 * time.Second):
+			t.Error("cancelled authorization did not stop during cleanup")
+		}
+	})
+	select {
+	case <-entered:
+	case <-time.After(5 * time.Second):
+		t.Fatal("maintenance did not start authorization")
+	}
+	// The sweep precedes dispatch, so cancellation is observable even while
+	// the only authorization worker is blocked on an unrelated credential.
+	if !idle.closed || idle.ctx.Err() == nil {
+		t.Fatal("slow authorization delayed abandoned playback cancellation")
+	}
+	jobs.mu.Lock()
+	if len(jobs.cancels) != 1 || jobs.cancels[0].scope != idle.key.scope {
+		t.Error("idle sweep cancelled the wrong producer")
+	}
+	jobs.mu.Unlock()
+	cycle.expire()
+	<-finished
+}
+
+func TestPlaybackCancellationReachesRetiredJobsAndPreservesSiblingPlays(t *testing.T) {
+	for _, kind := range []string{"ordinary", "application-key"} {
+		t.Run(kind, func(t *testing.T) {
+			h, jobs := hlsRuntimeTestFixture(t)
+			first := hlsRuntimeTestSession(t, h, "cancelled", false)
+			sibling := hlsRuntimeTestSession(t, h, "sibling", false)
+			delete(h.byKey, first.key)
+			delete(h.byKey, sibling.key)
+			sibling.key.scope.AuthSessionID = first.key.scope.AuthSessionID
+			sibling.key.scope.UserID = first.key.scope.UserID
+			for _, session := range []*hlsSession{first, sibling} {
+				if kind == "application-key" {
+					session.key.scope.ApplicationKey = true
+					session.key.scope.UserID = ""
+					session.key.scope.ApplicationClientID = session.id + "-application-client"
+				}
+				session.principal.User.ID = session.key.scope.UserID
+				session.principal.SessionID = session.key.scope.AuthSessionID
+				session.principal.ClientSessionID = session.key.scope.ApplicationClientID
+				if kind == "application-key" {
+					session.principal.Kind = identity.ApplicationKeyKind
+					session.principal.ApplicationKeyID = 1
+				}
+				h.byKey[session.key] = session
+				hlsRuntimeTestOwnProducer(t, h, session)
+			}
+			app := &Server{hls: h}
+			h.retire(first)
+			app.cancelPlaybackResources(first.key.scope.AuthSessionID, first.key.scope.PlaySessionID)
+			if sibling.closed || sibling.ctx.Err() != nil || h.sessions[sibling.id] != sibling || h.byKey[sibling.key] != sibling {
+				t.Fatal("cancelling a retired play stopped a sibling client on the same credential")
+			}
+			jobs.mu.Lock()
+			defer jobs.mu.Unlock()
+			if len(jobs.playbackCancels) != 1 || jobs.playbackCancels[0].scope.AuthSessionID != first.key.scope.AuthSessionID ||
+				jobs.playbackCancels[0].scope.PlaySessionID != first.key.scope.PlaySessionID {
+				t.Fatal("a retired HLS registration prevented cancellation of its orphaned producer")
+			}
+		})
 	}
 }

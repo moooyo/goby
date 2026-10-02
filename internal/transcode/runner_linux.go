@@ -35,8 +35,20 @@ const (
 // open until Run returns. The output directory must be empty and privately
 // owned by the job manager. Calls to onProgress from process-output readers are
 // serialized and must return promptly without blocking network or disk work.
-func Run(ctx context.Context, executable, directory string, input *os.File, plan Plan, threads int, onProgress func(Progress)) (RunResult, error) {
-	result := RunResult{ExitCode: -1}
+func Run(ctx context.Context, executable, directory string, input *os.File, plan Plan, threads int, onProgress func(Progress)) (result RunResult, runErr error) {
+	result = RunResult{ExitCode: -1}
+	lifecycle := resourceLifecycleFromContext(ctx)
+	if lifecycle != nil {
+		// This is registered before every runner-owned close, so the lifecycle
+		// boundary is observed only after those defers have released their files.
+		defer func() {
+			if err := lifecycle.runnerReturned(context.WithoutCancel(ctx)); err != nil {
+				result.ProductionSealSafe = false
+				result.WindowInputEvidence = nil
+				runErr = errors.Join(runErr, ErrProcess, err)
+			}
+		}()
+	}
 	if err := ctx.Err(); err != nil {
 		return result, err
 	}
@@ -128,12 +140,20 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	stderr := &stderrTail{cancel: cancel}
 	var progressive *progressiveObserver
 	var hlsClock *hlsClockObserver
+	var windowInput *generatedInputObserver
 	if needsHLSClock(plan) {
 		hlsClock, err = newHLSClockObserver(plan, report, cancel)
 		if err != nil {
 			return result, ErrStart
 		}
 		defer hlsClock.close()
+	}
+	if plan.HLS.Window.RequireInputEvidence {
+		windowInput, err = newGeneratedInputObserver(processCtx, plan, nil, cancel)
+		if err != nil {
+			return result, err
+		}
+		defer windowInput.close()
 	}
 	if plan.OutputMode == "progressive" {
 		progressive, err = newProgressiveObserver(directory, input, plan, onProgress, cancel)
@@ -164,6 +184,11 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 			cmd.ExtraFiles = append(cmd.ExtraFiles, pipe.write)
 		}
 	}
+	if windowInput != nil {
+		for _, pipe := range windowInput.pipes {
+			cmd.ExtraFiles = append(cmd.ExtraFiles, pipe.write)
+		}
+	}
 	if live != nil {
 		for _, pipe := range live.journals {
 			cmd.ExtraFiles = append(cmd.ExtraFiles, pipe.write)
@@ -182,6 +207,7 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	var groupMu sync.Mutex
 	var timer *time.Timer
 	retired := false
+	cancelSignalled := false
 	cmd.Cancel = func() error {
 		groupMu.Lock()
 		defer groupMu.Unlock()
@@ -192,6 +218,9 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 		err := syscall.Kill(-pid, syscall.SIGTERM)
 		if errors.Is(err, syscall.ESRCH) {
 			return os.ErrProcessDone
+		}
+		if err == nil {
+			cancelSignalled = true
 		}
 		timer = time.AfterFunc(terminateGrace, func() {
 			groupMu.Lock()
@@ -210,6 +239,9 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	}
 	if hlsClock != nil {
 		hlsClock.start()
+	}
+	if windowInput != nil {
+		windowInput.start()
 	}
 	if live != nil {
 		live.start()
@@ -259,11 +291,23 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 		_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
 	}
 	retired = true
+	cancelWasSignalled := cancelSignalled
 	groupMu.Unlock()
 	err = cmd.Wait()
+	var retirementErr error
+	if plan.SourceMode != "stream" && lifecycle != nil {
+		retirementErr = lifecycle.retireProcesses(context.WithoutCancel(ctx))
+		if retirementErr != nil {
+			cancel()
+		}
+	}
 	var hlsClockErr error
 	if hlsClock != nil {
 		hlsClockErr = hlsClock.finish()
+	}
+	var windowInputErr error
+	if windowInput != nil {
+		windowInputErr = windowInput.finish()
 	}
 	var liveErr error
 	if live != nil {
@@ -292,6 +336,14 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 		result.ExitCode = cmd.ProcessState.ExitCode()
 	}
 	progress.finish()
+	// Context cancellation intentionally remains the public error priority.
+	// Retaining a partial VOD window needs a separate proof after all stdout,
+	// stderr, clock and private-publication workers have drained. Recheck the
+	// input here: the earlier source observation preceded publisher shutdown.
+	result.ProductionSealSafe = plan.SegmentMode == "vod" && plan.OutputMode == "" && plan.SourceMode == "" && !GeneratedHLS(plan) &&
+		transcodeSourceUnchanged(input, info) && waitErr == nil && retirementErr == nil &&
+		progress.err == nil && !stderr.failed && hlsClockErr == nil && liveErr == nil && progressiveErr == nil && publicationErr == nil &&
+		productionSealProcessExitSafe(err, cancelWasSignalled)
 	if failure := progress.failure; failure != nil {
 		failure.WaitDelay = errors.Is(err, exec.ErrWaitDelay)
 		failure.WaitErrorClass = progressWaitErrorClass(err)
@@ -307,8 +359,15 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	if progress.err != nil {
 		return result, ErrProgress
 	}
-	if waitErr != nil || err != nil || stderr.failed || progressiveErr != nil || publicationErr != nil || hlsClockErr != nil || liveErr != nil {
+	if waitErr != nil || err != nil || stderr.failed || progressiveErr != nil || publicationErr != nil || hlsClockErr != nil || liveErr != nil || retirementErr != nil || windowInputErr != nil {
 		return result, ErrProcess
+	}
+	if windowInput != nil {
+		if !transcodeSourceUnchanged(input, info) {
+			return result, ErrInvalidInput
+		}
+		evidence := windowInput.snapshot()
+		result.WindowInputEvidence = &evidence
 	}
 	return result, nil
 }

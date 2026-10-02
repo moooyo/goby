@@ -42,7 +42,7 @@ func (clock HLSMuxClock) ticks(boundedDuration bool) (int64, error) {
 }
 
 func needsHLSClock(p Plan) bool {
-	return p.OutputMode == "" && (p.SourceMode == "stream" || HasHLSSubtitles(p))
+	return p.OutputMode == "" && (p.SourceMode == "stream" || HasHLSSubtitles(p) || hasHLSWindow(p))
 }
 
 func needsHLSCopyClock(p Plan) bool {

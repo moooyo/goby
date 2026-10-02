@@ -85,7 +85,12 @@ func (s *Server) requireEmby(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 		peer := s.policyClientAddress(r)
-		principal, err := s.identity.ResolveEmbyForClientWithPeer(r.Context(), token, client, peer)
+		users, err := s.identity.ForPlaybackControl(r.Context())
+		if err != nil {
+			s.identityError(w, r, err)
+			return
+		}
+		principal, err := users.ResolveEmbyForClientWithPeer(r.Context(), token, client, peer)
 		if err != nil {
 			if errors.Is(err, identity.ErrInvalidInput) {
 				apiError(w, r, http.StatusBadRequest, "invalid_client", "Check the client metadata and application key client-session limit.")
@@ -94,6 +99,10 @@ func (s *Server) requireEmby(next http.HandlerFunc) http.HandlerFunc {
 			s.identityError(w, r, err)
 			return
 		}
+		// An explicit application client is bound, reauthorized and touched by
+		// ResolveEmbyForClientWithPeer. Metadata-free media URLs restore their
+		// persisted playback context before recording that context's activity.
+		applicationActivityRecorded := principal.IsApplicationKey() && client != (identity.Client{})
 		if principal.IsApplicationKey() {
 			if playID := playbackContextHint(r); playID != "" {
 				principal, err = s.bindKeyPlaybackContext(r, principal, playID)
@@ -103,8 +112,9 @@ func (s *Server) requireEmby(next http.HandlerFunc) http.HandlerFunc {
 				}
 			}
 		}
-		if principal.IsApplicationKey() || time.Since(principal.LastSeenAt) >= identity.ClientSessionTouchInterval {
-			if err := s.identity.TouchClientSessionFromAddress(r.Context(), principal, peer); err != nil {
+		if (principal.IsApplicationKey() && !applicationActivityRecorded) ||
+			(!principal.IsApplicationKey() && time.Since(principal.LastSeenAt) >= identity.ClientSessionTouchInterval) {
+			if err := users.TouchClientSessionFromAddress(r.Context(), principal, peer); err != nil {
 				s.identityError(w, r, err)
 				return
 			}

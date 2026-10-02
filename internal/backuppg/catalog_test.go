@@ -97,7 +97,7 @@ func TestCurrentRecoveryCatalogIncludesFeatureWaveMetadata(t *testing.T) {
 		"item_metadata_state": {"online_source", "online_type", "online_base", "automatic_sort_name_explicit"},
 		"task_run_children":   {"executor_token", "analysis_scope_key"},
 		"managed_settings":    {"management", "runtime_overrides", "sort_remove_words"},
-		"play_sessions":       {"is_dynamic"},
+		"play_sessions":       {"is_dynamic", "playback_revision"},
 	} {
 		columns := tables[table].Columns
 		if len(columns) < len(appended) || !equalJSON(columns[len(columns)-len(appended):], appended) {

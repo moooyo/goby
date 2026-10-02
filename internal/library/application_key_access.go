@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/moooyo/goby/internal/identity"
 )
 
@@ -45,16 +46,26 @@ func checkSubjectApplicationKey(ctx context.Context, tx pgx.Tx, credentialID str
 // counts, pages, and projections. Target library policy scopes catalog reads;
 // account disablement and playback policy do not remove the key's authority.
 func (s *Store) beginSubjectRead(ctx context.Context, subject Subject) (pgx.Tx, libraryAccess, error) {
+	if !validSubject(subject) {
+		return nil, libraryAccess{}, ErrInvalidInput
+	}
+	if s == nil {
+		return nil, libraryAccess{}, ErrUnavailable
+	}
+	return s.beginSubjectReadOnPool(ctx, subject, s.pool)
+}
+
+func (s *Store) beginSubjectReadOnPool(ctx context.Context, subject Subject, pool *pgxpool.Pool) (pgx.Tx, libraryAccess, error) {
 	if subject.ApplicationCredentialID == "" {
-		return s.beginUserRead(ctx, subject.UserID)
+		return s.beginUserReadOnPool(ctx, subject.UserID, pool)
 	}
 	if !validSubject(subject) {
 		return nil, libraryAccess{}, ErrInvalidInput
 	}
-	if s == nil || s.pool == nil {
+	if s == nil || pool == nil {
 		return nil, libraryAccess{}, ErrUnavailable
 	}
-	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
+	tx, err := pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
 	if err != nil {
 		return nil, libraryAccess{}, fmt.Errorf("begin application catalog read: %w", err)
 	}

@@ -174,15 +174,32 @@ func managerTestWaitFinished(t *testing.T, m *Manager, id string) Record {
 	}
 	done := j.done
 	m.mu.Unlock()
+	deadline := time.NewTimer(5 * time.Second)
+	defer deadline.Stop()
 	select {
 	case <-done:
-	case <-time.After(5 * time.Second):
+	case <-deadline.C:
 		t.Fatal("job did not finish")
 	}
-	m.mu.Lock()
-	record := j.record
-	m.mu.Unlock()
-	return record
+	// Terminal bookkeeping closes done before the executor returns its exact
+	// ticket. Ordinary completion helpers must observe both boundaries before
+	// asserting reclaim, shutdown, or reusable metadata capacity.
+	poll := time.NewTicker(time.Millisecond)
+	defer poll.Stop()
+	for {
+		m.mu.Lock()
+		returned, record := completionReturnedForReclaim(j), j.record
+		m.mu.Unlock()
+		if returned {
+			return record
+		}
+		select {
+		case <-deadline.C:
+			t.Fatal("finished job did not return its completion ticket")
+			return Record{}
+		case <-poll.C:
+		}
+	}
 }
 
 func managerTestWaitStart(t *testing.T, started <-chan int64) int64 {

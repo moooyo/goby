@@ -41,6 +41,7 @@ func (s *Server) playbackReport(event string) http.HandlerFunc {
 			ItemID        string `json:"ItemId"`
 			MediaSourceID string `json:"MediaSourceId"`
 			SessionID     string `json:"SessionId"`
+			EventName     string `json:"EventName"`
 			PositionTicks *int64
 			IsPaused      bool
 		}
@@ -57,9 +58,16 @@ func (s *Server) playbackReport(event string) http.HandlerFunc {
 			apiError(w, r, http.StatusForbidden, "session_mismatch", "Playback reports must belong to the authenticated session.")
 			return
 		}
-		play, data, err := s.library.ReportPlayback(r.Context(), playbackOwner(principal), library.PlaybackReport{
+		report := library.PlaybackReport{
 			PlaySessionID: body.PlaySessionID, ItemID: body.ItemID, MediaSourceID: body.MediaSourceID,
-			Event: event, PositionTicks: body.PositionTicks, IsPaused: body.IsPaused, PlayerState: &body.PlayerStateUpdate})
+			Event: event, EventName: body.EventName, PositionTicks: body.PositionTicks, IsPaused: body.IsPaused, PlayerState: &body.PlayerStateUpdate}
+		var play library.PlaySession
+		var data library.UserData
+		if event == "Stopped" && body.PlaySessionID != "" && s.correlatedHLSOwnershipEnabled && s.correlatedHLSEarlyStopEnabled {
+			play, data, err = s.library.ReportPlaybackWithValidatedStop(r.Context(), playbackOwner(principal), report, s.correlatedHLSValidatedStop)
+		} else {
+			play, data, err = s.library.ReportPlayback(r.Context(), playbackOwner(principal), report)
+		}
 		if err != nil {
 			s.playbackError(w, r, err)
 			return
@@ -71,8 +79,9 @@ func (s *Server) playbackReport(event string) http.HandlerFunc {
 			s.cancelPlaybackResources(principal.SessionID, play.ID)
 			s.cancelMediaPolicySource(principal, play.ItemID, play.MediaSourceID)
 		} else {
+			s.hls.applyPlaybackSnapshot(play)
 			s.hls.touchMatching(principal.SessionID, play.ID)
-			if s.heartbeatDynamicMediaPolicy(principal, play) {
+			if s.heartbeatPlaybackMediaPolicy(principal, play) && play.IsDynamic {
 				s.heartbeatDynamicPlayback(r.Context(), principal, play)
 			}
 		}
@@ -103,7 +112,7 @@ func (s *Server) playbackPing(w http.ResponseWriter, r *http.Request) {
 	}
 	if err == nil {
 		s.hls.touchMatching(principal.SessionID, play.ID)
-		if s.heartbeatDynamicMediaPolicy(principal, play) {
+		if s.heartbeatPlaybackMediaPolicy(principal, play) && play.IsDynamic {
 			s.heartbeatDynamicPlayback(r.Context(), principal, play)
 		}
 	}

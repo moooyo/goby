@@ -10,6 +10,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/moooyo/goby/internal/database"
 	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/notificationjournal"
 )
@@ -25,6 +27,7 @@ type PlaybackOwner struct {
 type PlaySession struct {
 	ID, UserID, AuthSessionID, DeviceID, ItemID, MediaSourceID, State string
 	PositionTicks, DurationTicks                                      int64
+	PlaybackRevision                                                  int64
 	CreatedAt, UpdatedAt, ExpiresAt                                   time.Time
 	StartedAt, StoppedAt                                              *time.Time
 	PlayerState                                                       PlayerState
@@ -41,13 +44,14 @@ type PlaySession struct {
 // Authentication identities and client-reported durations are not report fields.
 type PlaybackReport struct {
 	PlaySessionID, ItemID, MediaSourceID, Event string
+	EventName                                   string
 	PositionTicks                               *int64
 	IsPaused                                    bool
 	PlayerState                                 *PlayerStateUpdate
 }
 
 const playSessionColumns = `id, user_id, auth_session_id, device_id, item_id, media_source_id, state,
-	position_ticks, duration_ticks, created_at, updated_at, expires_at, started_at, stopped_at, player_state, counted, expires_at > clock_timestamp(), application_client_id, client_correlated, is_dynamic`
+	position_ticks, duration_ticks, created_at, updated_at, expires_at, started_at, stopped_at, player_state, counted, expires_at > clock_timestamp(), application_client_id, client_correlated, is_dynamic, playback_revision`
 
 func scanPlaySession(row rowScanner) (PlaySession, error) {
 	var session PlaySession
@@ -57,9 +61,12 @@ func scanPlaySession(row rowScanner) (PlaySession, error) {
 	err := row.Scan(&session.ID, &userID, &session.AuthSessionID, &session.DeviceID,
 		&session.ItemID, &session.MediaSourceID, &session.State, &session.PositionTicks,
 		&session.DurationTicks, &session.CreatedAt, &session.UpdatedAt, &session.ExpiresAt,
-		&session.StartedAt, &session.StoppedAt, &rawPlayerState, &session.counted, &session.live, &applicationClientID, &session.clientCorrelated, &session.IsDynamic)
+		&session.StartedAt, &session.StoppedAt, &rawPlayerState, &session.counted, &session.live, &applicationClientID, &session.clientCorrelated, &session.IsDynamic, &session.PlaybackRevision)
 	if err != nil {
 		return session, err
+	}
+	if session.PlaybackRevision < 0 {
+		return PlaySession{}, fmt.Errorf("%w: playback revision is invalid", ErrUnavailable)
 	}
 	// Callers establish the credential kind before reading a playback owner.
 	session.ApplicationKey = userID == nil
@@ -100,6 +107,13 @@ func validPlaybackOwner(owner PlaybackOwner) bool {
 }
 
 func (s *Store) beginPlaybackWrite(ctx context.Context, owner PlaybackOwner) (pgx.Tx, libraryAccess, error) {
+	if s == nil {
+		return nil, libraryAccess{}, ErrInvalidInput
+	}
+	return s.beginPlaybackWriteOnPool(ctx, owner, s.pool)
+}
+
+func (s *Store) beginPlaybackWriteOnPool(ctx context.Context, owner PlaybackOwner, pool *pgxpool.Pool) (pgx.Tx, libraryAccess, error) {
 	if !validPlaybackOwner(owner) {
 		return nil, libraryAccess{}, ErrInvalidInput
 	}
@@ -107,7 +121,7 @@ func (s *Store) beginPlaybackWrite(ctx context.Context, owner PlaybackOwner) (pg
 	if owner.ApplicationKey {
 		subject.ApplicationCredentialID = owner.SessionID
 	}
-	tx, access, err := s.beginSubjectStateWrite(ctx, subject, true)
+	tx, access, err := s.beginStateWriteOnPool(ctx, subject, true, pool)
 	if err != nil {
 		return nil, libraryAccess{}, err
 	}
@@ -183,12 +197,18 @@ func clampPosition(position, duration int64) int64 {
 }
 
 func readOwnedCanonicalPlaySession(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, id string, lock bool) (PlaySession, error) {
+	lockClause := ""
+	if lock {
+		lockClause = " FOR UPDATE"
+	}
+	return readOwnedCanonicalPlaySessionWithLock(ctx, tx, owner, id, lockClause)
+}
+
+func readOwnedCanonicalPlaySessionWithLock(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, id, lockClause string) (PlaySession, error) {
 	statement := "SELECT " + playSessionColumns + ` FROM play_sessions
 		WHERE id = $1 AND user_id IS NOT DISTINCT FROM NULLIF($2, '') AND auth_session_id = $3 AND device_id = $4
 		AND application_client_id IS NOT DISTINCT FROM NULLIF($5, '')`
-	if lock {
-		statement += " FOR UPDATE"
-	}
+	statement += lockClause
 	session, err := scanPlaySession(tx.QueryRow(ctx, statement, id, owner.UserID, owner.SessionID, owner.DeviceID, owner.ApplicationClientID))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return PlaySession{}, ErrNotFound
@@ -268,6 +288,20 @@ func lockPlaybackUserData(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, i
 		return UserData{}, nil
 	}
 	return lockUserData(ctx, tx, owner.UserID, itemID)
+}
+
+func playbackUserDataSnapshot(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, itemID string) (UserData, error) {
+	if owner.ApplicationKey {
+		return UserData{}, nil
+	}
+	data, err := scanUserData(tx.QueryRow(ctx, "SELECT "+userDataColumns+" FROM user_item_data WHERE user_id = $1 AND item_id = $2", owner.UserID, itemID))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return UserData{ItemID: itemID}, nil
+	}
+	if err != nil {
+		return UserData{}, fmt.Errorf("read playback user data snapshot: %w", err)
+	}
+	return data, nil
 }
 
 func activeOrNewPlayback(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, item stateItem, sourceID string, data UserData) (PlaySession, error) {
@@ -404,7 +438,25 @@ func (s *Store) preparePlaybackMode(ctx context.Context, owner PlaybackOwner, it
 // current token, account, library, and source authorization independently of
 // playback state. Terminal sessions still accept idempotent event reports.
 func (s *Store) GetPlaybackSession(ctx context.Context, owner PlaybackOwner, id string) (PlaySession, error) {
-	tx, access, err := s.beginPlaybackWrite(ctx, owner)
+	return s.getPlaybackSessionAdmitted(ctx, owner, id, nil)
+}
+
+// GetPlaybackSessionAdmitted retains the existing fresh session authorization
+// and also mints a memory-only cancellation lifetime before final commit. A
+// failed final check/commit calls cleanup and returns no usable snapshot.
+func (s *Store) GetPlaybackSessionAdmitted(ctx context.Context, owner PlaybackOwner, id string, admission PlaybackSessionAdmission) (PlaySession, error) {
+	return s.getPlaybackSessionAdmitted(ctx, owner, id, admission)
+}
+
+func (s *Store) getPlaybackSessionAdmitted(ctx context.Context, owner PlaybackOwner, id string, admission PlaybackSessionAdmission) (PlaySession, error) {
+	if s == nil || !validPlaybackOwner(owner) {
+		return PlaySession{}, ErrInvalidInput
+	}
+	pool, err := s.playbackReadPool(ctx)
+	if err != nil {
+		return PlaySession{}, err
+	}
+	tx, access, err := s.beginPlaybackWriteOnPool(ctx, owner, pool)
 	if err != nil {
 		return PlaySession{}, err
 	}
@@ -416,7 +468,16 @@ func (s *Store) GetPlaybackSession(ctx context.Context, owner PlaybackOwner, id 
 	if _, err := lockStateItem(ctx, tx, access, session.ItemID, true); err != nil {
 		return PlaySession{}, err
 	}
-	session, err = readOwnedPlaySession(ctx, tx, owner, id, true)
+	// Validation never changes a playback row. Compatible SHARE locks let
+	// segment requests overlap while reports retain exclusive ownership. The
+	// canonical ID has already been resolved under the credential/client locks.
+	if _, err := readOwnedCanonicalPlaySessionWithLock(ctx, tx, owner, session.ID, " FOR SHARE"); err != nil {
+		return PlaySession{}, err
+	}
+	// The deadline expression in a locking SELECT can be evaluated before it
+	// waits. A fresh statement after acquiring the lock observes database time
+	// and any stop committed by the previous row owner without upgrading locks.
+	session, err = readOwnedCanonicalPlaySession(ctx, tx, owner, session.ID, false)
 	if err != nil {
 		return PlaySession{}, err
 	}
@@ -426,9 +487,28 @@ func (s *Store) GetPlaybackSession(ctx context.Context, owner PlaybackOwner, id 
 	if session.State == "Stopped" || session.State == "Expired" || !session.live {
 		return PlaySession{}, ErrNotFound
 	}
+	var admissionCleanup func()
+	admissionAccepted := false
+	defer func() {
+		if !admissionAccepted && admissionCleanup != nil {
+			admissionCleanup()
+		}
+	}()
+	if admission != nil {
+		// The callback holds identity lifetime only. Fresh credentials/time
+		// are checked both before its mint and again by the final commit.
+		if err := checkPlaybackStateWrite(ctx, tx, owner, false); err != nil {
+			return PlaySession{}, err
+		}
+		admissionCleanup, err = admission(session)
+		if err != nil {
+			return PlaySession{}, err
+		}
+	}
 	if err := commitPlaybackWrite(ctx, tx, owner); err != nil {
 		return PlaySession{}, fmt.Errorf("complete playback session validation: %w", err)
 	}
+	admissionAccepted = true
 	return session, nil
 }
 
@@ -581,25 +661,61 @@ func stopPosition(position, duration int64) (int64, bool) {
 }
 
 func (s *Store) ReportPlayback(ctx context.Context, owner PlaybackOwner, report PlaybackReport) (PlaySession, UserData, error) {
+	return s.reportPlaybackValidatedStop(ctx, owner, report, nil)
+}
+
+// ReportPlaybackWithValidatedStop accepts an optional correlated Stopped intent
+// after complete current validation and before user-data locking. Unnamed
+// legacy reports retain their existing target/transaction processing order.
+func (s *Store) ReportPlaybackWithValidatedStop(ctx context.Context, owner PlaybackOwner, report PlaybackReport, factory PlaybackValidatedStopFactory) (PlaySession, UserData, error) {
+	if event, err := canonicalPlaybackEvent(report.Event); err != nil || event != "Stopped" {
+		return PlaySession{}, UserData{}, ErrInvalidInput
+	}
+	return s.reportPlaybackValidatedStop(ctx, owner, report, factory)
+}
+
+func (s *Store) reportPlaybackValidatedStop(ctx context.Context, owner PlaybackOwner, report PlaybackReport, factory PlaybackValidatedStopFactory) (PlaySession, UserData, error) {
+	explicitStopReference := report.PlaySessionID != ""
 	event, err := canonicalPlaybackEvent(report.Event)
 	if err != nil || (report.PositionTicks != nil && *report.PositionTicks < 0) ||
 		(report.PlaySessionID != "" && !validClientPlaybackReference(report.PlaySessionID)) {
 		return PlaySession{}, UserData{}, ErrInvalidInput
 	}
+	report.IsPaused = playbackReportPaused(event, report.EventName, report.IsPaused)
 	playerStatePatch, err := encodePlayerStateUpdate(report.PlayerState)
 	if err != nil {
 		return PlaySession{}, UserData{}, err
+	}
+	if s == nil {
+		return PlaySession{}, UserData{}, ErrInvalidInput
+	}
+	pool := s.pool
+	if database.IsPlaybackControl(ctx) {
+		if event != "Ping" && event != "Stopped" {
+			return PlaySession{}, UserData{}, ErrInvalidInput
+		}
+		pool = s.playbackControlPool
+		if pool == nil {
+			return PlaySession{}, UserData{}, ErrUnavailable
+		}
 	}
 	if event == "Started" && report.PlaySessionID == "" {
 		if err := s.cleanupPlayback(ctx, owner); err != nil {
 			return PlaySession{}, UserData{}, err
 		}
 	}
-	tx, access, err := s.beginPlaybackWrite(ctx, owner)
+	tx, access, err := s.beginPlaybackWriteOnPool(ctx, owner, pool)
 	if err != nil {
 		return PlaySession{}, UserData{}, err
 	}
 	defer rollback(tx)
+	var stopAction PlaybackValidatedStopAction
+	terminalCommitted := false
+	defer func() {
+		if stopAction.Finish != nil {
+			stopAction.Finish(terminalCommitted)
+		}
+	}()
 	var identified PlaySession
 	if report.PlaySessionID != "" {
 		identified, err = readOwnedPlaySession(ctx, tx, owner, report.PlaySessionID, false)
@@ -644,10 +760,49 @@ func (s *Store) ReportPlayback(ctx context.Context, owner PlaybackOwner, report 
 			return PlaySession{}, UserData{}, err
 		}
 	}
-	// Every event uses the same data-before-playback-row lock order.
+	if event == "Stopped" && explicitStopReference && factory != nil {
+		// Read the exact canonical identity again after the catalog lock.
+		// Do not acquire a playback lock ahead of the user-data row or carry
+		// an early position/revision snapshot into the eventual write.
+		current, err := readOwnedCanonicalPlaySession(ctx, tx, owner, report.PlaySessionID, false)
+		if err != nil {
+			return PlaySession{}, UserData{}, err
+		}
+		if current.ItemID != report.ItemID || current.MediaSourceID != sourceID || current.IsDynamic != identified.IsDynamic {
+			return PlaySession{}, UserData{}, ErrNotFound
+		}
+		if err := checkPlaybackStateWrite(ctx, tx, owner, false); err != nil {
+			return PlaySession{}, UserData{}, err
+		}
+		validated, err := validatedPlaybackStopIdentity(owner, current)
+		if err != nil {
+			return PlaySession{}, UserData{}, err
+		}
+		stopAction, err = factory(validated)
+		if err != nil {
+			return PlaySession{}, UserData{}, err
+		}
+		if stopAction.Cancel != nil {
+			if stopAction.Finish == nil {
+				return PlaySession{}, UserData{}, ErrInvalidInput
+			}
+			// Accepted intent remains owned even if the requesting client
+			// disconnects. The action must perform bounded real retirement;
+			// it cannot authorize new work from this validation snapshot.
+			if err := stopAction.Cancel(ctx); err != nil {
+				return PlaySession{}, UserData{}, err
+			}
+		}
+	}
+	// User data writes retain the data-before-playback-row lock order. Ping
+	// returns a committed snapshot without initializing or locking user data.
 	data := UserData{ItemID: report.ItemID}
 	if !identified.IsDynamic {
-		data, err = lockPlaybackUserData(ctx, tx, owner, report.ItemID)
+		if event == "Ping" {
+			data, err = playbackUserDataSnapshot(ctx, tx, owner, report.ItemID)
+		} else {
+			data, err = lockPlaybackUserData(ctx, tx, owner, report.ItemID)
+		}
 		if err != nil {
 			return PlaySession{}, UserData{}, err
 		}
@@ -667,6 +822,7 @@ func (s *Store) ReportPlayback(ctx context.Context, owner PlaybackOwner, report 
 		if err := commitPlaybackWrite(ctx, tx, owner); err != nil {
 			return PlaySession{}, UserData{}, err
 		}
+		terminalCommitted = true
 		return session, data, nil
 	}
 	if !session.live {
@@ -678,6 +834,7 @@ func (s *Store) ReportPlayback(ctx context.Context, owner PlaybackOwner, report 
 		if err := commitPlaybackWrite(ctx, tx, owner); err != nil {
 			return PlaySession{}, UserData{}, err
 		}
+		terminalCommitted = true
 		return session, data, nil
 	}
 	if event == "Started" && session.StartedAt != nil {
@@ -710,12 +867,13 @@ func (s *Store) ReportPlayback(ctx context.Context, owner PlaybackOwner, report 
 	}
 	session, err = scanPlaySession(tx.QueryRow(ctx, `UPDATE play_sessions SET state = $2,
 		position_ticks = $3, duration_ticks = $4, counted = $5,
+		playback_revision = playback_revision + CASE WHEN $9::boolean THEN 1 ELSE 0 END,
 		started_at = CASE WHEN $6 THEN COALESCE(started_at, clock_timestamp()) ELSE started_at END,
 		stopped_at = CASE WHEN $2 = 'Stopped' THEN clock_timestamp() ELSE stopped_at END,
 		expires_at = CASE WHEN $2 = 'Stopped' THEN clock_timestamp() ELSE clock_timestamp() + interval '30 minutes' END,
 		player_state = CASE WHEN $7::boolean THEN player_state || $8::jsonb ELSE player_state END,
 		updated_at = clock_timestamp() WHERE id = $1 RETURNING `+playSessionColumns,
-		session.ID, state, position, duration, counted, countNow, report.PlayerState != nil && event != "Ping", playerStatePatch))
+		session.ID, state, position, duration, counted, countNow, report.PlayerState != nil && event != "Ping", playerStatePatch, event != "Ping"))
 	if err != nil {
 		return PlaySession{}, UserData{}, fmt.Errorf("persist playback report: %w", err)
 	}
@@ -746,5 +904,6 @@ func (s *Store) ReportPlayback(ctx context.Context, owner PlaybackOwner, report 
 	if err := commitPlaybackWrite(ctx, tx, owner); err != nil {
 		return PlaySession{}, UserData{}, fmt.Errorf("commit playback report: %w", err)
 	}
+	terminalCommitted = session.State == "Stopped" || session.State == "Expired"
 	return session, data, nil
 }

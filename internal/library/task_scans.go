@@ -206,6 +206,11 @@ func copyTaskScanSnapshot(tx OwnedTx, child *taskScanChild, job Job) error {
 		}
 		return nil
 	}
+	// The locked child has already retained this exact snapshot. Avoid another
+	// row version while keeping association and terminal-state checks above.
+	if taskSnapshotMatches(child, job) {
+		return nil
+	}
 	result, err := tx.Exec(`UPDATE task_run_children SET state = $3, scanned = $4, added = $5, updated = $6,
 		error_code = $7, error_message = $8, started_at = $9, finished_at = $10
 		WHERE id = $1 AND scan_job_id = $2 AND state IN ('queued', 'running')`, child.id, job.ID,

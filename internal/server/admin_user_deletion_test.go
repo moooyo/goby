@@ -25,7 +25,11 @@ func TestDeletedUserCredentialRetiresRegisteredAndUnregisteredProducers(t *testi
 		ctx, cancel := context.WithCancel(context.Background())
 		t.Cleanup(cancel)
 		key := hlsKey{scope: transcode.Scope{AuthSessionID: credential}}
-		session := &hlsSession{id: id, key: key, ctx: ctx, cancel: cancel, producers: []hlsProducer{{id: id + "-producer"}}}
+		producer, err := h.ownProducer(key.scope, id+"-producer", 0, 0)
+		if err != nil {
+			t.Fatalf("register controlled deleted-user producer ownership: %v", err)
+		}
+		session := &hlsSession{id: id, key: key, ctx: ctx, cancel: cancel, producers: []hlsProducer{producer}}
 		h.sessions[id], h.byKey[key] = session, session
 		return ctx
 	}

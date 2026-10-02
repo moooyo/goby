@@ -75,9 +75,15 @@ func (s *Store) openPublicMediaSource(ctx context.Context, source indexedMediaSo
 	if err != nil {
 		return nil, err
 	}
+	delivered := false
+	defer func() {
+		if !delivered {
+			_ = file.Close()
+		}
+	}()
 	if err := s.checkOpenedMediaPublication(ctx, source); err != nil {
-		_ = file.Close()
 		return nil, err
 	}
+	delivered = true
 	return file, nil
 }

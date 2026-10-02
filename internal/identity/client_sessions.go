@@ -184,6 +184,13 @@ func (s *Store) TouchClientSessionFromAddress(ctx context.Context, principal Pri
 	if peerIP != "" {
 		principal.PeerIP = peerIP
 	}
+	if principal.IsApplicationKey() {
+		if _, steady, err := s.readSteadyApplicationClient(ctx, principal, nil); err != nil {
+			return err
+		} else if steady {
+			return nil
+		}
+	}
 	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return fmt.Errorf("begin client session activity: %w", err)

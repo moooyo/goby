@@ -123,7 +123,7 @@ func readEmbeddedArtworkContent(ctx context.Context, tx pgx.Tx, itemID string) (
 }
 
 func (s *Store) checkEmbeddedArtworkContentSource(ctx context.Context, result embeddedArtworkContent) error {
-	file, _, err := runMediaSourceWorker(ctx, mediaSourceWorkers, func() (*os.File, MediaFile, error) {
+	file, _, err := s.runIndexedMediaSourceWorker(ctx, false, result.source, func(ctx context.Context) (*os.File, MediaFile, error) {
 		file, err := s.openPublicMediaSource(ctx, result.source)
 		return file, result.source.mediaFile, err
 	})

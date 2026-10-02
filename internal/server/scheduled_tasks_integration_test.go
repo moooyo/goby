@@ -23,6 +23,7 @@ import (
 
 	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/systemevents"
 	"github.com/moooyo/goby/internal/tasks"
 )
 
@@ -248,11 +249,18 @@ func TestHTTPScheduledTasksRequireManagementTokensAndExposeOnlyTaskInfo(t *testi
 				"GobyAnalyzeIntroductions": "Analyze episode introductions",
 				"GobyGenerateSeekPreviews": "Generate seek previews",
 			}
+			analysisEvents := map[string]systemevents.Event{
+				"GobyAnalyzeIntroductions": systemevents.IntroAnalysisRequested,
+				"GobyGenerateSeekPreviews": systemevents.PreviewGenerationRequested,
+			}
 			seenAnalysis := make(map[string]bool, len(expectedAnalysis))
 			for _, info := range items {
 				key, _ := info["Key"].(string)
 				name, analysis := expectedAnalysis[key]
 				if !analysis {
+					if triggers, ok := info["Triggers"].([]any); !ok || len(triggers) != 0 {
+						t.Fatal("ordinary TaskInfo changed its initial empty trigger array")
+					}
 					continue
 				}
 				seenAnalysis[key] = true
@@ -269,9 +277,10 @@ func TestHTTPScheduledTasksRequireManagementTokensAndExposeOnlyTaskInfo(t *testi
 					}
 				}
 				stringValue(t, info, "Description")
-				if triggers, ok := info["Triggers"].([]any); !ok || len(triggers) != 0 {
-					t.Fatal("new analysis TaskInfo must contain an explicit empty trigger array")
-				}
+				scheduledTaskHTTPAssertJSON(t, info["Triggers"], []map[string]any{
+					{"Type": "IntervalTrigger", "IntervalTicks": int64(864000000000)},
+					{"Type": "SystemEventTrigger", "SystemEvent": string(analysisEvents[key])},
+				})
 			}
 			if len(seenAnalysis) != len(expectedAnalysis) {
 				t.Fatal("task list omitted an explicitly registered analysis capability")

@@ -144,24 +144,28 @@ type scanTask struct {
 // Store runs exactly two scan workers. Administrators must be authorized by the
 // caller before using management methods; item methods enforce user policies.
 type Store struct {
-	pool          *pgxpool.Pool
-	ownership     *scanOwnership
-	scanEvidence  *scanEvidenceManager
-	prober        Prober
-	roots         []approvedRoot
-	ctx           context.Context
-	cancel        context.CancelFunc
-	mu            sync.Mutex
-	closed        bool
-	closing       atomic.Bool
-	closeOnce     sync.Once
-	shutdownErr   error
-	active        map[string]*scanTask
-	queue         chan *scanTask
-	scanUpdates   chan struct{}
-	workers       sync.WaitGroup
-	fileDeletions sync.WaitGroup
-	done          chan struct{}
+	pool                *pgxpool.Pool
+	playbackControlPool *pgxpool.Pool
+	ownership           *scanOwnership
+	scanEvidence        *scanEvidenceManager
+	prober              Prober
+	roots               []approvedRoot
+	ctx                 context.Context
+	cancel              context.CancelFunc
+	mu                  sync.Mutex
+	closed              bool
+	closing             atomic.Bool
+	closeOnce           sync.Once
+	shutdownErr         error
+	active              map[string]*scanTask
+	queue               chan *scanTask
+	scanUpdates         chan struct{}
+	workers             sync.WaitGroup
+	fileDeletions       sync.WaitGroup
+	done                chan struct{}
+
+	// Source admission has its own lock so shutdown never waits for Store.mu.
+	mediaSourceOwners mediaSourceOwnerRuntime
 
 	rootBindingAnchors   map[string]rootBindingAnchor
 	rootAnchorReferences map[*os.Root]*rootAnchorReference

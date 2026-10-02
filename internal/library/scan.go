@@ -269,6 +269,12 @@ func (state *scanState) walk(relative string, current hierarchy, depth int) erro
 	if err := state.recordThemeDirectoryOwner(relative, current, folderType); err != nil {
 		return err
 	}
+	probes := state.newScanProbeWindow()
+	if probes != nil {
+		// A failed prepare or publication must cancel and join the other probe
+		// before any directory or root descriptor can be retired.
+		defer probes.close()
+	}
 	for _, entry := range entries {
 		if err := state.task.ctx.Err(); err != nil {
 			return err
@@ -278,6 +284,11 @@ func (state *scanState) walk(relative string, current hierarchy, depth int) erro
 		}
 		path := filepath.Join(relative, entry.Name())
 		if entry.IsDir() {
+			if probes != nil {
+				if err := probes.flush(); err != nil {
+					return err
+				}
+			}
 			next := current
 			itemType, number := "Folder", 0
 			if state.library.CollectionType == "tvshows" || (state.library.CollectionType == "mixed" && current.seriesID != "") {
@@ -305,12 +316,23 @@ func (state *scanState) walk(relative string, current hierarchy, depth int) erro
 		if kind == "" {
 			continue
 		}
-		fileWarnings := state.warnings
-		if err := state.scanFile(path, kind, current); err != nil {
-			return err
+		if probes != nil {
+			if err := probes.submit(path, kind, current); err != nil {
+				return err
+			}
+		} else {
+			fileWarnings := state.warnings
+			if err := state.scanFile(path, kind, current); err != nil {
+				return err
+			}
+			if state.warnings != fileWarnings {
+				state.failThemeDirectory(relative)
+			}
 		}
-		if state.warnings != fileWarnings {
-			state.failThemeDirectory(relative)
+	}
+	if probes != nil {
+		if err := probes.flush(); err != nil {
+			return err
 		}
 	}
 	if err := state.publishThemeDirectory(relative); err != nil {
@@ -328,7 +350,19 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 		return err
 	}
 	defer input.file.Close()
+	return state.publishScannedMedia(path, kind, current, input)
+}
+
+// publishScannedMedia runs only on the scan worker. Probe workers never mutate
+// counters, claims, hierarchy, sidecars, evidence, or the catalog.
+func (state *scanState) publishScannedMedia(path, kind string, current hierarchy, input *scannedMediaInput) error {
+	if input.authority != nil {
+		if err := state.checkScanProbeFile(path, input); err != nil {
+			return err
+		}
+	}
 	info, stored, probe := input.info, input.stored, input.probe
+	var err error
 	unchanged, checksVersion := input.unchanged, input.checksVersion
 	relative := filepath.ToSlash(path)
 	name := cleanName(strings.TrimSuffix(filepath.Base(path), filepath.Ext(path)))
@@ -430,8 +464,12 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 		if err := state.scanSubtitles(stored.id, path, probe); err != nil {
 			return err
 		}
-		if err := state.scanImagesWithKnownAbsence(stored.id, itemType, path, false, !stored.hasLocalImages); err != nil {
-			return err
+		combineCompletion := state.task.job.TaskChildID != "" && !stored.hasLocalImages &&
+			EffectiveLibraryOptions(state.library).EnableLocalImages
+		if !combineCompletion {
+			if err := state.scanImagesWithKnownAbsence(stored.id, itemType, path, false, !stored.hasLocalImages); err != nil {
+				return err
+			}
 		}
 		if probe != nil {
 			if err := state.scanEmbeddedArtwork(stored.id, itemType, path, input.file, *probe); err != nil {
@@ -442,9 +480,23 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 		if err := state.recordScanSeen(stored.id); err != nil {
 			return err
 		}
+		checked := false
+		if combineCompletion {
+			// Only a task-owned visit with no stored local images moves images
+			// last. Its complete stable-absence owner query can also be the final
+			// fresh task fence. No sidecar/staging write follows that check.
+			completionCheck := func() error {
+				err := state.store.checkCachedTaskScanProgress(state.task)
+				checked = err == nil
+				return err
+			}
+			if err := state.scanImagesWithKnownAbsence(stored.id, itemType, path, false, true, completionCheck); err != nil {
+				return err
+			}
+		}
 		// The entry checkpoint already persisted Scanned for an independent scan.
 		// A cached visit does not change the primary item counters.
-		if state.task.job.TaskChildID == "" {
+		if state.task.job.TaskChildID == "" || checked {
 			return state.task.ctx.Err()
 		}
 		return state.store.persistProgress(state.task)
@@ -469,6 +521,19 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 		return err
 	}
 	defer rollback(tx)
+	var publicationProgress *taskScanRelation
+	if state.task.job.TaskChildID != "" {
+		relation, err := lockScanPublicationProgress(scanProbeAuthorityTx{ctx: state.task.ctx, tx: tx}, state.task)
+		if err != nil {
+			return err
+		}
+		publicationProgress = &relation
+	}
+	if input.authority != nil {
+		if err := state.checkScanProbeAuthorityWithRelation(tx, path, input, publicationProgress); err != nil {
+			return err
+		}
+	}
 	beforeCatalog, err := readScanCatalogItem(state.task.ctx, tx, id)
 	if err != nil {
 		return err
@@ -520,19 +585,28 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 	if err := beforeAuxiliary.record(state.task.ctx, tx, nil); err != nil {
 		return err
 	}
+	candidateProgress := state.task.job
+	if stored.id == "" {
+		candidateProgress.Added++
+	} else {
+		candidateProgress.Updated++
+	}
 	progressInItemTx := false
-	if state.task.job.TaskChildID == "" {
-		// Commit independent scan counters with the primary item. Task-owned
-		// scans keep their existing atomic job and child progress checkpoint.
-		added, updated := state.task.job.Added, state.task.job.Updated
-		if stored.id == "" {
-			added++
-		} else {
-			updated++
+	var committedProgress Job
+	if publicationProgress != nil {
+		// The task rows were locked before catalog rows. Publish their accepted
+		// counters atomically with this primary item, without changing memory
+		// until its transaction has actually committed.
+		committedProgress, err = writeScanPublicationProgress(scanProbeAuthorityTx{ctx: state.task.ctx, tx: tx}, *publicationProgress, candidateProgress)
+		if err != nil {
+			return err
 		}
+		progressInItemTx = true
+	} else {
+		// Independent scans retain their existing primary-item checkpoint.
 		err = tx.QueryRow(state.task.ctx, `UPDATE scan_jobs SET scanned = $2, added = $3, updated = $4
 			WHERE id = $1 AND task_child_id IS NULL AND status = 'Running' AND NOT cancel_requested
-			RETURNING true`, state.task.job.ID, state.task.job.Scanned, added, updated).Scan(&progressInItemTx)
+			RETURNING true`, state.task.job.ID, candidateProgress.Scanned, candidateProgress.Added, candidateProgress.Updated).Scan(&progressInItemTx)
 		if errors.Is(err, pgx.ErrNoRows) {
 			// Do not commit a primary item after its scan job stopped accepting
 			// progress; finalization will resolve the terminal job state.
@@ -541,13 +615,38 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 			return err
 		}
 	}
+	if input.authority != nil {
+		if err := state.task.ctx.Err(); err != nil {
+			return err
+		}
+		if state.store.closing.Load() {
+			return ErrUnavailable
+		}
+		if err := state.revalidateScanProbeStorage(tx, path, input); err != nil {
+			return err
+		}
+		if err := state.task.ctx.Err(); err != nil {
+			return err
+		}
+		if state.store.closing.Load() {
+			return ErrUnavailable
+		}
+	}
+	if publicationProgress != nil {
+		if err := state.task.ctx.Err(); err != nil {
+			return err
+		}
+		if state.store.closing.Load() {
+			return ErrUnavailable
+		}
+	}
 	if err := tx.Commit(state.task.ctx); err != nil {
 		return err
 	}
-	if stored.id == "" {
-		state.task.job.Added++
+	if publicationProgress != nil {
+		state.task.job = committedProgress
 	} else {
-		state.task.job.Updated++
+		state.task.job.Added, state.task.job.Updated = candidateProgress.Added, candidateProgress.Updated
 	}
 	if progressInItemTx {
 		state.store.notifyScanUpdate()
@@ -567,10 +666,13 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 	if err := state.recordScanSeen(id); err != nil {
 		return err
 	}
-	if progressInItemTx {
-		return state.task.ctx.Err()
+	if publicationProgress != nil {
+		// Sidecars and accepted-identity staging remain outside the item
+		// transaction. Recheck current task authority after those operations;
+		// this standalone shared-lock check still has an autocommit transaction.
+		return state.store.checkCachedTaskScanProgress(state.task)
 	}
-	return state.store.persistProgress(state.task)
+	return state.task.ctx.Err()
 }
 
 func (state *scanState) folder(relative, path, name, itemType, parentID string, indexNumber int, nfoRelative ...string) (string, error) {
@@ -648,14 +750,25 @@ func (state *scanState) folder(relative, path, name, itemType, parentID string, 
 		 overview, local_metadata, local_metadata_hash, local_metadata_path)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,true,$10,$11,$12,$13,$14)
 		ON CONFLICT (root_id, relative_path) DO UPDATE SET parent_id = EXCLUDED.parent_id,
-		name = EXCLUDED.name, sort_name = EXCLUDED.sort_name, type = EXCLUDED.type,
+		type = EXCLUDED.type,
 		is_folder = true, media = NULL, file_identity = '', file_size = 0, modified_at = NULL,
 		parent_index_number = 0,
-		overview = EXCLUDED.overview, local_metadata = EXCLUDED.local_metadata,
+		local_metadata = EXCLUDED.local_metadata,
 		local_metadata_hash = EXCLUDED.local_metadata_hash, local_metadata_path = EXCLUDED.local_metadata_path,
 		path = EXCLUDED.path, index_number = EXCLUDED.index_number, updated_at = now()
+		WHERE ROW(items.parent_id, items.type, items.is_folder, items.media, items.file_identity,
+			items.file_size, items.modified_at, items.parent_index_number, items.local_metadata,
+			items.local_metadata_hash, items.local_metadata_path, items.path, items.index_number)
+		IS DISTINCT FROM ROW(EXCLUDED.parent_id, EXCLUDED.type, true, NULL::jsonb, ''::text,
+			0::bigint, NULL::timestamptz, 0, EXCLUDED.local_metadata,
+			EXCLUDED.local_metadata_hash, EXCLUDED.local_metadata_path, EXCLUDED.path, EXCLUDED.index_number)
 		RETURNING id`, id, state.library.ID, state.root.id, parentID, name, sortName, itemType, path, relative, indexNumber,
 		overview, localJSON, local.hash, local.path).Scan(&id)
+	if errors.Is(err, pgx.ErrNoRows) && beforeCatalog.present {
+		// The conflicting row was locked before the upsert. A distinctness guard
+		// retains its identity even when PostgreSQL returns no updated row.
+		id, err = beforeCatalog.change.ItemID, nil
+	}
 	if err != nil {
 		return "", err
 	}
@@ -664,7 +777,12 @@ func (state *scanState) folder(relative, path, name, itemType, parentID string, 
 			return "", err
 		}
 	}
-	if err := syncScannedMetadata(state.task.ctx, tx, id, scannedMetadataOptions{ForceEntities: id == insertID}); err != nil {
+	// Existing display fields may contain administrator or online overlays.
+	// Supply the incoming automatic base directly instead of transiently
+	// replacing those display fields on every physical-directory visit.
+	if err := syncScannedMetadata(state.task.ctx, tx, id, scannedMetadataOptions{
+		Base: &scannedMetadataBase{Name: name, SortName: sortName, Overview: overview}, ForceEntities: id == insertID,
+	}); err != nil {
 		return "", err
 	}
 	if err := deactivateInvalidThemeChildren(state.task.ctx, tx, []string{id}); err != nil {

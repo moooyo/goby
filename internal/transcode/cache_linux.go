@@ -34,11 +34,53 @@ const (
 // operation is relative to an opened directory descriptor, and each supplied
 // component is opened without following symbolic links.
 type cacheRoot struct {
-	mu     sync.Mutex
-	path   string
-	dir    *os.File
-	lock   *os.File
-	closed bool
+	// mu protects the root lifetime. Recovery and closure exclude every job
+	// operation, while operations on separate job directories share this gate.
+	mu               sync.RWMutex
+	jobsMu           sync.Mutex
+	jobs             map[string]*cacheJobLock
+	maintenance      map[string]*cacheInventory
+	maintenanceFacts int
+	maintenanceDirty int
+	path             string
+	dir              *os.File
+	lock             *os.File
+	closed           bool
+}
+
+type cacheJobLock struct {
+	mu   sync.Mutex
+	refs int
+}
+
+// lockJob requires a root read lock. Count waiters before acquiring the job
+// mutex so removing and recreating an ID cannot introduce a second mutex while
+// an earlier operation still uses that directory. Idle entries can be released
+// without retaining every job ID for the lifetime of the manager.
+func (c *cacheRoot) lockJob(id string) *cacheJobLock {
+	c.jobsMu.Lock()
+	if c.jobs == nil {
+		c.jobs = make(map[string]*cacheJobLock)
+	}
+	job := c.jobs[id]
+	if job == nil {
+		job = &cacheJobLock{}
+		c.jobs[id] = job
+	}
+	job.refs++
+	c.jobsMu.Unlock()
+	job.mu.Lock()
+	return job
+}
+
+func (c *cacheRoot) unlockJob(id string, job *cacheJobLock) {
+	job.mu.Unlock()
+	c.jobsMu.Lock()
+	job.refs--
+	if job.refs == 0 {
+		delete(c.jobs, id)
+	}
+	c.jobsMu.Unlock()
 }
 
 type cacheFileSnapshot struct {
@@ -149,8 +191,8 @@ func (c *cacheRoot) JobPath(id string) (string, error) {
 	if !validJobID(id) {
 		return "", ErrCacheInvalid
 	}
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	if c.closed {
 		return "", os.ErrClosed
 	}
@@ -168,6 +210,12 @@ func (c *cacheRoot) Close() error {
 	}
 	c.closed = true
 	var err error
+	for _, inventory := range c.maintenance {
+		err = errors.Join(err, inventory.close())
+	}
+	c.maintenance = nil
+	c.maintenanceFacts = 0
+	c.maintenanceDirty = 0
 	if c.lock != nil {
 		err = c.lock.Close()
 	}
@@ -278,6 +326,14 @@ func (c *cacheRoot) Recover() error {
 	if c.closed {
 		return os.ErrClosed
 	}
+	for _, inventory := range c.maintenance {
+		if err := inventory.close(); err != nil {
+			return err
+		}
+	}
+	c.maintenance = nil
+	c.maintenanceFacts = 0
+	c.maintenanceDirty = 0
 	if err := c.ensureMarker(false); err != nil {
 		return err
 	}
@@ -311,29 +367,62 @@ func (c *cacheRoot) CreateJob(id string) error {
 	if !validJobID(id) {
 		return ErrCacheInvalid
 	}
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	if c.closed {
 		return os.ErrClosed
 	}
-	return syscall.Mkdirat(int(c.dir.Fd()), id, 0o700)
+	job := c.lockJob(id)
+	defer c.unlockJob(id, job)
+	if err := syscall.Mkdirat(int(c.dir.Fd()), id, 0o700); err != nil {
+		return err
+	}
+	// Install observation before the producer receives this directory. A
+	// missed registration never creates an unobserved incremental baseline.
+	_, err := c.inventory(id)
+	if err != nil {
+		// No producer has received the directory yet. Guarded removal either
+		// rolls back this empty creation or preserves unexpected unsafe content.
+		return c.rollbackJobCreation(id, err)
+	}
+	return err
+}
+
+// rollbackJobCreation requires the root read lock and keyed job lock. A failed
+// guarded rollback explicitly transfers the still-owned directory to manager
+// finalization; unexpected content is preserved and cannot become free quota.
+func (c *cacheRoot) rollbackJobCreation(id string, cause error) error {
+	if err := c.removeJob(id, nil); err != nil {
+		return errors.Join(cause, errCacheCreationUnaccounted, err)
+	}
+	return errors.Join(cause, c.retireInventory(id))
 }
 
 func (c *cacheRoot) OpenJobFile(id, name string) (*os.File, error) {
 	if !validJobID(id) || !validOutputName(name) {
 		return nil, ErrCacheInvalid
 	}
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	if c.closed {
 		return nil, os.ErrClosed
 	}
+	job := c.lockJob(id)
+	defer c.unlockJob(id, job)
 	dir, err := cacheOpenDirectoryAt(c.dir, id)
 	if err != nil {
 		return nil, err
 	}
 	defer dir.Close()
-	return cacheOpenRegular(dir, name, syscall.O_RDONLY, 0)
+	file, info, err := cacheOpenRegularInfo(dir, name, syscall.O_RDONLY, 0)
+	if err == nil {
+		err = c.checkFrozenFile(id, name, info, dir)
+		if err != nil {
+			_ = file.Close()
+			file = nil
+		}
+	}
+	return file, err
 }
 
 // OpenProgressiveFile opens the private, append-only output through its owned
@@ -343,17 +432,27 @@ func (c *cacheRoot) OpenProgressiveFile(id string) (*os.File, error) {
 	if !validJobID(id) {
 		return nil, ErrCacheInvalid
 	}
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	if c.closed {
 		return nil, os.ErrClosed
 	}
+	job := c.lockJob(id)
+	defer c.unlockJob(id, job)
 	dir, err := cacheOpenDirectoryAt(c.dir, id)
 	if err != nil {
 		return nil, err
 	}
 	defer dir.Close()
-	return cacheOpenRegular(dir, "stream.bin", syscall.O_RDONLY, 0)
+	file, info, err := cacheOpenRegularInfo(dir, "stream.bin", syscall.O_RDONLY, 0)
+	if err == nil {
+		err = c.checkFrozenFile(id, "stream.bin", info, dir)
+		if err != nil {
+			_ = file.Close()
+			file = nil
+		}
+	}
+	return file, err
 }
 
 func (c *cacheRoot) ScanJob(id string) (bytes int64, ready bool, err error) {
@@ -376,11 +475,13 @@ func (c *cacheRoot) ScanPlanJob(id string, plan Plan) (bytes int64, ready bool, 
 	default:
 		return 0, false, ErrCacheInvalid
 	}
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	if c.closed {
 		return 0, false, os.ErrClosed
 	}
+	job := c.lockJob(id)
+	defer c.unlockJob(id, job)
 	dir, err := cacheOpenDirectoryAt(c.dir, id)
 	if err != nil {
 		return 0, false, err
@@ -398,12 +499,32 @@ func (c *cacheRoot) RemoveJob(id string) error {
 	if !validJobID(id) {
 		return ErrCacheInvalid
 	}
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	if c.closed {
 		return os.ErrClosed
 	}
-	return c.removeJob(id, nil)
+	job := c.lockJob(id)
+	defer c.unlockJob(id, job)
+	err := c.removeJob(id, nil)
+	// Retire observers even after a guarded removal failure. The directory is
+	// preserved by removeJob, while the manager retains its sticky safety fence.
+	return errors.Join(err, c.retireInventory(id))
+}
+
+func (c *cacheRoot) retireInventory(id string) error {
+	c.jobsMu.Lock()
+	inventory := c.maintenance[id]
+	delete(c.maintenance, id)
+	if inventory != nil {
+		c.maintenanceFacts -= len(inventory.files)
+		c.maintenanceDirty -= len(inventory.dirty)
+	}
+	c.jobsMu.Unlock()
+	if inventory != nil {
+		return inventory.close()
+	}
+	return nil
 }
 
 func (c *cacheRoot) removeJob(id string, expected os.FileInfo) error {
@@ -449,8 +570,8 @@ func (c *cacheRoot) removeJob(id string, expected os.FileInfo) error {
 }
 
 func (c *cacheRoot) FreeBytes() (int64, error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	if c.closed {
 		return 0, os.ErrClosed
 	}
@@ -634,31 +755,36 @@ func cacheOpenDirectoryAt(parent *os.File, name string) (*os.File, error) {
 }
 
 func cacheOpenRegular(parent *os.File, name string, flags int, mode uint32) (*os.File, error) {
+	file, _, err := cacheOpenRegularInfo(parent, name, flags, mode)
+	return file, err
+}
+
+func cacheOpenRegularInfo(parent *os.File, name string, flags int, mode uint32) (*os.File, os.FileInfo, error) {
 	// O_NONBLOCK prevents an unexpected FIFO from blocking before its type can
 	// be checked. Regular files remain seekable and support normal reads.
 	fd, err := syscall.Openat(int(parent.Fd()), name, flags|syscall.O_NOFOLLOW|syscall.O_CLOEXEC|syscall.O_NONBLOCK, mode)
 	if err != nil {
-		return nil, cacheOpenError(err)
+		return nil, nil, cacheOpenError(err)
 	}
 	file := os.NewFile(uintptr(fd), name)
 	info, err := file.Stat()
 	if err != nil {
 		_ = file.Close()
-		return nil, err
+		return nil, nil, err
 	}
 	stat, ok := info.Sys().(*syscall.Stat_t)
 	if !info.Mode().IsRegular() || !ok || stat.Nlink > 1 {
 		_ = file.Close()
-		return nil, fmt.Errorf("%w: output must be a regular file without hard links", ErrCacheUnsafe)
+		return nil, nil, fmt.Errorf("%w: output must be a regular file without hard links", ErrCacheUnsafe)
 	}
 	// A published playlist may be replaced immediately after openat. A zero
 	// link count is safe for that already-open regular inode; rejecting it
 	// would turn normal atomic playlist publication into a spurious failure.
 	if _, err := file.Seek(0, io.SeekStart); err != nil {
 		_ = file.Close()
-		return nil, fmt.Errorf("%w: output is not seekable", ErrCacheUnsafe)
+		return nil, nil, fmt.Errorf("%w: output is not seekable", ErrCacheUnsafe)
 	}
-	return file, nil
+	return file, info, nil
 }
 
 func cacheOpenError(err error) error {

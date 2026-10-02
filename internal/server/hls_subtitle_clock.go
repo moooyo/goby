@@ -5,20 +5,18 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"io"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
 
 	"github.com/moooyo/goby/internal/identity"
-	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/playback"
 	"github.com/moooyo/goby/internal/subtitle"
 	"github.com/moooyo/goby/internal/transcode"
 )
 
-func (s *Server) serveGeneratedHLSSubtitle(w http.ResponseWriter, r *http.Request, session *hlsSession, input *os.File, slot int, sequence int64, view playback.HLSSubtitleView) bool {
+func (s *Server) serveGeneratedHLSSubtitle(w http.ResponseWriter, r *http.Request, session *hlsSession, input *os.File, slot int, sequence int64, view playback.HLSSubtitleView, producerIDs ...string) bool {
 	select {
 	case s.subtitleSlots <- struct{}{}:
 		defer func() { <-s.subtitleSlots }()
@@ -29,7 +27,7 @@ func (s *Server) serveGeneratedHLSSubtitle(w http.ResponseWriter, r *http.Reques
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 45*time.Second)
 	defer cancel()
-	_, windows, delta, err := s.hls.subtitleMediaWindow(ctx, session, input)
+	_, windows, delta, err := s.hls.subtitleMediaWindow(ctx, session, input, producerIDs...)
 	if err != nil {
 		s.hlsError(w, r, err)
 		return false
@@ -96,129 +94,7 @@ type hlsClockJobs interface {
 // subtitleClock measures the container's translation of the producer's source
 // clock. Pairing the very same first reference packet before and after muxing
 // avoids guesses about decoder reorder delay, AAC priming, and MP4 timescales.
-func (h *hlsRuntime) subtitleClock(ctx context.Context, session *hlsSession, input *os.File) (int64, error) {
-	clocks, ok := h.manager.(hlsClockJobs)
-	if !ok || !transcode.HasHLSSubtitles(session.key.plan) {
-		return 0, transcode.ErrOutputUnavailable
-	}
-	first, err := h.generatedArtifact(ctx, session, input, transcode.HLSPlaylistName(0, session.key.plan.HLS.RenditionCount))
-	if err != nil {
-		return 0, err
-	}
-	defer first.Close()
-	jobID := first.EncodingID()
-	if jobID == "" {
-		return 0, transcode.ErrOutputUnavailable
-	}
-	for {
-		session.mu.Lock()
-		if session.closed {
-			session.mu.Unlock()
-			return 0, transcode.ErrJobCancelled
-		}
-		if session.subtitleClockJob == jobID {
-			delta := session.subtitleClockTicks
-			session.mu.Unlock()
-			return delta, nil
-		}
-		if pending := session.subtitleClockBusy; pending != nil {
-			session.mu.Unlock()
-			select {
-			case <-ctx.Done():
-				return 0, ctx.Err()
-			case <-pending:
-				continue
-			}
-		}
-		pending := make(chan struct{})
-		session.subtitleClockBusy = pending
-		session.mu.Unlock()
-		delta, err := h.measureSubtitleClock(ctx, session, clocks, jobID, first)
-		session.mu.Lock()
-		if err == nil && !session.closed {
-			session.subtitleClockJob, session.subtitleClockTicks = jobID, delta
-		}
-		session.subtitleClockBusy = nil
-		close(pending)
-		session.mu.Unlock()
-		return delta, err
-	}
-}
-
-func (h *hlsRuntime) measureSubtitleClock(ctx context.Context, session *hlsSession, clocks hlsClockJobs, jobID string, first *transcode.ReadHandle) (int64, error) {
-	var sharedDelta int64
-	for index := 0; index < max(1, session.key.plan.HLS.RenditionCount); index++ {
-		playlist := first
-		if index != 0 {
-			var err error
-			playlist, err = h.manager.Open(ctx, session.key.scope, jobID, transcode.HLSPlaylistName(index, session.key.plan.HLS.RenditionCount))
-			if err != nil {
-				return 0, err
-			}
-		}
-		data, err := io.ReadAll(io.LimitReader(playlist, transcode.MaxPlaylistBytes+1))
-		if index != 0 {
-			_ = playlist.Close()
-		}
-		if err != nil {
-			return 0, err
-		}
-		list, err := transcode.ParseMediaPlaylist(data)
-		if err != nil || list.Sequence != 0 || len(list.Segments) == 0 || list.Segments[0].Number != 0 {
-			return 0, transcode.ErrInvalidTimeline
-		}
-		before, err := clocks.HLSClock(ctx, session.key.scope, jobID, index)
-		if err != nil {
-			return 0, err
-		}
-		preTicks, err := before.Ticks()
-		if err != nil {
-			return 0, err
-		}
-		segment, err := h.manager.Open(ctx, session.key.scope, jobID, list.Segments[0].Name)
-		if err != nil {
-			return 0, err
-		}
-		var init *transcode.ReadHandle
-		if list.InitName != "" {
-			init, err = h.manager.Open(ctx, session.key.scope, jobID, list.InitName)
-			if err != nil {
-				_ = segment.Close()
-				return 0, err
-			}
-		}
-		var initFile *os.File
-		if init != nil {
-			initFile = init.File
-		}
-		select {
-		case h.probes <- struct{}{}:
-			var postTicks int64
-			postTicks, err = transcode.MeasureHLSMuxClock(ctx, h.server.cfg.FFprobePath, initFile, segment.File, session.key.plan.VideoStreamIndex >= 0)
-			<-h.probes
-			if err == nil {
-				delta := postTicks - preTicks
-				if delta < -24*60*60*media.TicksPerSecond || delta > 24*60*60*media.TicksPerSecond {
-					err = transcode.ErrInvalidTimeline
-				} else if index == 0 {
-					sharedDelta = delta
-					session.mu.Lock()
-					session.subtitleClockOrigin = preTicks
-					session.mu.Unlock()
-				} else if delta-sharedDelta > 112 || sharedDelta-delta > 112 {
-					err = transcode.ErrInvalidTimeline
-				}
-			}
-		case <-ctx.Done():
-			err = ctx.Err()
-		}
-		_ = segment.Close()
-		if init != nil {
-			_ = init.Close()
-		}
-		if err != nil {
-			return 0, err
-		}
-	}
-	return sharedDelta, nil
+func (h *hlsRuntime) subtitleClock(ctx context.Context, session *hlsSession, input *os.File, producerIDs ...string) (int64, error) {
+	evidence, err := h.producerSubtitleClock(ctx, session, input, producerIDs...)
+	return evidence.delta, err
 }

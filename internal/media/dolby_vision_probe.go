@@ -68,7 +68,8 @@ func runDolbyVisionRPUProbe(ctx context.Context, executable string, file *os.Fil
 			metadata.Profile < 8 && metadata.MetadataCompression != "none" {
 			continue
 		}
-		output, runErr := runLimitedFilesOutput(scanContext, timeout, maxDolbyVisionProbeOutput, executable, []*os.File{file},
+		parser := newDolbyVisionRPUStream(scanContext, metadata.MetadataCompression)
+		output, runErr := runLimitedFilesStreamOutput(scanContext, timeout, maxDolbyVisionProbeOutput, executable, []*os.File{file}, parser,
 			dolbyVisionRPUProbeArgs(stream.Index)...)
 		if err := ctx.Err(); err != nil {
 			return Info{}, err
@@ -85,7 +86,7 @@ func runDolbyVisionRPUProbe(ctx context.Context, executable string, file *os.Fil
 			evidence.reason = dolbyVisionRPUDecoderError
 		default:
 			var parseErr error
-			evidence, parseErr = parseDolbyVisionRPUAccessUnits(scanContext, output.stdout, metadata.MetadataCompression)
+			evidence, parseErr = parser.finish()
 			if err := ctx.Err(); err != nil {
 				return Info{}, err
 			}

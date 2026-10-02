@@ -14,6 +14,21 @@ type HLSPlan struct {
 	RenditionCount int                            `json:"RenditionCount,omitempty"`
 	Renditions     [MaxHLSRenditions]HLSRendition `json:"Renditions,omitempty"`
 	Subtitles      HLSSubtitlePlan                `json:"Subtitles,omitempty"`
+	Window         HLSWindow                      `json:"Window,omitzero"`
+}
+
+// HLSWindow bounds one complete generated producer while retaining the full
+// source duration in Plan. StartNumber is a job-local namespace offset, not a
+// source-time boundary or a promise of continuity with another producer. A
+// restarted encoder has its own premux epoch and initialization resources.
+// NativeClockVersion selects an independently proved source-relative emission:
+// version one is silent TS; version two is the calibrated silent AVC fMP4 path.
+// The zero value preserves the historical complete-source output contract.
+type HLSWindow struct {
+	EndTicks             int64 `json:"EndTicks"`
+	StartNumber          int   `json:"StartNumber"`
+	RequireInputEvidence bool  `json:"RequireInputEvidence,omitempty"`
+	NativeClockVersion   uint8 `json:"NativeClockVersion,omitempty"`
 }
 
 type HLSRendition struct {
@@ -31,6 +46,9 @@ func GeneratedHLS(p Plan) bool {
 func validateHLSPlan(p Plan) error {
 	invalid := func(field string) error { return fmt.Errorf("%w: %s", ErrInvalidPlan, field) }
 	if err := ValidateHLSSubtitlePlan(p); err != nil {
+		return err
+	}
+	if err := validateHLSWindow(p); err != nil {
 		return err
 	}
 	if p.SourceMode != "" && p.SourceMode != "stream" {

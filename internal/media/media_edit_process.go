@@ -66,24 +66,22 @@ func probeMediaEditPackets(ctx context.Context, executable string, file *os.File
 	command.WaitDelay = time.Second
 	stderr := &limitedOutput{limit: maxProcessStderr, cancel: cancel}
 	command.Stderr = stderr
-	stdout, err := command.StdoutPipe()
-	if err != nil {
-		return nil, err
+	var packets map[int]mediaEditPacketDigest
+	parseErr, waitErr, startErr := runMediaStdout(processContext, command, func(reader io.Reader) error {
+		bounded := &io.LimitedReader{R: reader, N: mediaEditMaxPacketJSONBytes + 1}
+		var parseErr error
+		packets, parseErr = parseMediaEditPackets(bounded, timeBases, mediaEditMaxPackets)
+		if bounded.N <= 0 {
+			parseErr = ErrSubtitleRemovalBudget
+		}
+		if parseErr != nil {
+			cancel()
+		}
+		return parseErr
+	})
+	if startErr != nil {
+		return nil, startErr
 	}
-	retired, err := startMediaProcess(command)
-	if err != nil {
-		_ = stdout.Close()
-		return nil, err
-	}
-	bounded := &io.LimitedReader{R: stdout, N: mediaEditMaxPacketJSONBytes + 1}
-	packets, parseErr := parseMediaEditPackets(bounded, timeBases, mediaEditMaxPackets)
-	if bounded.N <= 0 {
-		parseErr = ErrSubtitleRemovalBudget
-	}
-	if parseErr != nil {
-		cancel()
-	}
-	waitErr := errors.Join(<-retired, command.Wait())
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}

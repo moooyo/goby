@@ -246,41 +246,61 @@ func (timeline *hlsSubtitleTimeline) observe(job string, origin int64, list tran
 	return result, nil
 }
 
-func (h *hlsRuntime) subtitleMediaWindow(ctx context.Context, session *hlsSession, input *os.File) (transcode.MediaPlaylist, map[int64]hlsSubtitleWindow, int64, error) {
-	delta, err := h.subtitleClock(ctx, session, input)
+type hlsSubtitleMediaProof struct {
+	list       transcode.MediaPlaylist
+	windows    map[int64]hlsSubtitleWindow
+	delta      int64
+	producerID string
+}
+
+func (h *hlsRuntime) subtitleMediaWindow(ctx context.Context, session *hlsSession, input *os.File, producerIDs ...string) (transcode.MediaPlaylist, map[int64]hlsSubtitleWindow, int64, error) {
+	proof, err := h.subtitleMediaWindowProof(ctx, session, input, producerIDs...)
+	return proof.list, proof.windows, proof.delta, err
+}
+
+func (h *hlsRuntime) subtitleMediaWindowProof(ctx context.Context, session *hlsSession, input *os.File, producerIDs ...string) (hlsSubtitleMediaProof, error) {
+	evidence, err := h.producerSubtitleClock(ctx, session, input, producerIDs...)
 	if err != nil {
-		return transcode.MediaPlaylist{}, nil, 0, err
+		return hlsSubtitleMediaProof{}, err
 	}
-	handle, err := h.generatedArtifact(ctx, session, input, transcode.HLSPlaylistName(0, session.key.plan.HLS.RenditionCount))
+	handle, err := h.generatedArtifact(ctx, session, input, transcode.HLSPlaylistName(0, session.key.plan.HLS.RenditionCount), evidence.producerID)
 	if err != nil {
-		return transcode.MediaPlaylist{}, nil, 0, err
+		return hlsSubtitleMediaProof{}, err
 	}
 	defer handle.Close()
 	data, err := io.ReadAll(io.LimitReader(handle, transcode.MaxPlaylistBytes+1))
 	if err != nil {
-		return transcode.MediaPlaylist{}, nil, 0, err
+		return hlsSubtitleMediaProof{}, err
 	}
 	list, err := transcode.ParseMediaPlaylist(data)
 	if err != nil {
-		return list, nil, 0, err
+		return hlsSubtitleMediaProof{}, err
 	}
 	session.mu.Lock()
 	defer session.mu.Unlock()
-	if session.closed || session.subtitleClockJob != handle.EncodingID() {
-		return list, nil, 0, transcode.ErrOutputUnavailable
+	state := session.subtitleProducerClocks[evidence.producerID]
+	if session.closed || state == nil || !state.known || state.evidence != evidence || handle.EncodingID() != evidence.producerID {
+		return hlsSubtitleMediaProof{}, transcode.ErrOutputUnavailable
 	}
-	windows, err := session.subtitleWindows.observe(handle.EncodingID(), session.subtitleClockOrigin, list)
-	return list, windows, delta, err
+	windows, err := state.windows.observe(evidence.producerID, evidence.origin, list)
+	return hlsSubtitleMediaProof{list: list, windows: windows, delta: evidence.delta, producerID: evidence.producerID}, err
 }
 
-func hlsSubtitleManifest(session *hlsSession, resource, token string, start int64, slot int, view playback.HLSSubtitleView, list transcode.MediaPlaylist) ([]byte, error) {
+func hlsSubtitleManifest(session *hlsSession, resource, token string, start int64, slot int, view playback.HLSSubtitleView, list transcode.MediaPlaylist, producerIDs ...string) ([]byte, error) {
+	producerID := ""
+	if len(producerIDs) > 1 {
+		return nil, errInvalidHLSManifest
+	}
+	if len(producerIDs) == 1 {
+		producerID = producerIDs[0]
+	}
 	var out strings.Builder
 	fmt.Fprintf(&out, "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:%d\n#EXT-X-MEDIA-SEQUENCE:%d\n", list.TargetDuration, list.Sequence)
 	if list.Type != "" {
 		fmt.Fprintf(&out, "#EXT-X-PLAYLIST-TYPE:%s\n", list.Type)
 	}
 	for _, segment := range list.Segments {
-		child := hlsSubtitleArtifactURL(session, resource, hlsSubtitleSegmentName(slot, segment.Number), token, start, view)
+		child := hlsSubtitleURLView(hlsProducerArtifactURL(session, resource, hlsSubtitleSegmentName(slot, segment.Number), token, start, producerID), view)
 		if !validHLSManifestURL(child) {
 			return nil, errInvalidHLSManifest
 		}

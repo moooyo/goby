@@ -98,6 +98,7 @@ type Principal struct {
 // Store provides database-backed identity operations.
 type Store struct {
 	pool                *pgxpool.Pool
+	playbackControlPool *pgxpool.Pool
 	applicationKeyVault *ApplicationKeyVault
 }
 

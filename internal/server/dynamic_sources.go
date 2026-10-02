@@ -73,32 +73,8 @@ func (s *Server) initializeDynamicSources(_ context.Context) error {
 			URL: configured.URL, Headers: configured.Headers, Infinite: configured.Infinite, MaxReconnects: configured.MaxReconnects, Subtitles: configured.Subtitles})
 	}
 	manager, err := dynamicsource.New(context.Background(), definitions, dynamicsource.Options{
-		Prober: media.Prober{FFprobePath: s.cfg.FFprobePath, Timeout: 10 * time.Second},
-		Authorize: func(ctx context.Context, owner dynamicsource.Owner, itemID, playID string) error {
-			subject := library.Subject{UserID: owner.UserID}
-			if owner.ApplicationKey {
-				subject.ApplicationCredentialID = owner.SessionID
-			}
-			item, err := s.library.GetItemFor(ctx, subject, itemID)
-			if err != nil {
-				return err
-			}
-			if !item.CanPlay || item.IsFolder {
-				return library.ErrForbidden
-			}
-			if playID != "" {
-				play, err := s.library.GetPlaybackSession(ctx, library.PlaybackOwner{UserID: owner.UserID, SessionID: owner.SessionID,
-					DeviceID: owner.DeviceID, PeerIP: owner.PeerIP, ApplicationKey: owner.ApplicationKey, ApplicationClientID: owner.ApplicationClientID}, playID)
-				if err != nil {
-					return err
-				}
-				if play.ItemID != itemID || play.MediaSourceID != media.SourceID(itemID) || !time.Now().Before(play.ExpiresAt) ||
-					(play.State != "Prepared" && play.State != "Playing" && play.State != "Paused") {
-					return library.ErrNotFound
-				}
-			}
-			return nil
-		},
+		Prober:    media.Prober{FFprobePath: s.cfg.FFprobePath, Timeout: 10 * time.Second},
+		Authorize: s.authorizeDynamicSource,
 	})
 	if err != nil {
 		return err

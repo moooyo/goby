@@ -22,16 +22,36 @@ func audioSampleSeekWindow(p Plan, outputRate int) (start, end, samples int64, e
 	if p.EndTicks < 0 || p.EndTicks > p.DurationTicks || p.EndTicks > 0 && p.EndTicks <= p.StartTicks {
 		return invalid()
 	}
+	if hasHLSWindow(p) && validateHLSWindow(p) != nil {
+		return invalid()
+	}
 	start = progressiveSampleLimit(p.StartTicks, p.AudioSourceSampleRate)
 	end = p.AudioSourceSampleCount
-	if p.EndTicks > 0 {
-		end = min(end, progressiveSampleLimit(p.EndTicks, p.AudioSourceSampleRate))
+	endTicks := p.EndTicks
+	if hasHLSWindow(p) {
+		endTicks = p.HLS.Window.EndTicks
+	}
+	if endTicks > 0 {
+		end = min(end, progressiveSampleLimit(endTicks, p.AudioSourceSampleRate))
 	}
 	if end <= start {
 		return invalid()
 	}
 	remaining, sourceRate, rate := end-start, int64(p.AudioSourceSampleRate), int64(outputRate)
 	samples = remaining/sourceRate*rate + (remaining%sourceRate*rate+sourceRate-1)/sourceRate
+	if hasHLSWindow(p) {
+		// Each window is a new encoder epoch. Difference the absolute source
+		// sample indexes after rescaling so adjacent planned ranges do not
+		// each invent a rounded-up output sample. This bounds sample count;
+		// it does not claim to preserve the resampler's state or codec delay.
+		rescale := func(index int64) int64 {
+			return index/sourceRate*rate + (index%sourceRate*rate+sourceRate-1)/sourceRate
+		}
+		samples = rescale(end) - rescale(start)
+		if samples <= 0 {
+			return invalid()
+		}
+	}
 	return start, end, samples, nil
 }
 
@@ -40,7 +60,8 @@ func audioSampleSeekFilter(p Plan, outputRate int) string {
 	// Reset timestamps before resampling so a nonzero presentation origin cannot
 	// leak into the output timeline. Sample bounds replace output -t: FFmpeg would
 	// otherwise round that duration back into a potentially shorter sample limit.
-	// The VOD muxer separately applies the global source-time offset.
+	// The legacy VOD muxer separately applies its global source-time offset;
+	// generated windows retain a measured, independent encoder epoch.
 	return "atrim=start_sample=" + strconv.FormatInt(start, 10) + ":end_sample=" + strconv.FormatInt(end, 10) +
 		",asetpts=N/SR/TB,aresample=" + strconv.Itoa(outputRate) +
 		",atrim=end_sample=" + strconv.FormatInt(samples, 10) + ",asetpts=N/SR/TB"

@@ -55,7 +55,7 @@ func runAnalysisProcess(ctx context.Context, executable string, input *os.File, 
 	if ctx == nil || runtime.GOOS != "linux" || executable == "" || stderr == nil || parse == nil || stdoutLimit < 1 || stdoutLimit > 8<<30 || timeout <= 0 || timeout > 2*time.Hour {
 		return ErrAnalysisUnavailable
 	}
-	processContext, cancel := context.WithTimeout(ctx, timeout)
+	processContext, cancel := context.WithTimeout(WithBackgroundProcess(ctx), timeout)
 	defer cancel()
 	if err := processContext.Err(); err != nil {
 		stderr.Close(err)
@@ -91,12 +91,30 @@ func runAnalysisProcess(ctx context.Context, executable string, input *os.File, 
 		return err
 	}
 	defer errorPipe.Close()
-	retired, err := startMediaProcess(command)
+	process, err := startMediaProcess(processContext, command)
 	if err != nil {
+		cancel()
 		stderr.Close(err)
+		if process != nil {
+			err = errors.Join(err, process.Close())
+		}
 		return fmt.Errorf("%w: start analysis process: %w", ErrAnalysisUnavailable, err)
 	}
 	stderrDone := make(chan error, 1)
+	stderrJoined := false
+	defer func() {
+		cancel()
+		stderr.Close(processContext.Err())
+		// This reader is owned by the analysis runner rather than exec.Cmd.
+		// Join it even when the stdout parser panics or returns prematurely.
+		if command.Cancel != nil {
+			_ = command.Cancel()
+		}
+		if !stderrJoined {
+			<-stderrDone
+		}
+		_ = process.Close()
+	}()
 	go func() {
 		_, err := io.Copy(&analysisProcessStderr{sink: stderr, cancel: cancel, remaining: 256 << 20}, errorPipe)
 		if err != nil {
@@ -122,9 +140,10 @@ func runAnalysisProcess(ctx context.Context, executable string, input *os.File, 
 	}
 	// Wait for retirement before Wait, retaining the process-group leader as a
 	// waitable child until all descendant signals have been delivered.
-	retireErr := <-retired
+	_ = process.Retire()
 	stderrErr := <-stderrDone
-	waitErr := command.Wait()
+	stderrJoined = true
+	waitErr := process.Wait()
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -140,7 +159,7 @@ func runAnalysisProcess(ctx context.Context, executable string, input *os.File, 
 	if err := processContext.Err(); err != nil {
 		return err
 	}
-	if err := errors.Join(retireErr, waitErr); err != nil {
+	if err := waitErr; err != nil {
 		return fmt.Errorf("analysis process did not exit cleanly: %w", err)
 	}
 	return nil
@@ -173,6 +192,9 @@ func (sink *analysisDiscardStderr) Write(data []byte) (int, error) {
 func (sink *analysisDiscardStderr) Close(err error) {
 	sink.mu.Lock()
 	defer sink.mu.Unlock()
+	if sink.closed {
+		return
+	}
 	sink.closed = true
 	if sink.err == nil {
 		sink.err = err

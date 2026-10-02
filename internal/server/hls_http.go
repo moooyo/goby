@@ -7,7 +7,6 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -25,8 +24,8 @@ func (s *Server) registerHLSRoutes(mux *http.ServeMux) {
 		mux.HandleFunc("GET /emby/"+kind+"/{Id}/hls1/{PlaylistId}/{SegmentFile}", s.requireEmby(s.hlsSegment(kind == "Audio")))
 		mux.HandleFunc("GET /emby/"+kind+"/{Id}/hls2/{PlaylistId}/{Artifact}", s.requireEmby(s.hlsArtifact(kind == "Audio")))
 	}
-	mux.HandleFunc("DELETE /emby/Videos/ActiveEncodings", s.requireEmby(s.stopHLSEncodings))
-	mux.HandleFunc("POST /emby/Videos/ActiveEncodings/Delete", s.requireEmby(s.stopHLSEncodings))
+	mux.HandleFunc("DELETE /emby/Videos/ActiveEncodings", s.requirePlaybackControl(s.stopHLSEncodings))
+	mux.HandleFunc("POST /emby/Videos/ActiveEncodings/Delete", s.requirePlaybackControl(s.stopHLSEncodings))
 }
 
 func hlsSessionURL(session *hlsSession, resource, file, token string, start int64) string {
@@ -83,7 +82,16 @@ func hlsValues(r *http.Request) (map[string]string, error) {
 	if len(r.URL.RawQuery) > 64*1024 {
 		return nil, errHLSRequestInvalid
 	}
-	return streamValues(r)
+	values, err := streamValues(r)
+	if err == nil {
+		if id, supplied := values["gobyhlsproducerid"]; supplied && id == "" {
+			return nil, errHLSRequestInvalid
+		}
+		if id, supplied := values["gobyhlswindowgraphid"]; supplied && id == "" {
+			return nil, errHLSRequestInvalid
+		}
+	}
+	return values, err
 }
 
 func hlsStart(values map[string]string, fallback, duration int64) (int64, error) {
@@ -100,7 +108,7 @@ func hlsStart(values map[string]string, fallback, duration int64) (int64, error)
 	return fallback, nil
 }
 
-func (s *Server) resolveHLS(ctx context.Context, r *http.Request, values map[string]string) (*hlsSession, *os.File, library.MediaFile, error) {
+func (s *Server) resolveHLS(ctx context.Context, r *http.Request, values map[string]string) (*hlsSession, *hlsPlaybackSource, library.MediaFile, error) {
 	principal := r.Context().Value(principalKey).(identity.Principal)
 	if device := values["deviceid"]; !principal.IsApplicationKey() && device != "" && device != principal.Client.DeviceID {
 		return nil, nil, library.MediaFile{}, library.ErrForbidden
@@ -112,6 +120,13 @@ func (s *Server) resolveHLS(ctx context.Context, r *http.Request, values map[str
 		}
 		if session.key.plan.OutputMode != "" {
 			return nil, nil, library.MediaFile{}, library.ErrNotFound
+		}
+		if values["gobyhlsproducerid"] != "" && (!transcode.GeneratedHLS(session.key.plan) || session.key.plan.SourceMode != "") {
+			return nil, nil, library.MediaFile{}, errHLSRequestInvalid
+		}
+		if graphID := values["gobyhlswindowgraphid"]; graphID != "" &&
+			(!transcode.GeneratedHLS(session.key.plan) || session.key.plan.SourceMode != "" || graphID != session.id) {
+			return nil, nil, library.MediaFile{}, errHLSRequestInvalid
 		}
 		if reference := values["playsessionid"]; reference != "" && reference != session.key.scope.PlaySessionID {
 			canonical, err := s.library.ResolvePlaybackReference(ctx, playbackOwner(principal), reference)
@@ -141,13 +156,16 @@ func (s *Server) resolveHLS(ctx context.Context, r *http.Request, values map[str
 		if _, err := hlsSubtitleRequestView(values, session); err != nil {
 			return nil, nil, library.MediaFile{}, err
 		}
-		file, source, err := s.authorizeHLS(ctx, principal, session.key.scope, session.key.stamp, session.key.plan)
+		loan, source, err := s.hls.authorizePlaybackSource(ctx, principal, session)
 		if permanentHLSError(err) {
 			s.hls.retire(session)
 		}
-		return session, file, source, err
+		return session, loan, source, err
 	}
 	if values["playsessionid"] == "" {
+		return nil, nil, library.MediaFile{}, errHLSRequestInvalid
+	}
+	if values["gobyhlsproducerid"] != "" || values["gobyhlswindowgraphid"] != "" {
 		return nil, nil, library.MediaFile{}, errHLSRequestInvalid
 	}
 	play, err := s.library.GetPlaybackSession(ctx, playbackOwner(principal), values["playsessionid"])
@@ -210,7 +228,14 @@ func (s *Server) resolveHLS(ctx context.Context, r *http.Request, values map[str
 		_ = file.Close()
 		return nil, nil, library.MediaFile{}, err
 	}
-	return session, file, source, nil
+	if s.hls.usesPlaybackOwnership(session.key.plan) {
+		// The old planning FD has no independent Ensure capability. Close it
+		// before borrowing a fresh scoped source under the owned registration.
+		_ = file.Close()
+		loan, current, err := s.hls.authorizePlaybackSource(ctx, principal, session)
+		return session, loan, current, err
+	}
+	return session, &hlsPlaybackSource{runtime: s.hls, file: file, work: ctx}, source, nil
 }
 
 func (s *Server) hlsPlaylist(audioOnly, master bool) http.HandlerFunc {
@@ -225,12 +250,14 @@ func (s *Server) hlsPlaylist(audioOnly, master bool) http.HandlerFunc {
 			s.hlsError(w, r, errHLSRequestInvalid)
 			return
 		}
-		session, file, source, err := s.resolveHLS(ctx, r, values)
+		session, loan, source, err := s.resolveHLS(ctx, r, values)
 		if err != nil {
 			s.hlsError(w, r, err)
 			return
 		}
-		defer file.Close()
+		defer loan.close()
+		file := loan.file
+		ctx = loan.context(ctx)
 		view, err := hlsSubtitleRequestView(values, session)
 		if err != nil {
 			s.hlsError(w, r, err)
@@ -260,6 +287,11 @@ func (s *Server) hlsPlaylist(audioOnly, master bool) http.HandlerFunc {
 			resource = "Audio"
 		}
 		if r.Method == http.MethodHead && !master && transcode.GeneratedHLS(session.key.plan) {
+			name := transcode.HLSPlaylistName(0, session.key.plan.HLS.RenditionCount)
+			if err := s.hls.checkGeneratedWindowHead(ctx, session, name, values["gobyhlsproducerid"], values["gobyhlswindowgraphid"], start); err != nil {
+				s.hlsError(w, r, err)
+				return
+			}
 			w.Header().Set("Content-Type", "application/vnd.apple.mpegurl")
 			w.Header().Set("Cache-Control", "no-store")
 			w.WriteHeader(http.StatusOK)
@@ -268,6 +300,10 @@ func (s *Server) hlsPlaylist(audioOnly, master bool) http.HandlerFunc {
 		var body []byte
 		if transcode.GeneratedHLS(session.key.plan) {
 			if master {
+				if values["gobyhlsproducerid"] != "" || values["gobyhlswindowgraphid"] != "" {
+					s.hlsError(w, r, errHLSRequestInvalid)
+					return
+				}
 				body, err = hlsGeneratedMasterView(session, resource, token, start, view)
 			} else {
 				if r.Method != http.MethodHead {
@@ -279,9 +315,9 @@ func (s *Server) hlsPlaylist(audioOnly, master bool) http.HandlerFunc {
 					defer release()
 					ctx = policyContext
 				}
-				body, err = s.hls.generatedPlaylist(ctx, session, file, transcode.HLSPlaylistName(0, session.key.plan.HLS.RenditionCount), resource, token, start, view)
+				body, err = s.hls.generatedPlaylistFromCurrentSource(ctx, session, file, playbackMediaInfo(source.Item), transcode.HLSPlaylistName(0, session.key.plan.HLS.RenditionCount), resource, token, start, values["gobyhlsproducerid"], values["gobyhlswindowgraphid"], view)
 				if err != nil && r.Method != http.MethodHead {
-					s.failMediaPolicy(ctx, session.key.scope)
+					s.failHLSMediaPolicy(ctx, session)
 				}
 				if err == nil && r.Method != http.MethodHead {
 					s.touchMediaPolicy(ctx, r.Context().Value(principalKey).(identity.Principal), session.key.scope)
@@ -351,20 +387,21 @@ func (s *Server) hlsSegment(audioOnly bool) http.HandlerFunc {
 			return
 		}
 		values["gobyhlsid"] = r.PathValue("PlaylistId")
-		session, file, source, err := s.resolveHLS(ctx, r, values)
+		session, loan, source, err := s.resolveHLS(ctx, r, values)
 		if err != nil {
 			s.hlsError(w, r, err)
 			return
 		}
+		defer loan.close()
+		file := loan.file
+		ctx = loan.context(ctx)
 		if (source.Item.Type == "Audio") != audioOnly {
-			_ = file.Close()
 			s.hlsError(w, r, library.ErrNotFound)
 			return
 		}
 		if r.Method != http.MethodHead {
 			policyContext, release, policyErr := s.acquireMediaPolicy(ctx, r.Context().Value(principalKey).(identity.Principal), session.key.scope)
 			if policyErr != nil {
-				_ = file.Close()
 				s.hlsError(w, r, policyErr)
 				return
 			}
@@ -382,7 +419,7 @@ func (s *Server) hlsSegment(audioOnly bool) http.HandlerFunc {
 		}
 		if err != nil {
 			if r.Method != http.MethodHead {
-				s.failMediaPolicy(work, session.key.scope)
+				s.failHLSMediaPolicy(work, session)
 			}
 			s.hlsError(w, r, err)
 			return

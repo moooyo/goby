@@ -212,7 +212,7 @@ func runHardwareEncodingProcess(ctx context.Context, executable string, files []
 	if err := ctx.Err(); err != nil {
 		return mediaProcessOutput{}, err
 	}
-	work, cancel := context.WithCancel(ctx)
+	work, cancel := context.WithCancel(WithBackgroundProcess(ctx))
 	defer cancel()
 	stdout := &limitedOutput{limit: limit, cancel: cancel}
 	stderr := &limitedOutput{limit: maxProcessStderr, cancel: cancel}
@@ -226,12 +226,12 @@ func runHardwareEncodingProcess(ctx context.Context, executable string, files []
 	}
 	command.Stdout, command.Stderr = stdout, stderr
 	command.WaitDelay = hardwareEncodingTimeout
-	retired, err := startMediaProcess(command)
+	process, err := startMediaProcess(work, command)
 	if err == nil {
-		retireErr := <-retired
-		err = command.Wait()
-		if retireErr != nil {
-			err = retireErr
+		defer process.Close()
+		err = process.Wait()
+		if process.retireErr != nil {
+			err = process.retireErr
 		}
 	}
 	if stdout.exceeded || stderr.exceeded {

@@ -170,7 +170,7 @@ func (s *Store) AdditionalParts(ctx context.Context, subject Subject, itemID str
 		return result, err
 	}
 	for _, source := range sources {
-		file, _, err := runMediaSourceWorker(ctx, mediaSourceWorkers, func() (*os.File, MediaFile, error) {
+		file, _, err := s.runIndexedMediaSourceWorker(ctx, false, source, func(ctx context.Context) (*os.File, MediaFile, error) {
 			opened, err := s.openPublicMediaSource(ctx, source)
 			return opened, source.mediaFile, err
 		})

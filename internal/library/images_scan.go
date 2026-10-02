@@ -27,7 +27,7 @@ func (state *scanState) scanImages(itemID, itemType, relative string, isFolder b
 	return state.scanImagesWithKnownAbsence(itemID, itemType, relative, isFolder, false)
 }
 
-func (state *scanState) scanImagesWithKnownAbsence(itemID, itemType, relative string, isFolder, knownNoLocalImages bool) error {
+func (state *scanState) scanImagesWithKnownAbsence(itemID, itemType, relative string, isFolder, knownNoLocalImages bool, completionCheck ...func() error) error {
 	if err := state.task.ctx.Err(); err != nil {
 		return err
 	}
@@ -160,6 +160,12 @@ func (state *scanState) scanImagesWithKnownAbsence(itemID, itemType, relative st
 	if knownNoLocalImages && noCandidates {
 		// The stored item lookup found no local image rows, and the complete,
 		// stable directory supplied no replacement candidates.
+		if len(completionCheck) != 0 && completionCheck[0] != nil {
+			// A cached task-owned visit may combine its final fresh progress
+			// fence with this already required owner-session query. Other image
+			// paths do not complete that fence and retain their normal checkpoint.
+			return completionCheck[0]()
+		}
 		return state.store.CheckOwnership(state.task.ctx)
 	}
 	tx, err := state.store.beginOwnedTx(state.task.ctx)

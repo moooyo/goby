@@ -3,7 +3,6 @@ package media
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"math/big"
@@ -218,23 +217,22 @@ func runVideoSeekFrameHash(ctx context.Context, executable string, file *os.File
 	command.WaitDelay = time.Second
 	stderr := &limitedOutput{limit: maxProcessStderr, cancel: cancel}
 	command.Stderr = stderr
-	stdout, err := command.StdoutPipe()
-	if err != nil {
-		return VideoSeekIndex{}, err
+	var index VideoSeekIndex
+	parseErr, waitErr, startErr := runMediaStdout(processContext, command, func(reader io.Reader) error {
+		bounded := &io.LimitedReader{R: reader, N: int64(maxOutput) + 1}
+		var parseErr error
+		index, parseErr = ParseVideoSeekFrameHash(bounded, base, maxEntries)
+		if bounded.N <= 0 {
+			parseErr = ErrOutputLimit
+		}
+		if parseErr != nil {
+			cancel()
+		}
+		return parseErr
+	})
+	if startErr != nil {
+		return VideoSeekIndex{}, startErr
 	}
-	retired, err := startMediaProcess(command)
-	if err != nil {
-		return VideoSeekIndex{}, err
-	}
-	bounded := &io.LimitedReader{R: stdout, N: int64(maxOutput) + 1}
-	index, parseErr := ParseVideoSeekFrameHash(bounded, base, maxEntries)
-	if bounded.N <= 0 {
-		parseErr = ErrOutputLimit
-	}
-	if parseErr != nil {
-		cancel()
-	}
-	waitErr := errors.Join(<-retired, command.Wait())
 	if err := ctx.Err(); err != nil {
 		return VideoSeekIndex{}, err
 	}

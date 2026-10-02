@@ -49,7 +49,7 @@ func buildGeneratedHLSArgs(p Plan, threads int) ([]string, error) {
 			rendition.Width, rendition.Height, rendition.VideoBitrate = r.Width, r.Height, r.VideoBitrate
 		}
 		if p.SourceMode != "stream" && !p.AudioSampleSeek {
-			args = append(args, "-t", tickSeconds(p.DurationTicks-p.StartTicks))
+			args = append(args, "-t", tickSeconds(generatedHLSEndTicks(p)-p.StartTicks))
 		}
 		args = append(args, "-map_metadata", "-1", "-map_chapters", "-1", "-sn", "-dn")
 		if p.VideoStreamIndex >= 0 {
@@ -110,6 +110,10 @@ func buildGeneratedHLSArgs(p Plan, threads int) ([]string, error) {
 			}
 		}
 		prefix := hlsPrefix(index, p.HLS.RenditionCount)
+		if p.HLS.Window.RequireInputEvidence {
+			args = append(args, "-stats_enc_pre:v:0", "pipe:"+strconv.Itoa(4+count+index),
+				"-stats_enc_pre_fmt:v:0", "GOBY_INPUT {fidx} {sidx} {n} {ni} {tb} {pts} {tbi} {ptsi}")
+		}
 		if needsHLSClock(p) && !needsHLSCopyClock(p) {
 			reference := "v:0"
 			if p.VideoStreamIndex < 0 {
@@ -130,7 +134,11 @@ func buildGeneratedHLSArgs(p Plan, threads int) ([]string, error) {
 				args = append(args, "-segment_format_options", "write_xing=0:id3v2_version=0:write_id3v1=0")
 			}
 			args = append(args, "-avoid_negative_ts", "make_zero", "-f", "segment", "-segment_format", format,
-				"-segment_time", strconv.Itoa(p.SegmentSeconds), "-reset_timestamps", "0", "-segment_list", "segment-list.m3u8", "-segment_list_type", "m3u8", "segment-%06d."+p.AudioCodec+".tmp")
+				"-segment_time", strconv.Itoa(p.SegmentSeconds), "-reset_timestamps", "0")
+			if hasHLSWindow(p) {
+				args = append(args, "-segment_start_number", strconv.Itoa(generatedHLSStartNumber(p)))
+			}
+			args = append(args, "-segment_list", "segment-list.m3u8", "-segment_list_type", "m3u8", "segment-%06d."+p.AudioCodec+".tmp")
 			continue
 		}
 		segmentType, extension := "mpegts", "ts"
@@ -144,13 +152,25 @@ func buildGeneratedHLSArgs(p Plan, threads int) ([]string, error) {
 		if VideoEncodingSupported(p.VideoCodec) {
 			flags += "+independent_segments"
 		}
-		args = append(args, "-avoid_negative_ts", "make_zero", "-max_muxing_queue_size", "1024", "-f", "hls", "-hls_segment_type", segmentType,
-			"-hls_time", strconv.Itoa(p.SegmentSeconds), "-hls_list_size", "0", "-hls_playlist_type", "event", "-hls_flags", flags, "-start_number", "0")
+		if hasHLSWindow(p) {
+			flags += "+discont_start"
+		}
+		avoidNegative, segmentOptions := "make_zero", "mpegts_copyts=1"
+		if p.HLS.Window.NativeClockVersion == GeneratedWindowNativeClockV1 {
+			avoidNegative, segmentOptions = "disabled", "mpegts_copyts=1:avoid_negative_ts=disabled"
+			args = append(args, "-output_ts_offset", tickSeconds(p.StartTicks))
+		}
+		if p.HLS.Window.NativeClockVersion == GeneratedWindowNativeClockV2 {
+			avoidNegative, segmentOptions = "disabled", "use_editlist=0:avoid_negative_ts=disabled:movflags=+frag_discont"
+			args = append(args, "-output_ts_offset", tickSeconds(p.StartTicks))
+		}
+		args = append(args, "-avoid_negative_ts", avoidNegative, "-max_muxing_queue_size", "1024", "-f", "hls", "-hls_segment_type", segmentType,
+			"-hls_time", strconv.Itoa(p.SegmentSeconds), "-hls_list_size", "0", "-hls_playlist_type", "event", "-hls_flags", flags, "-start_number", strconv.Itoa(generatedHLSStartNumber(p)))
 		if segmentType == "fmp4" {
 			args = append(args, "-hls_fmp4_init_filename", prefix+"init.mp4")
 		}
-		if segmentType == "mpegts" {
-			args = append(args, "-hls_segment_options", "mpegts_copyts=1")
+		if segmentType == "mpegts" || p.HLS.Window.NativeClockVersion == GeneratedWindowNativeClockV2 {
+			args = append(args, "-hls_segment_options", segmentOptions)
 		}
 		args = append(args, "-hls_segment_filename", prefix+"segment-%06d."+extension, HLSPlaylistName(index, p.HLS.RenditionCount))
 	}

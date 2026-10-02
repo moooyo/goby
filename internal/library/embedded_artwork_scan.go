@@ -33,7 +33,7 @@ func (state *scanState) scanEmbeddedArtwork(itemID, itemType, relative string, f
 	if !enabled {
 		return nil
 	}
-	ctx := state.task.ctx
+	ctx := media.WithBackgroundProcess(state.task.ctx)
 	if err := ctx.Err(); err != nil {
 		return err
 	}

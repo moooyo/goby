@@ -11,6 +11,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/moooyo/goby/internal/library"
+	"github.com/moooyo/goby/internal/media"
 )
 
 const (
@@ -56,8 +57,17 @@ type originalResourcesDTO struct {
 type adminRuntimeResourcesDTO struct {
 	ScanEvidence        library.ScanEvidenceStatus
 	StorageObservations library.StorageObservationStatus
+	MediaProcesses      media.ProcessCapacitySnapshot
 	OriginalStreams     originalResourcesDTO
 	DatabasePool        databasePoolResourcesDTO
+	DatabasePools       *databasePoolLanesDTO `json:",omitempty"`
+}
+
+// These application-pool statistics include the catalog owner's Data
+// connection. The generation's hijacked deployment lease is outside the pools.
+type databasePoolLanesDTO struct {
+	Data            databasePoolResourcesDTO
+	PlaybackControl *databasePoolResourcesDTO `json:",omitempty"`
 }
 
 type databasePoolResourcesDTO struct {
@@ -86,6 +96,29 @@ func databasePoolResources(snapshot *pgxpool.Stat) databasePoolResourcesDTO {
 		EmptyAcquireWaitNanoseconds: strconv.FormatInt(snapshot.EmptyAcquireWaitTime().Nanoseconds(), 10),
 		CanceledAcquireCount:        strconv.FormatInt(snapshot.CanceledAcquireCount(), 10),
 	}
+}
+
+func (s *Server) databasePoolResourceLanes() (databasePoolResourcesDTO, databasePoolLanesDTO) {
+	data := s.db.Stat()
+	total := databasePoolResources(data)
+	lanes := databasePoolLanesDTO{Data: total}
+	if s.playbackControlDB == nil {
+		return total, lanes
+	}
+	control := s.playbackControlDB.Stat()
+	reserved := databasePoolResources(control)
+	lanes.PlaybackControl = &reserved
+	total.MaxConns += reserved.MaxConns
+	total.TotalConns += reserved.TotalConns
+	total.IdleConns += reserved.IdleConns
+	total.AcquiredConns += reserved.AcquiredConns
+	total.ConstructingConns += reserved.ConstructingConns
+	total.AcquireCount = strconv.FormatInt(data.AcquireCount()+control.AcquireCount(), 10)
+	total.AcquireDurationNanoseconds = strconv.FormatInt((data.AcquireDuration() + control.AcquireDuration()).Nanoseconds(), 10)
+	total.EmptyAcquireCount = strconv.FormatInt(data.EmptyAcquireCount()+control.EmptyAcquireCount(), 10)
+	total.EmptyAcquireWaitNanoseconds = strconv.FormatInt((data.EmptyAcquireWaitTime() + control.EmptyAcquireWaitTime()).Nanoseconds(), 10)
+	total.CanceledAcquireCount = strconv.FormatInt(data.CanceledAcquireCount()+control.CanceledAcquireCount(), 10)
+	return total, lanes
 }
 
 func newOriginalResourceInstanceID() (string, error) {
@@ -221,7 +254,12 @@ func (s *Server) adminRuntimeResources(w http.ResponseWriter, r *http.Request) {
 		apiError(w, r, http.StatusServiceUnavailable, "runtime_resources_unavailable", "The runtime resource snapshot is unavailable.")
 		return
 	}
+	total, lanes := s.databasePoolResourceLanes()
+	var reservedLanes *databasePoolLanesDTO
+	if s.playbackControlDB != nil {
+		reservedLanes = &lanes
+	}
 	jsonResponse(w, http.StatusOK, adminRuntimeResourcesDTO{ScanEvidence: s.library.ScanEvidenceStatus(),
-		StorageObservations: library.StorageObservationSnapshot(), OriginalStreams: originals,
-		DatabasePool: databasePoolResources(s.db.Stat())})
+		StorageObservations: library.StorageObservationSnapshot(), MediaProcesses: media.GetProcessCapacityStats(), OriginalStreams: originals,
+		DatabasePool: total, DatabasePools: reservedLanes})
 }

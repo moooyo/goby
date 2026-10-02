@@ -385,7 +385,8 @@ func TestAnalysisProcessForwardsBoundedPCMStdin(t *testing.T) {
 	const payload = "\x00\x80\xff\x7f\x00\x00\xff\xff"
 	tool := analysisProcessTestTool(t, "cat")
 	var output bytes.Buffer
-	if err := runAnalysisProcess(context.Background(), tool, nil, strings.NewReader(payload), nil, 5*time.Second, int64(len(payload)), &analysisDiscardStderr{}, func(reader io.Reader) error {
+	sink := &analysisDiscardStderr{}
+	if err := runAnalysisProcess(context.Background(), tool, nil, strings.NewReader(payload), nil, 5*time.Second, int64(len(payload)), sink, func(reader io.Reader) error {
 		_, err := io.Copy(&output, reader)
 		return err
 	}); err != nil {
@@ -393,5 +394,27 @@ func TestAnalysisProcessForwardsBoundedPCMStdin(t *testing.T) {
 	}
 	if output.String() != payload {
 		t.Fatalf("PCM stdin bytes changed: %q", output.Bytes())
+	}
+	if err := sink.failure(); err != nil {
+		t.Fatalf("successful stderr EOF became a cleanup failure: %v", err)
+	}
+}
+
+func TestAnalysisDiscardStderrClosePreservesFirstResult(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		first error
+	}{
+		{"clean_eof", nil},
+		{"first_error", analysisProcessTestStderrError},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			sink := &analysisDiscardStderr{}
+			sink.Close(test.first)
+			sink.Close(context.Canceled)
+			if got := sink.failure(); got != test.first {
+				t.Fatalf("first close result changed: got %v, want %v", got, test.first)
+			}
+		})
 	}
 }

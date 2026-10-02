@@ -35,7 +35,11 @@ func (s *Server) bindKeyPlaybackContext(r *http.Request, principal identity.Prin
 	if client != (identity.Client{}) {
 		return principal, nil
 	}
-	bound, err := s.identity.ResolveApplicationKeyPlaybackContext(r.Context(), principal, playID)
+	users, err := s.identity.ForPlaybackControl(r.Context())
+	if err != nil {
+		return identity.Principal{}, err
+	}
+	bound, err := users.ResolveApplicationKeyPlaybackContext(r.Context(), principal, playID)
 	if errors.Is(err, identity.ErrNotFound) {
 		// Keep missing/foreign/expired resource behavior at the media handler.
 		return principal, nil

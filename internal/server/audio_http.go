@@ -145,7 +145,9 @@ func (s *Server) audioStream(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		s.serveOriginalMedia(w, r, file, source)
+		planningFile := file
+		file = nil
+		s.serveOriginalMediaSnapshot(w, r, planningFile, source)
 		return
 	}
 	var conversion playback.ConversionDecision

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/big"
 	"os"
 	"strconv"
 	"strings"
@@ -41,9 +42,13 @@ func (p *packedHLSPublisher) publish(finished bool) (publishErr error) {
 		}
 	}()
 	extension := p.plan.AudioCodec
+	firstNumber := generatedHLSStartNumber(p.plan)
 	if p.plan.HLS.SegmentType != "packed" || (extension != "aac" && extension != "mp3") ||
 		p.plan.StartTicks < 0 || p.plan.StartTicks > maxDurationTicks ||
-		p.plan.SegmentStartNumber < 0 || p.plan.SegmentStartNumber >= MaxPlaylistSegments {
+		firstNumber < 0 || firstNumber >= MaxPlaylistSegments || validateHLSWindow(p.plan) != nil {
+		return ErrInvalidPlan
+	}
+	if hasHLSWindow(p.plan) && ValidatePlan(p.plan) != nil {
 		return ErrInvalidPlan
 	}
 	fd, err := syscall.Open(p.directory, syscall.O_RDONLY|syscall.O_DIRECTORY|syscall.O_NOFOLLOW|syscall.O_CLOEXEC, 0)
@@ -73,26 +78,47 @@ func (p *packedHLSPublisher) publish(finished bool) (publishErr error) {
 		}
 		return nil
 	}
-	list, err := parsePrivatePackedList(data, p.plan.SegmentStartNumber, extension)
+	list, err := parsePrivatePackedList(data, firstNumber, extension)
 	if err != nil {
 		return err
 	}
 	if finished && !list.Ended || len(list.Segments) < len(p.published) ||
-		len(list.Segments) > MaxPlaylistSegments-p.plan.SegmentStartNumber {
+		len(list.Segments) > MaxPlaylistSegments-firstNumber {
 		return ErrInvalidPlaylist
+	}
+	if hasHLSWindow(p.plan) {
+		for _, segment := range list.Segments {
+			if segment.Discontinuity {
+				return ErrInvalidPlaylist
+			}
+		}
+		// A new finite encoder is a distinct epoch. This does not make its
+		// priming, padding or resampling state continuous with another job.
+		list.Segments[0].Discontinuity = true
 	}
 	var elapsed int64
 	for index, segment := range list.Segments {
-		if segment.Discontinuity || segment.DurationTicks > maxDurationTicks-elapsed ||
+		if segment.Discontinuity && !(hasHLSWindow(p.plan) && index == 0) || segment.DurationTicks > maxDurationTicks-elapsed ||
 			index < len(p.published) && segment != p.published[index] {
 			return ErrInvalidPlaylist
 		}
 		elapsed += segment.DurationTicks
 	}
 	timestampTicks := p.plan.StartTicks
+	var windowClock *big.Rat
+	if hasHLSWindow(p.plan) {
+		windowClock = generatedWindowSourceOriginTicks(p.plan)
+	}
+	advanceClock := func(duration int64) {
+		if windowClock != nil {
+			windowClock.Add(windowClock, new(big.Rat).SetInt64(duration))
+		} else {
+			timestampTicks += duration
+		}
+	}
 	for index, segment := range list.Segments {
 		if index < len(p.published) {
-			timestampTicks += segment.DurationTicks
+			advanceClock(segment.DurationTicks)
 			continue
 		}
 		if !finished {
@@ -108,18 +134,27 @@ func (p *packedHLSPublisher) publish(finished bool) (publishErr error) {
 				return err
 			}
 		}
-		if err := publishPackedSegment(dir, segment.Name, extension, timestampTicks); err != nil {
-			return err
+		var publishErr error
+		if windowClock != nil {
+			publishErr = publishPackedSegmentClock(dir, segment.Name, extension, windowClock)
+		} else {
+			publishErr = publishPackedSegment(dir, segment.Name, extension, timestampTicks)
+		}
+		if publishErr != nil {
+			return publishErr
 		}
 		p.published = append(p.published, segment)
-		timestampTicks += segment.DurationTicks
+		advanceClock(segment.DurationTicks)
 	}
 	if len(p.published) == 0 {
 		return nil
 	}
 	var output strings.Builder
-	fmt.Fprintf(&output, "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-MEDIA-SEQUENCE:%d\n#EXT-X-TARGETDURATION:%d\n#EXT-X-PLAYLIST-TYPE:EVENT\n", p.plan.SegmentStartNumber, list.TargetDuration)
+	fmt.Fprintf(&output, "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-MEDIA-SEQUENCE:%d\n#EXT-X-TARGETDURATION:%d\n#EXT-X-PLAYLIST-TYPE:EVENT\n", firstNumber, list.TargetDuration)
 	for _, segment := range p.published {
+		if segment.Discontinuity {
+			output.WriteString("#EXT-X-DISCONTINUITY\n")
+		}
 		fmt.Fprintf(&output, "#EXTINF:%s,\n%s\n", tickSeconds(segment.DurationTicks), segment.Name)
 	}
 	if finished && list.Ended && len(p.published) == len(list.Segments) {
@@ -181,6 +216,14 @@ func parsePrivatePackedList(data []byte, sequence int, extension string) (MediaP
 }
 
 func publishPackedSegment(dir *os.File, name, extension string, timestampTicks int64) error {
+	return publishPackedSegmentTag(dir, name, extension, packedTimestampTag(timestampTicks))
+}
+
+func publishPackedSegmentClock(dir *os.File, name, extension string, timestampTicks *big.Rat) error {
+	return publishPackedSegmentTag(dir, name, extension, packedTimestampTagClock(timestampTicks))
+}
+
+func publishPackedSegmentTag(dir *os.File, name, extension string, timestampTag []byte) error {
 	source, err := cacheOpenRegular(dir, name+".tmp", syscall.O_RDONLY, 0)
 	if err != nil {
 		return err
@@ -208,7 +251,7 @@ func publishPackedSegment(dir *os.File, name, extension string, timestampTicks i
 		return err
 	}
 	defer syscall.Unlinkat(int(dir.Fd()), stageName)
-	_, writeErr := publication.Write(packedTimestampTag(timestampTicks))
+	_, writeErr := publication.Write(timestampTag)
 	if writeErr == nil {
 		_, writeErr = io.CopyN(publication, source, info.Size())
 	}
@@ -252,6 +295,22 @@ func publishPackedManifest(dir *os.File, content string) error {
 }
 
 func packedTimestampTag(ticks int64) []byte {
+	// Preserve the historical integer clock path for complete-source jobs.
+	timestamp := uint64(ticks/ticksPerSecond)*90_000 + uint64(ticks%ticksPerSecond)*90_000/uint64(ticksPerSecond)
+	return packedTimestampTagValue(timestamp)
+}
+
+func packedTimestampTagClock(ticks *big.Rat) []byte {
+	// Preserve the sample-domain fractional origin and accumulate actual EXTINF
+	// values before flooring once into the unsigned 90 kHz transport clock.
+	// This is the publisher's declared epoch, not an independent priming proof.
+	clock := new(big.Rat).Mul(ticks, big.NewRat(9, 1000))
+	timestamp := new(big.Int).Quo(clock.Num(), clock.Denom())
+	timestamp.Mod(timestamp, new(big.Int).Lsh(big.NewInt(1), 33))
+	return packedTimestampTagValue(timestamp.Uint64())
+}
+
+func packedTimestampTagValue(timestamp uint64) []byte {
 	// Both ID3v2.4 sizes fit in one synchsafe byte for this fixed PRIV frame.
 	frameBytes := len(packedTimestampOwner) + 1 + 8
 	tag := make([]byte, 10+10+frameBytes)
@@ -260,9 +319,6 @@ func packedTimestampTag(ticks int64) []byte {
 	copy(tag[10:], "PRIV")
 	tag[17] = byte(frameBytes)
 	copy(tag[20:], packedTimestampOwner)
-	// Split seconds and fractions before conversion to avoid multiplication
-	// overflow, then apply MPEG's 33-bit wrap to the unsigned transport clock.
-	timestamp := uint64(ticks/ticksPerSecond)*90_000 + uint64(ticks%ticksPerSecond)*90_000/uint64(ticksPerSecond)
 	binary.BigEndian.PutUint64(tag[len(tag)-8:], timestamp&((1<<33)-1))
 	return tag
 }

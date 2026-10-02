@@ -77,9 +77,16 @@ func (m *Manager) OpenProgressive(ctx context.Context, scope Scope, id string) (
 	m.readers++
 	m.touchLocked(j)
 	m.mu.Unlock()
-	m.filesMu.Lock()
+	m.filesMu.RLock()
+	j.filesMu.Lock()
 	file, openErr := m.cache.OpenProgressiveFile(id)
-	m.filesMu.Unlock()
+	if errors.Is(openErr, ErrCacheUnsafe) {
+		m.mu.Lock()
+		m.rejectCacheObservationLocked(j)
+		m.mu.Unlock()
+	}
+	j.filesMu.Unlock()
+	m.filesMu.RUnlock()
 	var size int64
 	if openErr == nil {
 		info, statErr := file.Stat()
@@ -106,6 +113,9 @@ func (m *Manager) OpenProgressive(ctx context.Context, scope Scope, id string) (
 		err = ctx.Err()
 	}
 	m.mu.Unlock()
+	if errors.Is(openErr, ErrCacheUnsafe) && errors.Is(err, ErrJobFailed) {
+		err = ErrOutputUnavailable
+	}
 	if err != nil {
 		if file != nil {
 			_ = file.Close()

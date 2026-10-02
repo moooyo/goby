@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io/fs"
 	"log/slog"
@@ -28,46 +29,54 @@ import (
 )
 
 type Server struct {
-	cfg                  config.Config
-	db                   *pgxpool.Pool
-	identity             *identity.Store
-	log                  *slog.Logger
-	version              string
-	serverID             string
-	limiter              *loginLimiter
-	library              *library.Store
-	images               *imageCache
-	streamSlots          chan struct{}
-	originals            *originalStreamRuntime
-	subtitleSlots        chan struct{}
-	eventHub             *events.Hub
-	sockets              *socketRuntime
-	notifier             *userDataNotifier
-	catalogNotifier      *libraryNotifier
-	hls                  *hlsRuntime
-	dynamicSources       *dynamicsource.Manager
-	dynamicStreams       *dynamicStreamRuntime
-	mediaPolicyOnce      sync.Once
-	mediaPolicy          *mediaPolicyRuntime
-	hardwareEncodingOnce sync.Once
-	hardwareEncoding     *hardwareEncodingRuntime
-	managedHardware      *managedHardwareInventory
-	httpBinding          runtimeHTTPBinding
-	taskStore            *tasks.Store
-	taskManager          *tasks.Manager
-	settings             *settings.Store
-	diagnostics          *diagnostics.Store
-	mediaDiagnostics     *mediaDiagnosticRuntime
-	mediaOperations      *mediaOperationsRuntime
-	mediaAnalysis        *mediaAnalysisRuntime
-	notificationStore    *notifications.Store
-	notificationRuntime  *notifications.Runtime
-	notificationOptions  notifications.RuntimeOptions
-	dashboardFiles       fs.FS
-	recovery             adminRecoveryManager
-	activityCancel       context.CancelFunc
-	activityDone         chan struct{}
-	hostStatus           systemStatusReader
+	cfg                    config.Config
+	db                     *pgxpool.Pool
+	playbackControlDB      *pgxpool.Pool
+	identity               *identity.Store
+	log                    *slog.Logger
+	version                string
+	serverID               string
+	limiter                *loginLimiter
+	library                *library.Store
+	images                 *imageCache
+	streamSlots            chan struct{}
+	originals              *originalStreamRuntime
+	subtitleSlots          chan struct{}
+	eventHub               *events.Hub
+	sockets                *socketRuntime
+	notifier               *userDataNotifier
+	catalogNotifier        *libraryNotifier
+	hls                    *hlsRuntime
+	dynamicSources         *dynamicsource.Manager
+	dynamicStreams         *dynamicStreamRuntime
+	mediaPolicyOnce        sync.Once
+	mediaPolicy            *mediaPolicyRuntime
+	playbackStopIntents    playbackStopIntentGate
+	playbackUnknownInputMu sync.Mutex
+	playbackUnknownInputs  *[maxPlaybackAdmissionReferences]*playbackOwnedInput
+	// Qualification enables these only after the complete correlated file-HLS
+	// ownership/admission chain and actual stop/recreation matrix are accepted.
+	correlatedHLSOwnershipEnabled bool
+	correlatedHLSEarlyStopEnabled bool
+	hardwareEncodingOnce          sync.Once
+	hardwareEncoding              *hardwareEncodingRuntime
+	managedHardware               *managedHardwareInventory
+	httpBinding                   runtimeHTTPBinding
+	taskStore                     *tasks.Store
+	taskManager                   *tasks.Manager
+	settings                      *settings.Store
+	diagnostics                   *diagnostics.Store
+	mediaDiagnostics              *mediaDiagnosticRuntime
+	mediaOperations               *mediaOperationsRuntime
+	mediaAnalysis                 *mediaAnalysisRuntime
+	notificationStore             *notifications.Store
+	notificationRuntime           *notifications.Runtime
+	notificationOptions           notifications.RuntimeOptions
+	dashboardFiles                fs.FS
+	recovery                      adminRecoveryManager
+	activityCancel                context.CancelFunc
+	activityDone                  chan struct{}
+	hostStatus                    systemStatusReader
 }
 
 // Option attaches dependencies whose lifetime is owned by the process entry
@@ -83,9 +92,24 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 	if err != nil {
 		return nil, err
 	}
+	app := &Server{cfg: cfg, db: db, identity: users, log: logger, version: version, serverID: id, limiter: newLoginLimiter(), images: newImageCache(), streamSlots: make(chan struct{}, 64), subtitleSlots: make(chan struct{}, 4), sockets: newSocketRuntime()}
+	for _, option := range options {
+		if option != nil {
+			option(app)
+		}
+	}
+	if app.playbackControlDB != nil {
+		if app.playbackControlDB == db {
+			return nil, fmt.Errorf("playback control requires a separate database pool")
+		}
+		app.identity = users.WithPlaybackControlPool(app.playbackControlDB)
+	}
 	catalogOptions, err := scanEvidenceLibraryOptions(cfg, id)
 	if err != nil {
 		return nil, err
+	}
+	if app.playbackControlDB != nil {
+		catalogOptions = append(catalogOptions, library.WithPlaybackControlPool(app.playbackControlDB))
 	}
 	// Optional restart analysis belongs to scanning, independently of whether
 	// conversion is currently enabled. Unsupported analysis retains the normal
@@ -100,13 +124,8 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 		_ = catalog.Close(ctx)
 		return nil, err
 	}
-	app := &Server{cfg: cfg, db: db, identity: users, log: logger, version: version, serverID: id, limiter: newLoginLimiter(), library: catalog, images: newImageCache(), streamSlots: make(chan struct{}, 64), subtitleSlots: make(chan struct{}, 4), eventHub: hub, sockets: newSocketRuntime()}
+	app.library, app.eventHub = catalog, hub
 	app.managedHardware = newManagedHardwareInventory(cfg.Transcoding)
-	for _, option := range options {
-		if option != nil {
-			option(app)
-		}
-	}
 	app.originals = newOriginalStreamRuntime()
 	app.hls, err = newHLSRuntime(ctx, app)
 	if err != nil {
@@ -220,6 +239,11 @@ func (s *Server) initializeTasks(ctx context.Context) error {
 }
 
 func (s *Server) Close(ctx context.Context) error {
+	if s.correlatedHLSOwnershipEnabled {
+		// Closing rejects new lifetime owners. Existing loans/callbacks still
+		// release only after actual domain work and descriptor/worker join.
+		s.playbackStopIntents.close()
+	}
 	if collector, ok := s.hostStatus.(interface{ Close() }); ok {
 		collector.Close()
 	}
@@ -233,7 +257,11 @@ func (s *Server) Close(ctx context.Context) error {
 	s.mediaDiagnostics.BeginClose()
 	s.catalogNotifier.Close()
 	s.cancelActivityRetention()
-	return s.closeSockets(ctx)
+	err := s.closeSockets(ctx)
+	if s.correlatedHLSOwnershipEnabled && !s.playbackStopIntents.close() {
+		return errors.Join(err, library.ErrUnavailable)
+	}
+	return err
 }
 
 func (s *Server) Handler() http.Handler {

@@ -204,7 +204,7 @@ func (s *Store) captureMediaOperationTarget(ctx context.Context, actor identity.
 	if err = tx.Commit(ctx); err != nil {
 		return target, source, nil, err
 	}
-	file, _, err := runMediaSourceWorker(ctx, mediaSourceWorkers, func() (*os.File, MediaFile, error) {
+	file, _, err := s.runIndexedMediaSourceWorker(ctx, false, source, func(ctx context.Context) (*os.File, MediaFile, error) {
 		f, e := s.openMediaSource(ctx, source)
 		return f, source.mediaFile, e
 	})

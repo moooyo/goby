@@ -420,11 +420,22 @@ func (s *Store) UpdateItemMetadata(ctx context.Context, actor identity.Principal
 }
 
 func applyEffectiveMetadata(ctx context.Context, tx pgx.Tx, itemID string, effective MetadataValues, projection []byte, synchronize ...bool) error {
+	return writeEffectiveMetadata(ctx, tx, itemID, effective, projection, false, synchronize...)
+}
+
+// Scanner no-op suppression applies only to unchanged display fields. Explicit
+// administrator/provider publication keeps its existing updated_at semantics,
+// and requested entity repair still runs even when the item needs no update.
+func writeEffectiveMetadata(ctx context.Context, tx pgx.Tx, itemID string, effective MetadataValues, projection []byte, onlyChanged bool, synchronize ...bool) error {
 	_, err := tx.Exec(ctx, `UPDATE items SET name = $2, sort_name = $3, overview = $4,
 		index_number = CASE WHEN type IN ('Episode', 'Audio') THEN COALESCE($5::integer, 0) ELSE index_number END,
 		parent_index_number = CASE WHEN type = 'Audio' THEN COALESCE($6::integer, 0) ELSE parent_index_number END,
-		updated_at = clock_timestamp() WHERE id = $1`, itemID, effective.Name, effective.SortName,
-		effective.Overview, effective.IndexNumber, effective.ParentIndexNumber)
+		updated_at = clock_timestamp() WHERE id = $1 AND (NOT $7::boolean OR
+		ROW(name, sort_name, overview, index_number, parent_index_number) IS DISTINCT FROM
+		ROW($2::text, $3::text, $4::text,
+			CASE WHEN type IN ('Episode', 'Audio') THEN COALESCE($5::integer, 0) ELSE index_number END,
+			CASE WHEN type = 'Audio' THEN COALESCE($6::integer, 0) ELSE parent_index_number END))`, itemID, effective.Name, effective.SortName,
+		effective.Overview, effective.IndexNumber, effective.ParentIndexNumber, onlyChanged)
 	if err != nil {
 		return fmt.Errorf("apply effective metadata values: %w", err)
 	}

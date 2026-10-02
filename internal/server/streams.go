@@ -12,6 +12,7 @@ import (
 
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
+	"github.com/moooyo/goby/internal/primaryio"
 	"github.com/moooyo/goby/internal/transcode"
 )
 
@@ -54,10 +55,16 @@ func streamAlias(name string) (container string, original bool, valid bool) {
 	return extension, prefix == "original", true
 }
 
-// serveOriginalMedia only writes a source already opened and authorized by its
-// caller. Sharing the delivery code keeps Universal and legacy original reads
-// on the same snapshot without reopening a potentially changed source.
-func (s *Server) serveOriginalMedia(w http.ResponseWriter, r *http.Request, file *os.File, source library.MediaFile) {
+// serveOriginalMedia consumes an owned source reopened against the exact planning
+// snapshot. Universal and legacy responses use the same bounded reader and retain
+// Store ownership until actual reads, cancellation cleanup and FD Close finish.
+func (s *Server) serveOriginalMedia(w http.ResponseWriter, r *http.Request, file *os.File, source library.MediaFile, content *primaryio.ReadSeeker) {
+	defer func() {
+		if err := content.Close(); err != nil {
+			panic(http.ErrAbortHandler)
+		}
+	}()
+	r = r.WithContext(content.Context())
 	work, finish, err := s.guardOriginalMedia(w, r, file, source)
 	if err != nil {
 		if errors.Is(err, identity.ErrUnauthorized) {
@@ -74,13 +81,22 @@ func (s *Server) serveOriginalMedia(w http.ResponseWriter, r *http.Request, file
 		}
 		return
 	}
-	defer finish()
+	defer func() {
+		// Keep per-owner original admission until actual source methods and
+		// descriptor cleanup finish, then join/release authorization watchers.
+		defer finish()
+		if err := content.Close(); err != nil {
+			panic(http.ErrAbortHandler)
+		}
+	}()
+	defer bridgeOriginalReadCancellation(work, content)()
 	r = r.WithContext(work)
 	writer, err := newIdleResponseWriter(w, work, mediaWriteIdle)
 	if err != nil {
 		panic(http.ErrAbortHandler)
 	}
-	defer writer.finish()
+	finishWriter := finishOriginalPrimaryWriter(writer, func() { s.failOriginalMediaPolicy(work) })
+	defer finishWriter()
 	w.Header().Set("Content-Type", source.MIMEType)
 	w.Header().Set("ETag", source.ETag)
 	w.Header().Set("Cache-Control", "private, no-transform")
@@ -96,8 +112,24 @@ func (s *Server) serveOriginalMedia(w http.ResponseWriter, r *http.Request, file
 	// conditional responses. Ticks never become a guessed source-byte offset.
 	// Linux ctime invalidates date validators when a writer restores mtime;
 	// ETags remain the precise validator because HTTP dates have second precision.
-	http.ServeContent(writer, r, "original."+source.Container, modified, file)
+	counted := &originalPrimaryResponseWriter{writer: writer}
+	if err := serveOriginalPrimaryContent(counted, r, "original."+source.Container, modified, source.MIMEType, source.Size, content); err != nil {
+		s.failOriginalMediaPolicy(work)
+		panic(http.ErrAbortHandler)
+	}
+	if originalPrimaryBodyError(r, content, writer, counted) != nil {
+		s.failOriginalMediaPolicy(work)
+		panic(http.ErrAbortHandler)
+	}
 	if work.Err() != nil {
+		s.failOriginalMediaPolicy(work)
+		panic(http.ErrAbortHandler)
+	}
+	// Buffered transport delivery is not complete until the final flush succeeds.
+	// This also stops and joins the deadline callback before reporting presence.
+	finishWriter()
+	if work.Err() != nil {
+		s.failOriginalMediaPolicy(work)
 		panic(http.ErrAbortHandler)
 	}
 	if r.Method != http.MethodHead && (writer.status == http.StatusOK || writer.status == http.StatusPartialContent) {

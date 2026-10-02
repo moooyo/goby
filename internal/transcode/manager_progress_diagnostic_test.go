@@ -23,6 +23,8 @@ type managerProgressLogObservation struct {
 	locksReleased bool
 	finished      bool
 	running       int
+	subjectHeld   bool
+	working       int
 }
 
 type managerProgressLogSink struct {
@@ -40,8 +42,12 @@ func (sink *managerProgressLogSink) Handle(ctx context.Context, record slog.Reco
 		value.running = sink.manager.running
 		for _, job := range sink.manager.jobs {
 			value.finished = job.finished
+			value.subjectHeld = job.subjectOwnershipHeld &&
+				sink.manager.runningUsers[job.record.Spec.Scope.UserID] > 0 &&
+				sink.manager.runningAuth[job.record.Spec.Scope.AuthSessionID] > 0
 		}
 		sink.manager.mu.Unlock()
+		value.working = sink.manager.completions.snapshot().Working
 		sink.manager.filesMu.Lock()
 		sink.manager.filesMu.Unlock()
 		value.locksReleased = true
@@ -50,6 +56,7 @@ func (sink *managerProgressLogSink) Handle(ctx context.Context, record slog.Reco
 	select {
 	case value := <-locks:
 		observed.locksReleased, observed.finished, observed.running = value.locksReleased, value.finished, value.running
+		observed.subjectHeld, observed.working = value.subjectHeld, value.working
 	case <-time.After(2 * time.Second):
 	}
 	var output bytes.Buffer
@@ -129,8 +136,9 @@ func TestManagerProgressFailureDiagnostic(t *testing.T) {
 				case <-time.After(5 * time.Second):
 					t.Fatal("progress diagnostic was not emitted")
 				}
-				if observed.contextErr != nil || !observed.locksReleased || !observed.finished || observed.running != 0 {
-					t.Fatalf("diagnostic ran before finalization or under a manager lock: %+v", observed)
+				if observed.contextErr != nil || !observed.locksReleased || observed.finished || observed.running != 0 ||
+					observed.subjectHeld || observed.working != 1 {
+					t.Fatalf("diagnostic lost its bounded terminal ownership or held a manager lock: %+v", observed)
 				}
 				var value map[string]any
 				if err := json.Unmarshal(observed.data, &value); err != nil {

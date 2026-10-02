@@ -154,6 +154,12 @@ func dolbyVisionRPUHeaderResidual(ctx context.Context, escaped []byte, metadataC
 	if checksum != binary.BigEndian.Uint32(rbsp[crcStart:crcStart+4]) {
 		return false, 0, dolbyVisionRPUInvalidScan, nil
 	}
+	return dolbyVisionRPUHeaderFields(body, int64(len(body)), compressionMode)
+}
+
+// The streaming envelope retains only this header prefix, while bodyLength
+// includes all mapping bytes and excludes the CRC and terminator.
+func dolbyVisionRPUHeaderFields(body []byte, bodyLength int64, compressionMode string) (bool, int, string, error) {
 	bits := dolbyVisionRPUHeaderBits{data: body}
 	rpuType := bits.read(6)
 	format := bits.read(11)
@@ -188,7 +194,7 @@ func dolbyVisionRPUHeaderResidual(ctx context.Context, escaped []byte, metadataC
 	disabled := bits.read(1) == 1
 	metadataPresent := bits.read(1)
 	usePrevious := bits.read(1)
-	if bits.invalid || bits.position >= int64(len(body))*8 || compression == 1 && metadataPresent == 0 {
+	if bits.invalid || bits.position >= bodyLength*8 || compression == 1 && metadataPresent == 0 {
 		return false, 0, dolbyVisionRPUInvalidScan, nil
 	}
 	if compression > 1 {

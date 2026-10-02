@@ -71,7 +71,7 @@ func managedUsersLegacySnapshot(t *testing.T, ctx context.Context, pool *pgxpool
 		'libraries', (SELECT jsonb_agg(to_jsonb(t) - 'revision' - 'options' ORDER BY id) FROM libraries t),
 		'roots', (SELECT jsonb_agg(to_jsonb(t) - 'binding_revision' - 'storage_binding' - 'bound_at' - 'bound_by' ORDER BY id) FROM library_roots t),
 		'items', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM items t),
-		'play', (SELECT jsonb_agg(to_jsonb(t) - 'application_client_id' - 'is_dynamic' ORDER BY id) FROM play_sessions t),
+		'play', (SELECT jsonb_agg(to_jsonb(t) - 'application_client_id' - 'is_dynamic' - 'playback_revision' ORDER BY id) FROM play_sessions t),
 		'userdata', (SELECT jsonb_agg(to_jsonb(t) - ARRAY['hide_from_resume','rating','likes',
 			'remembered_media_source_id','remembered_media_stamp','remembered_audio_stream_index',
 			'remembered_subtitle_stream_index'] ORDER BY user_id, item_id) FROM user_item_data t),

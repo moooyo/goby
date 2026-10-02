@@ -25,18 +25,19 @@ const generationShutdownTimeout = 15 * time.Second
 // listener, but serves no clients until Start. Runtime and diagnostics remain
 // process-owned and must outlive this generation's complete Close pipeline.
 type generation struct {
-	cfg             config.Config
-	pool            *pgxpool.Pool
-	lease           *database.Lease
-	manager         *recovery.Manager
-	app             *server.Server
-	server          *http.Server
-	listener        net.Listener
-	ctx             context.Context
-	cancel          context.CancelFunc
-	state           lifecycle.State
-	pendingSwitch   string
-	switchActivated bool
+	cfg                 config.Config
+	pool                *pgxpool.Pool
+	playbackControlPool *pgxpool.Pool
+	lease               *database.Lease
+	manager             *recovery.Manager
+	app                 *server.Server
+	server              *http.Server
+	listener            net.Listener
+	ctx                 context.Context
+	cancel              context.CancelFunc
+	state               lifecycle.State
+	pendingSwitch       string
+	switchActivated     bool
 
 	mu           sync.Mutex
 	started      bool
@@ -212,6 +213,13 @@ func prepareGeneration(ctx context.Context, runtime *recovery.Runtime, logger *s
 			return nil, err
 		}
 	}
+	g.playbackControlPool, err = database.OpenPlaybackControlFor(startup, g.pool)
+	if err != nil {
+		return nil, generationError("playback control database capacity is unavailable", err)
+	}
+	if err := g.checkStartup(startup); err != nil {
+		return nil, err
+	}
 	// Server.New and its transcode manager use this argument for initialization
 	// only; their workers are explicitly drained by CloseApplication.
 	assets, err := dashboardAssets(cfg.WebDirectory)
@@ -219,7 +227,8 @@ func prepareGeneration(ctx context.Context, runtime *recovery.Runtime, logger *s
 		return nil, generationError("administrator assets are unavailable", err)
 	}
 	g.app, err = server.New(startup, cfg, g.pool, users, logger, version,
-		server.WithDiagnostics(diag), server.WithRecovery(g.manager), server.WithDashboardAssets(assets))
+		server.WithDiagnostics(diag), server.WithRecovery(g.manager), server.WithDashboardAssets(assets),
+		server.WithPlaybackControlPool(g.playbackControlPool))
 	if err != nil {
 		return nil, generationError("application generation initialization failed", err)
 	}
@@ -462,6 +471,12 @@ func (g *generation) Close(ctx context.Context) error {
 				return g.manager.Close(context.Background())
 			})
 			g.resourceCloseErr = errors.Join(g.resourceCloseErr, g.CloseApplication(context.Background()))
+			g.resourceCloseErr = errors.Join(g.resourceCloseErr, generationCall("playback control database pool cleanup failed", func() error {
+				if g.playbackControlPool != nil {
+					g.playbackControlPool.Close()
+				}
+				return nil
+			}))
 			g.resourceCloseErr = errors.Join(g.resourceCloseErr, generationCall("database pool cleanup failed", func() error {
 				if g.pool != nil {
 					g.pool.Close()

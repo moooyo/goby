@@ -4,6 +4,7 @@ package library
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -19,9 +20,21 @@ import (
 )
 
 type scanPerformanceObserverContextKey struct{}
+type scanPerformanceWriteContextKey struct{}
+type scanPerformanceTimingContextKey struct{}
+
+type scanPerformanceQueryTiming struct {
+	started  time.Time
+	category string
+}
 
 type scanPerformanceSQLTracer struct {
-	queries, begins, commits, rollbacks atomic.Int64
+	queries, begins, commits, rollbacks         atomic.Int64
+	itemRows, metadataRows, scanRows, childRows atomic.Int64
+	cachedCompletionChecks                      atomic.Int64
+	relationshipQueries, relationshipNanos      atomic.Int64
+	completionNanos                             atomic.Int64
+	timingEnabled                               bool
 }
 
 func (trace *scanPerformanceSQLTracer) TraceQueryStart(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
@@ -30,6 +43,9 @@ func (trace *scanPerformanceSQLTracer) TraceQueryStart(ctx context.Context, _ *p
 	}
 	trace.queries.Add(1)
 	statement := strings.ToLower(strings.TrimSpace(data.SQL))
+	if strings.HasPrefix(statement, "with progress_run as materialized") {
+		trace.cachedCompletionChecks.Add(1)
+	}
 	switch {
 	case strings.HasPrefix(statement, "begin"):
 		trace.begins.Add(1)
@@ -38,16 +54,75 @@ func (trace *scanPerformanceSQLTracer) TraceQueryStart(ctx context.Context, _ *p
 	case statement == "rollback":
 		trace.rollbacks.Add(1)
 	}
+	var category string
+	for _, table := range []string{"items", "item_metadata_state", "scan_jobs", "task_run_children"} {
+		if strings.HasPrefix(statement, "update "+table+" ") || strings.HasPrefix(statement, "insert into "+table+" ") ||
+			strings.HasPrefix(statement, "insert into "+table+"\n") || strings.HasPrefix(statement, "insert into "+table+"(") {
+			category = table
+			break
+		}
+	}
+	ctx = context.WithValue(ctx, scanPerformanceWriteContextKey{}, category)
+	if trace.timingEnabled {
+		// Opt-in timings include the client round trip and result consumption.
+		// They do not include waiting for ownership.mu before Query starts.
+		timingCategory := ""
+		if strings.HasPrefix(statement, "with progress_run as materialized") {
+			timingCategory = "completion"
+		} else if strings.HasPrefix(statement, "select coalesce(task_child_id, '') from scan_jobs where id = $1") ||
+			strings.HasPrefix(statement, "select run_id from task_run_children where id = $1") ||
+			strings.HasPrefix(statement, "select state, stop_reason, task_key from task_runs where id = $1 for update") ||
+			(strings.HasPrefix(statement, "select library_id, state, coalesce(scan_job_id, '')") && strings.Contains(statement, "from task_run_children")) ||
+			strings.Contains(statement, " from scan_jobs where id = $1 for update") {
+			timingCategory = "relationship"
+		}
+		if timingCategory != "" {
+			ctx = context.WithValue(ctx, scanPerformanceTimingContextKey{}, scanPerformanceQueryTiming{started: time.Now(), category: timingCategory})
+		}
+	}
 	return ctx
 }
 
-func (*scanPerformanceSQLTracer) TraceQueryEnd(context.Context, *pgx.Conn, pgx.TraceQueryEndData) {}
+func (trace *scanPerformanceSQLTracer) TraceQueryEnd(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryEndData) {
+	if ignored, _ := ctx.Value(scanPerformanceObserverContextKey{}).(bool); ignored || data.Err != nil {
+		return
+	}
+	if timing, ok := ctx.Value(scanPerformanceTimingContextKey{}).(scanPerformanceQueryTiming); ok {
+		nanoseconds := time.Since(timing.started).Nanoseconds()
+		if timing.category == "completion" {
+			trace.completionNanos.Add(nanoseconds)
+		} else {
+			trace.relationshipQueries.Add(1)
+			trace.relationshipNanos.Add(nanoseconds)
+		}
+	}
+	category, _ := ctx.Value(scanPerformanceWriteContextKey{}).(string)
+	rows := data.CommandTag.RowsAffected()
+	switch category {
+	case "items":
+		trace.itemRows.Add(rows)
+	case "item_metadata_state":
+		trace.metadataRows.Add(rows)
+	case "scan_jobs":
+		trace.scanRows.Add(rows)
+	case "task_run_children":
+		trace.childRows.Add(rows)
+	}
+}
 
 func (trace *scanPerformanceSQLTracer) reset() {
 	trace.queries.Store(0)
 	trace.begins.Store(0)
 	trace.commits.Store(0)
 	trace.rollbacks.Store(0)
+	trace.itemRows.Store(0)
+	trace.metadataRows.Store(0)
+	trace.scanRows.Store(0)
+	trace.childRows.Store(0)
+	trace.cachedCompletionChecks.Store(0)
+	trace.relationshipQueries.Store(0)
+	trace.relationshipNanos.Store(0)
+	trace.completionNanos.Store(0)
 }
 
 type scanPerformanceCorpus struct {
@@ -77,6 +152,7 @@ func TestScanPerformanceProfile(t *testing.T) {
 	if os.Getenv("GOBY_TEST_SCAN_PERFORMANCE") != "1" {
 		t.Skip("GOBY_TEST_SCAN_PERFORMANCE=1 enables the media scan performance profile")
 	}
+	focus := os.Getenv("GOBY_SCAN_PERFORMANCE_FOCUS") == "1"
 	var probes atomic.Int64
 	prober := scanProberFunc(func(_ context.Context, file *os.File) (media.Info, error) {
 		probes.Add(1)
@@ -92,7 +168,7 @@ func TestScanPerformanceProfile(t *testing.T) {
 	if err := fixtureStore.Close(ctx); err != nil {
 		t.Fatalf("release fixture catalog ownership: %v", err)
 	}
-	trace := &scanPerformanceSQLTracer{}
+	trace := &scanPerformanceSQLTracer{timingEnabled: os.Getenv("GOBY_SCAN_PERFORMANCE_SQL_TIMING") == "1"}
 	configuration := fixturePool.Config()
 	configuration.ConnConfig.Tracer = trace
 	tracedPool, err := pgxpool.NewWithConfig(ctx, configuration)
@@ -156,11 +232,29 @@ func TestScanPerformanceProfile(t *testing.T) {
 	})
 	t.Cleanup(func() { store.SetCatalogChangeListener(nil) })
 	observerCtx := context.WithValue(ctx, scanPerformanceObserverContextKey{}, true)
+	scanPerformanceLogConnectionPolicy(t, observerCtx, store, tracedPool.Config(), "initial", focus, trace.timingEnabled)
 	scan := func(phase string, corpus scanPerformanceCorpus, force bool, wantAdded, wantUpdated int, wantProbes int64) {
 		t.Helper()
+		childID := ""
+		if strings.HasPrefix(phase, "task_owned_") {
+			_, children := taskScanFixture(t, observerCtx, fixturePool, corpus.library)
+			childID = children[0]
+		}
+		walBefore := scanPerformanceWALPosition(t, observerCtx, fixturePool)
 		trace.reset()
 		probesBefore, started := probes.Load(), time.Now()
-		job, err := store.StartScanWithOptions(ctx, corpus.library.ID, ScanOptions{ForceProbe: force})
+		var job Job
+		var err error
+		if childID == "" {
+			job, err = store.StartScanWithOptions(ctx, corpus.library.ID, ScanOptions{ForceProbe: force})
+		} else {
+			var admission ScanAdmission
+			admission, err = store.AdmitTaskScan(ctx, childID)
+			job = admission.Job
+			if err == nil && admission.Kind != ScanAdmitted {
+				t.Fatalf("performance task scan was not admitted: %+v", admission)
+			}
+		}
 		if err != nil {
 			t.Fatalf("start %s/%s scan: %v", phase, corpus.label, err)
 		}
@@ -168,6 +262,11 @@ func TestScanPerformanceProfile(t *testing.T) {
 		// helper's 250 ms interval rather than adding 100 reads per second.
 		job = libraryIntegrationWaitJobWithTimeout(t, observerCtx, store, job.ID, "Completed", 3*time.Minute)
 		elapsed, probeCalls := time.Since(started), probes.Load()-probesBefore
+		walAfter := scanPerformanceWALPosition(t, observerCtx, fixturePool)
+		var walBytes int64
+		if err := fixturePool.QueryRow(observerCtx, `SELECT pg_wal_lsn_diff($1::pg_lsn,$2::pg_lsn)::bigint`, walAfter, walBefore).Scan(&walBytes); err != nil {
+			t.Fatalf("measure scan WAL delta: %v", err)
+		}
 		if job.Error != "" || job.Scanned != len(corpus.paths) || job.Added != wantAdded || job.Updated != wantUpdated ||
 			job.ForceProbe != force || job.CancelRequested || job.StartedAt == nil || job.FinishedAt == nil || probeCalls != wantProbes {
 			t.Fatalf("%s/%s scan facts differ: job=%+v probe_calls=%d want_probes=%d", phase, corpus.label, job, probeCalls, wantProbes)
@@ -175,9 +274,17 @@ func TestScanPerformanceProfile(t *testing.T) {
 		if trace.queries.Load() == 0 || trace.begins.Load() == 0 || trace.commits.Load() == 0 {
 			t.Fatal("scan SQL tracer did not observe the owned transaction session")
 		}
-		t.Logf("scan_performance phase=%s library=%s elapsed=%s job_elapsed=%s sql=%d begin=%d commit=%d rollback=%d probe_calls=%d scanned=%d added=%d updated=%d",
+		if childID != "" {
+			taskScanAssertChild(t, observerCtx, fixturePool, childID, job)
+		}
+		// Direct row counts cover client UPDATE/INSERT statements, excluding
+		// trigger/function writes and DELETE. WAL positions are cluster-wide
+		// observations, so paired measurements need an otherwise quiet database.
+		t.Logf("scan_performance phase=%s library=%s elapsed=%s job_elapsed=%s sql=%d begin=%d commit=%d rollback=%d probe_calls=%d scanned=%d added=%d updated=%d direct_items_write_rows=%d direct_metadata_write_rows=%d direct_scan_write_rows=%d direct_child_write_rows=%d wal_bytes=%d cached_completion_checks=%d relationship_queries=%d relationship_query_ns=%d completion_query_ns=%d",
 			phase, corpus.label, elapsed, job.FinishedAt.Sub(*job.StartedAt), trace.queries.Load(), trace.begins.Load(),
-			trace.commits.Load(), trace.rollbacks.Load(), probeCalls, job.Scanned, job.Added, job.Updated)
+			trace.commits.Load(), trace.rollbacks.Load(), probeCalls, job.Scanned, job.Added, job.Updated,
+			trace.itemRows.Load(), trace.metadataRows.Load(), trace.scanRows.Load(), trace.childRows.Load(), walBytes, trace.cachedCompletionChecks.Load(),
+			trace.relationshipQueries.Load(), trace.relationshipNanos.Load(), trace.completionNanos.Load())
 	}
 	for _, corpus := range corpora {
 		scan("cold", corpus, false, len(corpus.paths), 0, int64(len(corpus.paths)))
@@ -219,6 +326,23 @@ func TestScanPerformanceProfile(t *testing.T) {
 		}
 		scanPerformanceAssertChanges(t, notifications, notificationOverflow.Load(), nil)
 		assertUserData()
+	}
+	for _, corpus := range corpora {
+		scan("task_owned_cached", corpus, false, 0, 0, 0)
+	}
+	if current := scanPerformanceReadCatalog(t, observerCtx, fixturePool); !reflect.DeepEqual(current, initial) {
+		t.Fatal("task-owned cached scan changed catalog identities, hierarchy or accepted media")
+	}
+	scanPerformanceAssertChanges(t, notifications, notificationOverflow.Load(), nil)
+	assertUserData()
+	if focus {
+		// Keep identical cold priming and both independent cached controls before
+		// task-owned measurements. Unrelated incremental/forced work is omitted.
+		if probes.Load() != 400 {
+			t.Fatalf("focused profile probe calls=%d, want 400 priming probes", probes.Load())
+		}
+		scanPerformanceLogConnectionPolicy(t, observerCtx, store, tracedPool.Config(), "focus_complete", focus, trace.timingEnabled)
+		return
 	}
 	// Each layout receives one add, rename and deletion. Existing folders remain
 	// populated, so expected item counts stay constant and every old survivor ID
@@ -319,6 +443,57 @@ func TestScanPerformanceProfile(t *testing.T) {
 			}
 		}
 	}
+	scanPerformanceLogConnectionPolicy(t, observerCtx, store, tracedPool.Config(), "complete", focus, trace.timingEnabled)
+}
+
+func scanPerformanceLogConnectionPolicy(t *testing.T, ctx context.Context, store *Store, config *pgxpool.Config, phase string, focus, timing bool) {
+	t.Helper()
+	policy := struct {
+		Phase              string `json:"phase"`
+		QueryExecMode      string `json:"query_exec_mode"`
+		QueryExecModeValue int    `json:"query_exec_mode_value"`
+		JIT                string `json:"jit"`
+		PlanCacheMode      string `json:"plan_cache_mode"`
+		PreparedStatements int64  `json:"prepared_statement_count"`
+		GenericPlans       int64  `json:"generic_plan_count"`
+		CustomPlans        int64  `json:"custom_plan_count"`
+		Focus              bool   `json:"focus"`
+		SQLTiming          bool   `json:"sql_timing"`
+	}{Phase: phase, QueryExecMode: fmt.Sprint(config.ConnConfig.DefaultQueryExecMode),
+		QueryExecModeValue: int(config.ConnConfig.DefaultQueryExecMode), Focus: focus, SQLTiming: timing}
+	if err := store.lockOwnedSession(ctx); err != nil {
+		t.Fatal(err)
+	}
+	err := func() error {
+		defer store.ownership.mu.Unlock()
+		readCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 20*time.Second)
+		defer cancel()
+		err := store.ownership.conn.QueryRow(readCtx, `SELECT current_setting('jit'),current_setting('plan_cache_mode'),
+			count(*),COALESCE(sum(generic_plans),0)::bigint,COALESCE(sum(custom_plans),0)::bigint
+			FROM pg_prepared_statements`).Scan(&policy.JIT, &policy.PlanCacheMode, &policy.PreparedStatements,
+			&policy.GenericPlans, &policy.CustomPlans)
+		return store.ownershipErrorLocked(err)
+	}()
+	if err != nil {
+		t.Fatalf("observe scan owner connection policy: %v", err)
+	}
+	data, err := json.Marshal(policy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// This observation uses the ignored context and executes outside workload
+	// timing/reset boundaries. Plan counts cover the exact owner's whole session,
+	// including the policy query itself, rather than a specific checkpoint SQL.
+	t.Logf("scan_performance_connection=%s", data)
+}
+
+func scanPerformanceWALPosition(t *testing.T, ctx context.Context, pool *pgxpool.Pool) string {
+	t.Helper()
+	var position string
+	if err := pool.QueryRow(ctx, `SELECT pg_current_wal_insert_lsn()::text`).Scan(&position); err != nil {
+		t.Fatalf("read scan WAL position: %v", err)
+	}
+	return position
 }
 
 func scanPerformanceReadCatalog(t *testing.T, ctx context.Context, pool *pgxpool.Pool) map[string]scanPerformanceRecord {

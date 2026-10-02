@@ -10,6 +10,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/moooyo/goby/internal/database"
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/media"
@@ -232,7 +233,17 @@ func (s *Store) GetItemFor(ctx context.Context, subject Subject, id string) (Ite
 	if strings.TrimSpace(id) == "" || strings.ContainsRune(id, '\x00') {
 		return Item{}, ErrInvalidInput
 	}
-	tx, access, err := s.beginSubjectRead(ctx, subject)
+	if s == nil {
+		return Item{}, ErrUnavailable
+	}
+	return s.getItemForOnPool(ctx, subject, id, s.pool)
+}
+
+func (s *Store) getItemForOnPool(ctx context.Context, subject Subject, id string, pool *pgxpool.Pool) (Item, error) {
+	if strings.TrimSpace(id) == "" || strings.ContainsRune(id, '\x00') {
+		return Item{}, ErrInvalidInput
+	}
+	tx, access, err := s.beginSubjectReadOnPool(ctx, subject, pool)
 	if err != nil {
 		return Item{}, err
 	}
@@ -384,10 +395,20 @@ func (s *Store) beginUserRead(ctx context.Context, userID string) (pgx.Tx, libra
 	if strings.TrimSpace(userID) == "" || strings.ContainsRune(userID, '\x00') {
 		return nil, libraryAccess{}, ErrInvalidInput
 	}
-	if s == nil || s.pool == nil {
+	if s == nil {
 		return nil, libraryAccess{}, ErrUnavailable
 	}
-	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
+	return s.beginUserReadOnPool(ctx, userID, s.pool)
+}
+
+func (s *Store) beginUserReadOnPool(ctx context.Context, userID string, pool *pgxpool.Pool) (pgx.Tx, libraryAccess, error) {
+	if strings.TrimSpace(userID) == "" || strings.ContainsRune(userID, '\x00') {
+		return nil, libraryAccess{}, ErrInvalidInput
+	}
+	if s == nil || pool == nil {
+		return nil, libraryAccess{}, ErrUnavailable
+	}
+	tx, err := pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
 	if err != nil {
 		return nil, libraryAccess{}, fmt.Errorf("begin authorized library read: %w", err)
 	}

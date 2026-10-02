@@ -9,7 +9,11 @@ func (s *Server) cancelPlaybackResources(authID, playID string) {
 	}
 	s.cancelMediaPolicy(authID, playID)
 	s.cancelDynamicStreams(authID, playID)
-	s.hls.cancelMatching(authID, playID)
+	if playID == "" {
+		s.hls.cancelCredential(authID)
+	} else {
+		s.hls.cancelPlayback(authID, playID)
+	}
 }
 
 func (s *Server) cancelPlaybackCredential(authID string) {

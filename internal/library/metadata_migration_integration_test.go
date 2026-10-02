@@ -200,7 +200,13 @@ func metadataMigrationSnapshot(t *testing.T, ctx context.Context, pool *pgxpool.
 func metadataMigrationPhase3Defaults(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
 	t.Helper()
 	var valid bool
-	if err := pool.QueryRow(ctx, `SELECT
+	var totalEvents, initializedEvents int
+	if err := pool.QueryRow(ctx, `WITH event_defaults AS (
+		SELECT count(*) AS total, count(*) FILTER (WHERE name IN
+			('ServerStarted','LibraryChanged','ConfigurationChanged','IntroAnalysisRequested','PreviewGenerationRequested')
+			AND sequence=0 AND lifecycle_key='' AND occurred_at IS NOT NULL) AS initialized
+		FROM task_system_events
+	) SELECT
 		NOT EXISTS(SELECT 1 FROM libraries WHERE revision IS DISTINCT FROM 1
 			OR options IS DISTINCT FROM '{"EnableLocalMetadata":true,"EnableLocalImages":true,"EnableEmbeddedArtwork":true}'::jsonb)
 		AND NOT EXISTS(SELECT 1 FROM users WHERE configuration_revision IS DISTINCT FROM 1)
@@ -213,12 +219,11 @@ func metadataMigrationPhase3Defaults(t *testing.T, ctx context.Context, pool *pg
 		AND NOT EXISTS(SELECT 1 FROM artwork_images)
 		AND NOT EXISTS(SELECT 1 FROM entity_user_data)
 		AND NOT EXISTS(SELECT 1 FROM task_triggers WHERE system_event IS NOT NULL OR last_event_sequence IS DISTINCT FROM 0)
-		AND (SELECT count(*) FROM task_system_events)=3
-		AND (SELECT count(*) FROM task_system_events WHERE name IN
-			('ServerStarted','LibraryChanged','ConfigurationChanged') AND sequence=0
-			AND lifecycle_key='' AND occurred_at IS NOT NULL)=3
-		AND NOT EXISTS(SELECT 1 FROM task_system_event_receipts)`).Scan(&valid); err != nil || !valid {
-		t.Fatalf("metadata migration inferred phase 3 library, preference, artwork, or event state: %v", err)
+		AND (SELECT total=5 AND initialized=5 FROM event_defaults)
+		AND NOT EXISTS(SELECT 1 FROM task_system_event_receipts),
+		(SELECT total FROM event_defaults), (SELECT initialized FROM event_defaults)`).Scan(&valid, &totalEvents, &initializedEvents); err != nil || !valid {
+		t.Fatalf("metadata migration inferred phase 3 library, preference, artwork, or event state: valid=%t total_events=%d initialized_events=%d error=%v",
+			valid, totalEvents, initializedEvents, err)
 	}
 	if err := pool.QueryRow(ctx, `SELECT
 		pg_get_serial_sequence('artwork_state','id')::regclass='artwork_state_id_seq'::regclass

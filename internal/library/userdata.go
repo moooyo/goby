@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/notificationjournal"
@@ -52,7 +53,14 @@ type stateItem struct {
 // library-policy change cannot commit before a stale authorization writes data.
 // These short transactions use the pool independently from the scan owner.
 func (s *Store) beginStateWrite(ctx context.Context, subject Subject, requirePlayback bool) (pgx.Tx, libraryAccess, error) {
-	if s == nil || s.pool == nil || !validSubject(subject) {
+	if s == nil {
+		return nil, libraryAccess{}, ErrInvalidInput
+	}
+	return s.beginStateWriteOnPool(ctx, subject, requirePlayback, s.pool)
+}
+
+func (s *Store) beginStateWriteOnPool(ctx context.Context, subject Subject, requirePlayback bool, pool *pgxpool.Pool) (pgx.Tx, libraryAccess, error) {
+	if s == nil || pool == nil || !validSubject(subject) {
 		return nil, libraryAccess{}, ErrInvalidInput
 	}
 	s.mu.Lock()
@@ -61,8 +69,11 @@ func (s *Store) beginStateWrite(ctx context.Context, subject Subject, requirePla
 	if closed {
 		return nil, libraryAccess{}, ErrUnavailable
 	}
-	tx, err := s.pool.Begin(ctx)
+	tx, err := pool.Begin(ctx)
 	if err != nil {
+		if subject.ApplicationCredentialID != "" {
+			return nil, libraryAccess{}, fmt.Errorf("begin application state update: %w", err)
+		}
 		return nil, libraryAccess{}, fmt.Errorf("begin user state update: %w", err)
 	}
 	access, err := checkSubjectStateWrite(ctx, tx, subject, requirePlayback, true)

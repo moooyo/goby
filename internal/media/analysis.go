@@ -114,7 +114,7 @@ func analysisAcquire(ctx context.Context, timeout time.Duration) (context.Contex
 	if ctx == nil || timeout <= 0 || timeout > 2*time.Hour {
 		return nil, nil, ErrAnalysisBudget
 	}
-	bounded, cancel := context.WithTimeout(ctx, timeout)
+	bounded, cancel := context.WithTimeout(WithBackgroundProcess(ctx), timeout)
 	select {
 	case analysisSlots <- struct{}{}:
 		return bounded, func() { cancel(); <-analysisSlots }, nil

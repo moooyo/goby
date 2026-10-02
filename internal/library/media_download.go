@@ -23,7 +23,9 @@ func (s *Store) OpenDownloadFor(ctx context.Context, subject Subject, itemID, so
 	if s == nil || s.pool == nil {
 		return nil, MediaFile{}, ErrUnavailable
 	}
-	return runMediaSourceWorker(ctx, mediaSourceWorkers, func() (*os.File, MediaFile, error) {
+	return s.runPreparedMediaSourceWorker(ctx, false, func(ctx context.Context) (mediaSourceRootHint, error) {
+		return s.readMediaSourceRootHint(ctx, itemID)
+	}, func(ctx context.Context) (*os.File, MediaFile, error) {
 		snapshot, err := s.readDownloadSource(ctx, subject, itemID, sourceID)
 		if err != nil {
 			return nil, MediaFile{}, err
@@ -33,10 +35,18 @@ func (s *Store) OpenDownloadFor(ctx context.Context, subject Subject, itemID, so
 			return nil, MediaFile{}, err
 		}
 		return file, snapshot.mediaFile, nil
+	}, func(ctx context.Context) error {
+		_, err := s.readDownloadSource(ctx, subject, itemID, sourceID)
+		return err
 	})
 }
 
 func (s *Store) readDownloadSource(ctx context.Context, subject Subject, itemID, sourceID string) (indexedMediaSource, error) {
+	ctx, release, err := beginMediaSourceAuthorization(ctx)
+	if err != nil {
+		return indexedMediaSource{}, err
+	}
+	defer release()
 	tx, access, err := s.beginSubjectRead(ctx, subject)
 	if err != nil {
 		return indexedMediaSource{}, err

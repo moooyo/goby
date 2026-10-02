@@ -88,44 +88,121 @@ func hlsOutputAudioBitrate(session *hlsSession) int64 {
 // generatedArtifact borrows input and shares one producer across every variant
 // and map. Only an independently owned descriptor is transferred to Ensure.
 // Scope remains in every lookup, and retirement cancels the complete graph.
-func (h *hlsRuntime) generatedArtifact(ctx context.Context, session *hlsSession, input *os.File, name string) (*transcode.ReadHandle, error) {
+func (h *hlsRuntime) generatedArtifact(ctx context.Context, session *hlsSession, input *os.File, name string, producerIDs ...string) (*transcode.ReadHandle, error) {
+	if len(producerIDs) > 1 {
+		return nil, transcode.ErrJobNotFound
+	}
+	if len(producerIDs) == 1 && producerIDs[0] != "" {
+		return h.generatedProducerArtifact(ctx, session, producerIDs[0], name)
+	}
+	if !strings.HasSuffix(name, ".m3u8") {
+		if err := h.selectManualGeneratedMode(session); err != nil {
+			return nil, err
+		}
+	}
 	if !hlsPlanArtifact(session.key.plan, name) {
 		return nil, transcode.ErrJobNotFound
 	}
-	session.mu.Lock()
-	if session.closed {
-		session.mu.Unlock()
-		return nil, transcode.ErrJobNotFound
-	}
-	for _, producer := range session.producers {
-		if producer.first != -1 {
-			continue
+	var gate *hlsAdmissionGate
+	var retryFrom *hlsAdmission
+	staleRetries := 0
+	releaseReservation := func() {
+		if gate != nil {
+			reserved := gate
+			gate = nil
+			h.releaseAdmission(session.key, reserved)
 		}
-		state, err := h.manager.Snapshot(session.key.scope, producer.id)
-		if err == nil && (state.State == "queued" || state.State == "running" || state.State == "completed") {
+	}
+	defer releaseReservation()
+	for {
+		session.mu.Lock()
+		if session.closed || ctx.Err() != nil {
+			session.mu.Unlock()
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+			return nil, transcode.ErrJobNotFound
+		}
+		if retryFrom != nil && session.admissionRevision != retryFrom.revision {
+			session.mu.Unlock()
+			return nil, context.Canceled
+		}
+		for _, producer := range session.producers {
+			if producer.first != -1 || h.producerReleased(producer) {
+				continue
+			}
+			state, err := h.manager.Snapshot(session.key.scope, producer.id)
+			if err == nil && (state.State == "queued" || state.State == "running" || state.State == "completed") {
+				session.accessed = time.Now()
+				session.mu.Unlock()
+				releaseReservation()
+				return h.manager.Open(ctx, session.key.scope, producer.id, name)
+			}
+		}
+		if session.demand.paused {
+			session.mu.Unlock()
+			return nil, transcode.ErrOutputUnavailable
+		}
+		if pending := session.admission; pending != nil && pending.ctx.Err() == nil {
 			session.accessed = time.Now()
 			session.mu.Unlock()
-			return h.manager.Open(ctx, session.key.scope, producer.id, name)
+			releaseReservation()
+			record, err := waitHLSAdmission(ctx, session, pending)
+			if err != nil {
+				if retryHLSAdmission(ctx, session, pending, err) {
+					if err == errHLSAdmissionStale {
+						if staleRetries != 0 {
+							return nil, transcode.ErrJobNotFound
+						}
+						staleRetries++
+					}
+					retryFrom = pending
+					continue
+				}
+				return nil, err
+			}
+			return h.manager.Open(ctx, session.key.scope, record.ID, name)
 		}
-	}
-	producerInput, err := transcode.DuplicateInput(input)
-	if err != nil {
+		if gate == nil {
+			// Take runtime worker ownership without reversing the retirement
+			// lock order, then repeat selection in case another caller won.
+			session.mu.Unlock()
+			var err error
+			gate, err = h.reserveAdmission(session.key)
+			if err != nil {
+				return nil, err
+			}
+			continue
+		}
+		producerInput, playbackInput, playbackWorker, err := h.duplicateAdmissionInputLocked(session, input)
+		if err != nil {
+			session.mu.Unlock()
+			return nil, err
+		}
+		pending := newHLSAdmission(ctx, session, transcode.Spec{Scope: session.key.scope, SourceStamp: session.key.stamp, Plan: session.key.plan}, -1, -1)
+		pending.installPlaybackInput(playbackInput, playbackWorker)
+		if prior := session.admission; prior != nil {
+			prior.cancel()
+		}
+		session.admission, session.accessed = pending, time.Now()
 		session.mu.Unlock()
-		return nil, err
+		workerGate := gate
+		gate = nil
+		go h.runAdmission(session, pending, workerGate, producerInput)
+		record, err := waitHLSAdmission(ctx, session, pending)
+		if err != nil {
+			if err == errHLSAdmissionStale && retryHLSAdmission(ctx, session, pending, err) {
+				if staleRetries != 0 {
+					return nil, transcode.ErrJobNotFound
+				}
+				staleRetries++
+				retryFrom = pending
+				continue
+			}
+			return nil, err
+		}
+		return h.manager.Open(ctx, session.key.scope, record.ID, name)
 	}
-	record, err := h.manager.Ensure(ctx, transcode.Spec{Scope: session.key.scope, SourceStamp: session.key.stamp, Plan: session.key.plan}, producerInput)
-	if err != nil {
-		session.mu.Unlock()
-		return nil, err
-	}
-	if len(session.producers) >= maxHLSProducers {
-		_ = h.manager.CancelJob(session.producers[0].id, session.key.scope)
-		session.producers = session.producers[1:]
-	}
-	session.producers = append(session.producers, hlsProducer{id: record.ID, first: -1, last: -1})
-	session.accessed = time.Now()
-	session.mu.Unlock()
-	return h.manager.Open(ctx, session.key.scope, record.ID, name)
 }
 
 func hlsPlanArtifact(plan transcode.Plan, name string) bool {
@@ -165,6 +242,10 @@ func hlsPlanArtifact(plan transcode.Plan, name string) bool {
 }
 
 func (h *hlsRuntime) generatedPlaylist(ctx context.Context, session *hlsSession, input *os.File, name, resource, token string, start int64, views ...playback.HLSSubtitleView) ([]byte, error) {
+	return h.generatedPlaylistFromProducer(ctx, session, input, name, resource, token, start, "", views...)
+}
+
+func (h *hlsRuntime) generatedPlaylistFromProducer(ctx context.Context, session *hlsSession, input *os.File, name, resource, token string, start int64, producerID string, views ...playback.HLSSubtitleView) ([]byte, error) {
 	view, err := hlsSubtitleRequestView(nil, session)
 	if err != nil {
 		return nil, err
@@ -172,11 +253,15 @@ func (h *hlsRuntime) generatedPlaylist(ctx context.Context, session *hlsSession,
 	if len(views) != 0 {
 		view = views[0]
 	}
-	handle, err := h.generatedArtifact(ctx, session, input, name)
+	handle, err := h.generatedArtifact(ctx, session, input, name, producerID)
 	if err != nil {
 		return nil, err
 	}
 	defer handle.Close()
+	producerID = handle.EncodingID()
+	if producerID == "" {
+		return nil, transcode.ErrOutputUnavailable
+	}
 	data, err := io.ReadAll(io.LimitReader(handle, transcode.MaxPlaylistBytes+1))
 	if err != nil {
 		return nil, err
@@ -189,7 +274,7 @@ func (h *hlsRuntime) generatedPlaylist(ctx context.Context, session *hlsSession,
 		if !hlsPlanArtifact(session.key.plan, segment.Name) || !strings.HasPrefix(segment.Name, prefix+"segment-") {
 			return ""
 		}
-		child := hlsArtifactURL(session, resource, segment.Name, token, start)
+		child := hlsProducerArtifactURL(session, resource, segment.Name, token, start, producerID)
 		if transcode.HasHLSSubtitles(session.key.plan) {
 			child = hlsSubtitleURLView(child, view)
 		}
@@ -198,7 +283,7 @@ func (h *hlsRuntime) generatedPlaylist(ctx context.Context, session *hlsSession,
 		if !hlsPlanArtifact(session.key.plan, init) || init != prefix+"init.mp4" {
 			return ""
 		}
-		child := hlsArtifactURL(session, resource, init, token, start)
+		child := hlsProducerArtifactURL(session, resource, init, token, start, producerID)
 		if transcode.HasHLSSubtitles(session.key.plan) {
 			child = hlsSubtitleURLView(child, view)
 		}
@@ -226,12 +311,14 @@ func (s *Server) hlsArtifact(audioOnly bool) http.HandlerFunc {
 			return
 		}
 		values["gobyhlsid"] = r.PathValue("PlaylistId")
-		session, input, source, err := s.resolveHLS(ctx, r, values)
+		session, loan, source, err := s.resolveHLS(ctx, r, values)
 		if err != nil {
 			s.hlsError(w, r, err)
 			return
 		}
-		defer input.Close()
+		defer loan.close()
+		input := loan.file
+		ctx = loan.context(ctx)
 		if (source.Item.Type == "Audio") != audioOnly || !transcode.GeneratedHLS(session.key.plan) {
 			s.hlsError(w, r, library.ErrNotFound)
 			return
@@ -258,10 +345,29 @@ func (s *Server) hlsArtifact(audioOnly bool) http.HandlerFunc {
 			s.hlsError(w, r, err)
 			return
 		}
+		if windowResource, logical := hlsGeneratedWindowResourceFromName(session.key.plan, name); logical {
+			if values["gobyhlsproducerid"] != "" {
+				s.hlsError(w, r, errHLSRequestInvalid)
+				return
+			}
+			s.serveGeneratedWindowResourceAdmission(w, r.WithContext(work), session, input, playbackMediaInfo(source.Item), values["gobyhlswindowgraphid"], windowResource, resource, token, start)
+			return
+		}
+		if values["gobyhlswindowgraphid"] != "" && !strings.HasSuffix(name, ".m3u8") {
+			s.hlsError(w, r, errHLSRequestInvalid)
+			return
+		}
 		slot, sequence, subtitlePlaylist, allowedSubtitle := hlsSubtitleArtifact(session.key.plan, name, view)
 		if !allowedSubtitle && !hlsPlanArtifact(session.key.plan, name) {
 			s.hlsError(w, r, library.ErrNotFound)
 			return
+		}
+		producerID := values["gobyhlsproducerid"]
+		if r.Method == http.MethodHead {
+			if err := s.hls.checkGeneratedWindowHead(work, session, name, producerID, values["gobyhlswindowgraphid"], start); err != nil {
+				s.hlsError(w, r, err)
+				return
+			}
 		}
 		if r.Method == http.MethodHead {
 			contentType := "video/mp2t"
@@ -298,21 +404,21 @@ func (s *Server) hlsArtifact(audioOnly bool) http.HandlerFunc {
 				if work.Err() == nil && policyDelivered {
 					s.touchMediaPolicy(work, r.Context().Value(principalKey).(identity.Principal), session.key.scope)
 				} else {
-					s.failMediaPolicy(work, session.key.scope)
+					s.failHLSMediaPolicy(work, session)
 				}
 			}()
 		}
 		if allowedSubtitle {
 			if !subtitlePlaylist {
-				policyDelivered = s.serveGeneratedHLSSubtitle(w, r.WithContext(work), session, input, slot, sequence, view)
+				policyDelivered = s.serveGeneratedHLSSubtitle(w, r.WithContext(work), session, input, slot, sequence, view, producerID)
 				return
 			}
-			list, _, _, err := s.hls.subtitleMediaWindow(work, session, input)
+			proof, err := s.hls.subtitleMediaWindowProof(work, session, input, producerID)
 			if err != nil {
 				s.hlsError(w, r, err)
 				return
 			}
-			body, err := hlsSubtitleManifest(session, resource, token, start, slot, view, list)
+			body, err := hlsSubtitleManifest(session, resource, token, start, slot, view, proof.list, proof.producerID)
 			if err != nil {
 				s.hlsError(w, r, err)
 				return
@@ -329,34 +435,34 @@ func (s *Server) hlsArtifact(audioOnly bool) http.HandlerFunc {
 			return
 		}
 		if strings.HasSuffix(name, ".m3u8") {
-			body, err := s.hls.generatedPlaylist(work, session, input, name, resource, token, start, view)
+			body, err := s.hls.generatedPlaylistFromCurrentSource(work, session, input, playbackMediaInfo(source.Item), name, resource, token, start, producerID, values["gobyhlswindowgraphid"], view)
 			if err != nil {
-				s.failMediaPolicy(work, session.key.scope)
+				s.failHLSMediaPolicy(work, session)
 				s.hlsError(w, r, err)
 				return
 			}
 			if !s.revalidateGeneratedHLS(work, w, r, session) {
-				s.failMediaPolicy(work, session.key.scope)
+				s.failHLSMediaPolicy(work, session)
 				return
 			}
 			policyDelivered = true
 			writeGeneratedHLSManifest(w, r, body)
 			return
 		}
-		handle, err := s.hls.generatedArtifact(work, session, input, name)
+		handle, err := s.hls.generatedArtifact(work, session, input, name, producerID)
 		if err != nil {
-			s.failMediaPolicy(work, session.key.scope)
+			s.failHLSMediaPolicy(work, session)
 			s.hlsError(w, r, err)
 			return
 		}
 		defer handle.Close()
 		if !s.revalidateGeneratedHLS(work, w, r, session) {
-			s.failMediaPolicy(work, session.key.scope)
+			s.failHLSMediaPolicy(work, session)
 			return
 		}
 		info, err := handle.Stat()
 		if err != nil {
-			s.failMediaPolicy(work, session.key.scope)
+			s.failHLSMediaPolicy(work, session)
 			s.hlsError(w, r, err)
 			return
 		}

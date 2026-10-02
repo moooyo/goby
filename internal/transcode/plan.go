@@ -107,6 +107,9 @@ type Record struct {
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 	LastAccessAt time.Time
+	// ProductionSealed is a transient admission fence, independent of retained
+	// artifact readability and the durable terminal status.
+	ProductionSealed bool `json:"ProductionSealed,omitempty"`
 }
 
 // Progress carries FFmpeg output timing only. It cannot change authoritative
@@ -127,4 +130,10 @@ type RunResult struct {
 	ExitCode        int
 	StderrTail      string
 	ProgressFailure *ProgressFailure
+	// ProductionSealSafe proves that cancellation did not hide source mutation,
+	// observer failure, incomplete retirement or unsafe private publication.
+	ProductionSealSafe bool
+	// WindowInputEvidence exists only after all input observers drained and
+	// successful process retirement revalidated the unchanged source descriptor.
+	WindowInputEvidence *[MaxHLSRenditions]GeneratedInputEvidence
 }

@@ -26,6 +26,22 @@ func (s *Store) ResolveEmbyForClientWithPeer(ctx context.Context, token string, 
 	if err := validateClient(client); err != nil {
 		return Principal{}, err
 	}
+	resolved, steady, err := s.readSteadyApplicationClient(ctx, principal, &client)
+	if err != nil {
+		return Principal{}, err
+	}
+	if steady {
+		resolved.PeerIP = peerIP
+		return resolved, nil
+	}
+	// A shared reader never upgrades its row locks. Reauthorize under the
+	// established exclusive order after releasing the complete read transaction.
+	principal, err = s.bindApplicationClient(ctx, principal, client)
+	principal.PeerIP = peerIP
+	return principal, err
+}
+
+func (s *Store) bindApplicationClient(ctx context.Context, principal Principal, client Client) (Principal, error) {
 	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return Principal{}, fmt.Errorf("begin application client binding: %w", err)
@@ -175,5 +191,7 @@ func (s *Store) ResolveApplicationKeyPlaybackContext(ctx context.Context, previo
 	if err := tx.Commit(ctx); err != nil {
 		return Principal{}, fmt.Errorf("commit application playback context: %w", err)
 	}
+	// Persisted client metadata does not replace the current request's peer.
+	principal.PeerIP = previous.PeerIP
 	return principal, nil
 }

@@ -122,7 +122,7 @@ func RemuxSubtitleRemoval(ctx context.Context, input, candidate *os.File, option
 	if options.Timeout < time.Second || options.Timeout > MaxSubtitleRemovalTimeout {
 		return evidence, ErrSubtitleRemovalBudget
 	}
-	operationContext, cancel := context.WithTimeout(ctx, options.Timeout)
+	operationContext, cancel := context.WithTimeout(WithBackgroundProcess(ctx), options.Timeout)
 	defer cancel()
 	select {
 	case mediaEditSlots <- struct{}{}:

@@ -183,8 +183,10 @@ func (o *progressiveObserver) finish(success bool) error {
 	if err == nil && success {
 		err = o.inspect(true)
 	}
-	if syncErr := o.file.Sync(); err == nil {
-		err = syncErr
+	if err == nil && success {
+		// Cancelled or failed output will be discarded. Flushing it can delay
+		// process retirement and hold a conversion slot under disk pressure.
+		err = o.file.Sync()
 	}
 	return err
 }

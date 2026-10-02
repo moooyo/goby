@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 const (
@@ -24,7 +26,10 @@ const (
 	scanEvidenceMaxDescriptors     = scanEvidenceMaxPasses * scanEvidenceDescriptorsPerPass
 )
 
-type storeOptions struct{ scanEvidence *ScanEvidenceOptions }
+type storeOptions struct {
+	scanEvidence        *ScanEvidenceOptions
+	playbackControlPool *pgxpool.Pool
+}
 
 // Option attaches optional deployment resources without changing existing callers.
 type Option func(*storeOptions) error

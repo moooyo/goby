@@ -41,6 +41,7 @@ type diagnosticProcessSession struct {
 	directoryFD     *os.File
 	commands        int
 	pending         <-chan error
+	commandProcess  *mediaProcess
 	failed          bool
 	closed          bool
 }
@@ -389,7 +390,7 @@ func (s *diagnosticProcessSession) command(input *os.File, args []string, output
 	cmd.Dir = fmt.Sprintf("/proc/self/fd/%d", s.directoryFD.Fd())
 	cmd.Stdout, cmd.Stderr, cmd.WaitDelay = stdout, stderr, time.Second
 	cmd.SysProcAttr = &syscall.SysProcAttr{UseCgroupFD: true, CgroupFD: int(s.commandGroup.group.Fd())}
-	retired, startErr := startMediaProcess(cmd)
+	process, startErr := startMediaProcessHeld(WithBackgroundProcess(ctx), cmd)
 	if startErr != nil {
 		s.failed = true
 		closeCtx, closeCancel := context.WithTimeout(context.Background(), diagnosticCloseDeadline)
@@ -402,8 +403,14 @@ func (s *diagnosticProcessSession) command(input *os.File, args []string, output
 		return result, ErrDiagnosticResources
 	}
 	result.Started = true
+	s.commandProcess = process
 	done := make(chan error, 1)
-	go func() { done <- errors.Join(<-retired, cmd.Wait()) }()
+	// The pending owner outlives a bounded command/session timeout. The cgroup
+	// owner releases its lease only after both this join and domain retirement.
+	go func() {
+		defer process.Close()
+		done <- process.Wait()
+	}()
 	s.pending = done
 	var waitErr error
 	select {
@@ -480,6 +487,8 @@ func (s *diagnosticProcessSession) retireCommand(ctx context.Context) (diagnosti
 		return events, err
 	}
 	s.commandGroup = nil
+	s.commandProcess.completeCleanup()
+	s.commandProcess = nil
 	return events, nil
 }
 
@@ -515,6 +524,8 @@ func (s *diagnosticProcessSession) close() error {
 		return err
 	}
 	s.commandGroup = nil
+	s.commandProcess.completeCleanup()
+	s.commandProcess = nil
 	if err := s.group.close(); err != nil {
 		s.failed = true
 		return err

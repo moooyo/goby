@@ -269,9 +269,10 @@ func (s *Store) finishTask(task *scanTask, status, message string) error {
 		if finished.CancelRequested || task.ctx.Err() != nil || relation.child != nil && !activeTaskRun(relation.child.runState) {
 			status, message = s.taskCancellationStatus(relation.child)
 		}
+		accepted := retainAcceptedScanProgress(task.job, finished)
 		finished, err = scanJob(tx.QueryRow(`UPDATE scan_jobs SET status = $2, error = $3,
 			scanned = $4, added = $5, updated = $6, finished_at = clock_timestamp()
-			WHERE id = $1 RETURNING `+jobColumns, task.job.ID, status, message, task.job.Scanned, task.job.Added, task.job.Updated))
+			WHERE id = $1 RETURNING `+jobColumns, task.job.ID, status, message, accepted.Scanned, accepted.Added, accepted.Updated))
 		if err != nil {
 			return err
 		}
@@ -314,8 +315,85 @@ func (s *Store) finishTask(task *scanTask, status, message string) error {
 	return err
 }
 
+// A rejected publication can leave the worker behind a durable checkpoint.
+// Repair and finalization keep that accepted prefix rather than overwriting it
+// with the stale worker projection. Identity and state still come from the lock.
+func retainAcceptedScanProgress(candidate, committed Job) Job {
+	committed.Scanned = max(candidate.Scanned, committed.Scanned)
+	committed.Added = max(candidate.Added, committed.Added)
+	committed.Updated = max(candidate.Updated, committed.Updated)
+	return committed
+}
+
+// lockScanPublicationProgress fixes scan authority before any publication root
+// or item locks. The caller keeps this relation locked until its publication
+// commits; the returned snapshot is not reusable outside that transaction.
+func lockScanPublicationProgress(tx OwnedTx, task *scanTask) (taskScanRelation, error) {
+	relation, err := lockTaskScanRelation(tx, task.job.ID, task.job.TaskChildID)
+	if err != nil {
+		return taskScanRelation{}, err
+	}
+	if relation.missing {
+		if err := validateRetainedTaskSnapshot(relation.child, task.job); err != nil {
+			return taskScanRelation{}, err
+		}
+		return taskScanRelation{}, context.Canceled
+	}
+	if relation.job.ID != task.job.ID || relation.job.LibraryID != task.job.LibraryID ||
+		relation.job.TaskChildID != task.job.TaskChildID || relation.job.ForceProbe != task.job.ForceProbe {
+		return taskScanRelation{}, taskScanAssociationError()
+	}
+	if relation.job.Status != "Running" {
+		return taskScanRelation{}, context.Canceled
+	}
+	if relation.job.CancelRequested || relation.child != nil &&
+		(!activeTaskRun(relation.child.runState) || relation.child.state != "running") {
+		return taskScanRelation{}, context.Canceled
+	}
+	if err := task.ctx.Err(); err != nil {
+		return taskScanRelation{}, err
+	}
+	return relation, nil
+}
+
+// writeScanPublicationProgress keeps accepted counters and the child snapshot
+// atomic with the existing publication. It never changes the worker's in-memory
+// job: the caller may publish the returned projection only after Commit succeeds.
+func writeScanPublicationProgress(tx OwnedTx, relation taskScanRelation, candidate Job) (Job, error) {
+	if relation.missing || relation.job.Status != "Running" || relation.job.CancelRequested {
+		return Job{}, context.Canceled
+	}
+	if relation.job.ID != candidate.ID || relation.job.LibraryID != candidate.LibraryID ||
+		relation.job.TaskChildID != candidate.TaskChildID || relation.job.ForceProbe != candidate.ForceProbe {
+		return Job{}, taskScanAssociationError()
+	}
+	// A stale checkpoint must not reduce an already committed prefix, even
+	// when the current publication would otherwise succeed.
+	if candidate.Scanned < relation.job.Scanned || candidate.Added < relation.job.Added || candidate.Updated < relation.job.Updated {
+		return Job{}, fmt.Errorf("%w: scan publication counters would regress accepted progress", ErrUnavailable)
+	}
+	job := relation.job
+	if job.Scanned != candidate.Scanned || job.Added != candidate.Added || job.Updated != candidate.Updated {
+		var err error
+		job, err = scanJob(tx.QueryRow(`UPDATE scan_jobs SET scanned = $2, added = $3, updated = $4
+			WHERE id = $1 AND status = 'Running' AND NOT cancel_requested RETURNING `+jobColumns,
+			job.ID, candidate.Scanned, candidate.Added, candidate.Updated))
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Job{}, context.Canceled
+		}
+		if err != nil {
+			return Job{}, err
+		}
+	}
+	if err := copyTaskScanSnapshot(tx, relation.child, job); err != nil {
+		return Job{}, err
+	}
+	return job, nil
+}
+
 func (s *Store) persistProgress(task *scanTask) error {
 	var cancelled bool
+	var accepted Job
 	err := s.taskScanTransaction(task.ctx, func(tx OwnedTx) error {
 		relation, err := lockTaskScanRelation(tx, task.job.ID, task.job.TaskChildID)
 		if err != nil {
@@ -330,9 +408,17 @@ func (s *Store) persistProgress(task *scanTask) error {
 			return copyTaskScanSnapshot(tx, relation.child, relation.job)
 		}
 		cancelled = relation.job.CancelRequested || relation.child != nil && !activeTaskRun(relation.child.runState)
+		accepted = retainAcceptedScanProgress(task.job, relation.job)
+		// A second checkpoint for a cached media visit still fences ownership,
+		// cancellation and the current parent/child association. Persist counters
+		// only when that fresh locked snapshot differs from the accepted values.
+		if relation.job.Scanned == accepted.Scanned && relation.job.Added == accepted.Added &&
+			relation.job.Updated == accepted.Updated && relation.job.CancelRequested == cancelled {
+			return copyTaskScanSnapshot(tx, relation.child, relation.job)
+		}
 		job, err := scanJob(tx.QueryRow(`UPDATE scan_jobs SET scanned = $2, added = $3, updated = $4,
 			cancel_requested = cancel_requested OR $5 WHERE id = $1 RETURNING `+jobColumns,
-			task.job.ID, task.job.Scanned, task.job.Added, task.job.Updated, cancelled))
+			task.job.ID, accepted.Scanned, accepted.Added, accepted.Updated, cancelled))
 		if err != nil {
 			return err
 		}
@@ -346,6 +432,9 @@ func (s *Store) persistProgress(task *scanTask) error {
 		return nil
 	})
 	if err == nil {
+		if accepted.ID != "" {
+			task.job.Scanned, task.job.Added, task.job.Updated = accepted.Scanned, accepted.Added, accepted.Updated
+		}
 		s.notifyScanUpdate()
 	}
 	if err == nil && cancelled {

@@ -281,27 +281,11 @@ func (s *Store) OpenAnalysisSource(ctx context.Context, childID, itemID string, 
 	if !ok {
 		return nil, MediaFile{}, ErrNotFound
 	}
-	file, mediaFile, err := runAnalysisSourceWorker(ctx, func() (*os.File, MediaFile, error) {
-		tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
+	file, mediaFile, err := s.runPreparedMediaSourceWorker(ctx, true, func(ctx context.Context) (mediaSourceRootHint, error) {
+		return s.readMediaSourceRootHint(ctx, itemID)
+	}, func(ctx context.Context) (*os.File, MediaFile, error) {
+		snapshot, err := s.readAdmittedAnalysisSource(ctx, expected)
 		if err != nil {
-			return nil, MediaFile{}, err
-		}
-		defer rollback(tx)
-		current, err := readAnalysisSourceUsing(ctx, tx, unrestrictedLibraryAccess(), itemID, false)
-		if err != nil {
-			return nil, MediaFile{}, err
-		}
-		if !sameAnalysisSource(expected, current) {
-			return nil, MediaFile{}, ErrAnalysisSourceChanged
-		}
-		snapshot, err := readIndexedMediaSource(ctx, tx, unrestrictedLibraryAccess(), itemID, expected.MediaSourceID)
-		if err != nil {
-			return nil, MediaFile{}, err
-		}
-		if err := captureMediaPublicationRead(ctx, tx, &snapshot); err != nil {
-			return nil, MediaFile{}, err
-		}
-		if err := tx.Commit(ctx); err != nil {
 			return nil, MediaFile{}, err
 		}
 		file, err := s.openPublicMediaSource(ctx, snapshot)
@@ -315,6 +299,37 @@ func (s *Store) OpenAnalysisSource(ctx context.Context, childID, itemID string, 
 		return nil, MediaFile{}, err
 	}
 	return file, mediaFile, nil
+}
+
+func (s *Store) readAdmittedAnalysisSource(ctx context.Context, expected AnalysisSource) (indexedMediaSource, error) {
+	ctx, release, err := beginMediaSourceAuthorization(ctx)
+	if err != nil {
+		return indexedMediaSource{}, err
+	}
+	defer release()
+	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
+	if err != nil {
+		return indexedMediaSource{}, err
+	}
+	defer rollback(tx)
+	current, err := readAnalysisSourceUsing(ctx, tx, unrestrictedLibraryAccess(), expected.ItemID, false)
+	if err != nil {
+		return indexedMediaSource{}, err
+	}
+	if !sameAnalysisSource(expected, current) {
+		return indexedMediaSource{}, ErrAnalysisSourceChanged
+	}
+	snapshot, err := readIndexedMediaSource(ctx, tx, unrestrictedLibraryAccess(), expected.ItemID, expected.MediaSourceID)
+	if err != nil {
+		return indexedMediaSource{}, err
+	}
+	if err := captureMediaPublicationRead(ctx, tx, &snapshot); err != nil {
+		return indexedMediaSource{}, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return indexedMediaSource{}, err
+	}
+	return snapshot, nil
 }
 
 func (s *Store) RevalidateAnalysisWork(ctx context.Context, childID string, fence AnalysisFence) (AnalysisWork, error) {
@@ -405,7 +420,7 @@ func (s *Store) analysisCurrentSourceAsAdministrator(ctx context.Context, actor 
 	if err := tx.Commit(ctx); err != nil {
 		return AnalysisSource{}, err
 	}
-	file, _, err := runMediaSourceWorker(ctx, mediaSourceWorkers, func() (*os.File, MediaFile, error) {
+	file, _, err := s.runIndexedMediaSourceWorker(ctx, false, snapshot, func(ctx context.Context) (*os.File, MediaFile, error) {
 		file, err := s.openPublicMediaSource(ctx, snapshot)
 		return file, snapshot.mediaFile, err
 	})
@@ -512,16 +527,20 @@ func analysisRevision(value string) (int64, error) {
 // Task cancellation retains both this bounded source slot and the caller's task
 // slot until actual filesystem work and undelivered descriptor cleanup finish.
 // HTTP source reads deliberately retain their separate early-return behavior.
+// The free-function adapter serves fixtures; Store calls also track shutdown.
 func runAnalysisSourceWorker(ctx context.Context, work func() (*os.File, MediaFile, error)) (*os.File, MediaFile, error) {
 	if err := analysisContext(ctx); err != nil {
 		return nil, MediaFile{}, err
 	}
-	select {
-	case mediaSourceWorkers <- struct{}{}:
-	case <-ctx.Done():
-		return nil, MediaFile{}, ctx.Err()
+	release, err := mediaSourceAdmission.acquire(ctx, true)
+	if err != nil {
+		return nil, MediaFile{}, err
 	}
-	defer func() { <-mediaSourceWorkers }()
+	return runAdmittedAnalysisSourceWorker(ctx, release, work)
+}
+
+func runAdmittedAnalysisSourceWorker(ctx context.Context, release func(), work func() (*os.File, MediaFile, error)) (*os.File, MediaFile, error) {
+	defer release()
 	if err := ctx.Err(); err != nil {
 		return nil, MediaFile{}, err
 	}

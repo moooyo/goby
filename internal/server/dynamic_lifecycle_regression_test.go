@@ -59,7 +59,7 @@ func (fixture dynamicLifecycleFixture) httpRequest(ctx context.Context, name str
 
 func (fixture dynamicLifecycleFixture) heartbeat() bool {
 	scope := fixture.session.scope
-	return fixture.server.heartbeatDynamicMediaPolicy(fixture.principal, library.PlaySession{ID: scope.PlaySessionID, UserID: scope.UserID,
+	return fixture.server.heartbeatPlaybackMediaPolicy(fixture.principal, library.PlaySession{ID: scope.PlaySessionID, UserID: scope.UserID,
 		AuthSessionID: scope.AuthSessionID, DeviceID: scope.DeviceID, ItemID: scope.ItemID, MediaSourceID: scope.SourceID,
 		ApplicationKey: scope.ApplicationKey, ApplicationClientID: scope.ApplicationClientID, IsDynamic: true, State: "Paused"})
 }

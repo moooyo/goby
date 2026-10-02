@@ -78,7 +78,9 @@ func (s *Server) videoStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if decision.Original {
-		s.serveOriginalMedia(w, r, file, source)
+		planningFile := file
+		file = nil
+		s.serveOriginalMediaSnapshot(w, r, planningFile, source)
 		return
 	}
 	if s.hls == nil || decision.Conversion.Plan == nil {

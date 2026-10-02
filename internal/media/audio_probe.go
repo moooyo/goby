@@ -41,21 +41,22 @@ func runAudioTimingProbe(ctx context.Context, timeout time.Duration, executable 
 	command.WaitDelay = time.Second
 	stderr := &limitedOutput{limit: maxProcessStderr, cancel: cancel}
 	command.Stderr = stderr
-	stdout, err := command.StdoutPipe()
-	if err != nil {
-		return Info{}, fmt.Errorf("open audio scan output: %w", err)
+	var accurate Info
+	var bounded *io.LimitedReader
+	var interrupted error
+	parseErr, waitErr, startErr := runMediaStdout(processContext, command, func(reader io.Reader) error {
+		bounded = &io.LimitedReader{R: reader, N: maxAudioProbeOutput + 1}
+		var parseErr error
+		accurate, parseErr = parseAudioTimingWithOgg(bounded, info, ogg)
+		interrupted = processContext.Err()
+		if parseErr != nil {
+			cancel()
+		}
+		return parseErr
+	})
+	if startErr != nil {
+		return Info{}, fmt.Errorf("start audio scan: %w", startErr)
 	}
-	retired, err := startMediaProcess(command)
-	if err != nil {
-		return Info{}, fmt.Errorf("start audio scan: %w", err)
-	}
-	bounded := &io.LimitedReader{R: stdout, N: maxAudioProbeOutput + 1}
-	accurate, parseErr := parseAudioTimingWithOgg(bounded, info, ogg)
-	interrupted := processContext.Err()
-	if parseErr != nil {
-		cancel()
-	}
-	waitErr := errors.Join(<-retired, command.Wait())
 	if err := ctx.Err(); err != nil {
 		return Info{}, err
 	}

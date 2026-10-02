@@ -133,6 +133,10 @@ func scanReconciliationSeen(tx OwnedTx, staging *scanReconciliationStaging, evid
 	return seen, nil
 }
 
+// The first page is freshly read by readScanReconciliationFinalPage in this
+// transaction; later pages use the same readScanReconciliationPage anti-join.
+// A staged page therefore contains no accepted identity, but still requires its
+// current sealed control and physical-budget check before filesystem observation.
 func collectScanReconciliationCandidates(tx OwnedTx, ctx context.Context, libraryID string,
 	roots map[string]*rootBindingScanCapture, evidence *scanReconciliationEvidence,
 	staging *scanReconciliationStaging, budget *scanReconciliationBudgetState, first []scanReconciliationItem) (map[string]scanReconciliationItem, error) {
@@ -146,11 +150,17 @@ func collectScanReconciliationCandidates(tx OwnedTx, ctx context.Context, librar
 			return nil, scanReconciliationBudget()
 		}
 		inspected += len(page)
-		ids := make([]string, len(page))
-		for index, item := range page {
-			ids[index] = item.id
+		var seen map[string]bool
+		var err error
+		if staging == nil {
+			ids := make([]string, len(page))
+			for index, item := range page {
+				ids[index] = item.id
+			}
+			seen, err = scanReconciliationSeen(tx, nil, evidence, ids)
+		} else {
+			err = staging.RequireSealed(tx)
 		}
-		seen, err := scanReconciliationSeen(tx, staging, evidence, ids)
 		if err != nil {
 			return nil, err
 		}

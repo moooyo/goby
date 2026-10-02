@@ -21,7 +21,12 @@ func (h *hlsRuntime) registerVerified(ctx context.Context, principal identity.Pr
 	if h == nil || h.verify == nil {
 		return nil, library.ErrUnavailable
 	}
-	session, created, err := h.registerWithStatus(principal, source, playID, decision, start)
+	parent, err := h.freshRegistrationOwner(ctx, principal, source, playID, decision)
+	if err != nil {
+		return nil, err
+	}
+	defer parent.release()
+	session, created, err := h.registerWithPlaybackOwner(principal, source, playID, decision, start, parent)
 	if err != nil {
 		return nil, err
 	}
@@ -32,9 +37,9 @@ func (h *hlsRuntime) registerVerified(ctx context.Context, principal identity.Pr
 	if session.ctx.Err() != nil {
 		cancel()
 	}
-	file, current, err := h.verify(check, principal, session.key.scope, session.key.stamp, session.key.plan)
-	if file != nil {
-		_ = file.Close()
+	loan, current, err := h.authorizePlaybackSource(check, principal, session)
+	if loan != nil {
+		err = errors.Join(err, loan.close())
 	}
 	if err == nil {
 		err = check.Err()
@@ -42,7 +47,7 @@ func (h *hlsRuntime) registerVerified(ctx context.Context, principal identity.Pr
 	if err == nil {
 		err = session.ctx.Err()
 	}
-	if err == nil && (file == nil || current.Item.ID != source.Item.ID || current.SourceID != source.SourceID || current.ETag != source.ETag) {
+	if err == nil && (loan == nil || loan.file == nil || current.Item.ID != source.Item.ID || current.SourceID != source.SourceID || current.ETag != source.ETag) {
 		err = library.ErrSourceChanged
 	}
 	if err != nil {

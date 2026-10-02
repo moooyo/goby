@@ -726,6 +726,13 @@ func (record *scanSpoolDirectory) entry(index int) (scanSpoolEntry, error) {
 	if _, err := record.file.ReadAt(data[:], record.offset+int64(index)*scanSpoolEntrySize); err != nil {
 		return scanSpoolEntry{}, err
 	}
+	return scanSpoolDecodeEntry(data[:])
+}
+
+func scanSpoolDecodeEntry(data []byte) (scanSpoolEntry, error) {
+	if len(data) != scanSpoolEntrySize {
+		return scanSpoolEntry{}, errScanReconciliationEvidenceUnavailable
+	}
 	digest := sha256.Sum256(data[:scanSpoolEntrySize-sha256.Size])
 	length := int(binary.LittleEndian.Uint16(data[:2]))
 	if length < 1 || length > 255 || string(digest[:]) != string(data[scanSpoolEntrySize-sha256.Size:]) {
@@ -760,6 +767,27 @@ func (record *scanSpoolDirectory) lookup(name string) (scanSpoolEntry, int, bool
 		return scanSpoolEntry{}, low, false, nil
 	}
 	entry, err := record.entry(low)
+	return entry, low, err == nil && entry.name == name, err
+}
+
+func scanSpoolLookup(name string, count int, read func(int) (scanSpoolEntry, error)) (scanSpoolEntry, int, bool, error) {
+	low, high := 0, count
+	for low < high {
+		middle := low + (high-low)/2
+		entry, err := read(middle)
+		if err != nil {
+			return scanSpoolEntry{}, 0, false, err
+		}
+		if entry.name < name {
+			low = middle + 1
+		} else {
+			high = middle
+		}
+	}
+	if low == count {
+		return scanSpoolEntry{}, low, false, nil
+	}
+	entry, err := read(low)
 	return entry, low, err == nil && entry.name == name, err
 }
 
@@ -1028,6 +1056,14 @@ func (evidence *scanReconciliationEvidence) verifySpoolDirectory(ctx context.Con
 	// One bit per bounded directory member detects duplicate enumeration without
 	// mutating immutable records or retaining a second whole-pass name map.
 	seen := make([]byte, (record.count+7)/8)
+	// Cache only this enumeration's record reads. The final member pass retains
+	// an uncached descriptor read for every record before checking its source.
+	// Limit reuse to the measured directory sizes. Small and high-fanout
+	// directories retain direct lookup without cache scratch or indirection.
+	var reader *scanSpoolEntryBlockReader
+	if scanSpoolEntryCacheEligible(record.count) {
+		reader = &scanSpoolEntryBlockReader{source: record.file, offset: record.offset, count: record.count}
+	}
 	count := 0
 	for {
 		if err := ctx.Err(); err != nil {
@@ -1035,7 +1071,15 @@ func (evidence *scanReconciliationEvidence) verifySpoolDirectory(ctx context.Con
 		}
 		entries, readErr := directory.ReadDir(min(scanReconciliationReadBatch, record.count-count+1))
 		for _, entry := range entries {
-			previous, index, exists, err := record.lookup(entry.Name())
+			var previous scanSpoolEntry
+			var index int
+			var exists bool
+			var err error
+			if reader == nil {
+				previous, index, exists, err = record.lookup(entry.Name())
+			} else {
+				previous, index, exists, err = scanSpoolLookup(entry.Name(), record.count, reader.entry)
+			}
 			if err != nil || !exists || seen[index/8]&(1<<uint(index%8)) != 0 || entry.Type().Type() != previous.mode {
 				return errScanReconciliationEvidenceUnavailable
 			}

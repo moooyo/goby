@@ -90,7 +90,8 @@ func syncScannedMetadata(ctx context.Context, tx pgx.Tx, itemID string, options 
 		return fmt.Errorf("compose scanned automatic metadata: %w", err)
 	}
 	if string(onlineSource) != "{}" {
-		if _, err := tx.Exec(ctx, `UPDATE item_metadata_state SET online_base=$2 WHERE item_id=$1`, itemID, automatic); err != nil {
+		if _, err := tx.Exec(ctx, `UPDATE item_metadata_state SET online_base=$2 WHERE item_id=$1
+			AND online_base IS DISTINCT FROM $2::jsonb`, itemID, automatic); err != nil {
 			return err
 		}
 		automatic, err = mergeOnlineSource(automatic, onlineSource)
@@ -138,5 +139,5 @@ func syncScannedMetadata(ctx context.Context, tx pgx.Tx, itemID string, options 
 			return fmt.Errorf("update scanned metadata state: %w", err)
 		}
 	}
-	return applyEffectiveMetadata(ctx, tx, itemID, effective, projection, projectionChanged || selected.ForceEntities)
+	return writeEffectiveMetadata(ctx, tx, itemID, effective, projection, true, projectionChanged || selected.ForceEntities)
 }

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -23,12 +24,13 @@ import (
 )
 
 const (
-	maxHLSSessions     = 128
-	maxHLSUserSessions = 32
-	maxHLSAuthSessions = 16
-	maxHLSProducers    = 8
-	hlsProducerSpan    = 256
-	hlsIdleTTL         = 5 * time.Minute
+	maxHLSSessions        = 128
+	maxHLSUserSessions    = 32
+	maxHLSAuthSessions    = 16
+	maxHLSProducers       = 8
+	hlsProducerSpan       = 16
+	hlsIdleTTL            = 5 * time.Minute
+	hlsMaintenanceWorkers = 4
 )
 
 type hlsKey struct {
@@ -41,6 +43,7 @@ type hlsKey struct {
 type hlsProducer struct {
 	id          string
 	first, last int
+	ownership   *hlsProducerOwnership
 }
 
 type hlsJobs interface {
@@ -69,53 +72,66 @@ func (h *hlsRuntime) health() transcode.Health {
 }
 
 type hlsSession struct {
-	mu                  sync.Mutex
-	id                  string
-	key                 hlsKey
-	principal           identity.Principal
-	output              playback.Source
-	subtitleSource      playback.Source
-	subtitleView        playback.HLSSubtitleView
-	audioTiming         *media.AudioTiming
-	startHint           int64
-	accessed            time.Time
-	presenceUpdated     time.Time
-	closed              bool
-	timeline            *transcode.Timeline
-	lead                int64
-	building            chan struct{}
-	subtitleClockJob    string
-	subtitleClockTicks  int64
-	subtitleClockOrigin int64
-	subtitleClockBusy   chan struct{}
-	subtitleWindows     hlsSubtitleTimeline
-	producers           []hlsProducer
-	progressiveReaders  int
-	lastAsked           int
-	ctx                 context.Context
-	cancel              context.CancelFunc
+	mu                     sync.Mutex
+	id                     string
+	key                    hlsKey
+	principal              identity.Principal
+	output                 playback.Source
+	subtitleSource         playback.Source
+	subtitleView           playback.HLSSubtitleView
+	audioTiming            *media.AudioTiming
+	startHint              int64
+	accessed               time.Time
+	presenceUpdated        time.Time
+	maintenanceChecked     time.Time
+	closed                 bool
+	timeline               *transcode.Timeline
+	lead                   int64
+	building               chan struct{}
+	subtitleProducerClocks map[string]*hlsProducerSubtitleClock
+	windowGraph            *hlsGeneratedWindowGraph
+	producers              []hlsProducer
+	admission              *hlsAdmission
+	admissionRevision      uint64
+	progressiveReaders     int
+	lastAsked              int
+	demand                 hlsPlaybackDemand
+	ctx                    context.Context
+	cancel                 context.CancelFunc
+	playbackReference      *playbackAdmissionReference
 }
 
 // HLS session IDs identify immutable output revisions, not credentials. Their
 // timelines and segment numbers span the complete source, independently of a
 // producer that starts later after a seek. Every HTTP use is authorized again.
 type hlsRuntime struct {
-	server   *Server
-	manager  hlsJobs
-	verify   func(context.Context, identity.Principal, transcode.Scope, string, transcode.Plan) (*os.File, library.MediaFile, error)
-	ctx      context.Context
-	cancel   context.CancelFunc
-	mu       sync.Mutex
-	sessions map[string]*hlsSession
-	byKey    map[hlsKey]*hlsSession
-	closing  bool
-	requests sync.WaitGroup
-	workers  sync.WaitGroup
-	once     sync.Once
-	done     chan struct{}
-	closeErr error
-	probes   chan struct{}
-	slots    chan struct{}
+	server                   *Server
+	manager                  hlsJobs
+	verify                   func(context.Context, identity.Principal, transcode.Scope, string, transcode.Plan) (*os.File, library.MediaFile, error)
+	ctx                      context.Context
+	cancel                   context.CancelFunc
+	mu                       sync.Mutex
+	sessions                 map[string]*hlsSession
+	byKey                    map[hlsKey]*hlsSession
+	byScope                  map[transcode.Scope]map[string]*hlsSession
+	closing                  bool
+	admissions               int
+	admissionGates           map[hlsAdmissionKey]*hlsAdmissionGate
+	producerMu               sync.Mutex
+	producerOwners           map[hlsProducerKey]int
+	producerDemands          map[hlsProducerKey]int
+	generatedWindowPinMu     sync.Mutex
+	generatedWindowPinOwners map[*transcode.ReadHandle]*hlsSession
+	initializationBudget     hlsInitializationBudget
+	requests                 sync.WaitGroup
+	workers                  sync.WaitGroup
+	once                     sync.Once
+	done                     chan struct{}
+	closeErr                 error
+	probes                   chan struct{}
+	slots                    chan struct{}
+	// Enabled after the closed-window HTTP/client acceptance matrix passes.
+	generatedWindowsEnabled bool
 }
 
 func newHLSRuntime(ctx context.Context, server *Server) (*hlsRuntime, error) {
@@ -142,13 +158,16 @@ func newHLSRuntime(ctx context.Context, server *Server) (*hlsRuntime, error) {
 	managerOptions.LivePublish = server.publishDynamicSegment
 	managerOptions.LiveSubtitle = server.receiveDynamicSubtitles
 	managerOptions.LiveCaption = server.receiveDynamicCaption
+	managerOptions.PlaybackAdmission = server.holdCorrelatedHLSAdmission
+	managerOptions.PlaybackStopped = server.correlatedHLSPlaybackStopped
 	manager, err := transcode.NewManager(ctx, managerOptions)
 	if err != nil {
 		return nil, err
 	}
 	lifetime, cancel := context.WithCancel(context.Background())
 	runtime := &hlsRuntime{server: server, manager: manager, ctx: lifetime, cancel: cancel, sessions: make(map[string]*hlsSession),
-		byKey: make(map[hlsKey]*hlsSession), done: make(chan struct{}), probes: make(chan struct{}, 2), slots: make(chan struct{}, 32)}
+		byKey: make(map[hlsKey]*hlsSession), byScope: make(map[transcode.Scope]map[string]*hlsSession),
+		done: make(chan struct{}), probes: make(chan struct{}, 2), slots: make(chan struct{}, 32)}
 	runtime.verify = server.authorizeHLS
 	runtime.workers.Add(1)
 	go runtime.maintain()
@@ -171,6 +190,10 @@ func (h *hlsRuntime) register(principal identity.Principal, source library.Media
 }
 
 func (h *hlsRuntime) registerWithStatus(principal identity.Principal, source library.MediaFile, playID string, decision playback.ConversionDecision, start int64) (*hlsSession, bool, error) {
+	return h.registerWithPlaybackOwner(principal, source, playID, decision, start, nil)
+}
+
+func (h *hlsRuntime) registerWithPlaybackOwner(principal identity.Principal, source library.MediaFile, playID string, decision playback.ConversionDecision, start int64, parent *playbackAdmissionReference) (*hlsSession, bool, error) {
 	if decision.Plan == nil {
 		return nil, false, transcode.ErrInvalidPlan
 	}
@@ -190,6 +213,15 @@ func (h *hlsRuntime) registerWithStatus(principal identity.Principal, source lib
 	if h.closing {
 		return nil, false, transcode.ErrManagerClosed
 	}
+	owned := h.usesPlaybackOwnership(plan)
+	if owned && (parent == nil || parent.gate != &h.server.playbackStopIntents) {
+		return nil, false, transcode.ErrInvalidScope
+	}
+	if owned {
+		if err := requireLivePlaybackReference(parent, key.scope); err != nil {
+			return nil, false, err
+		}
+	}
 	if prior := h.byKey[key]; prior != nil {
 		prior.mu.Lock()
 		closed := prior.closed
@@ -198,6 +230,9 @@ func (h *hlsRuntime) registerWithStatus(principal identity.Principal, source lib
 		}
 		prior.mu.Unlock()
 		if !closed {
+			if owned && prior.playbackReference == nil {
+				return nil, false, transcode.ErrInvalidScope
+			}
 			return prior, false, nil
 		}
 	}
@@ -217,11 +252,26 @@ func (h *hlsRuntime) registerWithStatus(principal identity.Principal, source lib
 	if _, err := rand.Read(random[:]); err != nil {
 		return nil, false, err
 	}
+	var playbackReference *playbackAdmissionReference
+	if owned {
+		var err error
+		playbackReference, err = parent.fork(key.scope)
+		if err != nil {
+			return nil, false, err
+		}
+	}
+	published := false
+	defer func() {
+		if !published {
+			playbackReference.release()
+		}
+	}()
 	ctx, cancel := context.WithCancel(h.ctx)
 	session := &hlsSession{id: hex.EncodeToString(random[:]), key: key, principal: principal, output: decision.OutputSource,
 		subtitleSource: playback.Source{ItemID: source.Item.ID, MediaSourceID: source.SourceID, ItemType: source.Item.Type, Info: playbackMediaInfo(source.Item)},
 		subtitleView:   decision.SubtitleView,
-		startHint:      start, accessed: time.Now(), presenceUpdated: time.Now(), lastAsked: -1, ctx: ctx, cancel: cancel}
+		startHint:      start, accessed: time.Now(), presenceUpdated: time.Now(), lastAsked: -1, ctx: ctx, cancel: cancel,
+		playbackReference: playbackReference}
 	if !session.subtitleView.SelectionSet {
 		if plan.Subtitle.Mode == "hls" {
 			session.subtitleView.OffsetTicks = plan.Subtitle.OffsetTicks
@@ -240,6 +290,14 @@ func (h *hlsRuntime) registerWithStatus(principal identity.Principal, source lib
 		}
 	}
 	h.sessions[session.id], h.byKey[key] = session, session
+	if h.byScope == nil {
+		h.byScope = make(map[transcode.Scope]map[string]*hlsSession)
+	}
+	if h.byScope[key.scope] == nil {
+		h.byScope[key.scope] = make(map[string]*hlsSession)
+	}
+	h.byScope[key.scope][session.id] = session
+	published = true
 	return session, true, nil
 }
 
@@ -266,15 +324,32 @@ func (h *hlsRuntime) retire(session *hlsSession) {
 	h.mu.Lock()
 	session.mu.Lock()
 	session.closed = true
+	if session.windowGraph != nil {
+		session.windowGraph.initialization.release()
+	}
 	session.cancel()
+	if session.admission != nil {
+		session.admission.cancel()
+	}
+	h.releaseGeneratedWindowPinsLocked(session)
 	// CancelJob immediately fences manager deduplication without waiting for
 	// process exit. Complete that fence before the same registry key can be
 	// registered again, or a replacement could inherit the retiring producer.
 	for _, producer := range session.producers {
-		_ = h.manager.CancelJob(producer.id, session.key.scope)
+		h.releaseProducer(session.key.scope, producer)
 	}
+	// Pending workers and source loans retain their independent descendants.
+	// Releasing the registry parent never stands in for their actual join.
+	session.playbackReference.release()
+	session.playbackReference = nil
 	if h.sessions[session.id] == session {
 		delete(h.sessions, session.id)
+		if registrations := h.byScope[session.key.scope]; registrations != nil {
+			delete(registrations, session.id)
+			if len(registrations) == 0 {
+				delete(h.byScope, session.key.scope)
+			}
+		}
 		if h.byKey[session.key] == session {
 			delete(h.byKey, session.key)
 		}
@@ -315,6 +390,48 @@ func (h *hlsRuntime) cancelCredential(authID string) {
 	}
 }
 
+// cancelPlayback also reaches jobs whose output registration has already been
+// removed. A stopped play must fence every producer before another lookup.
+func (h *hlsRuntime) cancelPlayback(authID, playID string) {
+	if h == nil || authID == "" || playID == "" {
+		return
+	}
+	h.cancelMatching(authID, playID)
+	h.mu.Lock()
+	manager := h.manager
+	h.mu.Unlock()
+	if scoped, ok := manager.(interface{ CancelPlayback(string, string) }); ok {
+		scoped.CancelPlayback(authID, playID)
+	}
+}
+
+// cancelFileHLSPlayback belongs only to the early correlated file-HLS intent.
+// Shared media policy and other transports retain post-commit cancellation.
+// The manager sweep also reaches file-HLS jobs without an attached registry.
+func (h *hlsRuntime) cancelFileHLSPlayback(authID, playID string) error {
+	if h == nil || authID == "" || playID == "" {
+		return library.ErrUnavailable
+	}
+	h.mu.Lock()
+	var matching []*hlsSession
+	for _, session := range h.sessions {
+		if session.key.scope.AuthSessionID == authID && session.key.scope.PlaySessionID == playID && correlatedFileHLSPlan(session.key.plan) {
+			matching = append(matching, session)
+		}
+	}
+	manager := h.manager
+	h.mu.Unlock()
+	for _, session := range matching {
+		h.retire(session)
+	}
+	if scoped, ok := manager.(interface{ CancelFileHLSPlayback(string, string) }); ok {
+		scoped.CancelFileHLSPlayback(authID, playID)
+		return nil
+	}
+	// No generic fallback may retire an unguarded progressive/dynamic input.
+	return library.ErrUnavailable
+}
+
 func (h *hlsRuntime) touchMatching(authID, playID string) {
 	if h == nil || playID == "" {
 		return
@@ -340,59 +457,38 @@ func (s *Server) authorizeHLS(ctx context.Context, principal identity.Principal,
 	owned := principal.SessionID == scope.AuthSessionID && principal.User.ID == scope.UserID && principal.ClientSessionID == scope.ApplicationClientID &&
 		principal.Client.DeviceID == scope.DeviceID && principal.IsApplicationKey() == scope.ApplicationKey
 	defer func() {
-		if owned && permanentHLSError(resultErr) {
+		if owned && permanentHLSError(resultErr) && !s.correlatedHLSPlaybackStopped(transcode.Spec{Scope: scope, Plan: plan}) {
 			s.cancelMediaPolicy(scope.AuthSessionID, scope.PlaySessionID)
 		}
 	}()
-	fresh, err := s.identity.RevalidateSession(ctx, principal)
+	file, authorization, err := s.library.AuthorizePlaybackMediaForChecked(ctx, principal, scope.PlaySessionID,
+		scope.ItemID, scope.SourceID, transcode.PlanHLSSubtitles(plan).Count > 0, func(current library.PlaybackMediaAuthorization) error {
+			return s.checkHLSPlaybackAuthorization(current, scope, plan)
+		})
 	if err != nil {
 		return nil, library.MediaFile{}, err
 	}
-	if fresh.IsApplicationKey() != scope.ApplicationKey || fresh.User.ID != scope.UserID ||
-		fresh.ClientSessionID != scope.ApplicationClientID ||
-		fresh.SessionID != scope.AuthSessionID || fresh.Client.DeviceID != scope.DeviceID {
+	fresh, source := authorization.Principal, authorization.Source
+	defer func() {
+		if resultErr != nil {
+			_ = file.Close()
+		}
+	}()
+	if !time.Now().Before(authorization.Play.ExpiresAt) {
 		return nil, library.MediaFile{}, library.ErrNotFound
-	}
-	if err := s.checkMediaPolicy(fresh, scope); err != nil {
-		return nil, library.MediaFile{}, err
-	}
-	// Registered outputs retain their original planning limits. Revalidation
-	// checks conversion support and current user permissions without replanning.
-	limits := hlsPrincipalLimits(config.TranscodingConfig{Enabled: s.cfg.Transcoding.Enabled}, fresh)
-	if !hlsPlanAllowed(plan, limits) {
-		return nil, library.MediaFile{}, library.ErrForbidden
-	}
-	play, err := s.library.GetPlaybackSession(ctx, playbackOwner(fresh), scope.PlaySessionID)
-	if err != nil {
-		return nil, library.MediaFile{}, err
-	}
-	if play.IsDynamic {
-		return nil, library.MediaFile{}, library.ErrSourceChanged
-	}
-	if play.ItemID != scope.ItemID || play.MediaSourceID != scope.SourceID || !time.Now().Before(play.ExpiresAt) ||
-		(play.State != "Prepared" && play.State != "Playing" && play.State != "Paused") {
-		return nil, library.MediaFile{}, library.ErrNotFound
-	}
-	file, source, err := s.library.OpenMediaFor(ctx, librarySubject(fresh, fresh.User.ID), scope.ItemID, scope.SourceID)
-	if err != nil {
-		return nil, library.MediaFile{}, err
 	}
 	if stamp != "" && stamp != source.ETag {
-		_ = file.Close()
 		return nil, library.MediaFile{}, library.ErrNotFound
 	}
 	if !principalPlanBitrateAllowed(fresh, source, plan) {
-		_ = file.Close()
 		return nil, library.MediaFile{}, library.ErrForbidden
 	}
 	if plan.Subtitle.ExternalTag != "" {
 		if _, err := s.readPlannedExternalSubtitle(ctx, fresh, scope, plan); err != nil {
-			_ = file.Close()
 			return nil, library.MediaFile{}, err
 		}
 	}
 	if err := s.authorizeHLSSubtitles(ctx, fresh, scope, source, plan); err != nil {
-		_ = file.Close()
 		return nil, library.MediaFile{}, err
 	}
 	return file, source, nil
@@ -529,12 +625,7 @@ func (h *hlsRuntime) timeline(ctx context.Context, session *hlsSession, input *o
 // existing producer; distant seeks start an immutable revision at the requested
 // source boundary. Earlier published files may remain reusable until eviction.
 func (h *hlsRuntime) segment(ctx context.Context, session *hlsSession, input *os.File, number int) (*transcode.ReadHandle, error) {
-	owned := false
-	defer func() {
-		if !owned {
-			_ = input.Close()
-		}
-	}()
+	defer input.Close()
 	timeline, err := h.timeline(ctx, session, input)
 	if err != nil {
 		return nil, err
@@ -543,67 +634,137 @@ func (h *hlsRuntime) segment(ctx context.Context, session *hlsSession, input *os
 		return nil, transcode.ErrJobNotFound
 	}
 	name := "segment-" + paddedSegmentNumber(number) + ".ts"
-	session.mu.Lock()
-	if session.closed {
-		session.mu.Unlock()
-		return nil, transcode.ErrJobNotFound
+	var gate *hlsAdmissionGate
+	var retryFrom *hlsAdmission
+	staleRetries := 0
+	releaseReservation := func() {
+		if gate != nil {
+			reserved := gate
+			gate = nil
+			h.releaseAdmission(session.key, reserved)
+		}
 	}
-	for index := len(session.producers) - 1; index >= 0; index-- {
-		producer := session.producers[index]
-		if number < producer.first || number > producer.last {
+	defer releaseReservation()
+	for {
+		session.mu.Lock()
+		if session.closed || ctx.Err() != nil {
+			session.mu.Unlock()
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+			return nil, transcode.ErrJobNotFound
+		}
+		if retryFrom != nil && session.admissionRevision != retryFrom.revision {
+			session.mu.Unlock()
+			return nil, context.Canceled
+		}
+		for index := len(session.producers) - 1; index >= 0; index-- {
+			producer := session.producers[index]
+			if h.producerReleased(producer) {
+				continue
+			}
+			if number < producer.first || number > producer.last {
+				continue
+			}
+			if handle, openErr := h.manager.TryOpen(session.key.scope, producer.id, name); openErr == nil {
+				session.lastAsked, session.accessed = number, time.Now()
+				session.mu.Unlock()
+				releaseReservation()
+				return handle, nil
+			}
+			state, stateErr := h.manager.Snapshot(session.key.scope, producer.id)
+			if stateErr == nil && (state.State == "queued" || state.State == "running") && !session.demand.paused && h.producerProducing(producer) {
+				session.lastAsked, session.accessed = number, time.Now()
+				session.mu.Unlock()
+				releaseReservation()
+				return h.manager.Open(ctx, session.key.scope, producer.id, name)
+			}
+		}
+		if session.demand.paused {
+			session.mu.Unlock()
+			return nil, transcode.ErrOutputUnavailable
+		}
+		if pending := session.admission; pending != nil && pending.ctx.Err() == nil {
+			inside := number >= pending.first && number <= pending.last
+			session.lastAsked, session.accessed = number, time.Now()
+			session.mu.Unlock()
+			releaseReservation()
+			record, err := waitHLSAdmission(ctx, session, pending)
+			if err != nil {
+				if retryHLSAdmission(ctx, session, pending, err) {
+					if errors.Is(err, errHLSAdmissionStale) {
+						if staleRetries != 0 {
+							return nil, transcode.ErrJobNotFound
+						}
+						staleRetries++
+					}
+					retryFrom = pending
+					continue
+				}
+				return nil, err
+			}
+			if inside {
+				return h.manager.Open(ctx, session.key.scope, record.ID, name)
+			}
+			// A GET has no demand generation. Waiting for an unrelated bounded
+			// admission cannot revoke it or turn an old seek into current demand.
 			continue
 		}
-		if handle, openErr := h.manager.TryOpen(session.key.scope, producer.id, name); openErr == nil {
-			session.lastAsked, session.accessed = number, time.Now()
+		if gate == nil {
 			session.mu.Unlock()
-			return handle, nil
+			gate, err = h.reserveAdmission(session.key)
+			if err != nil {
+				return nil, err
+			}
+			continue
 		}
-		state, stateErr := h.manager.Snapshot(session.key.scope, producer.id)
-		if stateErr == nil && (state.State == "queued" || state.State == "running") &&
-			number >= session.lastAsked-3 && number <= session.lastAsked+3 {
-			session.lastAsked, session.accessed = number, time.Now()
+		plan := session.key.plan
+		last := hlsProductionLast(timeline, number)
+		cuts, err := timeline.BoundaryTicks(number, last)
+		if err != nil {
 			session.mu.Unlock()
-			return h.manager.Open(ctx, session.key.scope, producer.id, name)
+			return nil, err
 		}
-	}
-	for _, producer := range session.producers {
-		state, stateErr := h.manager.Snapshot(session.key.scope, producer.id)
-		if stateErr == nil && (state.State == "queued" || state.State == "running") {
-			_ = h.manager.CancelJob(producer.id, session.key.scope)
+		encodedCuts := make([]string, len(cuts))
+		for index, cut := range cuts {
+			encodedCuts[index] = strconv.FormatInt(cut, 10)
 		}
-	}
-	plan := session.key.plan
-	last := min(len(timeline.Segments)-1, number+hlsProducerSpan-1)
-	cuts, err := timeline.BoundaryTicks(number, last)
-	if err != nil {
+		plan.SegmentMode, plan.SegmentStartNumber, plan.StartTicks = "vod", number, timeline.Segments[number].StartTicks
+		plan.EndTicks = timeline.Segments[last].StartTicks + timeline.Segments[last].DurationTicks
+		plan.SegmentTimes = strings.Join(encodedCuts, ",")
+		if number == 0 {
+			plan.ReferenceStartTicks = session.lead
+		}
+		if !h.makeProducerRoomLocked(session) {
+			session.mu.Unlock()
+			return nil, transcode.ErrBusy
+		}
+		producerInput, playbackInput, playbackWorker, err := h.duplicateAdmissionInputLocked(session, input)
+		if err != nil {
+			session.mu.Unlock()
+			return nil, err
+		}
+		pending := newHLSAdmission(ctx, session, transcode.Spec{Scope: session.key.scope, SourceStamp: session.key.stamp, Plan: plan}, number, last)
+		pending.installPlaybackInput(playbackInput, playbackWorker)
+		session.admission, session.lastAsked, session.accessed = pending, number, time.Now()
 		session.mu.Unlock()
-		return nil, err
+		workerGate := gate
+		gate = nil
+		go h.runAdmission(session, pending, workerGate, producerInput)
+		record, err := waitHLSAdmission(ctx, session, pending)
+		if err != nil {
+			if errors.Is(err, errHLSAdmissionStale) && retryHLSAdmission(ctx, session, pending, err) {
+				if staleRetries != 0 {
+					return nil, transcode.ErrJobNotFound
+				}
+				staleRetries++
+				retryFrom = pending
+				continue
+			}
+			return nil, err
+		}
+		return h.manager.Open(ctx, session.key.scope, record.ID, name)
 	}
-	encodedCuts := make([]string, len(cuts))
-	for index, cut := range cuts {
-		encodedCuts[index] = strconv.FormatInt(cut, 10)
-	}
-	plan.SegmentMode, plan.SegmentStartNumber, plan.StartTicks = "vod", number, timeline.Segments[number].StartTicks
-	plan.EndTicks = timeline.Segments[last].StartTicks + timeline.Segments[last].DurationTicks
-	plan.SegmentTimes = strings.Join(encodedCuts, ",")
-	if number == 0 {
-		plan.ReferenceStartTicks = session.lead
-	}
-	record, err := h.manager.Ensure(ctx, transcode.Spec{Scope: session.key.scope, SourceStamp: session.key.stamp, Plan: plan}, input)
-	owned = true
-	if err != nil {
-		session.mu.Unlock()
-		return nil, err
-	}
-	if len(session.producers) >= maxHLSProducers {
-		oldest := session.producers[0]
-		_ = h.manager.CancelJob(oldest.id, session.key.scope)
-		session.producers = append(session.producers[:0], session.producers[1:]...)
-	}
-	session.producers = append(session.producers, hlsProducer{id: record.ID, first: number, last: last})
-	session.lastAsked, session.accessed = number, time.Now()
-	session.mu.Unlock()
-	return h.manager.Open(ctx, session.key.scope, record.ID, name)
 }
 
 func paddedSegmentNumber(number int) string {
@@ -637,46 +798,99 @@ func (h *hlsRuntime) maintain() {
 }
 
 func (h *hlsRuntime) maintainSessions(cycle context.Context, sessions []*hlsSession) {
+	// Sweep idle registrations independently of the database budget. A slow
+	// authorization check must not delay cancellation of an abandoned producer.
+	type maintenanceCandidate struct {
+		session *hlsSession
+		checked time.Time
+	}
+	candidates := make([]maintenanceCandidate, 0, len(sessions))
 	for _, session := range sessions {
-		if cycle.Err() != nil {
-			break
-		}
 		session.mu.Lock()
-		idle, active := time.Since(session.accessed) > hlsIdleTTL, len(session.producers) > 0
-		keepPresence := time.Since(session.presenceUpdated) >= time.Minute && time.Since(session.accessed) < time.Minute
+		h.releaseExpiredGeneratedWindowPinsLocked(session, time.Now())
+		idle, active := time.Since(session.accessed) > hlsIdleTTL, !session.closed && len(session.producers) > 0
+		checked := session.maintenanceChecked
 		session.mu.Unlock()
 		if idle {
 			h.retire(session)
 			continue
 		}
-		if !active {
-			continue
+		if active {
+			candidates = append(candidates, maintenanceCandidate{session: session, checked: checked})
 		}
-		check, stop := context.WithTimeout(cycle, 750*time.Millisecond)
-		file, _, err := h.verify(check, session.principal, session.key.scope, session.key.stamp, session.key.plan)
-		if err == nil && keepPresence && h.server != nil {
-			// Media activity keeps the prepared play alive without pretending
-			// that the client reported a position, play count or watched state.
-			play, _, pingErr := h.server.library.ReportPlayback(check, playbackOwner(session.principal), library.PlaybackReport{
-				Event: "Ping", PlaySessionID: session.key.scope.PlaySessionID,
-				ItemID: session.key.scope.ItemID, MediaSourceID: session.key.scope.SourceID})
-			if pingErr != nil {
-				err = pingErr
-			} else if play.State == "Stopped" || play.State == "Expired" {
-				err = library.ErrNotFound
-			} else {
-				session.mu.Lock()
-				session.presenceUpdated = time.Now()
-				session.mu.Unlock()
+	}
+	// Check the least recently attempted sessions first, including checks that
+	// exhausted the previous cycle. Bound database concurrency without letting
+	// map iteration or one stalled credential repeatedly starve other clients.
+	sort.SliceStable(candidates, func(i, j int) bool { return candidates[i].checked.Before(candidates[j].checked) })
+	var dispatch sync.Mutex
+	next := 0
+	var workers sync.WaitGroup
+	for range min(hlsMaintenanceWorkers, len(candidates)) {
+		workers.Add(1)
+		go func() {
+			defer workers.Done()
+			for {
+				dispatch.Lock()
+				if cycle.Err() != nil || next == len(candidates) {
+					dispatch.Unlock()
+					return
+				}
+				session := candidates[next].session
+				next++
+				dispatch.Unlock()
+				h.maintainSession(cycle, session)
 			}
+		}()
+	}
+	workers.Wait()
+}
+
+func (h *hlsRuntime) maintainSession(cycle context.Context, session *hlsSession) {
+	session.mu.Lock()
+	if session.closed {
+		session.mu.Unlock()
+		return
+	}
+	session.maintenanceChecked = time.Now()
+	keepPresence := time.Since(session.presenceUpdated) >= time.Minute && time.Since(session.accessed) < time.Minute
+	session.mu.Unlock()
+	check, stop := context.WithTimeout(cycle, 750*time.Millisecond)
+	var file *os.File
+	var loan *hlsPlaybackSource
+	var err error
+	if h.usesPlaybackOwnership(session.key.plan) {
+		loan, _, err = h.authorizePlaybackSource(check, session.principal, session)
+		if loan != nil {
+			file, check = loan.file, loan.context(check)
 		}
-		stop()
-		if file != nil {
-			_ = file.Close()
+	} else {
+		file, _, err = h.verify(check, session.principal, session.key.scope, session.key.stamp, session.key.plan)
+	}
+	if err == nil && keepPresence && h.server != nil {
+		// Media activity keeps the prepared play alive without pretending
+		// that the client reported a position, play count or watched state.
+		play, _, pingErr := h.server.library.ReportPlayback(check, playbackOwner(session.principal), library.PlaybackReport{
+			Event: "Ping", PlaySessionID: session.key.scope.PlaySessionID,
+			ItemID: session.key.scope.ItemID, MediaSourceID: session.key.scope.SourceID})
+		if pingErr != nil {
+			err = pingErr
+		} else if play.State == "Stopped" || play.State == "Expired" {
+			err = library.ErrNotFound
+		} else {
+			session.mu.Lock()
+			session.presenceUpdated = time.Now()
+			session.mu.Unlock()
 		}
-		if permanentHLSError(err) {
-			h.retire(session)
-		}
+	}
+	stop()
+	if loan != nil {
+		err = errors.Join(err, loan.close())
+	} else if file != nil {
+		_ = file.Close()
+	}
+	if permanentHLSError(err) {
+		h.retire(session)
 	}
 }
 
@@ -690,6 +904,16 @@ func (h *hlsRuntime) Close(ctx context.Context) error {
 		h.cancel()
 		h.mu.Unlock()
 		go func() {
+			h.mu.Lock()
+			sessions := make([]*hlsSession, 0, len(h.sessions))
+			for _, session := range h.sessions {
+				sessions = append(sessions, session)
+			}
+			h.mu.Unlock()
+			for _, session := range sessions {
+				h.retire(session)
+			}
+			h.initializationBudget.close()
 			h.closeErr = h.manager.Close(context.Background())
 			h.requests.Wait()
 			h.workers.Wait()

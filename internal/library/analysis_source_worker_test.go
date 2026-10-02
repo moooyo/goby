@@ -45,23 +45,20 @@ func analysisSourceWorkerTestReceive(t *testing.T, result <-chan analysisSourceW
 
 func analysisSourceWorkerTestReserveSlots(t *testing.T, count int) {
 	t.Helper()
-	held := 0
+	var held []func()
 	t.Cleanup(func() {
-		for range held {
-			select {
-			case <-mediaSourceWorkers:
-			default:
-				t.Error("analysis source worker released a slot reserved by its test")
-			}
+		for _, release := range held {
+			release()
 		}
 	})
 	for range count {
-		select {
-		case mediaSourceWorkers <- struct{}{}:
-			held++
-		default:
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		release, err := mediaSourceAdmission.acquire(ctx, false)
+		cancel()
+		if err != nil {
 			t.Fatal("global media source slots were unexpectedly occupied before the controlled test")
 		}
+		held = append(held, release)
 	}
 }
 
@@ -71,7 +68,7 @@ func TestAnalysisSourceWorkerCancellationRetainsTaskAndSlotUntilCleanup(t *testi
 		t.Fatal(err)
 	}
 	defer file.Close()
-	analysisSourceWorkerTestReserveSlots(t, cap(mediaSourceWorkers)-1)
+	analysisSourceWorkerTestReserveSlots(t, mediaSourceOwnerLimit-1)
 	ctx, cancel := context.WithCancel(context.Background())
 	started, sawCancellation, release, finished := make(chan struct{}), make(chan struct{}), make(chan struct{}), make(chan struct{})
 	operationEnded := make(chan struct{})
@@ -134,11 +131,11 @@ func TestAnalysisSourceWorkerCancellationRetainsTaskAndSlotUntilCleanup(t *testi
 		t.Fatal("cancelled analysis returned before its actual source operation was released")
 	default:
 	}
-	select {
-	case mediaSourceWorkers <- struct{}{}:
-		<-mediaSourceWorkers
+	mediaSourceAdmission.mu.Lock()
+	active := mediaSourceAdmission.active
+	mediaSourceAdmission.mu.Unlock()
+	if active != mediaSourceOwnerLimit {
 		t.Fatal("cancellation released the active global source slot early")
-	default:
 	}
 	if _, err := file.Stat(); err != nil {
 		t.Fatalf("blocked operation lost its still-owned descriptor: %v", err)
@@ -155,18 +152,19 @@ func TestAnalysisSourceWorkerCancellationRetainsTaskAndSlotUntilCleanup(t *testi
 	if _, err := file.Stat(); !errors.Is(err, os.ErrClosed) {
 		t.Fatalf("undelivered descriptor outlived the source slot: %v", err)
 	}
-	select {
-	case mediaSourceWorkers <- struct{}{}:
-		<-mediaSourceWorkers
-	default:
+	mediaSourceAdmission.mu.Lock()
+	active = mediaSourceAdmission.active
+	mediaSourceAdmission.mu.Unlock()
+	if active != mediaSourceOwnerLimit-1 {
 		t.Fatal("completed source cleanup did not release its global slot")
 	}
 }
 
 func TestAnalysisSourceWorkerCancelledWhileQueuedNeverStartsWork(t *testing.T) {
-	analysisSourceWorkerTestReserveSlots(t, cap(mediaSourceWorkers))
+	analysisSourceWorkerTestReserveSlots(t, mediaSourceOwnerLimit)
 	ctx, cancel := context.WithCancel(context.Background())
-	attempting, finished := make(chan struct{}), make(chan struct{})
+	queued := &mediaSourceAdmissionTestQueuedContext{Context: ctx, queueDoneCall: 1, queued: make(chan struct{})}
+	finished := make(chan struct{})
 	started := make(chan struct{}, 1)
 	returned := make(chan analysisSourceWorkerTestResult, 1)
 	t.Cleanup(func() {
@@ -181,11 +179,10 @@ func TestAnalysisSourceWorkerCancelledWhileQueuedNeverStartsWork(t *testing.T) {
 	})
 	go func() {
 		defer close(finished)
-		close(attempting)
-		file, source, err := runAnalysisSourceWorker(ctx, func() (*os.File, MediaFile, error) { started <- struct{}{}; return nil, MediaFile{}, nil })
+		file, source, err := runAnalysisSourceWorker(queued, func() (*os.File, MediaFile, error) { started <- struct{}{}; return nil, MediaFile{}, nil })
 		returned <- analysisSourceWorkerTestResult{file: file, source: source, err: err}
 	}()
-	analysisSourceWorkerTestSignal(t, attempting, "queued worker admission attempt")
+	analysisSourceWorkerTestSignal(t, queued.queued, "queued worker admission")
 	cancel()
 	result := analysisSourceWorkerTestReceive(t, returned)
 	analysisSourceWorkerTestSignal(t, finished, "queued cancellation completion")
@@ -197,7 +194,10 @@ func TestAnalysisSourceWorkerCancelledWhileQueuedNeverStartsWork(t *testing.T) {
 		t.Fatal("a cancelled queued worker started source I/O")
 	default:
 	}
-	if len(mediaSourceWorkers) != cap(mediaSourceWorkers) {
+	mediaSourceAdmission.mu.Lock()
+	active := mediaSourceAdmission.active
+	mediaSourceAdmission.mu.Unlock()
+	if active != mediaSourceOwnerLimit {
 		t.Fatal("queued cancellation consumed another operation's slot")
 	}
 }

@@ -3,7 +3,6 @@ package media
 import (
 	"bufio"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -100,11 +99,12 @@ func runVideoCopySeekHashProof(ctx context.Context, executable string, file *os.
 	command.Env = mediaProbeEnvironment()
 	command.Stdout, command.Stderr = stdout, stderr
 	command.WaitDelay = time.Second
-	retired, err := startMediaProcess(command)
+	process, err := startMediaProcess(processContext, command)
 	if err != nil {
 		return err
 	}
-	waitErr := errors.Join(<-retired, command.Wait())
+	defer process.Close()
+	waitErr := process.Wait()
 	if err := ctx.Err(); err != nil {
 		return err
 	}

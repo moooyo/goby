@@ -7,7 +7,6 @@ import (
 	"crypto/sha256"
 	"debug/elf"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"image"
 	"image/png"
@@ -42,7 +41,7 @@ var subtitleOCRSlots = make(chan struct{}, 2)
 // candidate. It never publishes a track or treats low-confidence text as final.
 // The caller retains ownership of input and its current file position.
 func RecognizeBitmapSubtitles(ctx context.Context, config SubtitleOCRConfig, input *os.File, stream Stream, source Info, modelIDs []string) (SubtitleOCRResult, error) {
-	ctx, cancel := context.WithTimeout(ctx, subtitleOCRDeadline)
+	ctx, cancel := context.WithTimeout(WithBackgroundProcess(ctx), subtitleOCRDeadline)
 	defer cancel()
 	if err := ctx.Err(); err != nil {
 		return SubtitleOCRResult{}, err
@@ -478,9 +477,10 @@ func runSubtitleOCR(ctx context.Context, engine, directory *os.File, modelID str
 	command.Dir = fmt.Sprintf("/proc/self/fd/%d", directory.Fd())
 	command.Stdin = bytes.NewReader(pngBytes)
 	command.Stdout, command.Stderr, command.WaitDelay = stdout, stderr, time.Second
-	retired, err := startMediaProcess(command)
+	process, err := startMediaProcess(ctx, command)
 	if err == nil {
-		err = errors.Join(<-retired, command.Wait())
+		defer process.Close()
+		err = process.Wait()
 	}
 	if stdout.exceeded || stderr.exceeded {
 		return nil, false, fmt.Errorf("%w: %w", ErrSubtitleOCR, ErrOutputLimit)

@@ -42,7 +42,7 @@ func (s *Store) PrepareMediaOCR(ctx context.Context, work MediaOperationWork, co
 	if !found {
 		return MediaOperationResult{}, ErrNotFound
 	}
-	file, _, err := runMediaSourceWorker(ctx, mediaSourceWorkers, func() (*os.File, MediaFile, error) {
+	file, _, err := s.runIndexedMediaSourceWorker(ctx, false, snapshot, func(ctx context.Context) (*os.File, MediaFile, error) {
 		file, err := s.openMediaSource(ctx, snapshot)
 		return file, snapshot.mediaFile, err
 	})
@@ -64,7 +64,7 @@ func (s *Store) PrepareMediaOCR(ctx context.Context, work MediaOperationWork, co
 	if err != nil {
 		return MediaOperationResult{}, err
 	}
-	check, _, err := runMediaSourceWorker(ctx, mediaSourceWorkers, func() (*os.File, MediaFile, error) {
+	check, _, err := s.runIndexedMediaSourceWorker(ctx, false, current, func(ctx context.Context) (*os.File, MediaFile, error) {
 		file, err := s.openMediaSource(ctx, current)
 		return file, current.mediaFile, err
 	})

@@ -49,8 +49,18 @@ func TestHTTPAdminRuntimeResourcesNativeAuthorityAndSafeBoundedProjection(t *tes
 		t.Fatal("authorized resource observations were cacheable")
 	}
 	body := jsonObject(t, response)
-	if len(body) != 4 || len(objectValue(t, body, "StorageObservations")) != 2 || len(objectValue(t, body, "OriginalStreams")) != 11 {
+	if len(body) != 5 || len(objectValue(t, body, "StorageObservations")) != 2 || len(objectValue(t, body, "OriginalStreams")) != 11 {
 		t.Fatal("runtime endpoint exposed an undocumented root or original-stream field")
+	}
+	processes := objectValue(t, body, "MediaProcesses")
+	if len(processes) != 4 {
+		t.Fatal("media process snapshot exposed an undocumented field")
+	}
+	for _, field := range []string{"Active", "Background", "Queued", "RetirementUnknown"} {
+		value, ok := processes[field].(float64)
+		if !ok || value < 0 || float64(int64(value)) != value {
+			t.Fatal("media process gauge was not a bounded JSON integer")
+		}
 	}
 	pool := objectValue(t, body, "DatabasePool")
 	if len(pool) != 10 {

@@ -35,7 +35,11 @@ func (s *Store) ResolvePlaybackReference(ctx context.Context, owner PlaybackOwne
 	if !validClientPlaybackReference(reference) {
 		return "", ErrInvalidInput
 	}
-	tx, access, err := s.beginPlaybackWrite(ctx, owner)
+	pool, err := s.playbackReadPool(ctx)
+	if err != nil {
+		return "", err
+	}
+	tx, access, err := s.beginPlaybackWriteOnPool(ctx, owner, pool)
 	if err != nil {
 		return "", err
 	}

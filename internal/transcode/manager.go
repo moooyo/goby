@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -61,6 +62,13 @@ type Options struct {
 	NoProgressTimeout   time.Duration
 	MaxRuntime          time.Duration
 	Repository          Repository
+	// PlaybackAdmission and PlaybackStopped are memory-only lifetime hooks.
+	// They run under Manager.mu and must not perform IO, database work or call
+	// Manager methods. Admission returns one operation context and release; the
+	// release also runs under mu after normal Ensure input ownership handling.
+	// Neither hook changes the manager-owned lifetime context of an accepted job.
+	PlaybackAdmission func(context.Context, Spec) (context.Context, func(), error)
+	PlaybackStopped   func(Spec) bool
 	// ValidateHardware rechecks the captured device against the process's
 	// startup-authorized inventory after queue waits and before execution. It
 	// must be bounded and must not execute a hardware capability probe.
@@ -80,42 +88,57 @@ type Options struct {
 }
 
 type managedJob struct {
-	record        Record
-	input         *os.File
-	bitmap        *os.File
-	ctx           context.Context
-	cancel        context.CancelFunc
-	created       chan struct{}
-	launch        chan struct{}
-	done          chan struct{}
-	changed       chan struct{}
-	durable       bool
-	running       bool
-	finished      bool
-	reclaiming    bool
-	directory     bool
-	ready         bool
-	mediaReady    bool
-	readers       int
-	stopCode      string
-	started       time.Time
-	lastProgress  time.Time
-	outputTicks   int64
-	progressSize  int64
-	hlsClocks     [MaxHLSRenditions]HLSMuxClock
-	hlsClockKnown [MaxHLSRenditions]bool
+	// filesMu serializes filesystem work with this job's accounting changes.
+	// Acquire it before Manager.mu; readers pin the job before waiting for it.
+	filesMu    sync.Mutex
+	record     Record
+	input      *os.File
+	bitmap     *os.File
+	ctx        context.Context
+	cancel     context.CancelFunc
+	created    chan struct{}
+	launch     chan struct{}
+	done       chan struct{}
+	changed    chan struct{}
+	durable    bool
+	running    bool
+	finished   bool
+	reclaiming bool
+	directory  bool
+	ready      bool
+	mediaReady bool
+	readers    int
+	// accountingUnknown stays charged until guarded directory removal succeeds.
+	accountingUnknown    bool
+	accountingPending    bool
+	productionSealed     bool
+	productionSealSafe   bool
+	windowInputKnown     bool
+	windowInput          [MaxHLSRenditions]GeneratedInputEvidence
+	stopCode             string
+	started              time.Time
+	lastProgress         time.Time
+	outputTicks          int64
+	progressSize         int64
+	hlsClocks            [MaxHLSRenditions]HLSMuxClock
+	hlsClockKnown        [MaxHLSRenditions]bool
+	completion           *completionTicket
+	finalizationQueued   bool
+	subjectOwnershipHeld bool
 }
 
 // Manager owns every input accepted by Ensure and every process it starts.
 // Authorization belongs to the caller: each lookup additionally requires an
 // exact scope match, and no original authentication token is retained here.
 type Manager struct {
-	options               Options
-	cache                 *cacheRoot
-	ctx                   context.Context
-	cancel                context.CancelFunc
-	mu                    sync.Mutex
-	filesMu               sync.Mutex
+	options Options
+	cache   *cacheRoot
+	ctx     context.Context
+	cancel  context.CancelFunc
+	mu      sync.Mutex
+	// filesMu is the filesystem lifetime gate. Individual job operations share
+	// it, and shutdown takes it exclusively before closing the cache root.
+	filesMu               sync.RWMutex
 	jobs                  map[string]*managedJob
 	bySpec                map[Spec]*managedJob
 	queue                 []*managedJob
@@ -124,6 +147,9 @@ type Manager struct {
 	runningUsers          map[string]int
 	runningAuth           map[string]int
 	bytes                 int64
+	unaccountedJobs       int
+	pendingAccountingJobs int
+	maintenanceCursor     string
 	readers               int
 	cacheFailed           bool
 	closing               bool
@@ -131,7 +157,12 @@ type Manager struct {
 	wake                  chan struct{}
 	loopDone              chan struct{}
 	closed                chan struct{}
-	workers               sync.WaitGroup
+	completions           *completionTicketPool
+	finalizers            *finalizationExecutor
+	// runners covers accepted runner handoff, not terminal finalization.
+	runners sync.WaitGroup
+	// workers continues to cover explicitly reserved diagnostic ownership.
+	workers sync.WaitGroup
 }
 
 // NewManager recovers only an exclusively locked, explicitly owned cache. The
@@ -171,6 +202,27 @@ func NewManager(startupCtx context.Context, options Options) (*Manager, error) {
 		jobs: make(map[string]*managedJob), bySpec: make(map[Spec]*managedJob),
 		runningUsers: make(map[string]int), runningAuth: make(map[string]int),
 		wake: make(chan struct{}, 1), loopDone: make(chan struct{}), closed: make(chan struct{})}
+	m.completions, err = newCompletionTicketPool(options.MaxRetainedJobs, m.signal)
+	if err != nil {
+		cancel()
+		_ = cache.Close()
+		return nil, err
+	}
+	m.finalizers, err = newFinalizationExecutor(m.completions, min(2, options.MaxJobs))
+	if err != nil {
+		m.completions.close()
+		cancel()
+		_ = cache.Close()
+		return nil, err
+	}
+	if err = startupCtx.Err(); err != nil {
+		// No accepted runner or ticket can reach these workers yet. Stop and
+		// actually join this fixed set before closing its rooted filesystem.
+		m.finalizers.stopAfterDrain()
+		joinErr := m.finalizers.wait(context.Background())
+		cancel()
+		return nil, errors.Join(err, joinErr, cache.Close())
+	}
 	go m.loop()
 	return m, nil
 }
@@ -281,195 +333,307 @@ func (m *Manager) Ensure(ctx context.Context, spec Spec, input *os.File) (Record
 func (m *Manager) ensureInputs(ctx context.Context, spec Spec, inputs StreamInputs) (Record, error) {
 	input := inputs.Media
 	owned := false
+	returned, locked := false, false
+	var admissionRelease func()
+	lock := func() { m.mu.Lock(); locked = true }
+	unlock := func() { locked = false; m.mu.Unlock() }
 	defer func() {
+		// Context and memory callbacks can exit abnormally. Their original
+		// operation reference remains held, while no admission mutex is stranded.
+		if locked {
+			unlock()
+		}
 		if !owned {
 			inputs.close()
 		}
+		if returned && admissionRelease != nil {
+			m.releasePlaybackAdmission(admissionRelease)
+		}
 	}()
-	if err := ctx.Err(); err != nil {
-		return Record{}, err
-	}
-	if !validScope(spec.Scope) || !validManagerIdentifier(spec.SourceStamp, 256, false) {
-		return Record{}, ErrInvalidScope
-	}
-	if spec.Plan.ExecutionVersion == 0 && spec.Plan.Execution == (ExecutionOptions{}) {
-		var err error
-		spec.Plan, err = CaptureExecution(spec.Plan, DefaultExecutionOptions(m.options.Threads))
-		if err != nil {
+	record, resultErr := func() (Record, error) {
+		admissionChecked := false
+		if ctx == nil {
+			return Record{}, ErrInvalidOptions
+		}
+		if err := ctx.Err(); err != nil {
 			return Record{}, err
 		}
-	}
-	if err := ValidatePlan(spec.Plan); err != nil {
-		return Record{}, err
-	}
-	if spec.Plan.SourceMode == "stream" && m.options.LivePublish == nil {
-		return Record{}, ErrInvalidOptions
-	}
-	if err := validateStreamInputs(inputs, spec.Plan); err != nil {
-		return Record{}, err
-	}
-	if spec.Plan.Subtitle.Mode == "burn" && spec.Plan.Subtitle.ExternalTag != "" && m.options.SubtitleSource == nil {
-		return Record{}, ErrInvalidOptions
-	}
-	if input == nil {
-		return Record{}, ErrInvalidInput
-	}
-	_, err := validateSourceInput(input, spec.Plan)
-	if err != nil {
-		return Record{}, ErrInvalidInput
-	}
-retryAdmission:
-	if err := ctx.Err(); err != nil {
-		return Record{}, err
-	}
-	m.mu.Lock()
-	if m.closing {
-		m.mu.Unlock()
-		return Record{}, ErrManagerClosed
-	}
-	if m.cacheFailed {
-		m.mu.Unlock()
-		return Record{}, ErrOutputUnavailable
-	}
-	if existing := m.bySpec[spec]; existing != nil && existing.stopCode == "" {
-		m.touchLocked(existing)
-		record, created := existing.record, existing.created
-		m.mu.Unlock()
-		select {
-		case <-ctx.Done():
-			return Record{}, ctx.Err()
-		case <-created:
+		if !validScope(spec.Scope) || !validManagerIdentifier(spec.SourceStamp, 256, false) {
+			return Record{}, ErrInvalidScope
 		}
-		m.mu.Lock()
-		record = existing.record
-		switch {
-		case m.closing:
-			err = ErrManagerClosed
-		case m.cacheFailed:
-			err = ErrOutputUnavailable
-		case m.jobs[record.ID] != existing || existing.reclaiming:
-			m.mu.Unlock()
-			goto retryAdmission
-		default:
-			err = jobError(existing)
+		if spec.Plan.ExecutionVersion == 0 && spec.Plan.Execution == (ExecutionOptions{}) {
+			var err error
+			spec.Plan, err = CaptureExecution(spec.Plan, DefaultExecutionOptions(m.options.Threads))
+			if err != nil {
+				return Record{}, err
+			}
 		}
-		m.mu.Unlock()
-		return record, err
-	}
-	if !m.admissionAvailableLocked(spec.Scope) {
-		workAvailable := m.workAdmissionAvailableLocked(spec.Scope)
-		m.mu.Unlock()
-		if !workAvailable {
+		if err := ValidatePlan(spec.Plan); err != nil {
+			return Record{}, err
+		}
+		if spec.Plan.SourceMode == "stream" && m.options.LivePublish == nil {
+			return Record{}, ErrInvalidOptions
+		}
+		if err := validateStreamInputs(inputs, spec.Plan); err != nil {
+			return Record{}, err
+		}
+		if spec.Plan.Subtitle.Mode == "burn" && spec.Plan.Subtitle.ExternalTag != "" && m.options.SubtitleSource == nil {
+			return Record{}, ErrInvalidOptions
+		}
+		if input == nil {
+			return Record{}, ErrInvalidInput
+		}
+		_, err := validateSourceInput(input, spec.Plan)
+		if err != nil {
+			return Record{}, ErrInvalidInput
+		}
+	retryAdmission:
+		if err := ctx.Err(); err != nil {
+			return Record{}, err
+		}
+		lock()
+		if m.closing {
+			unlock()
+			return Record{}, ErrManagerClosed
+		}
+		if m.cacheFailed {
+			unlock()
+			return Record{}, ErrOutputUnavailable
+		}
+		if !admissionChecked {
+			admitted, release, admissionErr := m.admitPlaybackLocked(ctx, spec)
+			admissionRelease, admissionChecked = release, true
+			if admissionErr != nil {
+				unlock()
+				return Record{}, admissionErr
+			}
+			ctx = admitted
+			if err := ctx.Err(); err != nil {
+				unlock()
+				return Record{}, err
+			}
+		}
+		if m.playbackStoppedLocked(spec) {
+			unlock()
+			return Record{}, ErrJobCancelled
+		}
+		if existing := m.bySpec[spec]; existing != nil && existing.stopCode == "" {
+			m.touchLocked(existing)
+			record, created := existing.record, existing.created
+			unlock()
+			select {
+			case <-ctx.Done():
+				return Record{}, ctx.Err()
+			case <-created:
+			}
+			lock()
+			record = existing.record
+			switch {
+			case m.closing:
+				err = ErrManagerClosed
+			case m.cacheFailed:
+				err = ErrOutputUnavailable
+			case m.playbackStoppedLocked(spec):
+				err = ErrJobCancelled
+			case m.jobs[record.ID] != existing || existing.reclaiming:
+				unlock()
+				goto retryAdmission
+			default:
+				err = jobError(existing)
+			}
+			unlock()
+			return record, err
+		}
+		if m.unaccountedJobs != 0 || m.pendingAccountingJobs != 0 {
+			unlock()
+			return Record{}, ErrOutputUnavailable
+		}
+		if !m.admissionAvailableLocked(spec.Scope) {
+			workAvailable := m.workAdmissionAvailableLocked(spec.Scope)
+			unlock()
+			if !workAvailable {
+				return Record{}, ErrBusy
+			}
+			reclaimed, err := m.reclaimForAdmission(ctx, spec)
+			if err != nil {
+				return Record{}, err
+			}
+			if reclaimed {
+				goto retryAdmission
+			}
 			return Record{}, ErrBusy
 		}
-		reclaimed, err := m.reclaimForAdmission(ctx, spec)
+		if m.bytes >= m.options.MaxBytes {
+			unlock()
+			return Record{}, ErrQuota
+		}
+		unlock()
+		m.filesMu.RLock()
+		free, err := m.cache.FreeBytes()
+		m.filesMu.RUnlock()
 		if err != nil {
-			return Record{}, err
+			return Record{}, ErrOutputUnavailable
 		}
-		if reclaimed {
-			goto retryAdmission
+		if free < m.options.MinFreeBytes {
+			return Record{}, ErrQuota
 		}
-		return Record{}, ErrBusy
-	}
-	if m.bytes >= m.options.MaxBytes {
-		m.mu.Unlock()
-		return Record{}, ErrQuota
-	}
-	m.mu.Unlock()
-	m.filesMu.Lock()
-	free, err := m.cache.FreeBytes()
-	m.filesMu.Unlock()
-	if err != nil {
-		return Record{}, ErrOutputUnavailable
-	}
-	if free < m.options.MinFreeBytes {
-		return Record{}, ErrQuota
-	}
-	var randomID [16]byte
-	if _, err = rand.Read(randomID[:]); err != nil {
-		return Record{}, ErrBusy
-	}
-	now := time.Now().UTC()
-	jobCtx, cancel := context.WithCancel(m.ctx)
-	j := &managedJob{record: Record{ID: hex.EncodeToString(randomID[:]), Spec: spec, State: "queued", CreatedAt: now, UpdatedAt: now, LastAccessAt: now},
-		input: input, bitmap: inputs.Bitmap, ctx: jobCtx, cancel: cancel, created: make(chan struct{}), launch: make(chan struct{}), done: make(chan struct{}), changed: make(chan struct{})}
-	m.mu.Lock()
-	if m.closing {
-		m.mu.Unlock()
-		cancel()
-		return Record{}, ErrManagerClosed
-	}
-	if m.cacheFailed {
-		m.mu.Unlock()
-		cancel()
-		return Record{}, ErrOutputUnavailable
-	}
-	// Admission is repeated after the filesystem call: another request may have
-	// inserted the same spec or filled the queue while that call was in flight.
-	if existing := m.bySpec[spec]; existing != nil && existing.stopCode == "" {
-		m.mu.Unlock()
-		cancel()
-		goto retryAdmission
-	}
-	if !m.admissionAvailableLocked(spec.Scope) {
-		workAvailable := m.workAdmissionAvailableLocked(spec.Scope)
-		m.mu.Unlock()
-		cancel()
-		if !workAvailable {
+		var randomID [16]byte
+		if _, err = rand.Read(randomID[:]); err != nil {
 			return Record{}, ErrBusy
 		}
-		reclaimed, err := m.reclaimForAdmission(ctx, spec)
-		if err != nil {
-			return Record{}, err
+		now := time.Now().UTC()
+		jobCtx, cancel := context.WithCancel(m.ctx)
+		j := &managedJob{record: Record{ID: hex.EncodeToString(randomID[:]), Spec: spec, State: "queued", CreatedAt: now, UpdatedAt: now, LastAccessAt: now},
+			input: input, bitmap: inputs.Bitmap, ctx: jobCtx, cancel: cancel, created: make(chan struct{}), launch: make(chan struct{}), done: make(chan struct{}), changed: make(chan struct{})}
+		lock()
+		if m.closing {
+			unlock()
+			cancel()
+			return Record{}, ErrManagerClosed
 		}
-		if reclaimed {
+		if m.cacheFailed {
+			unlock()
+			cancel()
+			return Record{}, ErrOutputUnavailable
+		}
+		if m.playbackStoppedLocked(spec) {
+			unlock()
+			cancel()
+			return Record{}, ErrJobCancelled
+		}
+		// Admission is repeated after the filesystem call: another request may have
+		// inserted the same spec or filled the queue while that call was in flight.
+		if existing := m.bySpec[spec]; existing != nil && existing.stopCode == "" {
+			unlock()
+			cancel()
 			goto retryAdmission
 		}
-		return Record{}, ErrBusy
-	}
-	if m.bytes >= m.options.MaxBytes {
-		m.mu.Unlock()
-		cancel()
-		return Record{}, ErrQuota
-	}
-	m.jobs[j.record.ID], m.bySpec[spec] = j, j
-	m.queue = append(m.queue, j)
-	initialRecord := j.record
-	m.workers.Add(1)
-	owned = true
-	m.mu.Unlock()
-	go m.runJob(j)
-	createCtx, cancelCreate := context.WithTimeout(ctx, 5*time.Second)
-	stopCreate := context.AfterFunc(m.ctx, cancelCreate)
-	err = m.options.Repository.Create(createCtx, initialRecord)
-	stopCreate()
-	cancelCreate()
-	m.mu.Lock()
-	if err != nil {
-		j.stopCode = "persistence"
-		j.cancel()
-	} else {
-		j.durable = true
-		if ctx.Err() != nil {
-			m.stopLocked(j, "cancelled")
+		if m.unaccountedJobs != 0 || m.pendingAccountingJobs != 0 {
+			unlock()
+			cancel()
+			return Record{}, ErrOutputUnavailable
 		}
+		if !m.admissionAvailableLocked(spec.Scope) {
+			workAvailable := m.workAdmissionAvailableLocked(spec.Scope)
+			unlock()
+			cancel()
+			if !workAvailable {
+				return Record{}, ErrBusy
+			}
+			reclaimed, err := m.reclaimForAdmission(ctx, spec)
+			if err != nil {
+				return Record{}, err
+			}
+			if reclaimed {
+				goto retryAdmission
+			}
+			return Record{}, ErrBusy
+		}
+		if m.bytes >= m.options.MaxBytes {
+			unlock()
+			cancel()
+			return Record{}, ErrQuota
+		}
+		completion, err := m.completions.reserve()
+		if err != nil {
+			unlock()
+			cancel()
+			return Record{}, err
+		}
+		// This fresh ticket belongs to j before any worker can observe it. Every
+		// accepted creating/queued job retains it through terminal handling.
+		j.completion = completion
+		m.jobs[j.record.ID], m.bySpec[spec] = j, j
+		m.queue = append(m.queue, j)
+		initialRecord := j.record
+		m.runners.Add(1)
+		owned = true
+		unlock()
+		go m.runJob(j)
+		createCtx, cancelCreate := context.WithTimeout(ctx, 5*time.Second)
+		stopCreate := context.AfterFunc(m.ctx, cancelCreate)
+		err = m.options.Repository.Create(createCtx, initialRecord)
+		stopCreate()
+		cancelCreate()
+		lock()
+		stopped := m.playbackStoppedLocked(spec)
+		if err != nil {
+			j.stopCode = "persistence"
+			j.cancel()
+		} else {
+			j.durable = true
+			if ctx.Err() != nil || stopped {
+				m.stopLocked(j, "cancelled")
+			}
+		}
+		close(j.created)
+		m.notifyLocked(j)
+		record := j.record
+		closing := m.closing
+		unlock()
+		m.signal()
+		if err != nil {
+			return record, ErrPersistence
+		}
+		if err = ctx.Err(); err != nil {
+			return record, err
+		}
+		if stopped {
+			return record, ErrJobCancelled
+		}
+		if closing {
+			return record, ErrManagerClosed
+		}
+		return record, nil
+	}()
+	returned = true
+	return record, resultErr
+}
+
+func (m *Manager) admitPlaybackLocked(ctx context.Context, spec Spec) (context.Context, func(), error) {
+	if m.options.PlaybackAdmission == nil {
+		return ctx, nil, nil
 	}
-	close(j.created)
-	m.notifyLocked(j)
-	record := j.record
-	closing := m.closing
-	m.mu.Unlock()
-	m.signal()
-	if err != nil {
-		return record, ErrPersistence
+	returned := false
+	defer func() {
+		if !returned {
+			m.cacheFailed = true
+		}
+	}()
+	admitted, release, err := m.options.PlaybackAdmission(ctx, spec)
+	returned = true
+	if err == nil && (admitted == nil || release == nil) {
+		err = ErrInvalidOptions
 	}
-	if err = ctx.Err(); err != nil {
-		return record, err
+	return admitted, release, err
+}
+
+func (m *Manager) playbackStoppedLocked(spec Spec) bool {
+	if m.options.PlaybackStopped == nil {
+		return false
 	}
-	if closing {
-		return record, ErrManagerClosed
-	}
-	return record, nil
+	returned := false
+	defer func() {
+		if !returned {
+			m.cacheFailed = true
+		}
+	}()
+	stopped := m.options.PlaybackStopped(spec)
+	returned = true
+	return stopped
+}
+
+func (m *Manager) releasePlaybackAdmission(release func()) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	returned := false
+	defer func() {
+		if !returned {
+			m.cacheFailed = true
+		}
+	}()
+	release()
+	returned = true
 }
 
 // Admission reserves each subject's execution allowance as well as its waiting
@@ -516,8 +680,58 @@ func (m *Manager) reclaimForAdmission(ctx context.Context, spec Spec) (bool, err
 	if err := ctx.Err(); err != nil {
 		return false, err
 	}
-	m.filesMu.Lock()
-	defer m.filesMu.Unlock()
+	m.filesMu.RLock()
+	defer m.filesMu.RUnlock()
+	m.mu.Lock()
+	if err := ctx.Err(); err != nil {
+		m.mu.Unlock()
+		return false, err
+	}
+	if m.closing {
+		m.mu.Unlock()
+		return false, ErrManagerClosed
+	}
+	if m.cacheFailed {
+		m.mu.Unlock()
+		return false, ErrOutputUnavailable
+	}
+	if existing := m.bySpec[spec]; existing != nil && existing.stopCode == "" {
+		m.mu.Unlock()
+		return true, nil
+	}
+	if m.unaccountedJobs != 0 || m.pendingAccountingJobs != 0 {
+		m.mu.Unlock()
+		return false, ErrOutputUnavailable
+	}
+	if !m.workAdmissionAvailableLocked(spec.Scope) {
+		m.mu.Unlock()
+		return false, nil
+	}
+	if len(m.jobs) < m.options.MaxRetainedJobs {
+		m.mu.Unlock()
+		return true, nil
+	}
+	var victim *managedJob
+	for _, j := range m.jobs {
+		if !j.finished || j.readers != 0 || j.reclaiming || !completionReturnedForReclaim(j) {
+			continue
+		}
+		if victim == nil || j.stopCode != "" && victim.stopCode == "" ||
+			(j.stopCode != "") == (victim.stopCode != "") &&
+				(j.record.LastAccessAt.Before(victim.record.LastAccessAt) ||
+					j.record.LastAccessAt.Equal(victim.record.LastAccessAt) && j.record.ID < victim.record.ID) {
+			victim = j
+		}
+	}
+	if victim == nil {
+		m.mu.Unlock()
+		return false, nil
+	}
+	m.mu.Unlock()
+	// A scan may still own this job's filesystem state. Waiting without mu
+	// lets other jobs open output, finish and release their execution slots.
+	victim.filesMu.Lock()
+	defer victim.filesMu.Unlock()
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if err := ctx.Err(); err != nil {
@@ -532,26 +746,14 @@ func (m *Manager) reclaimForAdmission(ctx context.Context, spec Spec) (bool, err
 	if existing := m.bySpec[spec]; existing != nil && existing.stopCode == "" {
 		return true, nil
 	}
+	if m.unaccountedJobs != 0 || m.pendingAccountingJobs != 0 {
+		return false, ErrOutputUnavailable
+	}
 	if !m.workAdmissionAvailableLocked(spec.Scope) {
 		return false, nil
 	}
-	if len(m.jobs) < m.options.MaxRetainedJobs {
+	if len(m.jobs) < m.options.MaxRetainedJobs || m.jobs[victim.record.ID] != victim {
 		return true, nil
-	}
-	var victim *managedJob
-	for _, j := range m.jobs {
-		if !j.finished || j.readers != 0 || j.reclaiming {
-			continue
-		}
-		if victim == nil || j.stopCode != "" && victim.stopCode == "" ||
-			(j.stopCode != "") == (victim.stopCode != "") &&
-				(j.record.LastAccessAt.Before(victim.record.LastAccessAt) ||
-					j.record.LastAccessAt.Equal(victim.record.LastAccessAt) && j.record.ID < victim.record.ID) {
-			victim = j
-		}
-	}
-	if victim == nil {
-		return false, nil
 	}
 	reclaimed := m.reclaimLocked(victim, true)
 	if m.cacheFailed {
@@ -645,6 +847,9 @@ func (m *Manager) stopLocked(j *managedJob, code string) {
 }
 
 func jobError(j *managedJob) error {
+	if readableSealedProduction(j) {
+		return nil
+	}
 	if j.stopCode != "" || j.record.State == "failed" || j.record.State == "cancelled" || j.record.State == "interrupted" {
 		code := j.stopCode
 		if code == "" {
@@ -682,6 +887,8 @@ func (m *Manager) lookupLocked(scope Scope, id string) (*managedJob, error) {
 // lease. A stopped or failed job returns both its record and its classified
 // error. A completed job can therefore retain State "completed" while returning
 // ErrJobCancelled after its cached output has been explicitly invalidated.
+// A retained partial window reports cancelled/production_sealed without an error;
+// its missing artifacts cannot wait for more production.
 func (m *Manager) Snapshot(scope Scope, id string) (Record, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -689,7 +896,9 @@ func (m *Manager) Snapshot(scope Scope, id string) (Record, error) {
 	if err != nil {
 		return Record{}, err
 	}
-	return j.record, jobError(j)
+	record := j.record
+	record.ProductionSealed = j.productionSealed
+	return record, jobError(j)
 }
 
 // WaitReady requires each planned HLS rendition to have a published playlist,
@@ -711,12 +920,16 @@ func (m *Manager) WaitReady(ctx context.Context, scope Scope, id string) (Record
 		record, changed := j.record, j.changed
 		err = jobError(j)
 		ready := j.ready
+		noFutureOutput := j.productionSealed || j.finished
 		m.mu.Unlock()
 		if err != nil {
 			return record, err
 		}
 		if ready {
 			return record, nil
+		}
+		if noFutureOutput {
+			return record, ErrOutputUnavailable
 		}
 		select {
 		case <-ctx.Done():
@@ -819,7 +1032,7 @@ func (m *Manager) tryOpen(scope Scope, id, name string) (outputAttempt, error) {
 	m.touchLocked(j)
 	attempt.changed = j.changed
 	if !j.ready {
-		attempt.pending = !j.finished
+		attempt.pending = !j.finished && !j.productionSealed
 		m.mu.Unlock()
 		return attempt, ErrOutputUnavailable
 	}
@@ -830,9 +1043,16 @@ func (m *Manager) tryOpen(scope Scope, id, name string) (outputAttempt, error) {
 	j.readers++
 	m.readers++
 	m.mu.Unlock()
-	m.filesMu.Lock()
+	m.filesMu.RLock()
+	j.filesMu.Lock()
 	file, openErr := m.cache.OpenJobFile(id, name)
-	m.filesMu.Unlock()
+	if errors.Is(openErr, ErrCacheUnsafe) {
+		m.mu.Lock()
+		m.rejectCacheObservationLocked(j)
+		m.mu.Unlock()
+	}
+	j.filesMu.Unlock()
+	m.filesMu.RUnlock()
 	if openErr == nil {
 		info, statErr := file.Stat()
 		if statErr != nil || info.Size() <= 0 || info.Size() > m.options.MaxJobBytes || (kind == "playlist" && info.Size() > MaxPlaylistBytes) {
@@ -852,14 +1072,17 @@ func (m *Manager) tryOpen(scope Scope, id, name string) (outputAttempt, error) {
 	if err == nil {
 		attempt.changed = j.changed
 		if !j.ready {
-			attempt.pending = !j.finished
+			attempt.pending = !j.finished && !j.productionSealed
 			err = ErrOutputUnavailable
 		} else if openErr != nil {
-			attempt.pending = errors.Is(openErr, os.ErrNotExist) && !j.finished
+			attempt.pending = errors.Is(openErr, os.ErrNotExist) && !j.finished && !j.productionSealed
 			err = ErrOutputUnavailable
 		}
 	}
 	m.mu.Unlock()
+	if errors.Is(openErr, ErrCacheUnsafe) && errors.Is(err, ErrJobFailed) {
+		err = ErrOutputUnavailable
+	}
 	if err != nil {
 		if file != nil {
 			_ = file.Close()
@@ -955,6 +1178,55 @@ func (m *Manager) CancelSession(authID string) {
 	m.signal()
 }
 
+// CancelPlayback immediately invalidates all jobs belonging to one playback
+// session, including producers no longer tracked by an HTTP registration.
+// The caller must authorize both identifiers. Processes are reaped and files
+// are reclaimed in the background after their outstanding readers close.
+func (m *Manager) CancelPlayback(authID, playID string) {
+	if authID == "" || playID == "" {
+		return
+	}
+	m.mu.Lock()
+	for _, j := range m.jobs {
+		scope := j.record.Spec.Scope
+		if scope.AuthSessionID != authID || scope.PlaySessionID != playID {
+			continue
+		}
+		if j.finished {
+			m.invalidateFinishedLocked(j, "cancelled")
+		} else {
+			m.stopLocked(j, "cancelled")
+		}
+	}
+	m.mu.Unlock()
+	m.signal()
+}
+
+// CancelFileHLSPlayback invalidates only file-HLS jobs for an authorized play.
+// It is the restrictive sweep for a correlated early Stop intent; progressive
+// and stream jobs keep their existing post-commit cancellation ordering.
+// Creating and unattached jobs use the same mutex as normal admission.
+func (m *Manager) CancelFileHLSPlayback(authID, playID string) {
+	if authID == "" || playID == "" {
+		return
+	}
+	m.mu.Lock()
+	for _, j := range m.jobs {
+		scope, plan := j.record.Spec.Scope, j.record.Spec.Plan
+		if scope.AuthSessionID != authID || scope.PlaySessionID != playID ||
+			plan.SourceMode == "stream" || plan.OutputMode != "" && plan.OutputMode != "hls" {
+			continue
+		}
+		if j.finished {
+			m.invalidateFinishedLocked(j, "cancelled")
+		} else {
+			m.stopLocked(j, "cancelled")
+		}
+	}
+	m.mu.Unlock()
+	m.signal()
+}
+
 func (m *Manager) invalidateFinishedLocked(j *managedJob, code string) {
 	if j.stopCode == "" {
 		j.stopCode = code
@@ -970,13 +1242,18 @@ func (m *Manager) loop() {
 	ticker := time.NewTicker(m.options.pollInterval)
 	defer ticker.Stop()
 	for {
+		periodic := false
 		select {
 		case <-m.ctx.Done():
 			return
 		case <-m.wake:
 		case <-ticker.C:
+			periodic = true
 		}
-		m.maintain()
+		// Reader releases and queue changes must not turn every HTTP artifact
+		// request into a full scan of every retained output directory.
+		m.schedule()
+		m.maintainJobs(periodic)
 		m.schedule()
 	}
 }
@@ -984,12 +1261,28 @@ func (m *Manager) loop() {
 func (m *Manager) schedule() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if m.closing || m.cacheFailed {
+	if m.closing || m.cacheFailed || m.unaccountedJobs != 0 || m.pendingAccountingJobs != 0 {
 		return
 	}
 	remaining := m.queue[:0]
 	for _, j := range m.queue {
+		if m.cacheFailed {
+			remaining = append(remaining, j)
+			continue
+		}
 		if j.finished || j.stopCode != "" {
+			continue
+		}
+		if m.playbackStoppedLocked(j.record.Spec) {
+			m.stopLocked(j, "cancelled")
+			continue
+		}
+		if j.completion == nil || j.completion.pool != m.completions || j.finalizationQueued {
+			// A production admission never manufactures a missing reservation at
+			// launch. Preserve this record and fence the inconsistent owner.
+			m.cacheFailed = true
+			m.stopLocked(j, "cache_unavailable")
+			remaining = append(remaining, j)
 			continue
 		}
 		if !j.durable || m.running+m.diagnosticReservation >= m.options.MaxJobs ||
@@ -999,6 +1292,7 @@ func (m *Manager) schedule() {
 			continue
 		}
 		j.running = true
+		j.subjectOwnershipHeld = true
 		j.started = time.Now().UTC()
 		j.lastProgress = j.started
 		j.record.State, j.record.UpdatedAt = "running", j.started
@@ -1017,24 +1311,39 @@ func (m *Manager) schedule() {
 }
 
 func (m *Manager) runJob(j *managedJob) {
-	defer m.workers.Done()
+	defer m.runners.Done()
+	handedOff := false
+	defer func() {
+		if !handedOff {
+			_ = recover()
+			// A panic or Goexit is not normal runner drain. Retain the original
+			// execution, subject and completion ownership for explicit recovery.
+			m.quarantineJobFinalization(j, errJobResourceOwnership)
+		}
+	}()
+	handoff := func(runErr error, failure *ProgressFailure) {
+		if m.enqueueFinalization(j, runErr, failure) == nil {
+			handedOff = true
+		}
+	}
 	<-j.created
 	select {
 	case <-j.ctx.Done():
-		m.finish(j, j.ctx.Err())
+		handoff(j.ctx.Err(), nil)
 		return
 	case <-j.launch:
 	}
 	if err := m.persist(j); err != nil {
 		m.fail(j, "persistence")
-		m.finish(j, err)
+		handoff(err, nil)
 		return
 	}
 	if err := j.ctx.Err(); err != nil {
-		m.finish(j, err)
+		handoff(err, nil)
 		return
 	}
-	m.filesMu.Lock()
+	m.filesMu.RLock()
+	j.filesMu.Lock()
 	free, err := m.cache.FreeBytes()
 	if err == nil && free < m.options.MinFreeBytes {
 		err = ErrQuota
@@ -1042,25 +1351,32 @@ func (m *Manager) runJob(j *managedJob) {
 	if err == nil {
 		err = m.cache.CreateJob(j.record.ID)
 	}
-	m.filesMu.Unlock()
+	j.filesMu.Unlock()
+	m.filesMu.RUnlock()
 	if err != nil {
+		if errors.Is(err, errCacheCreationUnaccounted) {
+			m.mu.Lock()
+			j.directory = true
+			m.markAccountingUnknownLocked(j)
+			m.mu.Unlock()
+		}
 		if errors.Is(err, ErrQuota) {
 			m.fail(j, "cache_space")
 		} else {
 			m.fail(j, "cache_unavailable")
 		}
-		m.finish(j, err)
+		handoff(err, nil)
 		return
 	}
 	m.mu.Lock()
 	j.directory = true
 	m.mu.Unlock()
-	m.filesMu.Lock()
+	m.filesMu.RLock()
 	directory, err := m.cache.JobPath(j.record.ID)
-	m.filesMu.Unlock()
+	m.filesMu.RUnlock()
 	if err != nil {
 		m.fail(j, "cache_unavailable")
-		m.finish(j, err)
+		handoff(err, nil)
 		return
 	}
 	if m.options.ValidateHardware != nil {
@@ -1069,7 +1385,7 @@ func (m *Manager) runJob(j *managedJob) {
 		cancelCheck()
 		if err != nil {
 			m.fail(j, "hardware_unavailable")
-			m.finish(j, err)
+			handoff(err, nil)
 			return
 		}
 	}
@@ -1105,11 +1421,13 @@ func (m *Manager) runJob(j *managedJob) {
 			m.signal()
 		}
 	})
-	jobID, errorClass := j.record.ID, runnerErrorCode(err)
-	m.finish(j, err)
-	if err != nil && result.ProgressFailure != nil {
-		logManagerProgressFailure(jobID, errorClass, result.ProgressFailure)
+	m.mu.Lock()
+	j.productionSealSafe = result.ProductionSealSafe
+	if result.WindowInputEvidence != nil {
+		j.windowInput, j.windowInputKnown = *result.WindowInputEvidence, true
 	}
+	m.mu.Unlock()
+	handoff(err, result.ProgressFailure)
 }
 
 func logManagerProgressFailure(jobID, errorClass string, failure *ProgressFailure) {
@@ -1128,8 +1446,9 @@ func logManagerProgressFailure(jobID, errorClass string, failure *ProgressFailur
 		attrs = append(attrs, slog.Int64("output_ticks", previous.OutputTicks), slog.Int64("bytes", previous.Bytes),
 			slog.Bool("ended", previous.Ended))
 	}
-	// finish releases capacity, persists the original outcome and cancels the
-	// job context before synchronous diagnostic output can block.
+	// The fixed terminal worker retains its completion and subject ownership
+	// while synchronous diagnostic output can block. Inspection already returned
+	// global execution capacity; normal terminal return completes the lifetime.
 	slog.LogAttrs(context.Background(), slog.LevelWarn, "transcode progress rejected", attrs...)
 }
 
@@ -1150,87 +1469,22 @@ func (m *Manager) persist(j *managedJob) error {
 	return nil
 }
 
+// finish is the synchronous compatibility boundary for explicit internal test
+// helpers. Production runners always transfer through enqueueFinalization.
 func (m *Manager) finish(j *managedJob, runErr error) {
-	(StreamInputs{Media: j.input, Bitmap: j.bitmap}).close()
-	m.mu.Lock()
-	directory := j.directory
-	m.mu.Unlock()
-	var size int64
-	var ready bool
-	var scanErr error
-	if directory {
-		m.filesMu.Lock()
-		size, ready, scanErr = m.cache.ScanPlanJob(j.record.ID, j.record.Spec.Plan)
+	m.finishLegacySynchronously(j, runErr)
+}
+
+// Unticketed completed records exist only in recovery/test fixtures. Every
+// production Ensure owns an exact ticket; callback completion must return it
+// before guarded record removal can make its metadata capacity reusable.
+func completionReturnedForReclaim(j *managedJob) bool {
+	if j.completion == nil {
+		return !j.finalizationQueued
 	}
-	m.mu.Lock()
-	if j.record.Spec.Plan.SourceMode == "stream" {
-		ready = j.mediaReady
-	}
-	if j.record.Spec.Plan.OutputMode == "progressive" {
-		ready = ready && j.mediaReady
-		if size < j.record.OutputBytes && j.stopCode == "" {
-			j.stopCode = "invalid_output"
-		}
-	}
-	m.bytes += size - j.record.OutputBytes
-	j.record.OutputBytes = size
-	if j.stopCode == "" {
-		switch {
-		case size > m.options.MaxJobBytes:
-			j.stopCode = "job_quota"
-		case m.bytes > m.options.MaxBytes:
-			j.stopCode = "cache_quota"
-		case runErr != nil:
-			j.stopCode = runnerErrorCode(runErr)
-		case scanErr != nil || !ready:
-			j.stopCode = "invalid_output"
-		}
-	}
-	if j.stopCode == "" {
-		j.record.State, j.ready = "completed", true
-	} else {
-		j.record.State = "failed"
-		if j.stopCode == "cancelled" || j.stopCode == "session_cancelled" || j.stopCode == "source_replaced" || j.stopCode == "idle_timeout" || j.stopCode == "manager_closed" {
-			j.record.State = "cancelled"
-		}
-		j.record.ErrorCode = j.stopCode
-		if m.bySpec[j.record.Spec] == j {
-			delete(m.bySpec, j.record.Spec)
-		}
-	}
-	j.record.UpdatedAt = time.Now().UTC()
-	if j.running {
-		j.running = false
-		m.running--
-		if !j.record.Spec.Scope.ApplicationKey {
-			m.runningUsers[j.record.Spec.Scope.UserID]--
-			if m.runningUsers[j.record.Spec.Scope.UserID] == 0 {
-				delete(m.runningUsers, j.record.Spec.Scope.UserID)
-			}
-		}
-		m.runningAuth[j.record.Spec.Scope.AuthSessionID]--
-		if m.runningAuth[j.record.Spec.Scope.AuthSessionID] == 0 {
-			delete(m.runningAuth, j.record.Spec.Scope.AuthSessionID)
-		}
-	}
-	m.mu.Unlock()
-	if directory {
-		m.filesMu.Unlock()
-	}
-	err := m.persist(j)
-	m.mu.Lock()
-	if err != nil {
-		j.stopCode, j.record.ErrorCode, j.record.State = "persistence", "persistence", "failed"
-		if m.bySpec[j.record.Spec] == j {
-			delete(m.bySpec, j.record.Spec)
-		}
-	}
-	j.finished = true
-	close(j.done)
-	m.notifyLocked(j)
-	m.mu.Unlock()
-	j.cancel()
-	m.signal()
+	j.completion.pool.mu.Lock()
+	defer j.completion.pool.mu.Unlock()
+	return j.completion.phase == completionReleased
 }
 
 func runnerErrorCode(err error) string {
@@ -1252,31 +1506,73 @@ func runnerErrorCode(err error) string {
 	}
 }
 
-func (m *Manager) maintain() {
+func (m *Manager) maintain() { m.maintainJobs(true) }
+
+func (m *Manager) maintainJobs(periodic bool) {
 	m.mu.Lock()
 	jobs := make([]*managedJob, 0, len(m.jobs))
 	for _, j := range m.jobs {
 		jobs = append(jobs, j)
 	}
+	cursor := m.maintenanceCursor
 	m.mu.Unlock()
-	for _, j := range jobs {
-		m.filesMu.Lock()
+	// Stable ordering and a persisted cursor give both active producers and
+	// completed caches a fair share of the finite inspection allowance.
+	slices.SortFunc(jobs, func(a, b *managedJob) int { return strings.Compare(a.record.ID, b.record.ID) })
+	start := 0
+	for start < len(jobs) && jobs[start].record.ID <= cursor {
+		start++
+	}
+	if start == len(jobs) {
+		start = 0
+	}
+	budget := cacheMaintenanceGlobalBudget
+	for offset := range len(jobs) {
+		if budget < 6 {
+			break
+		}
+		j := jobs[(start+offset)%len(jobs)]
 		m.mu.Lock()
-		scan := m.jobs[j.record.ID] == j && !j.reclaiming && j.directory && (j.running || j.record.State == "completed")
+		scan := m.jobs[j.record.ID] == j && !j.reclaiming && j.directory &&
+			(j.running || j.record.State == "completed" || readableSealedProduction(j)) &&
+			(periodic || j.mediaReady && !j.ready)
 		m.mu.Unlock()
 		if !scan {
-			m.filesMu.Unlock()
 			continue
 		}
-		size, ready, err := m.cache.ScanPlanJob(j.record.ID, j.record.Spec.Plan)
+		m.filesMu.RLock()
+		j.filesMu.Lock()
 		m.mu.Lock()
+		scan = m.jobs[j.record.ID] == j && !j.reclaiming && j.directory &&
+			(j.running || j.record.State == "completed" || readableSealedProduction(j))
+		m.mu.Unlock()
+		if !scan {
+			j.filesMu.Unlock()
+			m.filesMu.RUnlock()
+			continue
+		}
+		inspection, err := m.cache.MaintainPlanJob(j.record.ID, j.record.Spec.Plan, min(budget, cacheMaintenanceJobBudget))
+		size, ready := inspection.bytes, inspection.ready
+		budget -= inspection.work
+		m.mu.Lock()
+		m.maintenanceCursor = j.record.ID
 		if err != nil {
+			m.setAccountingPendingLocked(j, false)
+			m.markAccountingUnknownLocked(j)
 			if !j.finished {
 				m.stopLocked(j, "cache_unavailable")
 			} else {
 				m.invalidateFinishedLocked(j, "cache_unavailable")
 			}
 		} else {
+			m.setAccountingPendingLocked(j, inspection.pending)
+			if inspection.pending {
+				// Rename/source events may span batches. A partial census can
+				// increase a known charge but never release storage or publish
+				// initial readiness before its change accounting closes.
+				size = max(size, j.record.OutputBytes)
+				ready = j.ready
+			}
 			if j.record.Spec.Plan.SourceMode == "stream" {
 				ready = j.mediaReady
 			}
@@ -1289,6 +1585,9 @@ func (m *Manager) maintain() {
 						m.stopLocked(j, "invalid_output")
 					}
 				}
+			}
+			if j.accountingUnknown {
+				size = max(size, j.record.OutputBytes)
 			}
 			changed := size != j.record.OutputBytes || ready != j.ready
 			if size > j.record.OutputBytes && j.running {
@@ -1309,15 +1608,25 @@ func (m *Manager) maintain() {
 			}
 		}
 		m.mu.Unlock()
-		m.filesMu.Unlock()
+		j.filesMu.Unlock()
+		m.filesMu.RUnlock()
 	}
-	m.filesMu.Lock()
-	free, freeErr := m.cache.FreeBytes()
-	m.filesMu.Unlock()
+	var free int64
+	var freeErr error
+	if periodic {
+		m.filesMu.RLock()
+		free, freeErr = m.cache.FreeBytes()
+		m.filesMu.RUnlock()
+	}
 	now := time.Now().UTC()
 	m.mu.Lock()
+	var reclaim []*managedJob
 	for _, j := range m.jobs {
 		if j.finished {
+			if j.readers == 0 && !j.reclaiming &&
+				(now.Sub(j.record.LastAccessAt) >= m.options.IdleTimeout || j.directory && j.stopCode != "") {
+				reclaim = append(reclaim, j)
+			}
 			continue
 		}
 		switch {
@@ -1325,40 +1634,43 @@ func (m *Manager) maintain() {
 			m.stopLocked(j, "cache_unavailable")
 		case freeErr != nil:
 			m.stopLocked(j, "cache_unavailable")
-		case free < m.options.MinFreeBytes:
+		case periodic && free < m.options.MinFreeBytes:
 			m.stopLocked(j, "cache_space")
 		case m.bytes > m.options.MaxBytes:
 			m.stopLocked(j, "cache_quota")
 		case j.readers == 0 && now.Sub(j.record.LastAccessAt) > m.options.IdleTimeout:
 			m.stopLocked(j, "idle_timeout")
-		case j.running && j.record.Spec.Plan.SourceMode != "stream" && now.Sub(j.started) > m.options.MaxRuntime:
+		case periodic && j.running && j.record.Spec.Plan.SourceMode != "stream" && now.Sub(j.started) > m.options.MaxRuntime:
 			m.stopLocked(j, "runtime_timeout")
-		case j.running && !j.ready && now.Sub(j.started) > m.options.StartupTimeout:
+		case periodic && j.running && !j.ready && now.Sub(j.started) > m.options.StartupTimeout:
 			m.stopLocked(j, "startup_timeout")
-		case j.running && now.Sub(j.lastProgress) > m.options.NoProgressTimeout:
+		case periodic && j.running && now.Sub(j.lastProgress) > m.options.NoProgressTimeout:
 			m.stopLocked(j, "progress_timeout")
 		}
 	}
 	m.mu.Unlock()
-	for _, j := range jobs {
+	for _, j := range reclaim {
 		m.reclaim(j, false)
 	}
 }
 
 func (m *Manager) reclaim(j *managedJob, force bool) bool {
-	m.filesMu.Lock()
-	defer m.filesMu.Unlock()
+	m.filesMu.RLock()
+	defer m.filesMu.RUnlock()
+	j.filesMu.Lock()
+	defer j.filesMu.Unlock()
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return m.reclaimLocked(j, force)
 }
 
-// reclaimLocked requires filesMu and mu, and returns holding both. Keeping the
-// record reserved until guarded cleanup finishes prevents admission from using
-// its slot before a cleanup failure makes the cache unavailable. Lookups cannot
-// pin new readers while mu is released for filesystem work.
+// reclaimLocked requires the shared filesystem gate, j.filesMu and mu, and
+// returns holding all three. Keeping the record reserved until guarded cleanup
+// finishes prevents admission from using its slot before a cleanup failure
+// makes the cache unavailable. Lookups cannot pin new readers while mu is
+// released for filesystem work.
 func (m *Manager) reclaimLocked(j *managedJob, force bool) bool {
-	if m.jobs[j.record.ID] != j || !j.finished || j.readers != 0 || j.reclaiming {
+	if m.jobs[j.record.ID] != j || !j.finished || j.readers != 0 || j.reclaiming || !completionReturnedForReclaim(j) {
 		return false
 	}
 	expired := force || time.Since(j.record.LastAccessAt) >= m.options.IdleTimeout
@@ -1380,6 +1692,12 @@ func (m *Manager) reclaimLocked(j *managedJob, force bool) bool {
 		if err == nil {
 			m.bytes -= j.record.OutputBytes
 			j.record.OutputBytes = 0
+			m.setAccountingPendingLocked(j, false)
+			if j.accountingUnknown {
+				j.accountingUnknown = false
+				m.unaccountedJobs--
+				m.signal()
+			}
 		} else {
 			// Unsafe content remains untouched. The manager stops admitting work
 			// until the owner resolves it and explicitly restarts the service.
@@ -1394,6 +1712,7 @@ func (m *Manager) reclaimLocked(j *managedJob, force bool) bool {
 	if expired {
 		// A failed cleanup still releases metadata during shutdown. Admission
 		// remains fenced by cacheFailed, and closeErr preserves the failure.
+		m.setAccountingPendingLocked(j, false)
 		delete(m.jobs, j.record.ID)
 		for index, queued := range m.queue {
 			if queued == j {
@@ -1407,6 +1726,40 @@ func (m *Manager) reclaimLocked(j *managedJob, force bool) bool {
 	return expired
 }
 
+// markAccountingUnknownLocked requires mu. Neither the configured job limit
+// nor the last progress report bounds bytes written since a failed inspection.
+// Preserve the known charge and fence new work until guarded removal succeeds.
+func (m *Manager) markAccountingUnknownLocked(j *managedJob) {
+	m.setAccountingPendingLocked(j, false)
+	if !j.accountingUnknown {
+		j.accountingUnknown = true
+		m.unaccountedJobs++
+	}
+}
+
+func (m *Manager) rejectCacheObservationLocked(j *managedJob) {
+	m.markAccountingUnknownLocked(j)
+	if j.finished {
+		m.invalidateFinishedLocked(j, "cache_unavailable")
+	} else {
+		m.stopLocked(j, "cache_unavailable")
+	}
+	m.signal()
+}
+
+func (m *Manager) setAccountingPendingLocked(j *managedJob, pending bool) {
+	if j.accountingPending == pending {
+		return
+	}
+	j.accountingPending = pending
+	if pending {
+		m.pendingAccountingJobs++
+	} else {
+		m.pendingAccountingJobs--
+		m.signal()
+	}
+}
+
 // Close starts an irreversible background shutdown. Even when ctx expires, the
 // manager continues reaping children and waits for outstanding readers and
 // diagnostic reservations before removing cache files and releasing its
@@ -1415,6 +1768,7 @@ func (m *Manager) Close(ctx context.Context) error {
 	m.mu.Lock()
 	if !m.closing {
 		m.closing = true
+		m.completions.close()
 		for _, j := range m.jobs {
 			if !j.finished {
 				m.stopLocked(j, "manager_closed")
@@ -1437,6 +1791,15 @@ func (m *Manager) Close(ctx context.Context) error {
 
 func (m *Manager) shutdown() {
 	<-m.loopDone
+	// Runners only hand off their existing tickets. Waiting for terminal work
+	// here would deadlock a fixed worker which still needs that handoff boundary.
+	m.runners.Wait()
+	m.finalizers.stopAfterDrain()
+	finalizerErr := m.finalizers.wait(context.Background())
+	m.mu.Lock()
+	m.closeErr = errors.Join(m.closeErr, finalizerErr)
+	m.mu.Unlock()
+	// Diagnostic owners remain independent of the transcode completion pool.
 	m.workers.Wait()
 	ticker := time.NewTicker(m.options.pollInterval)
 	defer ticker.Stop()

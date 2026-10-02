@@ -26,7 +26,7 @@ func (s *Store) ApplyMediaOCR(ctx context.Context, work MediaOperationWork) erro
 	if err != nil {
 		return err
 	}
-	file, _, err := runMediaSourceWorker(ctx, mediaSourceWorkers, func() (*os.File, MediaFile, error) {
+	file, _, err := s.runIndexedMediaSourceWorker(ctx, false, snapshot, func(ctx context.Context) (*os.File, MediaFile, error) {
 		file, err := s.openMediaSource(ctx, snapshot)
 		return file, snapshot.mediaFile, err
 	})

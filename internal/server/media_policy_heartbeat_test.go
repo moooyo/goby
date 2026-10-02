@@ -191,7 +191,7 @@ func TestMediaPolicyHeartbeatCannotUndoCompletionFailureStopOrTightening(t *test
 	}
 }
 
-func TestDynamicMediaPolicyHeartbeatUsesStoredPlayAndRejectsTerminalOrLocalState(t *testing.T) {
+func TestPlaybackMediaPolicyHeartbeatUsesStoredPlayAndRejectsTerminalState(t *testing.T) {
 	runtime := newMediaPolicyRuntime(nil)
 	defer runtime.stop()
 	app := &Server{mediaPolicy: runtime}
@@ -211,7 +211,6 @@ func TestDynamicMediaPolicyHeartbeatUsesStoredPlayAndRejectsTerminalOrLocalState
 	before := lease.last
 	clock.Add(int64(30 * time.Second))
 	for _, mutate := range []func(*library.PlaySession){
-		func(value *library.PlaySession) { value.IsDynamic = false },
 		func(value *library.PlaySession) { value.ID = "" },
 		func(value *library.PlaySession) { value.State = "Stopped" },
 		func(value *library.PlaySession) { value.State = "Expired" },
@@ -222,11 +221,16 @@ func TestDynamicMediaPolicyHeartbeatUsesStoredPlayAndRejectsTerminalOrLocalState
 	} {
 		invalid := play
 		mutate(&invalid)
-		if app.heartbeatDynamicMediaPolicy(principal, invalid) || !lease.last.Equal(before) {
-			t.Fatal("an ineligible playback report extended a dynamic delivery lease")
+		if app.heartbeatPlaybackMediaPolicy(principal, invalid) || !lease.last.Equal(before) {
+			t.Fatal("an ineligible playback report extended a delivery lease")
 		}
 	}
-	if !app.heartbeatDynamicMediaPolicy(principal, play) {
+	if !app.heartbeatPlaybackMediaPolicy(principal, play) {
 		t.Fatal("an authorized paused dynamic play did not retain its admitted delivery")
+	}
+	play.IsDynamic = false
+	clock.Add(int64(30 * time.Second))
+	if !app.heartbeatPlaybackMediaPolicy(principal, play) {
+		t.Fatal("an authorized paused local play did not retain its admitted delivery")
 	}
 }

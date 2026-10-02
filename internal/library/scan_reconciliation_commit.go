@@ -241,10 +241,14 @@ var scanReconciliationItemColumns = `
 	OR COALESCE(octet_length(extra.owner_item_id)>256,false))`
 
 func readScanReconciliationItems(tx OwnedTx, budget *scanReconciliationBudgetState, predicate string, argument any) ([]scanReconciliationItem, error) {
-	rows, err := tx.Query(`SELECT `+scanReconciliationItemColumns+`
+	return readScanReconciliationStatement(tx, budget, `SELECT `+scanReconciliationItemColumns+`
 		FROM items i LEFT JOIN item_theme_resources theme ON theme.resource_item_id=i.id
 		LEFT JOIN item_extra_resources extra ON extra.resource_item_id=i.id
 		WHERE `+predicate+` ORDER BY i.id LIMIT $2 FOR UPDATE OF i`, argument, scanReconciliationMaxItems+1)
+}
+
+func readScanReconciliationStatement(tx OwnedTx, budget *scanReconciliationBudgetState, statement string, arguments ...any) ([]scanReconciliationItem, error) {
+	rows, err := tx.Query(statement, arguments...)
 	if err != nil {
 		return nil, err
 	}
@@ -322,12 +326,26 @@ func (s *Store) reconcileMissingScanItems(task *scanTask, library Library, captu
 	if err := evidence.requireComplete(task.ctx); err != nil {
 		return nil, err
 	}
-	// Legacy direct callers supply their bounded in-memory Seen evidence.
-	// Production has a sealed database pass and can avoid all filesystem
-	// revalidation when the anti-join proves that no deletion is proposed.
+	var preflight scanReconciliationPreflight
+	// Direct legacy callers retain their original bounded proof sequence. A
+	// sealed production pass moves its first complete filesystem observation
+	// outside ownership; successful observation is only a preflight hint.
 	if staging == nil {
 		if err := revalidateScanReconciliation(task.ctx, captures, evidence); err != nil {
 			return nil, err
+		}
+	} else {
+		stage = "preflight_authority"
+		preflight, err = s.preflightScanReconciliation(task, library, roots, staging)
+		if err != nil {
+			return nil, err
+		}
+		if preflight.hasCandidates {
+			stage = "preflight_observation"
+			preflight.observationErr = revalidateScanReconciliation(task.ctx, captures, evidence)
+			// Always reenter final owned authority, including on observation
+			// failure. SQL/owner/rollback failure must remain fatal rather than
+			// being mistaken for an observation-only retained pass.
 		}
 	}
 	// Wait for ownership without blocking root admission, then recheck the
@@ -335,16 +353,18 @@ func (s *Store) reconcileMissingScanItems(task *scanTask, library Library, captu
 	stage = "owner_admission"
 	raw, err := s.beginOwnedAdmission(task.ctx, false)
 	if err != nil {
-		return nil, err
+		return nil, joinScanReconciliationPreflightError(err, preflight)
 	}
 	err = s.admitScanReconciliationLocked(task, roots)
 	s.mu.Unlock()
 	if err != nil {
-		rollback(raw)
-		return nil, err
+		return nil, s.withOwnedTxCallback(raw, func(OwnedTx) error {
+			return joinScanReconciliationPreflightError(err, preflight)
+		})
 	}
 	var albums []string
-	err = s.withOwnedTxCallback(raw, func(tx OwnedTx) error {
+	err = s.withOwnedTxCallback(raw, func(tx OwnedTx) (callbackErr error) {
+		defer func() { callbackErr = joinScanReconciliationPreflightError(callbackErr, preflight) }()
 		// Share a bounded allowance across all proofs in this transaction while
 		// retaining time for rollback before the owned SQL context expires.
 		stage = "proof_context"
@@ -364,25 +384,23 @@ func (s *Store) reconcileMissingScanItems(task *scanTask, library Library, captu
 		}
 		if staging != nil {
 			stage = "sealed_staging"
-			_, scanID, stagedLibrary := staging.Scope()
-			if scanID != task.job.ID || stagedLibrary != library.ID {
-				return ErrInvalidInput
-			}
-			if err := staging.RequireSealed(tx); err != nil {
+			if err := validateScanReconciliationStaging(tx, task, library.ID, staging); err != nil {
 				return err
 			}
 		}
 		stage = "anti_join"
-		page, err := readScanReconciliationPage(tx, library.ID, "", true, staging)
+		page, err := readScanReconciliationFinalPage(tx, library.ID, staging, preflight)
 		if err != nil {
 			return err
 		}
 		if len(page) == 0 {
 			return task.ctx.Err()
 		}
-		stage = "predelete_revalidation"
-		if err := revalidateScanReconciliation(proofCtx, captures, evidence); err != nil {
-			return err
+		if !preflight.performed {
+			stage = "predelete_revalidation"
+			if err := revalidateScanReconciliation(proofCtx, captures, evidence); err != nil {
+				return err
+			}
 		}
 		stage = "candidate_proof"
 		members, err := collectScanReconciliationCandidates(tx, proofCtx, library.ID, roots, evidence, staging, budget, page)
@@ -782,8 +800,7 @@ func expandScanReconciliation(tx OwnedTx, ctx context.Context, libraryID string,
 		}
 		// Do not filter by library or active status: the parent and auxiliary
 		// owner foreign keys can remove foreign children or inactive history.
-		items, err := readScanReconciliationItems(tx, budget, `(i.parent_id=ANY($1::text[])
-			OR theme.owner_item_id=ANY($1::text[]) OR extra.owner_item_id=ANY($1::text[]))`, frontier)
+		items, err := readScanReconciliationStatement(tx, budget, scanReconciliationDescendantQuery(), frontier, scanReconciliationMaxItems+1)
 		if err != nil {
 			return err
 		}

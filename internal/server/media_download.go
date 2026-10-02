@@ -3,11 +3,9 @@ package server
 import (
 	"context"
 	"errors"
-	"mime"
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -68,39 +66,7 @@ func (s *Server) downloadMedia(w http.ResponseWriter, r *http.Request) {
 		s.downloadMediaError(w, r, err)
 		return
 	}
-	defer file.Close()
-	work, finish, err := s.guardDownloadMedia(w, r, file, source)
-	if err != nil {
-		s.downloadMediaError(w, r, err)
-		return
-	}
-	defer finish()
-	writer, err := newIdleResponseWriter(w, work, mediaWriteIdle)
-	if err != nil {
-		panic(http.ErrAbortHandler)
-	}
-	defer writer.finish()
-	disposition := "inline"
-	if strings.EqualFold(filepath.Base(r.URL.Path), "Download") {
-		disposition = "attachment"
-	}
-	w.Header().Set("Content-Disposition", mime.FormatMediaType(disposition, map[string]string{"filename": filepath.Base(source.Item.Path)}))
-	w.Header().Set("Content-Type", source.MIMEType)
-	w.Header().Set("ETag", source.ETag)
-	w.Header().Set("Cache-Control", "private, no-cache, no-transform")
-	w.Header().Set("Access-Control-Expose-Headers", "Accept-Ranges, Content-Disposition, Content-Length, Content-Range, ETag, Last-Modified")
-	modified := source.ModifiedAt
-	if source.Item.Media != nil && source.Item.Media.FileChangeTimeNs > 0 {
-		if changed := time.Unix(0, source.Item.Media.FileChangeTimeNs).UTC(); changed.After(modified) {
-			modified = changed
-		}
-	}
-	// Authorization precedes all conditional and range processing, including
-	// HEAD and 304 responses that disclose the current representation metadata.
-	http.ServeContent(writer, r.WithContext(work), filepath.Base(source.Item.Path), modified, file)
-	if work.Err() != nil {
-		panic(http.ErrAbortHandler)
-	}
+	s.serveOriginalDownloadSnapshot(w, r, file, source)
 }
 
 func (s *Server) downloadMediaError(w http.ResponseWriter, r *http.Request, err error) {

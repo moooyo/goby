@@ -34,9 +34,8 @@ type indexedMediaSource struct {
 	relativePath        string
 	identity            string
 	publicationRevision string
+	rootBindingRevision int64
 }
-
-var mediaSourceWorkers = make(chan struct{}, 4)
 
 // ErrSourceChanged distinguishes a confirmed metadata/identity mismatch from
 // transient filesystem or database unavailability. Callers still receive
@@ -52,6 +51,8 @@ type mediaSourceWorkResult struct {
 // A canceled caller leaves its worker slot occupied until storage work and any
 // undelivered descriptor cleanup finish. Results have an unbuffered ownership
 // handoff, preventing a descriptor from being stranded in an abandoned channel.
+// This channel adapter serves deterministic fixtures; production Store entry
+// points use their owned runtime and the same process-wide admission budget.
 func runMediaSourceWorker(ctx context.Context, slots chan struct{}, work func() (*os.File, MediaFile, error)) (*os.File, MediaFile, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, MediaFile{}, err
@@ -61,23 +62,36 @@ func runMediaSourceWorker(ctx context.Context, slots chan struct{}, work func() 
 	case <-ctx.Done():
 		return nil, MediaFile{}, ctx.Err()
 	}
-	if err := ctx.Err(); err != nil {
+	release, err := mediaSourceAdmission.acquire(ctx, false)
+	if err != nil {
 		<-slots
 		return nil, MediaFile{}, err
 	}
+	return runAdmittedMediaSourceWorker(ctx, func() { release(); <-slots }, work)
+}
+
+func runAdmittedMediaSourceWorker(ctx context.Context, release func(), work func() (*os.File, MediaFile, error)) (*os.File, MediaFile, error) {
+	if err := ctx.Err(); err != nil {
+		release()
+		return nil, MediaFile{}, err
+	}
 	result := make(chan mediaSourceWorkResult)
+	received := make(chan struct{})
 	go func() {
-		defer func() { <-slots }()
+		defer release()
 		if ctx.Err() != nil {
 			return
 		}
-		file, source, err := work()
+		file, source, err := executeMediaSourceWorker(ctx, work)
 		if err != nil && file != nil {
 			_ = file.Close()
 			file = nil
 		}
 		select {
 		case result <- mediaSourceWorkResult{file: file, source: source, err: err}:
+			// The receiver completes its cancellation check before the owner
+			// releases its lifetime context or undelivered descriptor cleanup.
+			<-received
 		case <-ctx.Done():
 			if file != nil {
 				_ = file.Close()
@@ -86,6 +100,7 @@ func runMediaSourceWorker(ctx context.Context, slots chan struct{}, work func() 
 	}()
 	select {
 	case outcome := <-result:
+		defer close(received)
 		if err := ctx.Err(); err != nil {
 			if outcome.file != nil {
 				_ = outcome.file.Close()
@@ -96,6 +111,26 @@ func runMediaSourceWorker(ctx context.Context, slots chan struct{}, work func() 
 	case <-ctx.Done():
 		return nil, MediaFile{}, ctx.Err()
 	}
+}
+
+// Source workers run outside HTTP middleware. Translate a worker panic after
+// its transaction/file defers unwind, then use the normal descriptor handoff
+// and owner release path. Cancellation remains the caller-visible error.
+func executeMediaSourceWorker(ctx context.Context, work func() (*os.File, MediaFile, error)) (file *os.File, source MediaFile, err error) {
+	defer func() {
+		if recover() != nil {
+			if file != nil {
+				_ = file.Close()
+				file = nil
+			}
+			source = MediaFile{}
+			err = fmt.Errorf("%w: media source worker panicked", ErrUnavailable)
+			if canceled := ctx.Err(); canceled != nil {
+				err = canceled
+			}
+		}
+	}()
+	return work()
 }
 
 // OpenMedia opens only the catalog's original local source. The optional source
@@ -114,7 +149,9 @@ func (s *Store) OpenMediaFor(ctx context.Context, subject Subject, itemID, media
 	if s == nil || s.pool == nil {
 		return nil, MediaFile{}, ErrUnavailable
 	}
-	return runMediaSourceWorker(ctx, mediaSourceWorkers, func() (*os.File, MediaFile, error) {
+	return s.runPreparedMediaSourceWorker(ctx, false, func(ctx context.Context) (mediaSourceRootHint, error) {
+		return s.readMediaSourceRootHint(ctx, itemID)
+	}, func(ctx context.Context) (*os.File, MediaFile, error) {
 		snapshot, err := s.readMediaSourceFor(ctx, subject, itemID, mediaSourceID)
 		if err != nil {
 			return nil, MediaFile{}, err
@@ -124,6 +161,9 @@ func (s *Store) OpenMediaFor(ctx context.Context, subject Subject, itemID, media
 			return nil, MediaFile{}, err
 		}
 		return file, snapshot.mediaFile, nil
+	}, func(ctx context.Context) error {
+		_, err := s.readMediaSourceFor(ctx, subject, itemID, mediaSourceID)
+		return err
 	})
 }
 
@@ -132,6 +172,11 @@ func (s *Store) readMediaSource(ctx context.Context, userID, itemID, sourceID st
 }
 
 func (s *Store) readMediaSourceFor(ctx context.Context, subject Subject, itemID, sourceID string) (indexedMediaSource, error) {
+	ctx, release, err := beginMediaSourceAuthorization(ctx)
+	if err != nil {
+		return indexedMediaSource{}, err
+	}
+	defer release()
 	tx, access, err := s.beginSubjectRead(ctx, subject)
 	if err != nil {
 		return indexedMediaSource{}, err
@@ -177,6 +222,15 @@ func readIndexedMediaSource(ctx context.Context, tx pgx.Tx, access libraryAccess
 	if err != nil {
 		return indexedMediaSource{}, fmt.Errorf("%w: read media source: %w", ErrUnavailable, err)
 	}
+	item.AnalysisSourceRevision = analysisSourceRevision
+	snapshot.mediaFile.Item = item
+	return completeIndexedMediaSource(ctx, tx, access, snapshot, sourceID, modified, true)
+}
+
+// Both complete opens and delivery revalidation use exactly the same source
+// snapshot contract before touching the filesystem.
+func completeIndexedMediaSource(ctx context.Context, tx pgx.Tx, access libraryAccess, snapshot indexedMediaSource, sourceID string, modified *time.Time, includeSubtitles bool) (indexedMediaSource, error) {
+	item := snapshot.mediaFile.Item
 	if item.Media == nil || len(item.Media.Streams) == 0 {
 		return indexedMediaSource{}, ErrNotFound
 	}
@@ -191,12 +245,13 @@ func readIndexedMediaSource(ctx context.Context, tx pgx.Tx, access libraryAccess
 		return indexedMediaSource{}, fmt.Errorf("%w: media source has no valid indexed snapshot", ErrUnavailable)
 	}
 	item.CanPlay = access.canPlay
-	item.AnalysisSourceRevision = analysisSourceRevision
-	items := []Item{item}
-	if err := attachSubtitles(ctx, tx, items); err != nil {
-		return indexedMediaSource{}, err
+	if includeSubtitles {
+		items := []Item{item}
+		if err := attachSubtitles(ctx, tx, items); err != nil {
+			return indexedMediaSource{}, err
+		}
+		item = items[0]
 	}
-	item = items[0]
 	snapshot.mediaFile.Item = item
 	snapshot.mediaFile.SourceID = expectedSourceID
 	snapshot.mediaFile.ModifiedAt = modified.UTC()
@@ -248,6 +303,11 @@ func (s *Store) openMediaSource(ctx context.Context, snapshot indexedMediaSource
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
+	if err := s.checkMediaSourceRootAdmission(ctx, snapshot); err != nil {
+		return nil, err
+	}
+	openedAt := time.Now()
+	defer func() { mediaSourceAdmissionMeasurement.fileOpenNS.Add(uint64(time.Since(openedAt))) }()
 	root, err := s.openLibraryRoot(snapshot.root)
 	if err != nil {
 		return nil, err

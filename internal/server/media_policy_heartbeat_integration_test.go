@@ -17,6 +17,10 @@ import (
 )
 
 func dynamicHeartbeatHTTPFixture(t *testing.T) (*playbackHTTPFixture, identity.Principal, library.PlaySession, *mediaPolicyLease, *atomic.Int64) {
+	return playbackHeartbeatHTTPFixture(t, true)
+}
+
+func playbackHeartbeatHTTPFixture(t *testing.T, dynamic bool) (*playbackHTTPFixture, identity.Principal, library.PlaySession, *mediaPolicyLease, *atomic.Int64) {
 	t.Helper()
 	fixture := newPlaybackHTTPFixture(t)
 	f := fixture.s.f
@@ -27,7 +31,12 @@ func dynamicHeartbeatHTTPFixture(t *testing.T) (*playbackHTTPFixture, identity.P
 	if err != nil {
 		t.Fatal(err)
 	}
-	play, err := f.app.library.PrepareDynamicPlayback(f.ctx, playbackOwner(principal), fixture.s.video.id, media.SourceID(fixture.s.video.id), "")
+	var play library.PlaySession
+	if dynamic {
+		play, err = f.app.library.PrepareDynamicPlayback(f.ctx, playbackOwner(principal), fixture.s.video.id, media.SourceID(fixture.s.video.id), "")
+	} else {
+		play, err = f.app.library.PreparePlayback(f.ctx, playbackOwner(principal), fixture.s.video.id, media.SourceID(fixture.s.video.id), "")
+	}
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,6 +52,81 @@ func dynamicHeartbeatHTTPFixture(t *testing.T) (*playbackHTTPFixture, identity.P
 	f.app.touchMediaPolicy(work, principal, scope)
 	release()
 	return fixture, principal, play, lease, clock
+}
+
+func TestHTTPLocalPlaybackPauseHeartbeatsRetainDeliveryAndExitRetiresResources(t *testing.T) {
+	for _, termination := range []string{"idle", "stopped", "logout"} {
+		t.Run(termination, func(t *testing.T) {
+			fixture, _, play, lease, clock := playbackHeartbeatHTTPFixture(t, false)
+			f := fixture.s.f
+			gate := f.app.playbackPolicyGate()
+			h, jobs := hlsRuntimeTestFixture(t)
+			f.app.hls = h
+			session := hlsRuntimeTestSession(t, h, "local-heartbeat", false)
+			delete(h.byKey, session.key)
+			session.key.scope = lease.scope
+			h.byKey[session.key] = session
+			hlsRuntimeTestOwnProducer(t, h, session)
+			body := map[string]any{"PlaySessionId": play.ID, "ItemId": play.ItemID, "MediaSourceId": play.MediaSourceID,
+				"IsPaused": true, "PositionTicks": 0}
+			for _, path := range []string{"/emby/Sessions/Playing", "/emby/Sessions/Playing/Progress", "/emby/Sessions/Playing/Ping?PlaySessionId=" + play.ID} {
+				clock.Add(int64(80 * time.Second))
+				var report any = body
+				if path == "/emby/Sessions/Playing/Ping?PlaySessionId="+play.ID {
+					report = nil
+				}
+				expectStatus(t, f.request(t, http.MethodPost, path, report, fixture.headers), http.StatusNoContent)
+				gate.mu.Lock()
+				retained := gate.leases[lease.key] == lease && lease.delivered && lease.refs == 0
+				version := lease.version
+				gate.mu.Unlock()
+				gate.expire(lease, version-1)
+				if !retained || lease.ctx.Err() != nil || session.ctx.Err() != nil {
+					t.Fatal("authenticated local pause heartbeats lost delivery quota or its HLS registration")
+				}
+			}
+			switch termination {
+			case "idle":
+				gate.mu.Lock()
+				version := lease.version
+				gate.mu.Unlock()
+				clock.Add(int64(mediaPolicyIdleTTL - time.Second))
+				gate.expire(lease, version)
+				if lease.ctx.Err() != nil || session.ctx.Err() != nil {
+					t.Fatal("a segmented playback gap was retired before its idle deadline")
+				}
+				clock.Add(int64(2 * time.Second))
+				gate.expire(lease, version)
+			case "stopped":
+				expectStatus(t, f.request(t, http.MethodPost, "/emby/Sessions/Playing/Stopped", body, fixture.headers), http.StatusNoContent)
+			case "logout":
+				expectStatus(t, f.request(t, http.MethodPost, "/emby/Sessions/Logout", nil, fixture.headers), http.StatusNoContent)
+			}
+			select {
+			case <-session.ctx.Done():
+			case <-time.After(time.Second):
+				t.Fatal("playback exit did not cancel its producer within the cleanup deadline")
+			}
+			if lease.ctx.Err() == nil || h.sessions[session.id] != nil {
+				t.Fatal("playback exit retained its delivery quota or output registration")
+			}
+			jobs.mu.Lock()
+			cancelled := len(jobs.cancels) > 0 && jobs.cancels[0].scope == lease.scope && len(jobs.playbackCancels) > 0
+			jobs.mu.Unlock()
+			if !cancelled {
+				t.Fatal("playback exit failed to cancel both registered and detached producer scopes")
+			}
+			if termination != "logout" {
+				expectStatus(t, f.request(t, http.MethodPost, "/emby/Sessions/Playing/Ping?PlaySessionId="+play.ID, nil, fixture.headers), http.StatusNoContent)
+				gate.mu.Lock()
+				remaining := len(gate.leases)
+				gate.mu.Unlock()
+				if remaining != 0 {
+					t.Fatal("a late playback heartbeat revived retired media delivery")
+				}
+			}
+		})
+	}
 }
 
 func TestHTTPDynamicPlaybackReportsKeepPausedQuotaAndStoppedReportsRetireIt(t *testing.T) {

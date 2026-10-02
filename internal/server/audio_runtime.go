@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"os"
 	"sync"
 	"time"
@@ -34,9 +35,21 @@ func (h *hlsRuntime) progressive(ctx context.Context, session *hlsSession, input
 		session.mu.Unlock()
 		return nil, nil, err
 	}
+	producer, err := h.ownProducer(session.key.scope, record.ID, 0, 0)
+	if err != nil {
+		session.mu.Unlock()
+		h.cancelUnattachedProducer(session.key.scope, record.ID)
+		if errors.Is(err, errHLSAdmissionStale) {
+			err = transcode.ErrJobNotFound
+		}
+		return nil, nil, err
+	}
 	// A progressive revision has one complete output rather than HLS windows.
 	// The manager deduplicates concurrent requests for this immutable plan.
-	session.producers = []hlsProducer{{id: record.ID}}
+	for _, prior := range session.producers {
+		h.releaseProducer(session.key.scope, prior)
+	}
+	session.producers = []hlsProducer{producer}
 	session.progressiveReaders++
 	session.accessed = time.Now()
 	session.mu.Unlock()
@@ -50,7 +63,9 @@ func (h *hlsRuntime) progressive(ctx context.Context, session *hlsSession, input
 			if session.progressiveReaders == 0 && !session.closed {
 				state, err := h.manager.Snapshot(session.key.scope, record.ID)
 				if err != nil || state.State != "completed" {
-					_ = h.manager.CancelJob(record.ID, session.key.scope)
+					for _, producer := range session.producers {
+						h.releaseProducer(session.key.scope, producer)
+					}
 					// Claim retirement while holding the same lock used by a
 					// joining request. Manager deduplication is already fenced
 					// before a replacement registry entry becomes possible.

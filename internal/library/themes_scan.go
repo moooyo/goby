@@ -33,6 +33,7 @@ type scannedMediaInput struct {
 	probe         *media.Info
 	unchanged     bool
 	checksVersion bool
+	authority     *scanProbeAuthority
 }
 
 // inspectScannedMedia is shared by ordinary, theme, and extra files. It retains the
@@ -40,91 +41,26 @@ type scannedMediaInput struct {
 // validation; callers must close a successful input after their final identity
 // check and owned transaction. No owner NFO is read by this helper.
 func (state *scanState) inspectScannedMedia(path, kind string, role scannedMediaRole) (*scannedMediaInput, error) {
-	file, err := openScanFile(state.opened, path)
-	if err != nil {
-		state.warnings++
-		return nil, nil
+	input, err := state.prepareScannedMedia(path, kind, role)
+	if err != nil || input == nil {
+		return nil, err
 	}
 	accepted := false
 	defer func() {
 		if !accepted {
-			_ = file.Close()
+			_ = input.file.Close()
 		}
 	}()
-	info, err := file.Stat()
-	if err != nil || !info.Mode().IsRegular() {
-		state.warnings++
-		return nil, nil
+	var probeErr error
+	if !input.unchanged {
+		probed, err := state.store.prober.ProbeFile(media.WithBackgroundProcess(state.task.ctx), input.file)
+		input.probe, probeErr = &probed, err
 	}
-	state.task.job.Scanned++
-	if err := state.store.persistProgress(state.task); err != nil {
+	accepted, err = state.acceptScannedMedia(input, kind, probeErr)
+	if !accepted {
 		return nil, err
 	}
-	stored, err := state.findStoredFileForRole(filepath.ToSlash(path), info, role)
-	if errors.Is(err, errScannedMediaRoleConflict) {
-		state.warnings++
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	if state.themes != nil && stored.id != "" {
-		claims := state.themes.claimed
-		if state.themeLibrary != nil {
-			claims = state.themeLibrary.claimed
-		}
-		key := string(role) + ":" + state.root.id + ":" + filepath.ToSlash(path)
-		if previous, exists := claims[stored.id]; exists && previous != key {
-			stored = storedFile{}
-		} else {
-			claims[stored.id] = key
-		}
-	}
-	probe := stored.media
-	unchanged := !state.task.job.ForceProbe && probe != nil && stored.size == info.Size() && stored.modified != nil &&
-		stored.modified.Equal(catalogModifiedTime(info)) && (stored.identity == "" || stored.identity == fileIdentity(info))
-	versioned, checksVersion := state.store.prober.(interface{ CacheVersion() int })
-	if checksVersion {
-		unchanged = unchanged && probe.ProbeVersion == versioned.CacheVersion() &&
-			probe.FileChangeTimeNs > 0 && probe.FileChangeTimeNs == media.FileChangeTime(info)
-	}
-	if versioned, ok := state.store.prober.(interface{ MusicMetadataVersion() int }); kind == "audio" && ok {
-		unchanged = unchanged && probe.EmbeddedMusic != nil && probe.EmbeddedMusic.Version == versioned.MusicMetadataVersion()
-	}
-	if !unchanged {
-		probed, probeErr := state.store.prober.ProbeFile(state.task.ctx, file)
-		if probeErr != nil {
-			if state.task.ctx.Err() != nil {
-				return nil, state.task.ctx.Err()
-			}
-			state.warnings++
-			return nil, state.store.persistProgress(state.task)
-		}
-		probe = &probed
-		after, statErr := file.Stat()
-		if statErr != nil || after.Size() != info.Size() || !after.ModTime().Equal(info.ModTime()) ||
-			(checksVersion && media.FileChangeTime(after) != media.FileChangeTime(info)) {
-			state.warnings++
-			return nil, state.store.persistProgress(state.task)
-		}
-	}
-	if err := state.task.ctx.Err(); err != nil {
-		return nil, err
-	}
-	if kind == "audio" && probe.EmbeddedMusic != nil && probe.EmbeddedMusic.Version == media.CurrentMusicMetadataVersion {
-		if !validTrackMusic(*probe.EmbeddedMusic) {
-			state.warnings++
-			return nil, state.store.persistProgress(state.task)
-		}
-		raw, err := json.Marshal(probe.EmbeddedMusic)
-		if _, valid := acceptedTrackMusic(raw); err != nil || !valid {
-			state.warnings++
-			return nil, state.store.persistProgress(state.task)
-		}
-	}
-	accepted = true
-	return &scannedMediaInput{file: file, info: info, stored: stored, probe: probe,
-		unchanged: unchanged, checksVersion: checksVersion}, nil
+	return input, nil
 }
 
 type themeCandidate struct {
@@ -1295,14 +1231,13 @@ func (s *Store) publishThemeOwner(task *scanTask, library Library, owner themeDi
 		return false, err
 	}
 	defer rollback(tx)
-	var status string
-	var cancelled bool
-	if err := tx.QueryRow(task.ctx, `SELECT status,cancel_requested FROM scan_jobs WHERE id=$1 AND library_id=$2 FOR UPDATE`,
-		task.job.ID, library.ID).Scan(&status, &cancelled); err != nil {
+	progressTx := scanProbeAuthorityTx{ctx: task.ctx, tx: tx}
+	relation, err := lockScanPublicationProgress(progressTx, task)
+	if err != nil {
 		return false, err
 	}
-	if cancelled || status != "Running" || task.ctx.Err() != nil {
-		return false, context.Canceled
+	if relation.job.LibraryID != library.ID {
+		return false, taskScanAssociationError()
 	}
 	// Lock both the owner and affected resource rows in a stable order. This
 	// also serializes role activation/retirement with direct UserData writers.
@@ -1420,6 +1355,21 @@ func (s *Store) publishThemeOwner(task *scanTask, library Library, owner themeDi
 	if err := beforeAuxiliary.record(task.ctx, tx, forcedIDs); err != nil {
 		return false, err
 	}
+	candidate := task.job
+	for _, file := range files {
+		if file.input.stored.id == "" {
+			candidate.Added++
+		} else if file.changed || roleChanged[file.id] {
+			candidate.Updated++
+		}
+	}
+	// Keep the existing complete-owner publication boundary. Counters become
+	// durable with its resources, and remain local until its final source proof
+	// and commit succeed.
+	published, err := writeScanPublicationProgress(progressTx, relation, candidate)
+	if err != nil {
+		return false, err
+	}
 	if witness != nil {
 		if err := runStorageObservation(task.ctx, []*storageObservationLifetime{&witness.observation}, witness.validate); err != nil {
 			if task.ctx.Err() != nil {
@@ -1434,18 +1384,15 @@ func (s *Store) publishThemeOwner(task *scanTask, library Library, owner themeDi
 	if err := tx.Commit(task.ctx); err != nil {
 		return false, err
 	}
+	task.job = published
 	for _, file := range files {
 		file.state.themes.seen[file.id] = true
 		if file.input.stored.itemType == "Audio" {
 			file.state.queueMusicParent(file.input.stored.parentID)
 		}
-		if file.input.stored.id == "" {
-			task.job.Added++
-		} else if file.changed || roleChanged[file.id] {
-			task.job.Updated++
-		}
 	}
-	return false, s.persistProgress(task)
+	s.notifyScanUpdate()
+	return false, task.ctx.Err()
 }
 
 func (state *scanState) finishThemeScan() error {

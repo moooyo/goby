@@ -108,7 +108,7 @@ func TestGeneratedPlaylistRejectsInvalidArtifactGraphs(t *testing.T) {
 		strings.Replace(measuredPlaylist, "segment-000001.ts", "segment-000001.aac", 1),
 		strings.Replace(measuredPlaylist, "segment-000000.ts", "segment-0.ts", 1),
 		strings.Replace(measuredPlaylist, "#EXTINF:6.993000,", "#EXT-X-MAP:URI=\"init.mp4\"\n#EXTINF:6.993000,", 1),
-		strings.Replace(fragmentedPlaylist, "#EXT-X-MAP:", "#EXT-X-DISCONTINUITY\n#EXT-X-MAP:", 1),
+		strings.Replace(fragmentedPlaylist, "#EXT-X-MAP:", "#EXT-X-DISCONTINUITY\n#EXT-X-DISCONTINUITY\n#EXT-X-MAP:", 1),
 	} {
 		if _, err := ParseMediaPlaylist([]byte(data)); err == nil {
 			t.Errorf("accepted invalid artifact graph %q", data)

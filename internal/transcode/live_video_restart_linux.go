@@ -23,7 +23,8 @@ import (
 // closed segment. It borrows regular descriptors without changing offsets.
 // fMP4 initialization and media are concatenated privately; MPEG-TS must carry
 // its own parameter sets before the first IDR. No source scan or URL is opened.
-// Callers bound concurrent probes with their existing publication semaphore.
+// The shared media governor charges the process until group
+// retirement, Wait and every copier have completed.
 func ValidateLiveVideoRestart(ctx context.Context, ffprobe string, initialization, segment *os.File, codec string) error {
 	if err := ctx.Err(); err != nil {
 		return err
@@ -127,17 +128,22 @@ func ValidateLiveVideoRestart(ctx context.Context, ffprobe string, initializatio
 			return err
 		}
 	}
-	if err := command.Start(); err != nil {
-		return ErrStart
+	var waitErr, retirementErr error
+	runErr := media.RunProcessWithRetirement(processCtx, command, func() error {
+		waitErr = waitWithoutReaping(command.Process.Pid)
+		groupMu.Lock()
+		defer groupMu.Unlock()
+		if !errors.Is(waitErr, syscall.ECHILD) {
+			if err := syscall.Kill(-command.Process.Pid, syscall.SIGKILL); err != nil && !errors.Is(err, syscall.ESRCH) {
+				retirementErr = err
+			}
+		}
+		retired = true
+		return errors.Join(waitErr, retirementErr)
+	})
+	if errors.Is(runErr, media.ErrProcessRetirementUnknown) {
+		return errors.Join(ErrTimelineProbe, runErr)
 	}
-	waitErr := waitWithoutReaping(command.Process.Pid)
-	groupMu.Lock()
-	if !errors.Is(waitErr, syscall.ECHILD) {
-		_ = syscall.Kill(-command.Process.Pid, syscall.SIGKILL)
-	}
-	retired = true
-	groupMu.Unlock()
-	runErr := command.Wait()
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
@@ -147,7 +153,13 @@ func ValidateLiveVideoRestart(ctx context.Context, ffprobe string, initializatio
 	if processCtx.Err() != nil {
 		return processCtx.Err()
 	}
-	if waitErr != nil || runErr != nil || diagnostics.buffer.Len() != 0 {
+	if runErr != nil {
+		if command.Process == nil {
+			return errors.Join(ErrStart, runErr)
+		}
+		return errors.Join(ErrTimelineProbe, runErr)
+	}
+	if waitErr != nil || retirementErr != nil || diagnostics.buffer.Len() != 0 {
 		return ErrTimelineProbe
 	}
 	for index, file := range owned {

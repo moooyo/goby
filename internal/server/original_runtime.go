@@ -159,7 +159,7 @@ func (s *Server) authorizeOriginalPolicy(ctx context.Context, principal identity
 		fresh.SessionID != principal.SessionID || fresh.Client.DeviceID != principal.Client.DeviceID {
 		return fresh, library.ErrNotFound
 	}
-	verified, current, err := s.library.OpenMediaFor(ctx, librarySubject(fresh, fresh.User.ID), source.Item.ID, source.SourceID)
+	verified, current, err := s.library.RevalidateMediaSourceFor(ctx, librarySubject(fresh, fresh.User.ID), source.Item.ID, source.SourceID, false)
 	if err != nil {
 		return fresh, err
 	}

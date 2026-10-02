@@ -359,7 +359,7 @@ func (s *Server) playbackPolicyGate() *mediaPolicyRuntime {
 	s.mediaPolicyOnce.Do(func() {
 		s.mediaPolicy = newMediaPolicyRuntime(func(scope transcode.Scope) {
 			if scope.PlaySessionID != "" {
-				s.hls.cancelMatching(scope.AuthSessionID, scope.PlaySessionID)
+				s.hls.cancelPlayback(scope.AuthSessionID, scope.PlaySessionID)
 				s.cancelDynamicStreams(scope.AuthSessionID, scope.PlaySessionID)
 			}
 		})
@@ -384,8 +384,8 @@ func (s *Server) touchMediaPolicy(ctx context.Context, principal identity.Princi
 	s.playbackPolicyGate().touch(principal, scope, mediaPolicyContextLease(ctx))
 }
 
-func (s *Server) heartbeatDynamicMediaPolicy(principal identity.Principal, play library.PlaySession) bool {
-	if !play.IsDynamic || play.ID == "" || play.State == "Stopped" || play.State == "Expired" || play.StoppedAt != nil {
+func (s *Server) heartbeatPlaybackMediaPolicy(principal identity.Principal, play library.PlaySession) bool {
+	if play.ID == "" || play.State == "Stopped" || play.State == "Expired" || play.StoppedAt != nil {
 		return false
 	}
 	scope := transcode.Scope{ApplicationKey: play.ApplicationKey, ApplicationClientID: play.ApplicationClientID,

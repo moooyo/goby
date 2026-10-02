@@ -33,9 +33,13 @@ func (s *Server) registerPlaybackRoutes(mux *http.ServeMux) {
 		{"/emby/Sessions/Playing/Progress", "Progress"},
 		{"/emby/Sessions/Playing/Stopped", "Stopped"},
 	} {
-		mux.HandleFunc("POST "+event.route, s.requireEmby(s.playbackReport(event.name)))
+		handler := s.requireEmby(s.playbackReport(event.name))
+		if event.name == "Stopped" {
+			handler = s.requirePlaybackControl(s.playbackReport(event.name))
+		}
+		mux.HandleFunc("POST "+event.route, handler)
 	}
-	mux.HandleFunc("POST /emby/Sessions/Playing/Ping", s.requireEmby(s.playbackPing))
+	mux.HandleFunc("POST /emby/Sessions/Playing/Ping", s.requirePlaybackControl(s.playbackPing))
 	mux.HandleFunc("GET /emby/Users/{UserId}/Items/Resume", s.requireEmby(s.resumeItems))
 	for _, action := range []struct {
 		path     string
@@ -309,6 +313,7 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 			} else {
+				s.hls.seedGeneratedWindowInitialIntent(hls, session, start)
 				resource := "Videos"
 				if source.Item.Type == "Audio" {
 					resource = "Audio"

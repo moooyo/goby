@@ -25,6 +25,10 @@ var migrationFiles embed.FS
 
 // Open creates a bounded pool and verifies that PostgreSQL is reachable.
 func Open(ctx context.Context, url string) (*pgxpool.Pool, error) {
+	return openPool(ctx, url, DataMaxConns, "goby")
+}
+
+func openPool(ctx context.Context, url string, maxConns int32, application string) (*pgxpool.Pool, error) {
 	if strings.TrimSpace(url) == "" {
 		return nil, errors.New("database URL is required")
 	}
@@ -33,14 +37,14 @@ func Open(ctx context.Context, url string) (*pgxpool.Pool, error) {
 		// Do not include the URL or parser error, which may contain credentials.
 		return nil, errors.New("invalid database connection configuration")
 	}
-	config.MaxConns = 16
+	config.MaxConns = maxConns
 	config.MinConns = 1
 	config.MaxConnLifetime = time.Hour
 	config.MaxConnLifetimeJitter = 5 * time.Minute
 	config.MaxConnIdleTime = 5 * time.Minute
 	config.HealthCheckPeriod = time.Minute
 	config.ConnConfig.ConnectTimeout = 5 * time.Second
-	config.ConnConfig.RuntimeParams["application_name"] = "goby"
+	config.ConnConfig.RuntimeParams["application_name"] = application
 	config.ConnConfig.RuntimeParams["statement_timeout"] = "15000"
 	config.ConnConfig.RuntimeParams["idle_in_transaction_session_timeout"] = "30000"
 	// Reuse type descriptions without retaining named server-side query plans.
@@ -54,6 +58,10 @@ func Open(ctx context.Context, url string) (*pgxpool.Pool, error) {
 	// private backend memory. Apply this policy to every Goby session at startup.
 	config.ConnConfig.RuntimeParams["jit"] = "off"
 
+	return openConfiguredPool(ctx, config)
+}
+
+func openConfiguredPool(ctx context.Context, config *pgxpool.Config) (*pgxpool.Pool, error) {
 	connectCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	pool, err := pgxpool.NewWithConfig(connectCtx, config)

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/moooyo/goby/internal/library"
+	"github.com/moooyo/goby/internal/systemevents"
 	"github.com/moooyo/goby/internal/tasks"
 )
 
@@ -33,6 +34,10 @@ func adminTaskHTTPFixtureForKey(t *testing.T, key string) (*serverFixture, *http
 		t.Fatal("task startup did not register the seven task executors")
 	}
 	expected := map[string]string{tasks.LibraryScanKey: "Scan media library", tasks.LibraryRefreshMediaKey: "Refresh media details", tasks.MetadataRefreshKey: "Refresh online metadata", tasks.SubtitleDownloadKey: "Download missing subtitles", tasks.CacheMaintainKey: "Maintain provider cache", library.TaskIntroAnalysisKey: "Analyze episode introductions", library.TaskPreviewGenerationKey: "Generate seek previews"}
+	analysisEvents := map[string]systemevents.Event{
+		library.TaskIntroAnalysisKey:     systemevents.IntroAnalysisRequested,
+		library.TaskPreviewGenerationKey: systemevents.PreviewGenerationRequested,
+	}
 	definitions := make(map[string]map[string]any)
 	identities := make(map[string]bool)
 	for _, raw := range items {
@@ -42,8 +47,38 @@ func adminTaskHTTPFixtureForKey(t *testing.T, key string) (*serverFixture, *http
 		}
 		definitionKey := stringValue(t, definition, "Key")
 		name, known := expected[definitionKey]
-		if !known || definitions[definitionKey] != nil || definition["Name"] != name || definition["Enabled"] != true || definition["Revision"] != "1" {
+		event, analysis := analysisEvents[definitionKey]
+		revision := "1"
+		if analysis {
+			revision = "2"
+		}
+		if !known || definitions[definitionKey] != nil || definition["Name"] != name || definition["Enabled"] != true || definition["Revision"] != revision {
 			t.Fatal("native task definition lost its stable public metadata")
+		}
+		triggers, ok := definition["Triggers"].([]any)
+		if !ok || !analysis && len(triggers) != 0 || analysis && len(triggers) != 2 {
+			t.Fatal("native task definition lost its initial trigger set")
+		}
+		if analysis {
+			interval, intervalOK := triggers[0].(map[string]any)
+			signal, signalOK := triggers[1].(map[string]any)
+			if !intervalOK || !signalOK || interval["Kind"] != "interval" || interval["IntervalTicks"] != "864000000000" ||
+				interval["SystemEvent"] != nil || signal["Kind"] != "system_event" || signal["SystemEvent"] != string(event) ||
+				signal["IntervalTicks"] != nil || signal["NextFireAt"] != nil {
+				t.Fatal("native analysis task lost its daily interval or dedicated request event")
+			}
+			for _, trigger := range []map[string]any{interval, signal} {
+				if len(stringValue(t, trigger, "Id")) != 32 || trigger["TimeOfDayTicks"] != nil || trigger["DayOfWeek"] != nil ||
+					trigger["MaxRuntimeTicks"] != nil || trigger["CalculationError"] != "" {
+					t.Fatal("native analysis task changed its default trigger shape")
+				}
+			}
+			if interval["Id"] == signal["Id"] {
+				t.Fatal("native analysis task reused a trigger identity")
+			}
+			if _, err := time.Parse(time.RFC3339Nano, stringValue(t, interval, "NextFireAt")); err != nil {
+				t.Fatal("native analysis interval omitted its first daily occurrence")
+			}
 		}
 		id := stringValue(t, definition, "Id")
 		if len(id) != 32 || identities[id] {

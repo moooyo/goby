@@ -107,7 +107,10 @@ func ParseMediaPlaylist(data []byte) (MediaPlaylist, error) {
 			}
 			playlist.Ended = true
 		case "#EXT-X-MAP":
-			if !hasValue || playlist.InitName != "" || len(playlist.Segments) != 0 || pendingDuration != 0 || discontinuity ||
+			// FFmpeg can put the first encoder-epoch marker before its initial
+			// map. Retain that pending marker on the first actual fragment;
+			// duplicates, subsequent maps and maps after media remain invalid.
+			if !hasValue || playlist.InitName != "" || len(playlist.Segments) != 0 || pendingDuration != 0 ||
 				len(value) < len("URI=\"\"") || !strings.HasPrefix(value, "URI=\"") || !strings.HasSuffix(value, "\"") {
 				return invalid()
 			}

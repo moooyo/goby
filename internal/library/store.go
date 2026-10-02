@@ -38,6 +38,7 @@ func New(pool *pgxpool.Pool, prober Prober, allowedRoots []string, options ...Op
 			return nil, err
 		}
 	}
+	s.playbackControlPool = settings.playbackControlPool
 	seen := make(map[string]bool)
 	for _, path := range allowedRoots {
 		if strings.TrimSpace(path) == "" || strings.ContainsRune(path, '\x00') {
@@ -390,6 +391,7 @@ func (s *Store) Close(ctx context.Context) error {
 	// Fence new opens before waiting for admission. A slow already-admitted
 	// operation must not prevent this caller from observing its own deadline.
 	s.closing.Store(true)
+	s.beginCloseMediaSources()
 	s.closeOnce.Do(func() {
 		go func() {
 			s.mu.Lock()
@@ -403,6 +405,10 @@ func (s *Store) Close(ctx context.Context) error {
 			// its syscall and recovery work, so a successor cannot clear its journal
 			// while an old rename is still capable of taking effect.
 			s.fileDeletions.Wait()
+			// Source requests may already have returned after cancellation. Keep
+			// catalog ownership and root resources until their actual workers and
+			// undelivered descriptor cleanup have completed.
+			s.mediaSourceOwners.owners.Wait()
 			ownershipErr := s.retireScanEvidenceOwnership()
 			// Failed evidence retirement retains its filesystem lock and catalog
 			// fence outside the pool until process exit. Pool.Close must not wait

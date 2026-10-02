@@ -74,13 +74,18 @@ func (s *Store) resolveEmbyWithPeer(ctx context.Context, token, peerIP string) (
 	if !ok {
 		return Principal{}, ErrUnauthorized
 	}
-	return scanApplicationKeyPrincipal(s.pool.QueryRow(ctx, `SELECT k.id, a.id, c.id,
+	principal, err = scanApplicationKeyPrincipal(s.pool.QueryRow(ctx, `SELECT k.id, a.id, c.id,
 		c.client_name, c.device_id, c.device_name, c.client_version, c.last_seen_at
 		FROM sessions a JOIN application_keys k ON k.credential_id = a.id
 		JOIN application_key_clients c ON c.credential_id = a.id
 		AND c.client_name = a.client_name AND c.device_id = a.device_id
 		WHERE a.token_hash = $1 AND a.kind = 'application_key' AND a.user_id IS NULL
 		AND a.expires_at IS NULL AND a.revoked_at IS NULL`, digest[:]))
+	if err != nil {
+		return Principal{}, err
+	}
+	principal.PeerIP = peerIP
+	return principal, nil
 }
 
 func scanApplicationKeyPrincipal(row rowScanner) (Principal, error) {

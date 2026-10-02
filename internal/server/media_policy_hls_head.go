@@ -27,6 +27,9 @@ func (h *hlsRuntime) segmentHeader(ctx context.Context, session *hlsSession, inp
 	}
 	for index := len(session.producers) - 1; index >= 0; index-- {
 		producer := session.producers[index]
+		if h.producerReleased(producer) {
+			continue
+		}
 		if number >= producer.first && number <= producer.last {
 			if handle, err := h.manager.TryOpen(session.key.scope, producer.id, name); err == nil {
 				return handle, nil

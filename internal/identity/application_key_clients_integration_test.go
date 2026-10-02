@@ -206,7 +206,7 @@ func TestStoreApplicationKeyClientBindingRejectsRevocationWhileWaiting(t *testin
 		_, err := store.ResolveEmbyForClient(ctx, key.Token, identity.Client{Name: "Queued client", DeviceID: "queued-device"})
 		results <- err
 	}()
-	waitManagedBlockedQuery(t, ctx, pool, blockerPID, "SELECT id FROM sessions WHERE id = $1 FOR UPDATE", done)
+	waitManagedBlockedQuery(t, ctx, pool, blockerPID, "SELECT id FROM sessions WHERE id = $1 FOR SHARE", done)
 	if _, err := blocker.Exec(ctx, "UPDATE sessions SET revoked_at = clock_timestamp() WHERE id = $1", key.CredentialID); err != nil {
 		t.Fatal(err)
 	}
