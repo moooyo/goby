@@ -83,6 +83,7 @@ func (transaction *scanPerformanceAuthorityTransaction) isAuthority() bool {
 type scanPerformanceSQLTracer struct {
 	queries, begins, commits, rollbacks                   atomic.Int64
 	authorityBegins, authorityCommits, authorityRollbacks atomic.Int64
+	authorityQueries, authorityManual, authorityTask      atomic.Int64
 	itemRows, metadataRows, scanRows, childRows           atomic.Int64
 	cachedCompletionChecks                                atomic.Int64
 	relationshipQueries, relationshipNanos                atomic.Int64
@@ -196,6 +197,12 @@ func (trace *scanPerformanceSQLTracer) recordAuthorityStatement(connection *pgx.
 		// pgx reports a server ROLLBACK tag before Commit returns its error.
 		if transaction != nil && transaction.isAuthority() && data.CommandTag.String() == strings.ToUpper(statement) {
 			trace.authorityBegins.Add(1)
+			trace.authorityQueries.Add(int64(transaction.statementCount + 2))
+			if transaction.statementCount == 3 {
+				trace.authorityManual.Add(1)
+			} else {
+				trace.authorityTask.Add(1)
+			}
 			if statement == "commit" {
 				trace.authorityCommits.Add(1)
 			} else {
@@ -237,6 +244,9 @@ func (trace *scanPerformanceSQLTracer) reset() {
 	trace.authorityBegins.Store(0)
 	trace.authorityCommits.Store(0)
 	trace.authorityRollbacks.Store(0)
+	trace.authorityQueries.Store(0)
+	trace.authorityManual.Store(0)
+	trace.authorityTask.Store(0)
 	trace.authorityMu.Unlock()
 	trace.itemRows.Store(0)
 	trace.metadataRows.Store(0)
@@ -365,6 +375,7 @@ func TestScanPerformanceProfile(t *testing.T) {
 		}
 		walBefore := scanPerformanceWALPosition(t, observerCtx, fixturePool)
 		trace.reset()
+		measurement := scanPerformanceBeginMeasurement(tracedPool)
 		probesBefore, started := probes.Load(), time.Now()
 		var job Job
 		var err error
@@ -385,6 +396,8 @@ func TestScanPerformanceProfile(t *testing.T) {
 		// helper's 250 ms interval rather than adding 100 reads per second.
 		job = libraryIntegrationWaitJobWithTimeout(t, observerCtx, store, job.ID, "Completed", 3*time.Minute)
 		elapsed, probeCalls := time.Since(started), probes.Load()-probesBefore
+		workerRetirementWait := scanPerformanceWaitWorkerRetired(t, ctx, store, job.ID)
+		observation := scanPerformanceEndMeasurement(measurement, tracedPool)
 		walAfter := scanPerformanceWALPosition(t, observerCtx, fixturePool)
 		var walBytes int64
 		if err := fixturePool.QueryRow(observerCtx, `SELECT pg_wal_lsn_diff($1::pg_lsn,$2::pg_lsn)::bigint`, walAfter, walBefore).Scan(&walBytes); err != nil {
@@ -400,6 +413,7 @@ func TestScanPerformanceProfile(t *testing.T) {
 		if childID != "" {
 			taskScanAssertChild(t, observerCtx, fixturePool, childID, job)
 		}
+		observation.log(t, "descriptor", phase, corpus.label, job, elapsed, workerRetirementWait, probeCalls, trace)
 		// Direct row counts cover client UPDATE/INSERT statements, excluding
 		// trigger/function writes and DELETE. WAL positions are cluster-wide
 		// observations, so paired measurements need an otherwise quiet database.
@@ -465,6 +479,7 @@ func TestScanPerformanceProfile(t *testing.T) {
 			t.Fatalf("focused profile probe calls=%d, want 400 priming probes", probes.Load())
 		}
 		scanPerformanceLogConnectionPolicy(t, observerCtx, store, tracedPool.Config(), "focus_complete", focus, trace.timingEnabled)
+		scanPerformanceCloseMeasurementStore(t, store)
 		return
 	}
 	// Each layout receives one add, rename and deletion. Existing folders remain
@@ -567,6 +582,7 @@ func TestScanPerformanceProfile(t *testing.T) {
 		}
 	}
 	scanPerformanceLogConnectionPolicy(t, observerCtx, store, tracedPool.Config(), "complete", focus, trace.timingEnabled)
+	scanPerformanceCloseMeasurementStore(t, store)
 }
 
 func scanPerformanceLogConnectionPolicy(t *testing.T, ctx context.Context, store *Store, config *pgxpool.Config, phase string, focus, timing bool) {

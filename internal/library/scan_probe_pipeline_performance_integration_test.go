@@ -4,6 +4,7 @@ package library
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -116,6 +117,8 @@ func TestScanRealProbePipelinePerformance(t *testing.T) {
 		t.Fatalf("profile media is outside its fixture budget: video=%d audio=%d", len(video), len(audio))
 	}
 	const videos, tracks = 128, 32
+	t.Logf("scan_probe_performance_corpus videos=%d tracks=%d video_template_bytes=%d audio_template_bytes=%d video_template_sha256=%x audio_template_sha256=%x",
+		videos, tracks, len(video), len(audio), sha256.Sum256(video), sha256.Sum256(audio))
 	for i := 0; i < videos; i++ {
 		catalogCapacityWriteExclusive(t, filepath.Join(root, "mixed", fmt.Sprintf("Movie%04d.mp4", i)), video)
 	}
@@ -152,6 +155,7 @@ func TestScanRealProbePipelinePerformance(t *testing.T) {
 		}
 		trace.reset()
 		prober.maximum.Store(0)
+		measurement := scanPerformanceBeginMeasurement(pool)
 		calls, resources, started := prober.calls.Load(), scanProbeProfileResourceSnapshot(t), time.Now()
 		var job Job
 		if taskOwned {
@@ -167,6 +171,9 @@ func TestScanRealProbePipelinePerformance(t *testing.T) {
 			}
 		}
 		job = libraryIntegrationWaitJobWithTimeout(t, observerCtx, store, job.ID, "Completed", 3*time.Minute)
+		elapsed := time.Since(started)
+		workerRetirementWait := scanPerformanceWaitWorkerRetired(t, ctx, store, job.ID)
+		observation := scanPerformanceEndMeasurement(measurement, pool)
 		after := scanProbeProfileResourceSnapshot(t)
 		probes := prober.calls.Load() - calls
 		if job.Error != "" || job.Scanned != videos+tracks || job.Added != wantAdded || job.Updated != wantUpdated ||
@@ -176,8 +183,17 @@ func TestScanRealProbePipelinePerformance(t *testing.T) {
 		if wantProbes == 0 && (trace.itemRows.Load() != 0 || trace.metadataRows.Load() != 0) {
 			t.Fatalf("warm scan rewrote primary facts: items=%d metadata=%d", trace.itemRows.Load(), trace.metadataRows.Load())
 		}
+		observation.ProbeResources = &scanPerformanceProbeResources{
+			PeakProbeCohorts: prober.maximum.Load(),
+			ChildCPUNS:       int64(after.childCPU - resources.childCPU),
+			ChildInBlocks:    after.inBlocks - resources.inBlocks,
+			ChildOutBlocks:   after.outBlocks - resources.outBlocks,
+			CohortScope:      "overlapping ProbeFile callbacks including parsing and sequential child work; not active subprocess peak",
+			ChildScope:       "RUSAGE_CHILDREN deltas for reaped child CPU and kernel block I/O; not logical source-read bytes or page-cache miss evidence",
+		}
+		observation.log(t, "real_probe", phase, "mixed_real_probe", job, elapsed, workerRetirementWait, probes, trace)
 		t.Logf("scan_probe_performance phase=%s elapsed=%s job_elapsed=%s probes=%d peak_probe_cohorts=%d sql=%d begins=%d commits=%d direct_item_rows=%d direct_metadata_rows=%d child_cpu=%s child_inblock=%d child_oublock=%d mode=%s",
-			phase, time.Since(started), job.FinishedAt.Sub(*job.StartedAt), probes, prober.maximum.Load(),
+			phase, elapsed, job.FinishedAt.Sub(*job.StartedAt), probes, prober.maximum.Load(),
 			trace.queries.Load(), trace.begins.Load(), trace.commits.Load(), trace.itemRows.Load(), trace.metadataRows.Load(),
 			after.childCPU-resources.childCPU, after.inBlocks-resources.inBlocks, after.outBlocks-resources.outBlocks, mode)
 		if taskOwned {
@@ -198,4 +214,5 @@ func TestScanRealProbePipelinePerformance(t *testing.T) {
 	if err != nil || result.TotalRecordCount != videos+tracks || len(result.Items) != videos+tracks {
 		t.Fatalf("profile corpus did not remain complete: count=%d items=%d error=%v", result.TotalRecordCount, len(result.Items), err)
 	}
+	scanPerformanceCloseMeasurementStore(t, store)
 }
