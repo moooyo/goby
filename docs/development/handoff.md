@@ -1,5 +1,72 @@
 # Goby handoff - October 4, 2026
 
+Batch 2 has a mixed outcome. Descriptor cold C/B medians are 1.036 for
+directory_episodes (three of three blocks slower), 1.003 for flat_episodes and
+1.006 for flat_movies (each two of three slower). Descriptor force_probe medians
+are 1.027 for directory_episodes and 1.006 for flat_movies, each slower in two
+of three blocks. Flat_episodes force_probe median is 0.959, with adverse paired
+observation 2.561 retained. Real force median is 1.041, with two of three blocks
+slower. These regressions and all adverse samples remain
+explicit. Across all three descriptor layouts, cached_1, cached_2,
+task_owned_cached, incremental and cached_after_incremental improve in all
+three matched blocks; median C/B ranges are 0.670-0.798, 0.623-0.830,
+0.716-0.846, 0.696-0.799 and 0.631-0.696 respectively. Real warm improves in
+all three blocks, median C/B 0.754. This supports the selected cache/NFO repair,
+not uniform improvement or stable tails. Ordinary descriptor cached C/H medians
+remain 1.974-2.472x historical H; that baseline is not restored.
+
+The selected work is [cached scan observation consolidation, batch 2](scan-cached-observation-20261004.md),
+frozen v2 source commit `cac08952e0b694aa6520bbada0741b624ed642cb`, with complete
+[structured evidence](scan-cached-observation-20261004.json). The selected source
+is accepted with the mixed performance limits above; current v2 evidence and
+exact private closure are complete. Measured H is
+`912354f2a48b5043a8824246f2fa011f8f34bbf1`; B is completed batch 1
+`6b1ca87ca26319565e43936a6b1573d325be2dea`; C v2 measured archive is
+`4398cc771b8968773ca8aba29455f00135b2e202c14ce50c417d8c830ec7d4c4`.
+B is its exact original archive with already committed unchanged v2 drivers;
+no driver overlay is added to B and no driver changes enter the ten-path delta.
+Measured archive and later source commit byte identities are bound separately.
+
+The eligible cached path reduces four AUTH checks to two by merging pathname,
+NFO, subtitle and image-absence observation into the second metadata phase.
+Directory evidence is limited to 4096 entries/4 MiB and must reach complete EOF
+before proving absence; any payload, old-sidecar deletion, overflow or incomplete/
+unstable evidence uses the full scanner. Leases/handles retire before owner
+queries and catalog writes. Cached episode series/season side effects wait for
+the merged phase plus final source confirmation. Known root/primary changes
+reject with sourceChanged, and unconditional phase-end Lstat including ctime
+prevents soft fallback from publishing old metadata. File/folder NFO reads are
+admitted observations with parsing/warning application outside; ordinary warning
+semantics remain, while context/deadline, Close or unknown retirement stays fatal.
+
+V1 focused execution failed on a same-tick ctime fixture precondition and is
+retained as failure history. V2 adds one test-file filesystem-clock advance
+barrier; the four production files remain unchanged. V1 is excluded from v2
+qualification and performance statistics. Current v2 completes four correctness
+cases, four builds, six pilots, six separate diagnostics and eighteen formal
+processes, retaining all 216 phase records and exact closure. Timing is TRACE0;
+SQL/AUTH counters are unavailable, not zero. TRACE1 diagnostics and pilots do
+not enter timing statistics. Do not claim every product attempt passed.
+
+Final evidence receipt SHA-256 is
+`332eb7e7c1e045fcf8d1849919673a0d626c88a032251208122efec9339a22a4`;
+exact closure receipt SHA-256 is
+`8aa7a533f61e0d3c91705101f4a7979e43961495ad8bab99ad35a9da6b9c24f6`.
+Current evidence is `qualified_and_closed`: all 154 sealed actual files are exported and hash-matched, and eighteen formal aggregates match immutable receipts/raw logs. Failed v1 is `confirmed_failed_retained`. Owned references, mounts and errors are zero. Source/data/image/cache/raw and
+failure evidence are retained. No local product verification, image or deployment
+is part of this publication.
+
+## Remaining task decisions
+
+Batch 3 directory-index/reconciliation redesign is not authorized. TTL authority
+caching, quota changes, existing-client A/V, Analysis PART2, GPU/native-hard
+qualification, whole-service mixed capacity, images and deployment remain
+unselected. The selected batch 2 cache/NFO scope does not complete the whole
+performance program. Historical batch 1 regressions remain below in their
+original comparison; current cache improvements do not erase that history.
+
+## Previous October 4 scan authority round-trip optimization, batch 1
+
 Batch 1 has a mixed performance outcome. In cached_after_incremental,
 flat_episodes C/B median is 1.351 [0.890, 1.678] (+35.1%) and directory_episodes
 is 1.044 [0.922, 3.329] (+4.4%); each is slower in two of three matched blocks.
