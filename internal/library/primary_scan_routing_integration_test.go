@@ -64,6 +64,22 @@ func primaryScanRoutingWatchSource(t *testing.T, path string) func() {
 	}
 }
 
+// These are upper workload budgets. Freshness is established by the queued
+// mutation and locked-tuple tests, rather than by requiring redundant phases.
+func primaryScanRoutingAssertAuthorityBudget(t *testing.T, trace *scanPerformanceSQLTracer, maximum int64) {
+	t.Helper()
+	singleRows, attempts := trace.authorityImplicitSingleRows.Load(), trace.authorityImplicitAttempts.Load()
+	if singleRows == 0 || singleRows > maximum || attempts != singleRows || trace.authorityImplicitCommits.Load() != singleRows ||
+		trace.authorityQueries.Load() != attempts || trace.authorityBegins.Load() != 0 || trace.authorityCommits.Load() != 0 ||
+		trace.authorityRollbacks.Load() != 0 || trace.authorityImplicitErrors.Load() != 0 || trace.authorityImplicitEmpty.Load() != 0 ||
+		trace.authorityImplicitUnexpectedRows.Load() != 0 {
+		t.Fatalf("successful scan exceeded its one-request authority budget: single_rows=%d attempts=%d commits=%d SQL=%d explicit=%d/%d/%d errors=%d empty=%d unexpected=%d maximum=%d",
+			singleRows, attempts, trace.authorityImplicitCommits.Load(), trace.authorityQueries.Load(), trace.authorityBegins.Load(),
+			trace.authorityCommits.Load(), trace.authorityRollbacks.Load(), trace.authorityImplicitErrors.Load(),
+			trace.authorityImplicitEmpty.Load(), trace.authorityImplicitUnexpectedRows.Load(), maximum)
+	}
+}
+
 func TestPrimaryScanRoutingPreparationKeepsFreshAuthority(t *testing.T) {
 	for _, retained := range []bool{false, true} {
 		name := "standalone"
@@ -84,16 +100,12 @@ func TestPrimaryScanRoutingPreparationKeepsFreshAuthority(t *testing.T) {
 			if err := input.close(); err != nil {
 				t.Fatal(err)
 			}
-			wantAuthority := int64(2)
+			maximumAuthority := int64(2)
 			if retained {
-				wantAuthority = 1
+				maximumAuthority = 1
 			}
-			if trace.authorityBegins.Load() != wantAuthority || trace.authorityCommits.Load() != wantAuthority ||
-				trace.authorityQueries.Load() != 8*wantAuthority {
-				t.Fatalf("routing preparation changed required fresh authority: begin=%d commit=%d SQL=%d want=%d",
-					trace.authorityBegins.Load(), trace.authorityCommits.Load(), trace.authorityQueries.Load(), wantAuthority)
-			}
-			if trace.begins.Load() != wantAuthority+1 || trace.commits.Load() != wantAuthority+1 ||
+			primaryScanRoutingAssertAuthorityBudget(t, trace, maximumAuthority)
+			if trace.begins.Load() != 1 || trace.commits.Load() != 1 ||
 				trace.rollbacks.Load() != 0 || trace.itemRows.Load() != 0 || trace.metadataRows.Load() != 0 {
 				t.Fatalf("routing preparation changed entry checkpoint or primary writes: begin=%d commit=%d rollback=%d items=%d metadata=%d",
 					trace.begins.Load(), trace.commits.Load(), trace.rollbacks.Load(), trace.itemRows.Load(), trace.metadataRows.Load())
@@ -105,7 +117,7 @@ func TestPrimaryScanRoutingPreparationKeepsFreshAuthority(t *testing.T) {
 	}
 }
 
-func TestPrimaryScanRoutingRetainedWalkCachedVisitHasFourFreshPhases(t *testing.T) {
+func TestPrimaryScanRoutingRetainedWalkCachedVisitKeepsAuthorityBudget(t *testing.T) {
 	ctx, pool, store, state, trace, _ := scanCachedVisitFixture(t)
 	primaryScanRoutingRetainWalk(t, state)
 	beforeIO, beforeOwners := originalMediaReadGovernor.Stats(), originalMediaReadOwners.Stats().RegisteredOwners
@@ -113,13 +125,10 @@ func TestPrimaryScanRoutingRetainedWalkCachedVisitHasFourFreshPhases(t *testing.
 	if err := state.scanFile("Film.mp4", "video", hierarchy{parentID: state.library.ID}); err != nil {
 		t.Fatal(err)
 	}
-	// Preparation, publication pathname, subtitle payload, and image payload
-	// each retain their own fresh authority transaction after admission.
-	if trace.authorityBegins.Load() != 4 || trace.authorityCommits.Load() != 4 || trace.authorityQueries.Load() != 32 ||
-		trace.begins.Load() != 5 || trace.commits.Load() != 5 || trace.cachedCompletionChecks.Load() != 1 {
-		t.Fatalf("cached retained walk changed phase or checkpoint boundaries: total=%d/%d authority=%d/%d SQL=%d completion=%d",
-			trace.begins.Load(), trace.commits.Load(), trace.authorityBegins.Load(), trace.authorityCommits.Load(),
-			trace.authorityQueries.Load(), trace.cachedCompletionChecks.Load())
+	primaryScanRoutingAssertAuthorityBudget(t, trace, 4)
+	if trace.begins.Load() != 1 || trace.commits.Load() != 1 || trace.cachedCompletionChecks.Load() != 1 {
+		t.Fatalf("cached retained walk changed checkpoint boundaries: total=%d/%d completion=%d",
+			trace.begins.Load(), trace.commits.Load(), trace.cachedCompletionChecks.Load())
 	}
 	if trace.rollbacks.Load() != 0 || trace.itemRows.Load() != 0 || trace.metadataRows.Load() != 0 {
 		t.Fatalf("cached routing visit rewrote primary facts or rolled back: rollback=%d items=%d metadata=%d",

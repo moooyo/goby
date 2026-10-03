@@ -13,7 +13,7 @@ import (
 )
 
 // These observations are intentionally process-wide and pool-wide. They include
-// the common tracer, terminal observer, and Go background work during the phase.
+// the terminal observer, Go background work, and tracer when enabled.
 // Pool counters include observer acquires and exclude waits on ownership.mu or
 // operations on the already reserved owner connection. They are not per-item
 // allocation measurements or a complete measure of catalog contention.
@@ -23,49 +23,58 @@ type scanPerformanceMeasurement struct {
 }
 
 type scanPerformanceObservation struct {
-	MeasurementVersion          int                            `json:"measurement_version"`
-	Profile                     string                         `json:"profile"`
-	Phase                       string                         `json:"phase"`
-	Library                     string                         `json:"library"`
-	ForceProbe                  bool                           `json:"force_probe"`
-	TaskOwned                   bool                           `json:"task_owned"`
-	JobElapsedNS                int64                          `json:"job_elapsed_ns"`
-	ObservedTerminalElapsedNS   int64                          `json:"observed_terminal_elapsed_ns"`
-	WorkerRetirementWaitNS      int64                          `json:"worker_retirement_wait_ns"`
-	ProbeCalls                  int64                          `json:"probe_calls"`
-	RawSQL                      int64                          `json:"raw_sql"`
-	RawBegin                    int64                          `json:"raw_begin"`
-	RawCommit                   int64                          `json:"raw_commit"`
-	RawRollback                 int64                          `json:"raw_rollback"`
-	AttributedAuthoritySQL      int64                          `json:"attributed_authority_sql"`
-	AttributedAuthorityBegin    int64                          `json:"attributed_authority_begin"`
-	AttributedAuthorityCommit   int64                          `json:"attributed_authority_commit"`
-	AttributedAuthorityRollback int64                          `json:"attributed_authority_rollback"`
-	AuthorityManualTransactions int64                          `json:"authority_manual_transactions"`
-	AuthorityTaskTransactions   int64                          `json:"authority_task_transactions"`
-	SQLTiming                   bool                           `json:"sql_timing"`
-	AllocatedBytes              uint64                         `json:"process_allocated_bytes"`
-	Mallocs                     uint64                         `json:"process_mallocs"`
-	Frees                       uint64                         `json:"process_frees"`
-	GCCount                     uint32                         `json:"process_gc_count"`
-	GCPauseNS                   uint64                         `json:"process_gc_pause_ns"`
-	HeapAllocBefore             uint64                         `json:"process_heap_alloc_before"`
-	HeapAllocAfter              uint64                         `json:"process_heap_alloc_after"`
-	PoolAcquireCount            int64                          `json:"pool_acquire_count"`
-	PoolAcquireDurationNS       int64                          `json:"pool_acquire_duration_ns"`
-	PoolEmptyAcquireCount       int64                          `json:"pool_empty_acquire_count"`
-	PoolEmptyAcquireWaitNS      int64                          `json:"pool_empty_acquire_wait_ns"`
-	PoolCanceledAcquireCount    int64                          `json:"pool_canceled_acquire_count"`
-	PoolNewConnections          int64                          `json:"pool_new_connections"`
-	PoolMaxConnections          int32                          `json:"pool_max_connections"`
-	PoolAcquiredBefore          int32                          `json:"pool_acquired_before"`
-	PoolAcquiredAfter           int32                          `json:"pool_acquired_after"`
-	PoolTotalBefore             int32                          `json:"pool_total_before"`
-	PoolTotalAfter              int32                          `json:"pool_total_after"`
-	AllocationScope             string                         `json:"allocation_scope"`
-	PoolScope                   string                         `json:"pool_scope"`
-	RetirementScope             string                         `json:"retirement_scope"`
-	ProbeResources              *scanPerformanceProbeResources `json:"probe_resources,omitempty"`
+	MeasurementVersion           int                            `json:"measurement_version"`
+	Profile                      string                         `json:"profile"`
+	Phase                        string                         `json:"phase"`
+	Library                      string                         `json:"library"`
+	ForceProbe                   bool                           `json:"force_probe"`
+	TaskOwned                    bool                           `json:"task_owned"`
+	JobElapsedNS                 int64                          `json:"job_elapsed_ns"`
+	ObservedTerminalElapsedNS    int64                          `json:"observed_terminal_elapsed_ns"`
+	WorkerRetirementWaitNS       int64                          `json:"worker_retirement_wait_ns"`
+	ProbeCalls                   int64                          `json:"probe_calls"`
+	RawSQL                       *int64                         `json:"raw_sql"`
+	RawBegin                     *int64                         `json:"raw_begin"`
+	RawCommit                    *int64                         `json:"raw_commit"`
+	RawRollback                  *int64                         `json:"raw_rollback"`
+	AttributedAuthoritySQL       *int64                         `json:"attributed_authority_sql"`
+	AttributedAuthorityBegin     *int64                         `json:"attributed_authority_begin"`
+	AttributedAuthorityCommit    *int64                         `json:"attributed_authority_commit"`
+	AttributedAuthorityRollback  *int64                         `json:"attributed_authority_rollback"`
+	AuthorityManualTransactions  *int64                         `json:"authority_manual_transactions"`
+	AuthorityTaskTransactions    *int64                         `json:"authority_task_transactions"`
+	AuthorityImplicitAttempts    *int64                         `json:"authority_implicit_attempts"`
+	AuthorityImplicitCommits     *int64                         `json:"authority_implicit_commits"`
+	AuthorityImplicitSingleRows  *int64                         `json:"authority_implicit_single_rows"`
+	AuthorityImplicitEmpty       *int64                         `json:"authority_implicit_empty"`
+	AuthorityImplicitErrors      *int64                         `json:"authority_implicit_errors"`
+	AuthorityImplicitUnexpected  *int64                         `json:"authority_implicit_unexpected_rows"`
+	AuthorityImplicitUnconfirmed *int64                         `json:"authority_implicit_unconfirmed"`
+	SQLTraceEnabled              bool                           `json:"sql_trace_enabled"`
+	SQLCounterScope              string                         `json:"sql_counter_scope"`
+	SQLTiming                    bool                           `json:"sql_timing"`
+	AllocatedBytes               uint64                         `json:"process_allocated_bytes"`
+	Mallocs                      uint64                         `json:"process_mallocs"`
+	Frees                        uint64                         `json:"process_frees"`
+	GCCount                      uint32                         `json:"process_gc_count"`
+	GCPauseNS                    uint64                         `json:"process_gc_pause_ns"`
+	HeapAllocBefore              uint64                         `json:"process_heap_alloc_before"`
+	HeapAllocAfter               uint64                         `json:"process_heap_alloc_after"`
+	PoolAcquireCount             int64                          `json:"pool_acquire_count"`
+	PoolAcquireDurationNS        int64                          `json:"pool_acquire_duration_ns"`
+	PoolEmptyAcquireCount        int64                          `json:"pool_empty_acquire_count"`
+	PoolEmptyAcquireWaitNS       int64                          `json:"pool_empty_acquire_wait_ns"`
+	PoolCanceledAcquireCount     int64                          `json:"pool_canceled_acquire_count"`
+	PoolNewConnections           int64                          `json:"pool_new_connections"`
+	PoolMaxConnections           int32                          `json:"pool_max_connections"`
+	PoolAcquiredBefore           int32                          `json:"pool_acquired_before"`
+	PoolAcquiredAfter            int32                          `json:"pool_acquired_after"`
+	PoolTotalBefore              int32                          `json:"pool_total_before"`
+	PoolTotalAfter               int32                          `json:"pool_total_after"`
+	AllocationScope              string                         `json:"allocation_scope"`
+	PoolScope                    string                         `json:"pool_scope"`
+	RetirementScope              string                         `json:"retirement_scope"`
+	ProbeResources               *scanPerformanceProbeResources `json:"probe_resources,omitempty"`
 }
 
 type scanPerformanceProbeResources struct {
@@ -88,7 +97,7 @@ func scanPerformanceEndMeasurement(before scanPerformanceMeasurement, pool *pgxp
 	runtime.ReadMemStats(&after)
 	stats := pool.Stat()
 	return scanPerformanceObservation{
-		MeasurementVersion:       1,
+		MeasurementVersion:       2,
 		AllocatedBytes:           after.TotalAlloc - before.memory.TotalAlloc,
 		Mallocs:                  after.Mallocs - before.memory.Mallocs,
 		Frees:                    after.Frees - before.memory.Frees,
@@ -107,8 +116,8 @@ func scanPerformanceEndMeasurement(before scanPerformanceMeasurement, pool *pgxp
 		PoolAcquiredAfter:        stats.AcquiredConns(),
 		PoolTotalBefore:          before.pool.TotalConns(),
 		PoolTotalAfter:           stats.TotalConns(),
-		AllocationScope:          "process delta through observed terminal state and scan worker retirement; includes tracer, observer and Go background work",
-		PoolScope:                "traced data pool delta including observer acquires; empty wait includes resource construction; excludes reserved owner and ownership mutex waits",
+		AllocationScope:          "process delta through observed terminal state and scan worker retirement; includes observer, Go background work and tracer when enabled",
+		PoolScope:                "data pool delta including observer acquires; empty wait includes resource construction; excludes reserved owner and ownership mutex waits",
 		RetirementScope:          "same scan task removed from Store.active; does not establish unrelated physical callback or native process retirement",
 	}
 }
@@ -148,18 +157,36 @@ func (observation scanPerformanceObservation) log(t *testing.T, profile, phase, 
 	observation.JobElapsedNS = int64(job.FinishedAt.Sub(*job.StartedAt))
 	observation.ObservedTerminalElapsedNS = int64(elapsed)
 	observation.WorkerRetirementWaitNS, observation.ProbeCalls = int64(workerRetirementWait), probes
-	observation.RawSQL, observation.RawBegin = trace.queries.Load(), trace.begins.Load()
-	observation.RawCommit, observation.RawRollback = trace.commits.Load(), trace.rollbacks.Load()
-	observation.AttributedAuthoritySQL = trace.authorityQueries.Load()
-	observation.AttributedAuthorityBegin, observation.AttributedAuthorityCommit = trace.authorityBegins.Load(), trace.authorityCommits.Load()
-	observation.AttributedAuthorityRollback = trace.authorityRollbacks.Load()
-	observation.AuthorityManualTransactions, observation.AuthorityTaskTransactions = trace.authorityManual.Load(), trace.authorityTask.Load()
+	observation.SQLTraceEnabled = !trace.disabled
+	observation.SQLCounterScope = "not collected; the pgx SQL tracer was not installed"
+	if !trace.disabled {
+		observation.RawSQL, observation.RawBegin = scanPerformanceCounter(trace.queries.Load()), scanPerformanceCounter(trace.begins.Load())
+		observation.RawCommit, observation.RawRollback = scanPerformanceCounter(trace.commits.Load()), scanPerformanceCounter(trace.rollbacks.Load())
+		observation.AttributedAuthoritySQL = scanPerformanceCounter(trace.authorityQueries.Load())
+		observation.AttributedAuthorityBegin = scanPerformanceCounter(trace.authorityBegins.Load())
+		observation.AttributedAuthorityCommit = scanPerformanceCounter(trace.authorityCommits.Load())
+		observation.AttributedAuthorityRollback = scanPerformanceCounter(trace.authorityRollbacks.Load())
+		observation.AuthorityManualTransactions = scanPerformanceCounter(trace.authorityManual.Load())
+		observation.AuthorityTaskTransactions = scanPerformanceCounter(trace.authorityTask.Load())
+		observation.AuthorityImplicitAttempts = scanPerformanceCounter(trace.authorityImplicitAttempts.Load())
+		observation.AuthorityImplicitCommits = scanPerformanceCounter(trace.authorityImplicitCommits.Load())
+		observation.AuthorityImplicitSingleRows = scanPerformanceCounter(trace.authorityImplicitSingleRows.Load())
+		observation.AuthorityImplicitEmpty = scanPerformanceCounter(trace.authorityImplicitEmpty.Load())
+		observation.AuthorityImplicitErrors = scanPerformanceCounter(trace.authorityImplicitErrors.Load())
+		observation.AuthorityImplicitUnexpected = scanPerformanceCounter(trace.authorityImplicitUnexpectedRows.Load())
+		observation.AuthorityImplicitUnconfirmed = scanPerformanceCounter(trace.authorityImplicitUnconfirmed.Load())
+		observation.SQLCounterScope = "client commands excluding observer queries; AUTH SQL is a subset of raw SQL; BEGIN/COMMIT count explicit commands only; implicit commits include empty results; manual/task transactions require a single-row authority result"
+	}
 	observation.SQLTiming = trace.timingEnabled
 	data, err := json.Marshal(observation)
 	if err != nil {
 		t.Fatalf("encode scan performance observation: %v", err)
 	}
 	t.Logf("scan_performance_observation=%s", data)
+}
+
+func scanPerformanceCounter(value int64) *int64 {
+	return &value
 }
 
 // Close is outside every workload interval and must finish before a successful

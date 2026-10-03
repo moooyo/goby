@@ -19,6 +19,7 @@ import (
 )
 
 type primarySidecarQueuedAuthorityTrace struct {
+	authority    scanPerformanceSQLTracer
 	owner        atomic.Pointer[pgx.Conn]
 	begins       atomic.Int64
 	ownedBegins  atomic.Int64
@@ -27,6 +28,7 @@ type primarySidecarQueuedAuthorityTrace struct {
 }
 
 func (trace *primarySidecarQueuedAuthorityTrace) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
+	ctx = trace.authority.TraceQueryStart(ctx, conn, data)
 	statement := strings.ToLower(strings.TrimSpace(data.SQL))
 	if statement == "begin" {
 		trace.begins.Add(1)
@@ -43,10 +45,12 @@ func (trace *primarySidecarQueuedAuthorityTrace) TraceQueryStart(ctx context.Con
 	return ctx
 }
 
-func (trace *primarySidecarQueuedAuthorityTrace) TraceQueryEnd(context.Context, *pgx.Conn, pgx.TraceQueryEndData) {
+func (trace *primarySidecarQueuedAuthorityTrace) TraceQueryEnd(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryEndData) {
+	trace.authority.TraceQueryEnd(ctx, conn, data)
 }
 
 func (trace *primarySidecarQueuedAuthorityTrace) reset() {
+	trace.authority.reset()
 	trace.begins.Store(0)
 	trace.ownedBegins.Store(0)
 	trace.ownedCommits.Store(0)
@@ -187,9 +191,9 @@ func TestPrimarySidecarQueuedWalkRoutingRequiresFreshAuthority(t *testing.T) {
 			primaryReadTestWaitQueued(t, wait, baselineIO.Queued+1)
 			stats := originalMediaReadGovernor.Stats()
 			if stats.Active != baselineIO.Active+2 || stats.Background != baselineIO.Background+2 ||
-				originalMediaReadOwners.Stats().RegisteredOwners != baselineOwners+3 || trace.begins.Load() != 0 {
-				t.Fatalf("queued sidecar repeated preparation authority or changed actual admission: IO=%+v owners=%+v begins=%d",
-					stats, originalMediaReadOwners.Stats(), trace.begins.Load())
+				originalMediaReadOwners.Stats().RegisteredOwners != baselineOwners+3 || trace.begins.Load() != 0 || trace.authority.authorityImplicitAttempts.Load() != 0 {
+				t.Fatalf("queued sidecar repeated preparation authority or changed actual admission: IO=%+v owners=%+v begins=%d implicit_attempts=%d",
+					stats, originalMediaReadOwners.Stats(), trace.begins.Load(), trace.authority.authorityImplicitAttempts.Load())
 			}
 			if count := mediaSourceWarmPipelineTestFileCount(t, poster); count != 0 {
 				t.Fatalf("queued sidecar opened %d payload descriptors before its grant", count)
@@ -215,7 +219,24 @@ func TestPrimarySidecarQueuedWalkRoutingRequiresFreshAuthority(t *testing.T) {
 			if !errors.Is(scanErr, scenario.want) {
 				t.Fatalf("queued sidecar reused preparation authority: got=%v want=%v", scanErr, scenario.want)
 			}
-			if trace.begins.Load() != 1 || trace.ownedBegins.Load() != 0 || trace.ownedCommits.Load() != 0 || trace.imageWrites.Load() != 0 ||
+			wantBegins, wantSingleRows, wantEmpty := int64(0), int64(1), int64(0)
+			if scenario.job {
+				// Cancellation produces no fast-path row and retains the original
+				// explicit transaction's detailed rejection. Changed root facts
+				// are returned by the fast path and rejected against the route.
+				wantBegins, wantSingleRows, wantEmpty = 1, 0, 1
+			}
+			if trace.authority.authorityImplicitAttempts.Load() != 1 || trace.authority.authorityImplicitCommits.Load() != 1 ||
+				trace.authority.authorityImplicitSingleRows.Load() != wantSingleRows || trace.authority.authorityImplicitEmpty.Load() != wantEmpty ||
+				trace.authority.authorityImplicitErrors.Load() != 0 || trace.authority.authorityImplicitUnconfirmed.Load() != 0 ||
+				trace.authority.authorityImplicitUnexpectedRows.Load() != 0 {
+				t.Fatalf("queued sidecar did not retain its fresh authority request: attempts=%d commits=%d single_rows=%d empty=%d errors=%d unconfirmed=%d unexpected=%d",
+					trace.authority.authorityImplicitAttempts.Load(), trace.authority.authorityImplicitCommits.Load(),
+					trace.authority.authorityImplicitSingleRows.Load(), trace.authority.authorityImplicitEmpty.Load(),
+					trace.authority.authorityImplicitErrors.Load(), trace.authority.authorityImplicitUnconfirmed.Load(),
+					trace.authority.authorityImplicitUnexpectedRows.Load())
+			}
+			if trace.begins.Load() != wantBegins || trace.ownedBegins.Load() != 0 || trace.ownedCommits.Load() != 0 || trace.imageWrites.Load() != 0 ||
 				state.imageDirectories != nil || state.warnings != 0 {
 				t.Fatalf("rejected sidecar entered payload or catalog publication: begins=%d owned_begin=%d owned_commit=%d writes=%d directories=%v warnings=%d",
 					trace.begins.Load(), trace.ownedBegins.Load(), trace.ownedCommits.Load(), trace.imageWrites.Load(), state.imageDirectories, state.warnings)

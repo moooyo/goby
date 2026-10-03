@@ -76,9 +76,9 @@ func TestScanRealProbePipelinePerformance(t *testing.T) {
 	if err := original.Close(ctx); err != nil {
 		t.Fatal(err)
 	}
-	trace := &scanPerformanceSQLTracer{}
+	trace := scanPerformanceProfileTracer()
 	configuration := observer.Config()
-	configuration.ConnConfig.Tracer = trace
+	trace.configure(configuration)
 	pool, err := pgxpool.NewWithConfig(ctx, configuration)
 	if err != nil {
 		t.Fatal(err)
@@ -180,7 +180,7 @@ func TestScanRealProbePipelinePerformance(t *testing.T) {
 			job.ForceProbe != force || job.TaskChildID != childID || job.CancelRequested || probes != wantProbes || job.StartedAt == nil || job.FinishedAt == nil || prober.active.Load() != 0 {
 			t.Fatalf("complete real scan facts differ: job=%+v probes=%d active=%d", job, probes, prober.active.Load())
 		}
-		if wantProbes == 0 && (trace.itemRows.Load() != 0 || trace.metadataRows.Load() != 0) {
+		if !trace.disabled && wantProbes == 0 && (trace.itemRows.Load() != 0 || trace.metadataRows.Load() != 0) {
 			t.Fatalf("warm scan rewrote primary facts: items=%d metadata=%d", trace.itemRows.Load(), trace.metadataRows.Load())
 		}
 		observation.ProbeResources = &scanPerformanceProbeResources{
@@ -192,8 +192,8 @@ func TestScanRealProbePipelinePerformance(t *testing.T) {
 			ChildScope:       "RUSAGE_CHILDREN deltas for reaped child CPU and kernel block I/O; not logical source-read bytes or page-cache miss evidence",
 		}
 		observation.log(t, "real_probe", phase, "mixed_real_probe", job, elapsed, workerRetirementWait, probes, trace)
-		t.Logf("scan_probe_performance phase=%s elapsed=%s job_elapsed=%s probes=%d peak_probe_cohorts=%d sql=%d begins=%d commits=%d direct_item_rows=%d direct_metadata_rows=%d child_cpu=%s child_inblock=%d child_oublock=%d mode=%s",
-			phase, elapsed, job.FinishedAt.Sub(*job.StartedAt), probes, prober.maximum.Load(),
+		t.Logf("scan_probe_performance phase=%s elapsed=%s job_elapsed=%s probes=%d peak_probe_cohorts=%d sql_trace_enabled=%t sql=%d begins=%d commits=%d direct_item_rows=%d direct_metadata_rows=%d child_cpu=%s child_inblock=%d child_oublock=%d mode=%s",
+			phase, elapsed, job.FinishedAt.Sub(*job.StartedAt), probes, prober.maximum.Load(), !trace.disabled,
 			trace.queries.Load(), trace.begins.Load(), trace.commits.Load(), trace.itemRows.Load(), trace.metadataRows.Load(),
 			after.childCPU-resources.childCPU, after.inBlocks-resources.inBlocks, after.outBlocks-resources.outBlocks, mode)
 		if taskOwned {

@@ -278,27 +278,22 @@ func TestCachedScanImageAbsenceCombinesOneCompletionCheckpoint(t *testing.T) {
 			if err := state.scanFile("Film.mp4", "video", hierarchy{parentID: state.library.ID}); err != nil {
 				t.Fatal(err)
 			}
-			wantBegins, wantAuthority, wantCombined := int64(2), int64(5), int64(0)
+			wantBegins, maximumAuthority, wantCombined := int64(2), int64(5), int64(0)
 			if scenario == "stable_absence" {
-				wantBegins, wantAuthority, wantCombined = 1, 7, 1
+				wantBegins, maximumAuthority, wantCombined = 1, 7, 1
 			} else if scenario == "valid_candidate" || scenario == "invalid_candidate" {
-				wantBegins, wantAuthority = 3, 7
+				wantBegins, maximumAuthority = 3, 7
 			} else if scenario == "missing_directory_proof" {
-				wantAuthority = 3
+				maximumAuthority = 3
 			}
+			primaryScanRoutingAssertAuthorityBudget(t, trace, maximumAuthority)
 			begins, commits := trace.begins.Load(), trace.commits.Load()
-			authorityBegins, authorityCommits := trace.authorityBegins.Load(), trace.authorityCommits.Load()
-			checkpointBegins, checkpointCommits := begins-authorityBegins, commits-authorityCommits
 			combined := trace.cachedCompletionChecks.Load()
-			t.Logf("cached visit boundaries: total=%d/%d authority=%d/%d checkpoint=%d/%d combined=%d",
-				begins, commits, authorityBegins, authorityCommits, checkpointBegins, checkpointCommits, combined)
-			if checkpointBegins != wantBegins || checkpointCommits != wantBegins || combined != wantCombined {
+			t.Logf("cached visit boundaries: checkpoint=%d/%d authority_single_rows=%d combined=%d",
+				begins, commits, trace.authorityImplicitSingleRows.Load(), combined)
+			if begins != wantBegins || commits != wantBegins || combined != wantCombined {
 				t.Fatalf("cached visit checkpoint boundaries differ: begin=%d commit=%d combined=%d want_begin=%d want_combined=%d",
-					checkpointBegins, checkpointCommits, combined, wantBegins, wantCombined)
-			}
-			if authorityBegins != wantAuthority || authorityCommits != wantAuthority || begins != wantBegins+wantAuthority || commits != wantBegins+wantAuthority {
-				t.Fatalf("cached visit authority boundaries differ: total=%d/%d authority=%d/%d want_checkpoint=%d want_authority=%d",
-					begins, commits, authorityBegins, authorityCommits, wantBegins, wantAuthority)
+					begins, commits, combined, wantBegins, wantCombined)
 			}
 			if trace.rollbacks.Load() != 0 || trace.authorityRollbacks.Load() != 0 || trace.itemRows.Load() != 0 || trace.metadataRows.Load() != 0 {
 				t.Fatalf("cached visit introduced rollback or primary writes: rollback=%d authority_rollback=%d item_rows=%d metadata_rows=%d",

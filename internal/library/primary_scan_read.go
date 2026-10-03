@@ -263,6 +263,25 @@ func (input *primaryScanRead) readAuthorityForPublication(publication bool) (_ r
 	if !active {
 		return rootBindingRow{}, ErrTaskScanInactive
 	}
+	row, accepted, err := input.readAuthorityInOneRequest()
+	if err != nil {
+		return rootBindingRow{}, err
+	}
+	if accepted {
+		if publication {
+			if err := state.task.ctx.Err(); err != nil {
+				return rootBindingRow{}, err
+			}
+		}
+		return row, nil
+	}
+	return input.readAuthorityTransaction(publication)
+}
+
+// Unsuccessful fast-path observations retain the original detailed error and
+// terminal-history contracts in a new transaction with fresh statement views.
+func (input *primaryScanRead) readAuthorityTransaction(publication bool) (_ rootBindingRow, resultErr error) {
+	state := input.state
 	tx, err := state.store.pool.Begin(input.work)
 	if err != nil {
 		return rootBindingRow{}, err

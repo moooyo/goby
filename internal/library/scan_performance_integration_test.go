@@ -24,6 +24,12 @@ type scanPerformanceObserverContextKey struct{}
 type scanPerformanceWriteContextKey struct{}
 type scanPerformanceTimingContextKey struct{}
 type scanPerformanceStatementContextKey struct{}
+type scanPerformanceImplicitAuthorityContextKey struct{}
+
+type scanPerformanceImplicitAuthority struct {
+	mode string
+	idle bool
+}
 
 type scanPerformanceQueryTiming struct {
 	started  time.Time
@@ -56,6 +62,84 @@ var scanPerformanceAuthorityStatements = func() []string {
 	return statements
 }()
 
+// These complete SQL mirrors keep the measurement driver source-compatible
+// with historical revisions that have no one-request authority implementation.
+// The candidate's correctness test must also compare them with production SQL.
+const scanPerformanceManualAuthoritySQL = `/* primary_scan_authority */
+WITH job_route AS MATERIALIZED (
+	SELECT id, COALESCE(task_child_id, '') AS child_id
+	FROM scan_jobs WHERE id = $1
+), locked_job AS MATERIALIZED (
+	SELECT j.id, j.library_id, j.status, j.force_probe, j.cancel_requested,
+		COALESCE(j.task_child_id, '') AS child_id
+	FROM scan_jobs j JOIN job_route route ON j.id = route.id
+	WHERE route.child_id = $3 AND $3 = ''
+	FOR UPDATE OF j
+), authorized_job AS MATERIALIZED (
+	SELECT library_id FROM locked_job
+	WHERE id = $1 AND library_id = $2 AND child_id = $3
+		AND status = 'Running' AND force_probe = $4 AND NOT cancel_requested
+)
+` + scanPerformanceAuthorityRootSQL
+
+const scanPerformanceTaskAuthoritySQL = `/* primary_scan_authority */
+WITH job_route AS MATERIALIZED (
+	SELECT id, COALESCE(task_child_id, '') AS child_id
+	FROM scan_jobs WHERE id = $1
+), child_route AS MATERIALIZED (
+	SELECT c.id, c.run_id, route.id AS job_id
+	FROM task_run_children c JOIN job_route route ON c.id = route.child_id
+	WHERE route.child_id = $3 AND $3 <> ''
+), locked_run AS MATERIALIZED (
+	SELECT r.id, r.state, r.task_key, route.id AS child_id, route.job_id
+	FROM task_runs r JOIN child_route route ON r.id = route.run_id
+	FOR UPDATE OF r
+), locked_child AS MATERIALIZED (
+	SELECT c.id, c.library_id, c.state, COALESCE(c.scan_job_id, '') AS scan_id,
+		r.state AS run_state, r.task_key AS run_key, r.job_id
+	FROM task_run_children c JOIN locked_run r ON c.run_id = r.id AND c.id = r.child_id
+	FOR UPDATE OF c
+), locked_job AS MATERIALIZED (
+	SELECT j.id, j.library_id, j.status, j.force_probe, j.cancel_requested,
+		COALESCE(j.task_child_id, '') AS child_id, c.id AS locked_child_id,
+		c.library_id AS child_library_id, c.state AS child_state, c.scan_id,
+		c.run_state, c.run_key
+	FROM scan_jobs j JOIN locked_child c ON j.id = c.job_id
+	FOR UPDATE OF j
+), authorized_job AS MATERIALIZED (
+	SELECT library_id FROM locked_job
+	WHERE id = $1 AND library_id = $2 AND child_id = $3
+		AND status = 'Running' AND force_probe = $4 AND NOT cancel_requested
+		AND locked_child_id = child_id AND child_library_id = library_id AND scan_id = id
+		AND run_state IN ('pending', 'running') AND child_state = 'running'
+		AND ((run_key = 'library.scan' AND NOT force_probe)
+			OR (run_key = 'library.refresh_media' AND force_probe))
+)
+` + scanPerformanceAuthorityRootSQL
+
+const scanPerformanceAuthorityRootSQL = `SELECT ` + rootBindingMetadataColumns + `,
+	r.storage_binding IS NOT NULL,
+	CASE WHEN octet_length(r.storage_binding::text) <= $6 THEN r.storage_binding::text END,
+	r.bound_at, CASE WHEN r.bound_by IS NULL THEN NULL WHEN octet_length(r.bound_by) <= 256 THEN r.bound_by ELSE '' END
+	FROM library_roots r JOIN authorized_job authority ON r.library_id = authority.library_id
+	WHERE r.id = $5 FOR UPDATE OF r`
+
+var scanPerformanceImplicitAuthorityStatements = [2]string{
+	scanPerformanceNormalizeSQL(scanPerformanceManualAuthoritySQL),
+	scanPerformanceNormalizeSQL(scanPerformanceTaskAuthoritySQL),
+}
+
+func scanPerformanceImplicitAuthorityMode(statement string) string {
+	switch statement {
+	case scanPerformanceImplicitAuthorityStatements[0]:
+		return "manual"
+	case scanPerformanceImplicitAuthorityStatements[1]:
+		return "task"
+	default:
+		return ""
+	}
+}
+
 func scanPerformanceNormalizeSQL(statement string) string {
 	return strings.Join(strings.Fields(strings.ToLower(statement)), " ")
 }
@@ -84,19 +168,45 @@ type scanPerformanceSQLTracer struct {
 	queries, begins, commits, rollbacks                   atomic.Int64
 	authorityBegins, authorityCommits, authorityRollbacks atomic.Int64
 	authorityQueries, authorityManual, authorityTask      atomic.Int64
+	authorityImplicitAttempts, authorityImplicitCommits   atomic.Int64
+	authorityImplicitSingleRows, authorityImplicitEmpty   atomic.Int64
+	authorityImplicitErrors, authorityImplicitUnconfirmed atomic.Int64
+	authorityImplicitUnexpectedRows                       atomic.Int64
 	itemRows, metadataRows, scanRows, childRows           atomic.Int64
 	cachedCompletionChecks                                atomic.Int64
 	relationshipQueries, relationshipNanos                atomic.Int64
 	completionNanos                                       atomic.Int64
 	timingEnabled                                         bool
+	disabled                                              bool
 	authorityMu                                           sync.Mutex
 	authorityTransactions                                 map[*pgx.Conn]*scanPerformanceAuthorityTransaction
 }
 
-func (trace *scanPerformanceSQLTracer) TraceQueryStart(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
-	ctx = context.WithValue(ctx, scanPerformanceStatementContextKey{}, scanPerformanceNormalizeSQL(data.SQL))
+func scanPerformanceProfileTracer() *scanPerformanceSQLTracer {
+	disabled := os.Getenv("GOBY_SCAN_PERFORMANCE_SQL_TRACE") == "0"
+	return &scanPerformanceSQLTracer{disabled: disabled,
+		timingEnabled: !disabled && os.Getenv("GOBY_SCAN_PERFORMANCE_SQL_TIMING") == "1"}
+}
+
+func (trace *scanPerformanceSQLTracer) configure(config *pgxpool.Config) {
+	// A disabled profile has no query callback, normalization, or tracer lock.
+	// The zero-value tracer remains enabled for correctness fixtures.
+	config.ConnConfig.Tracer = nil
+	if !trace.disabled {
+		config.ConnConfig.Tracer = trace
+	}
+}
+
+func (trace *scanPerformanceSQLTracer) TraceQueryStart(ctx context.Context, connection *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
+	normalized := scanPerformanceNormalizeSQL(data.SQL)
+	ctx = context.WithValue(ctx, scanPerformanceStatementContextKey{}, normalized)
 	if ignored, _ := ctx.Value(scanPerformanceObserverContextKey{}).(bool); ignored {
 		return ctx
+	}
+	if mode := scanPerformanceImplicitAuthorityMode(normalized); mode != "" {
+		ctx = context.WithValue(ctx, scanPerformanceImplicitAuthorityContextKey{}, scanPerformanceImplicitAuthority{
+			mode: mode, idle: connection != nil && connection.PgConn().TxStatus() == 'I',
+		})
 	}
 	trace.queries.Add(1)
 	statement := strings.ToLower(strings.TrimSpace(data.SQL))
@@ -143,6 +253,9 @@ func (trace *scanPerformanceSQLTracer) TraceQueryStart(ctx context.Context, _ *p
 func (trace *scanPerformanceSQLTracer) TraceQueryEnd(ctx context.Context, connection *pgx.Conn, data pgx.TraceQueryEndData) {
 	ignored, _ := ctx.Value(scanPerformanceObserverContextKey{}).(bool)
 	statement, _ := ctx.Value(scanPerformanceStatementContextKey{}).(string)
+	if implicit, ok := ctx.Value(scanPerformanceImplicitAuthorityContextKey{}).(scanPerformanceImplicitAuthority); ok && !ignored {
+		trace.recordImplicitAuthority(connection, implicit, data)
+	}
 	trace.recordAuthorityStatement(connection, statement, ignored, data)
 	if ignored || data.Err != nil {
 		return
@@ -167,6 +280,39 @@ func (trace *scanPerformanceSQLTracer) TraceQueryEnd(ctx context.Context, connec
 		trace.scanRows.Add(rows)
 	case "task_run_children":
 		trace.childRows.Add(rows)
+	}
+}
+
+func (trace *scanPerformanceSQLTracer) recordImplicitAuthority(connection *pgx.Conn, authority scanPerformanceImplicitAuthority, data pgx.TraceQueryEndData) {
+	// BEGIN/COMMIT counters report client commands only. A matching standalone
+	// SELECT also executes a transaction, even when it returns no authority row.
+	if !authority.idle {
+		return
+	}
+	trace.authorityImplicitAttempts.Add(1)
+	trace.authorityQueries.Add(1)
+	if data.Err != nil {
+		// An error does not prove rollback or physical connection retirement.
+		trace.authorityImplicitErrors.Add(1)
+		return
+	}
+	if connection == nil || connection.PgConn().TxStatus() != 'I' || !strings.HasPrefix(data.CommandTag.String(), "SELECT ") {
+		trace.authorityImplicitUnconfirmed.Add(1)
+		return
+	}
+	trace.authorityImplicitCommits.Add(1)
+	switch data.CommandTag.RowsAffected() {
+	case 0:
+		trace.authorityImplicitEmpty.Add(1)
+	case 1:
+		trace.authorityImplicitSingleRows.Add(1)
+		if authority.mode == "manual" {
+			trace.authorityManual.Add(1)
+		} else {
+			trace.authorityTask.Add(1)
+		}
+	default:
+		trace.authorityImplicitUnexpectedRows.Add(1)
 	}
 }
 
@@ -247,6 +393,13 @@ func (trace *scanPerformanceSQLTracer) reset() {
 	trace.authorityQueries.Store(0)
 	trace.authorityManual.Store(0)
 	trace.authorityTask.Store(0)
+	trace.authorityImplicitAttempts.Store(0)
+	trace.authorityImplicitCommits.Store(0)
+	trace.authorityImplicitSingleRows.Store(0)
+	trace.authorityImplicitEmpty.Store(0)
+	trace.authorityImplicitErrors.Store(0)
+	trace.authorityImplicitUnexpectedRows.Store(0)
+	trace.authorityImplicitUnconfirmed.Store(0)
 	trace.authorityMu.Unlock()
 	trace.itemRows.Store(0)
 	trace.metadataRows.Store(0)
@@ -301,9 +454,9 @@ func TestScanPerformanceProfile(t *testing.T) {
 	if err := fixtureStore.Close(ctx); err != nil {
 		t.Fatalf("release fixture catalog ownership: %v", err)
 	}
-	trace := &scanPerformanceSQLTracer{timingEnabled: os.Getenv("GOBY_SCAN_PERFORMANCE_SQL_TIMING") == "1"}
+	trace := scanPerformanceProfileTracer()
 	configuration := fixturePool.Config()
-	configuration.ConnConfig.Tracer = trace
+	trace.configure(configuration)
 	tracedPool, err := pgxpool.NewWithConfig(ctx, configuration)
 	if err != nil {
 		t.Fatalf("create traced scan pool: %v", err)
@@ -407,7 +560,7 @@ func TestScanPerformanceProfile(t *testing.T) {
 			job.ForceProbe != force || job.CancelRequested || job.StartedAt == nil || job.FinishedAt == nil || probeCalls != wantProbes {
 			t.Fatalf("%s/%s scan facts differ: job=%+v probe_calls=%d want_probes=%d", phase, corpus.label, job, probeCalls, wantProbes)
 		}
-		if trace.queries.Load() == 0 || trace.begins.Load() == 0 || trace.commits.Load() == 0 {
+		if !trace.disabled && (trace.queries.Load() == 0 || trace.begins.Load() == 0 || trace.commits.Load() == 0) {
 			t.Fatal("scan SQL tracer did not observe the owned transaction session")
 		}
 		if childID != "" {
@@ -417,8 +570,8 @@ func TestScanPerformanceProfile(t *testing.T) {
 		// Direct row counts cover client UPDATE/INSERT statements, excluding
 		// trigger/function writes and DELETE. WAL positions are cluster-wide
 		// observations, so paired measurements need an otherwise quiet database.
-		t.Logf("scan_performance phase=%s library=%s elapsed=%s job_elapsed=%s sql=%d begin=%d commit=%d rollback=%d probe_calls=%d scanned=%d added=%d updated=%d direct_items_write_rows=%d direct_metadata_write_rows=%d direct_scan_write_rows=%d direct_child_write_rows=%d wal_bytes=%d cached_completion_checks=%d relationship_queries=%d relationship_query_ns=%d completion_query_ns=%d",
-			phase, corpus.label, elapsed, job.FinishedAt.Sub(*job.StartedAt), trace.queries.Load(), trace.begins.Load(),
+		t.Logf("scan_performance phase=%s library=%s elapsed=%s job_elapsed=%s sql_trace_enabled=%t sql=%d begin=%d commit=%d rollback=%d probe_calls=%d scanned=%d added=%d updated=%d direct_items_write_rows=%d direct_metadata_write_rows=%d direct_scan_write_rows=%d direct_child_write_rows=%d wal_bytes=%d cached_completion_checks=%d relationship_queries=%d relationship_query_ns=%d completion_query_ns=%d",
+			phase, corpus.label, elapsed, job.FinishedAt.Sub(*job.StartedAt), !trace.disabled, trace.queries.Load(), trace.begins.Load(),
 			trace.commits.Load(), trace.rollbacks.Load(), probeCalls, job.Scanned, job.Added, job.Updated,
 			trace.itemRows.Load(), trace.metadataRows.Load(), trace.scanRows.Load(), trace.childRows.Load(), walBytes, trace.cachedCompletionChecks.Load(),
 			trace.relationshipQueries.Load(), trace.relationshipNanos.Load(), trace.completionNanos.Load())
@@ -597,9 +750,11 @@ func scanPerformanceLogConnectionPolicy(t *testing.T, ctx context.Context, store
 		GenericPlans       int64  `json:"generic_plan_count"`
 		CustomPlans        int64  `json:"custom_plan_count"`
 		Focus              bool   `json:"focus"`
+		SQLTraceEnabled    bool   `json:"sql_trace_enabled"`
 		SQLTiming          bool   `json:"sql_timing"`
 	}{Phase: phase, QueryExecMode: fmt.Sprint(config.ConnConfig.DefaultQueryExecMode),
-		QueryExecModeValue: int(config.ConnConfig.DefaultQueryExecMode), Focus: focus, SQLTiming: timing}
+		QueryExecModeValue: int(config.ConnConfig.DefaultQueryExecMode), Focus: focus,
+		SQLTraceEnabled: config.ConnConfig.Tracer != nil, SQLTiming: timing}
 	if err := store.lockOwnedSession(ctx); err != nil {
 		t.Fatal(err)
 	}
