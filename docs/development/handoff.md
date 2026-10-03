@@ -1,5 +1,21 @@
 # Goby handoff - October 3, 2026
 
+Latest measurement delivery is [current-main performance remeasurement](media-performance-remeasure-20261003.md),
+with complete raw/statistical data in the [structured record](media-performance-remeasure-20261003.json).
+The measured production sources remain baseline `912354f` and current `66680f2`;
+measurement-driver commit `9f76c28f0c57913cf6e5449835f7375175b7a8a4` adds four Linux test files only.
+Three formal pairs completed with all 12 scan and six HTTP processes passing,
+zero skips, and pilot records excluded from statistics. Scan results show a
+regression: paired job medians are 2.16-2.24x for descriptor cold scans,
+4.10-5.91x for cached_1/cached_2, and 2.50-2.62x for forced probes; real-probe
+results have the same direction. HTTP and Stop observations retain their
+three-sample limits and do not establish stable tails. Private resources are
+closed, evidence is retained, and protected services are unchanged. The selected
+remeasurement is complete; scan optimization and the other performance tasks
+remain paused. No production behavior, default, image or deployment changed.
+
+## Previous October 3 Stop recovery and actual read qualification
+
 Latest source delivery is [Stop recovery and actual media-root read isolation](media-stop-read-isolation-20261003.md),
 source commit `8df2dd226e955343eb8376cdeff3e487a6d29d41`. Bounded Stop recovery
 and the declared actual read consumers are qualified. Existing file-HLS ownership
