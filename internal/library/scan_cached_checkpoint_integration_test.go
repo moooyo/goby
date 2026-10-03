@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -202,7 +203,22 @@ func TestCachedScanProgressRejectsLostOwnershipSession(t *testing.T) {
 	}
 }
 
-func scanCachedVisitFixture(t *testing.T) (context.Context, *pgxpool.Pool, *Store, *scanState, *scanPerformanceSQLTracer, string) {
+type scanCachedVisitQueryTracers []pgx.QueryTracer
+
+func (tracers scanCachedVisitQueryTracers) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
+	for _, trace := range tracers {
+		ctx = trace.TraceQueryStart(ctx, conn, data)
+	}
+	return ctx
+}
+
+func (tracers scanCachedVisitQueryTracers) TraceQueryEnd(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryEndData) {
+	for _, trace := range tracers {
+		trace.TraceQueryEnd(ctx, conn, data)
+	}
+}
+
+func scanCachedVisitFixture(t *testing.T, observers ...pgx.QueryTracer) (context.Context, *pgxpool.Pool, *Store, *scanState, *scanPerformanceSQLTracer, string) {
 	t.Helper()
 	ctx, pool, previous, root, _ := libraryIntegrationStore(t, &libraryFixtureProber{})
 	if err := previous.Close(ctx); err != nil {
@@ -211,6 +227,9 @@ func scanCachedVisitFixture(t *testing.T) (context.Context, *pgxpool.Pool, *Stor
 	trace := &scanPerformanceSQLTracer{}
 	config := pool.Config()
 	config.ConnConfig.Tracer = trace
+	if len(observers) != 0 {
+		config.ConnConfig.Tracer = append(scanCachedVisitQueryTracers{trace}, observers...)
+	}
 	tracedPool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
 		t.Fatal(err)
@@ -280,7 +299,7 @@ func TestCachedScanImageAbsenceCombinesOneCompletionCheckpoint(t *testing.T) {
 			}
 			wantBegins, maximumAuthority, wantCombined := int64(2), int64(5), int64(0)
 			if scenario == "stable_absence" {
-				wantBegins, maximumAuthority, wantCombined = 1, 7, 1
+				wantBegins, maximumAuthority, wantCombined = 1, 3, 1
 			} else if scenario == "valid_candidate" || scenario == "invalid_candidate" {
 				wantBegins, maximumAuthority = 3, 7
 			} else if scenario == "missing_directory_proof" {

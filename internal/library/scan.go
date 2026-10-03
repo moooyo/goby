@@ -463,11 +463,13 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 	}
 	info, stored, probe := input.info, input.stored, input.probe
 	var err error
-	unchanged, checksVersion := input.unchanged, input.checksVersion
+	unchanged := input.unchanged
 	relative := filepath.ToSlash(path)
 	name := cleanName(strings.TrimSuffix(filepath.Base(path), filepath.Ext(path)))
 	itemType, parentID, indexNumber, parentIndex := "Movie", current.parentID, 0, 0
 	parentNumberDefined := false
+	virtualSeriesID, virtualSeriesName := "", ""
+	needVirtualSeries, needVirtualSeason := false, false
 	if kind == "audio" {
 		itemType = "Audio"
 		if current.albumID != "" {
@@ -488,24 +490,16 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 				parentNumberDefined = true
 				parentIndex, _ = strconv.Atoi(matches[2])
 				indexNumber, _ = strconv.Atoi(matches[3])
-				seriesID := current.seriesID
-				if seriesID == "" {
-					seriesName := cleanName(matches[1])
-					if seriesName == "" {
-						seriesName = filepath.Base(state.root.path)
-					}
-					seriesID, err = state.folder("//series/"+strings.ToLower(seriesName), "", seriesName, "Series", state.library.ID, 0)
-					if err != nil {
-						return err
+				virtualSeriesID = current.seriesID
+				needVirtualSeries = virtualSeriesID == ""
+				if needVirtualSeries {
+					virtualSeriesName = cleanName(matches[1])
+					if virtualSeriesName == "" {
+						virtualSeriesName = filepath.Base(state.root.path)
 					}
 				}
 				parentID = current.seasonID
-				if parentID == "" || current.seasonNumber != parentIndex {
-					parentID, err = state.folder(fmt.Sprintf("//season/%s/%d", seriesID, parentIndex), "", fmt.Sprintf("Season %d", parentIndex), "Season", seriesID, parentIndex)
-					if err != nil {
-						return err
-					}
-				}
+				needVirtualSeason = parentID == "" || current.seasonNumber != parentIndex
 			} else if current.seasonID != "" {
 				parentIndex = current.seasonNumber
 				parentNumberDefined = true
@@ -513,27 +507,55 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 		}
 	}
 	candidates, nfoKind := fileNFOCandidates(path, itemType)
-	local := state.localNFO(candidates, nfoKind, stored.local)
+	// Sidecar absence is authoritative only while this media pathname still
+	// names the opened file. A concurrent directory move is not NFO deletion.
+	var nfoObservation localNFOObservation
+	var sidecarObservation cachedSidecarObservation
+	var currentInfo os.FileInfo
+	var pathErr error
+	if err := input.primary.runPublicationMetadata(input.primary.publicationIO, func(ctx context.Context) error {
+		var err error
+		nfoObservation, err = state.observeLocalNFO(ctx, candidates, nfoKind)
+		if err != nil {
+			return err
+		}
+		currentInfo, pathErr = state.opened.Lstat(path)
+		if unchanged && stored.id != "" && !stored.hasLocalImages && pathErr == nil && sameMediaSourceFile(info, currentInfo) {
+			sidecarObservation, err = state.observeCachedSidecarAbsence(ctx, path, itemType, probe, currentInfo)
+			if err != nil {
+				return err
+			}
+		}
+		// NFO and directory observation may have overlapped a media replacement.
+		// Even an ordinary fast-path fallback must finish with a fresh pathname.
+		currentInfo, pathErr = state.opened.Lstat(path)
+		return ctx.Err()
+	}); err != nil {
+		return scanReadFailure(err)
+	}
+	if sidecarObservation.sourceChanged || pathErr != nil || !currentInfo.Mode().IsRegular() || !sameMediaSourceFile(info, currentInfo) {
+		state.warnings++
+		return state.store.persistProgress(state.task)
+	}
+	// Hierarchy selection is computed above, but source rejection must precede
+	// every virtual-folder write for cached and newly probed media alike.
+	if needVirtualSeries {
+		virtualSeriesID, err = state.folder("//series/"+strings.ToLower(virtualSeriesName), "", virtualSeriesName, "Series", state.library.ID, 0)
+		if err != nil {
+			return err
+		}
+	}
+	if needVirtualSeason {
+		parentID, err = state.folder(fmt.Sprintf("//season/%s/%d", virtualSeriesID, parentIndex), "", fmt.Sprintf("Season %d", parentIndex), "Season", virtualSeriesID, parentIndex)
+		if err != nil {
+			return err
+		}
+	}
+	local := state.applyLocalNFO(nfoObservation, nfoKind, stored.local)
 	if itemType == "Episode" {
 		local, indexNumber, parentIndex = state.episodeNumbering(local, indexNumber, parentIndex, parentNumberDefined)
 	}
 	name, sortName, overview := describeFromLocal(name, local)
-	// Sidecar absence is authoritative only while this media pathname still
-	// names the opened file. A concurrent directory move is not NFO deletion.
-	var currentInfo os.FileInfo
-	var pathErr error
-	if err := input.primary.runPublicationMetadata(input.primary.publicationIO, func(context.Context) error {
-		currentInfo, pathErr = state.opened.Lstat(path)
-		return nil
-	}); err != nil {
-		return err
-	}
-	if pathErr != nil || !currentInfo.Mode().IsRegular() || !os.SameFile(info, currentInfo) ||
-		currentInfo.Size() != info.Size() || !currentInfo.ModTime().Equal(info.ModTime()) ||
-		(checksVersion && media.FileChangeTime(currentInfo) != media.FileChangeTime(info)) {
-		state.warnings++
-		return state.store.persistProgress(state.task)
-	}
 	fullPath := filepath.Join(state.root.path, path)
 	if itemType == "Audio" || stored.itemType == "Audio" {
 		state.queueMusicParent(stored.parentID)
@@ -569,14 +591,34 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 		stored.local.hash != local.hash || stored.local.path != local.path || !reflect.DeepEqual(stored.local.value, local.value)
 	if stored.id != "" && !changed {
 		completionRequired = state.task.job.TaskChildID != ""
-		if err := state.scanSubtitles(stored.id, path, probe); err != nil {
-			return err
+		sidecarsUnchanged := false
+		if sidecarObservation.absent {
+			state.retainCachedSidecarObservation(sidecarObservation)
+			// The observation has released its phase and every new descriptor.
+			// Any active subtitle row needs the ordinary deletion transaction.
+			sidecarsUnchanged, err = state.cachedSubtitleScanEmpty(stored.id, path, sidecarObservation.primary)
+			if err != nil {
+				return err
+			}
+		}
+		if !sidecarsUnchanged {
+			if err := state.scanSubtitles(stored.id, path, probe); err != nil {
+				return err
+			}
 		}
 		combineCompletion := state.task.job.TaskChildID != "" && !stored.hasLocalImages &&
 			EffectiveLibraryOptions(state.library).EnableLocalImages
 		if !combineCompletion {
-			if err := state.scanImagesWithKnownAbsence(stored.id, itemType, path, false, !stored.hasLocalImages); err != nil {
-				return err
+			if sidecarsUnchanged {
+				if EffectiveLibraryOptions(state.library).EnableLocalImages {
+					if err := state.store.CheckOwnership(state.task.ctx); err != nil {
+						return err
+					}
+				}
+			} else {
+				if err := state.scanImagesWithKnownAbsence(stored.id, itemType, path, false, !stored.hasLocalImages); err != nil {
+					return err
+				}
 			}
 		}
 		if probe != nil {
@@ -599,8 +641,14 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 				checked = err == nil
 				return err
 			}
-			if err := state.scanImagesWithKnownAbsence(stored.id, itemType, path, false, true, completionCheck); err != nil {
-				return err
+			if sidecarsUnchanged {
+				if err := completionCheck(); err != nil {
+					return err
+				}
+			} else {
+				if err := state.scanImagesWithKnownAbsence(stored.id, itemType, path, false, true, completionCheck); err != nil {
+					return err
+				}
 			}
 		}
 		// The entry checkpoint already persisted Scanned for an independent scan.
@@ -819,13 +867,6 @@ func (state *scanState) folder(relative, path, name, itemType, parentID string, 
 	local, err := state.folderLocalMetadata(relative, metadataPath, itemType, indexNumber)
 	if err != nil {
 		return "", err
-	}
-	if metadataPath != "" {
-		expected := state.directoryIdentities[filepath.Clean(metadataPath)]
-		current, statErr := state.opened.Lstat(metadataPath)
-		if expected == nil || statErr != nil || !current.IsDir() || !os.SameFile(expected, current) {
-			return "", fmt.Errorf("%w: media directory changed before metadata persistence", ErrUnavailable)
-		}
 	}
 	name, sortName, overview := describeFromLocal(name, local)
 	localJSON, err := encodeLocalMetadata(local)

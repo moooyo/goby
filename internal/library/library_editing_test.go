@@ -1,6 +1,7 @@
 package library
 
 import (
+	"context"
 	"errors"
 	"testing"
 )
@@ -29,7 +30,11 @@ func TestLibraryImportOptionsPreserveHistoricalDefaults(t *testing.T) {
 	}
 	previous := localMetadata{hash: "existing-source", path: "Film.nfo"}
 	state := scanState{library: Library{Options: &LibraryOptions{EnableLocalImages: true}}}
-	retained := state.localNFO([]string{"not-opened.nfo"}, "Movie", previous)
+	observation, err := state.observeLocalNFO(context.Background(), []string{"not-opened.nfo"}, "Movie")
+	if err != nil {
+		t.Fatal(err)
+	}
+	retained := state.applyLocalNFO(observation, "Movie", previous)
 	if retained.hash != previous.hash || retained.path != previous.path {
 		t.Fatal("disabled reader cleared accepted source facts")
 	}

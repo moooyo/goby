@@ -236,29 +236,7 @@ func (state *scanState) prepareEmptySubtitleScan(itemID, relative string, primar
 			state.store.ownership.mu.Unlock()
 		}
 	}()
-	readCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 20*time.Second)
-	defer cancel()
-	var identity string
-	var size int64
-	var modified *time.Time
-	var mediaJSON []byte
-	var active bool
-	err := state.store.ownership.conn.QueryRow(readCtx, `SELECT i.file_identity, i.file_size, i.modified_at, i.media,
-		EXISTS(SELECT 1 FROM item_subtitles s WHERE s.item_id = i.id AND s.active)
-		FROM items i JOIN library_roots r ON r.id = i.root_id AND r.library_id = i.library_id
-		WHERE i.id = $1 AND i.library_id = $2 AND i.root_id = $3 AND i.relative_path = $4
-		AND NOT i.is_folder AND i.media IS NOT NULL`,
-		itemID, state.library.ID, state.root.id, filepath.ToSlash(relative)).Scan(&identity, &size, &modified, &mediaJSON, &active)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, false, ErrNotFound
-	}
-	if err != nil {
-		return nil, false, state.store.ownershipErrorLocked(err)
-	}
-	if err := ctx.Err(); err != nil {
-		return nil, false, err
-	}
-	_, matches, err := subtitleScanPrimaryMatches(primary, identity, size, modified, mediaJSON)
+	matches, active, err := state.readEmptySubtitleScanLocked(ctx, itemID, relative, primary)
 	if err != nil {
 		return nil, false, err
 	}
@@ -275,6 +253,49 @@ func (state *scanState) prepareEmptySubtitleScan(itemID, relative string, primar
 		return nil, false, err
 	}
 	return tx, false, nil
+}
+
+// cachedSubtitleScanEmpty checks an observation after its admitted phase has
+// released every descriptor. Existing rows return to the complete scanner;
+// this path never starts a transaction or authorizes sidecar deletion.
+func (state *scanState) cachedSubtitleScanEmpty(itemID, relative string, primary os.FileInfo) (bool, error) {
+	ctx := state.task.ctx
+	if err := state.store.lockOwnedSession(ctx); err != nil {
+		return false, err
+	}
+	defer state.store.ownership.mu.Unlock()
+	matches, active, err := state.readEmptySubtitleScanLocked(ctx, itemID, relative, primary)
+	return matches && !active, err
+}
+
+func (state *scanState) readEmptySubtitleScanLocked(ctx context.Context, itemID, relative string, primary os.FileInfo) (bool, bool, error) {
+	readCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 20*time.Second)
+	defer cancel()
+	var identity string
+	var size int64
+	var modified *time.Time
+	var mediaJSON []byte
+	var active bool
+	err := state.store.ownership.conn.QueryRow(readCtx, `SELECT i.file_identity, i.file_size, i.modified_at, i.media,
+		EXISTS(SELECT 1 FROM item_subtitles s WHERE s.item_id = i.id AND s.active)
+		FROM items i JOIN library_roots r ON r.id = i.root_id AND r.library_id = i.library_id
+		WHERE i.id = $1 AND i.library_id = $2 AND i.root_id = $3 AND i.relative_path = $4
+		AND NOT i.is_folder AND i.media IS NOT NULL`,
+		itemID, state.library.ID, state.root.id, filepath.ToSlash(relative)).Scan(&identity, &size, &modified, &mediaJSON, &active)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, false, ErrNotFound
+	}
+	if err != nil {
+		return false, false, state.store.ownershipErrorLocked(err)
+	}
+	if err := ctx.Err(); err != nil {
+		return false, false, err
+	}
+	_, matches, err := subtitleScanPrimaryMatches(primary, identity, size, modified, mediaJSON)
+	if err != nil {
+		return false, false, err
+	}
+	return matches, active, nil
 }
 
 func subtitleScanPrimaryMatches(primary os.FileInfo, identity string, size int64, modified *time.Time, mediaJSON []byte) (media.Info, bool, error) {

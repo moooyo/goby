@@ -125,7 +125,7 @@ func TestPrimaryScanRoutingRetainedWalkCachedVisitKeepsAuthorityBudget(t *testin
 	if err := state.scanFile("Film.mp4", "video", hierarchy{parentID: state.library.ID}); err != nil {
 		t.Fatal(err)
 	}
-	primaryScanRoutingAssertAuthorityBudget(t, trace, 4)
+	primaryScanRoutingAssertAuthorityBudget(t, trace, 2)
 	if trace.begins.Load() != 1 || trace.commits.Load() != 1 || trace.cachedCompletionChecks.Load() != 1 {
 		t.Fatalf("cached retained walk changed checkpoint boundaries: total=%d/%d completion=%d",
 			trace.begins.Load(), trace.commits.Load(), trace.cachedCompletionChecks.Load())
