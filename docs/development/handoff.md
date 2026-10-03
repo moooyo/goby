@@ -1,5 +1,64 @@
 # Goby handoff - October 3, 2026
 
+Latest source delivery is [scan routing-preparation authority optimization](scan-authority-optimization-20261003.md),
+source commit `d7d047243febbb038c2c30556858ddbe171ff652`, with complete raw/statistical data in the
+[structured record](scan-authority-optimization-20261003.json). The selected
+routing-only increment is qualified and closed. Measured baseline is
+`8f2e7e459b33ffc025d3a9c68675c36576eb18c8`; measured candidate is its complete
+archive plus the exact six-file overlay, archive SHA-256
+`148182310beceb3fe9cf93215fb4b5fc18a316a34b289990d36a28a8cfc1e33d`.
+The later source commit matches the frozen changed-file bytes separately.
+
+Paired candidate/baseline job medians are 0.588-0.709 for descriptor cached_1,
+0.609-0.623 for cached_2, 0.801-0.877 for catalog-cold and 0.792-0.810 for
+force_probe. Real160 medians are 0.824 cold, 0.627 warm and 0.787 force. Seven
+individual paired phase observations exceed C/B=1 and remain retained. Three
+pairs establish observed medians/ranges, not stable tails or a return to the
+historical `912354f` pre-isolation baseline. In flat_movies cached_1, each pair
+reduces raw SQL 7665 to 4455 and strict AUTH BEGIN/COMMIT 1294 to 652 each; exact
+reductions of 3210 SQL and 642 BEGIN/COMMIT belong wholly to the strict AUTH
+subset. This is count attribution, not isolated transaction milliseconds or
+elapsed/allocation causation.
+
+Valid committed walk routing is reused before queue admission. Every actual
+Run grant still performs complete fresh task/root SQL and exact row binding;
+final transaction proof, Busy/unknown lifetime behavior and existing quotas
+remain. All four selected correctness processes and four Linux/Windows amd64
+CGO0 Goby/launcher builds pass. The full-library race package includes the
+unchanged real 10,000-file corpus, with 1281 top-level test PASS events, 2707
+subtest PASS events and one package PASS event, exactly eleven approved opt-in
+skips and no failures. Actual HLS/Analysis tagged race neighbors pass without
+skips. Four pilot processes qualify fixtures/instrumentation and are excluded
+from statistics; twelve formal scan processes and all 144 phase records are
+complete. The HTTP 36-wave performance matrix was not selected.
+
+Exact private PostgreSQL/mount/loop closure is complete, with zero owned
+references, mounts or closure errors. Source/data/image/cache/raw and failure
+evidence remain retained; protected services are unchanged. Final evidence
+receipt SHA-256 is
+`b9658df6c360100f12f02a54839367207251749fbf51b85cbbcc7a51b3d252ac`;
+closure receipt SHA-256 is
+`e87d4506a237916a28a9ca7aca7c2c790a35396446b149b0d32ab7ba1470fdbb`.
+Read the linked report for complete source, evidence, metric and scope limits.
+No feature default, Docker image or deployment is delivered by this increment.
+
+## Remaining task decisions
+
+The raw local-NFO read boundary remains an unresolved separate task. Its helper
+reads outside the publication metadata phase, mutates warning state and ignores
+one Close result. Any repair must preserve early cold source rejection before
+virtual-folder creation and avoid moving a mutating scanner helper into an
+asynchronous callback. This routing-only increment does not repair that boundary.
+
+Reconciliation algorithms and SQL/proof work remain unselected. Existing-client
+A/V, Analysis PART2, GPU/native-hard qualification, whole-service mixed capacity,
+images and deployment also remain unselected and require a separate scope
+decision. The selected optimization does not complete the whole performance
+program. Existing experimental defaults and accepted Docker delivery checkpoints
+below retain their prior scopes.
+
+## Previous October 3 current-main performance remeasurement
+
 Latest measurement delivery is [current-main performance remeasurement](media-performance-remeasure-20261003.md),
 with complete raw/statistical data in the [structured record](media-performance-remeasure-20261003.json).
 The measured production sources remain baseline `912354f` and current `66680f2`;
