@@ -1,4 +1,57 @@
-# Goby handoff - October 3, 2026
+# Goby handoff - October 4, 2026
+
+Batch 1 has a mixed performance outcome. In cached_after_incremental,
+flat_episodes C/B median is 1.351 [0.890, 1.678] (+35.1%) and directory_episodes
+is 1.044 [0.922, 3.329] (+4.4%); each is slower in two of three matched blocks.
+These regressions remain explicit. Descriptor cold and task_owned_cached
+improve in all three blocks for each of the three layouts, with C/B medians
+0.892-0.938 (about 6-11 percent lower) and 0.838-0.861 (about 14-16 percent lower) respectively. Real force improves in all three
+blocks, median C/B 0.897. This is an accepted bounded delivery, not uniform
+improvement or restoration of historical H performance. Three blocks support
+observed medians/ranges, not stable tails.
+
+The selected work is [scan authority round-trip optimization, batch 1](scan-authority-roundtrip-20261004.md),
+source commit `616766abbfc386e1167b61caca2fd6d1cc852eb2`, with the complete
+[structured record](scan-authority-roundtrip-20261004.json). The bounded batch
+is accepted with the mixed performance limitations above. H is
+`912354f2a48b5043a8824246f2fa011f8f34bbf1`, B is
+`948373ac64af8646ac6288e9294ce3c7f2882df6`, and measured C is the prepared
+nine-path overlay archive SHA-256
+`586b4151509502a2008d99753f1dfc9b7f75de52a409d2b9e917b7e077e1e0e8`.
+Four common drivers are identical across prepared H/B/C; actual prepared B/C
+production/test delta is six paths. Later commit bytes match the freeze
+separately from measured archive identities.
+
+The success-only one-request authority path retains locked-tuple acceptance,
+lock strength/order, complete query/implicit transaction completion before
+source access and unchanged fallback terminal/history/error semantics. Fresh
+authority after every actual Run grant, final owned publication proof, Busy
+behavior, committed prefixes, quotas and actual retirement remain. Four
+correctness cases, four builds, six pilots, six separate count diagnostics and
+eighteen formal timing processes completed and exact closure is complete.
+Timing uses TRACE0; SQL/AUTH counters are unavailable, not zero. The separate
+n=1 traced flat_movies/cached_1 diagnostic reduces B/C client SQL from 4455 to
+1859 while confirmed AUTH committed transactions remain 652/652; C has three
+explicit and 649 implicit AUTH commits. Counts do not assign untraced timing
+changes to transaction milliseconds. Pilots are excluded from statistics.
+
+The final evidence receipt SHA-256 is
+`ccff91d80b2ca0700d7168e23e912bf4a6cf2cc75caa9ad33e4ee0e06303af76`;
+exact closure receipt SHA-256 is
+`99a33b6acdcef09f3c06d755d6713e4418d86df0cf5940062fdeeb0d0fb804dd`.
+All 143 sealed actual evidence files match and the eighteen formal aggregates match immutable receipts/raw logs. Evidence status is `qualified_and_closed`; the mixed performance limitations
+remain. Source/data/image/cache/raw and failure evidence are retained.
+No local product verification, image or deployment is part of this publication.
+
+## Remaining task decisions
+
+Phase merging, the known raw local-NFO boundary, directory-index/reconciliation
+redesign, existing-client A/V, Analysis PART2, GPU/native-hard qualification,
+whole-service mixed capacity, images and deployment remain unselected. The
+bounded batch 1 delivery does not complete the whole performance program.
+Preserve the accepted historical checkpoints and limits below.
+
+## Previous October 3 scan routing-preparation authority optimization
 
 Latest source delivery is [scan routing-preparation authority optimization](scan-authority-optimization-20261003.md),
 source commit `d7d047243febbb038c2c30556858ddbe171ff652`, with complete raw/statistical data in the
