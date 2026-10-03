@@ -278,13 +278,13 @@ func TestCachedScanImageAbsenceCombinesOneCompletionCheckpoint(t *testing.T) {
 			if err := state.scanFile("Film.mp4", "video", hierarchy{parentID: state.library.ID}); err != nil {
 				t.Fatal(err)
 			}
-			wantBegins, wantAuthority, wantCombined := int64(2), int64(6), int64(0)
+			wantBegins, wantAuthority, wantCombined := int64(2), int64(5), int64(0)
 			if scenario == "stable_absence" {
-				wantBegins, wantAuthority, wantCombined = 1, 8, 1
+				wantBegins, wantAuthority, wantCombined = 1, 7, 1
 			} else if scenario == "valid_candidate" || scenario == "invalid_candidate" {
-				wantBegins, wantAuthority = 3, 8
+				wantBegins, wantAuthority = 3, 7
 			} else if scenario == "missing_directory_proof" {
-				wantAuthority = 4
+				wantAuthority = 3
 			}
 			begins, commits := trace.begins.Load(), trace.commits.Load()
 			authorityBegins, authorityCommits := trace.authorityBegins.Load(), trace.authorityCommits.Load()

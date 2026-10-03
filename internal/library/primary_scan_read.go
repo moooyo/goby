@@ -90,16 +90,52 @@ func (state *scanState) readPrimaryScanAuthority(ctx context.Context) (rootBindi
 	return (&primaryScanRead{state: state, work: ctx}).readAuthority()
 }
 
+// A retained walk mapping selects admission routing only. Every actual phase
+// still rechecks complete task and root authority after its admission grant.
+// Detached walk rows are never a source of routing preparation.
+func (state *scanState) primaryScanRoutingRow(ctx context.Context) (rootBindingRow, error) {
+	if ctx == nil || state == nil || state.store == nil || state.task == nil {
+		return rootBindingRow{}, ErrUnavailable
+	}
+	if err := ctx.Err(); err != nil {
+		return rootBindingRow{}, err
+	}
+	if state.walkIO == nil {
+		return state.readPrimaryScanAuthority(ctx)
+	}
+	row := state.walkRow
+	if row.root != state.root || row.validateMapping() != nil {
+		return rootBindingRow{}, ErrRootBindingConflict
+	}
+	return row, nil
+}
+
 func (state *scanState) runPrimaryScanMetadata(ctx context.Context, work func(context.Context) error) (resultErr error) {
-	row, err := state.readPrimaryScanAuthority(ctx)
+	row, err := state.primaryScanRoutingRow(ctx)
 	if err != nil {
 		return err
+	}
+	return state.runPrimaryScanMetadataWithRouting(ctx, row, work)
+}
+
+// The caller may pass the committed mapping from this input's preparation.
+// It cannot replace the fresh authority transaction inside the admitted phase.
+func (state *scanState) runPrimaryScanMetadataWithRouting(ctx context.Context, row rootBindingRow, work func(context.Context) error) (resultErr error) {
+	if ctx == nil || state == nil || state.store == nil || state.task == nil || work == nil {
+		return ErrUnavailable
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if row.root != state.root || row.validateMapping() != nil {
+		return ErrRootBindingConflict
 	}
 	if state.walkRow.root.id != "" && !state.walkRow.same(row) {
 		return ErrRootBindingConflict
 	}
 	operation := state.walkIO
 	if operation == nil {
+		var err error
 		operation, err = state.store.preparePrimaryRootIO(ctx,
 			[]mediaSourceRootHint{{root: row.root, bindingRevision: row.revision}})
 		if err != nil {
@@ -189,7 +225,7 @@ func (state *scanState) preparePrimaryScanRead() (_ *primaryScanRead, resultErr 
 			resultErr = scanReadFailure(resultErr)
 		}
 	}()
-	row, err := input.readAuthority()
+	row, err := state.primaryScanRoutingRow(work)
 	if err != nil {
 		return nil, err
 	}

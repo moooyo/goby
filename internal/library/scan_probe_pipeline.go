@@ -326,7 +326,7 @@ func (state *scanState) prepareScannedMedia(path, kind string, role scannedMedia
 	var file *os.File
 	var info os.FileInfo
 	var rejected *scanInputInspectionRejection
-	err = state.runPrimaryScanMetadata(state.task.ctx, func(context.Context) error {
+	err = state.runPrimaryScanMetadataWithRouting(state.task.ctx, primary.row, func(context.Context) error {
 		var err error
 		file, err = openScanFile(state.opened, path)
 		if err != nil {

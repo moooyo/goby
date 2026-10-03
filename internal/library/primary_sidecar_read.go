@@ -200,12 +200,17 @@ func (s *Store) checkSidecarRootHint(ctx context.Context, expected mediaSourceRo
 	return ctx.Err()
 }
 
-// Scan preparation preserves the active task relation and exact committed root
-// revision. Storage admission never retains the authority transaction.
+// An active walk contributes only its committed routing row and completion
+// right. Each admitted sidecar phase still reads fresh task and root authority.
+// Standalone preparation commits authority before registering storage routing.
 func (state *scanState) prepareSidecarScanIO() (*PrimaryRootIO, rootBindingRow, error) {
-	row, err := state.readPrimaryScanAuthority(state.task.ctx)
+	row, err := state.primaryScanRoutingRow(state.task.ctx)
 	if err != nil {
 		return nil, rootBindingRow{}, err
+	}
+	if state.walkIO != nil {
+		operation, err := state.walkIO.Fork(state.task.ctx)
+		return operation, row, err
 	}
 	operation, err := state.store.preparePrimaryRootIO(state.task.ctx,
 		[]mediaSourceRootHint{{root: row.root, bindingRevision: row.revision}})
