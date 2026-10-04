@@ -112,17 +112,12 @@ func (s *Store) preparePrimaryRootIO(ctx context.Context, hints []mediaSourceRoo
 			finish()
 			return nil, ErrInvalidInput
 		}
-		route, routeErr := s.primaryReadRouteContext(ctx, hint)
+		route, routeErr := s.primaryRootRouteContext(ctx, hint)
 		if routeErr != nil {
 			finish()
 			return nil, routeErr
 		}
-		_, domain, routeErr := s.mediaSourceRootLaneContext(ctx, hint)
-		if routeErr != nil {
-			finish()
-			return nil, routeErr
-		}
-		routes[hint.root.id] = primaryRootIORoute{route: route, domain: domain}
+		routes[hint.root.id] = route
 	}
 	if err := ctx.Err(); err != nil {
 		finish()

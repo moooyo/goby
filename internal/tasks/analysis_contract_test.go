@@ -41,6 +41,34 @@ func TestAnalysisRequestKeepsLegacyFingerprintAndCanonicalSelection(t *testing.T
 	}
 }
 
+func TestAnalysisSelectionIdentityRetainsWireSemantics(t *testing.T) {
+	selections := []*library.AnalysisSelection{
+		nil,
+		{},
+		{LibraryIDs: []string{}, ItemIDs: []string{}},
+		{Force: true},
+		{LibraryIDs: []string{"library-a", "library-b"}, ItemIDs: []string{"item-a", "item-b"}},
+		{LibraryIDs: []string{"library-b", "library-a"}, ItemIDs: []string{"item-a", "item-b"}},
+		{LibraryIDs: []string{"library-a", "library-b"}, ItemIDs: []string{"item-b", "item-a"}},
+		{LibraryIDs: []string{"library-a", "library-b"}, ItemIDs: []string{"item-a", "item-b"}, Force: true},
+	}
+	for firstIndex, first := range selections {
+		left, err := json.Marshal(first)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for secondIndex, second := range selections {
+			right, err := json.Marshal(second)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if sameAnalysisInput(first, second) != (string(left) == string(right)) {
+				t.Errorf("selection identity changed its wire contract for pair %d/%d: %s vs %s", firstIndex, secondIndex, left, right)
+			}
+		}
+	}
+}
+
 func TestAnalysisAuthorityAndFenceCannotBeReconstructedFromJSON(t *testing.T) {
 	var run Run
 	if err := json.Unmarshal([]byte(`{"id":"run","source":"compatibility","actor_kind":"application_key","actor_session_id":"credential","actor_application_key_id":7,"actor_client_session_id":"original-client","actor_peer_ip":"198.51.100.3","analysis_input":{"LibraryIds":["library"]}}`), &run); err != nil {

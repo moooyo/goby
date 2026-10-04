@@ -5,15 +5,24 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-
-	"github.com/moooyo/goby/internal/primaryio"
+	"slices"
 )
 
-func (s *Store) primaryReadRouteContext(ctx context.Context, hint mediaSourceRootHint) (primaryio.Route, error) {
+func (s *Store) primaryRootRouteContext(ctx context.Context, hint mediaSourceRootHint) (primaryRootIORoute, error) {
 	if prepared, granted, err := s.taskSourceRoute(ctx, hint); granted {
-		return prepared.route, err
+		prepared.route.Roots = slices.Clone(prepared.route.Roots)
+		prepared.route.Domains = slices.Clone(prepared.route.Domains)
+		return prepared, err
 	}
-	return s.primaryReadRoute(hint)
+	route, err := s.primaryReadRoute(hint)
+	if err != nil {
+		return primaryRootIORoute{}, err
+	}
+	_, domain, err := s.mediaSourceRootLane(hint)
+	if err != nil {
+		return primaryRootIORoute{}, err
+	}
+	return primaryRootIORoute{route: route, domain: domain}, nil
 }
 
 func (s *Store) mediaSourceRootLaneContext(ctx context.Context, hint mediaSourceRootHint) (mediaSourceRootKey, string, error) {

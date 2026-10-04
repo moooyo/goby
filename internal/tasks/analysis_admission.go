@@ -1,11 +1,11 @@
 package tasks
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"slices"
 	"sort"
 
 	"github.com/moooyo/goby/internal/library"
@@ -80,9 +80,11 @@ func taskRequestFingerprint(request StartRequest, key, source string, input *lib
 }
 
 func sameAnalysisInput(first, second *library.AnalysisSelection) bool {
-	left, _ := json.Marshal(first)
-	right, _ := json.Marshal(second)
-	return bytes.Equal(left, right)
+	if first == nil || second == nil {
+		return first == second
+	}
+	// Empty and nil slices have the same omitted fields in the wire identity.
+	return first.Force == second.Force && slices.Equal(first.LibraryIDs, second.LibraryIDs) && slices.Equal(first.ItemIDs, second.ItemIDs)
 }
 
 func analysisDatabaseInput(input *library.AnalysisSelection) any {

@@ -97,13 +97,8 @@ func readAnalysisWork(tx OwnedTx, childID string) (AnalysisWork, error) {
 	if err != nil {
 		return AnalysisWork{}, analysisReadError(err)
 	}
-	if ValidateStoredAnalysisAdmission(profileRaw, executionRaw, revision, work.PublicationEpoch, work.ConfigurationFingerprint) != nil {
-		return AnalysisWork{}, ErrUnavailable
-	}
-	// Historical admissions remain valid archive facts but are never upgraded
-	// into worker authority by filling newly introduced fields with zero values.
-	if analysisStrictJSON(profileRaw, &work.Profile) != nil || analysisStrictJSON(executionRaw, &work.Execution) != nil ||
-		ValidateAnalysisExecutionProfile(work.Execution) != nil {
+	work.Profile, work.Execution, err = decodeCurrentAnalysisAdmission(profileRaw, executionRaw, revision, work.PublicationEpoch, work.ConfigurationFingerprint)
+	if err != nil {
 		return AnalysisWork{}, ErrUnavailable
 	}
 	work.ConfigurationRevision = strconv.FormatInt(revision, 10)

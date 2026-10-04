@@ -48,14 +48,10 @@ func scanOperationRootRoute(catalog string, root libraryRoot, configured []strin
 	return primaryRootIORoute{route: route, domain: filepath.Clean(domain)}, nil
 }
 
-// scanOperationRoute returns a private copy of the startup route after checking
-// that the root still belongs to this active operation's immutable grant.
-func (s *Store) scanOperationRoute(ctx context.Context, task *scanTask, root libraryRoot) (primaryRootIORoute, error) {
-	if _, err := s.readScanOperationAuthority(ctx, task, root); err != nil {
-		return primaryRootIORoute{}, err
-	}
-	grant := task.authority.Load()
-	prepared, ok := grant.routes[root.id]
+// copyRoute returns a private route copy after the caller has checked the
+// operation and exact root against this immutable grant.
+func (grant *scanOperationAuthority) copyRoute(rootID string) (primaryRootIORoute, error) {
+	prepared, ok := grant.routes[rootID]
 	if !ok {
 		return primaryRootIORoute{}, ErrUnavailable
 	}
@@ -79,6 +75,11 @@ func (s *Store) prepareScanOperationRootIO(ctx context.Context, task *scanTask, 
 	if err != nil {
 		return nil, err
 	}
+	if err := s.prepareScanOperationAuthority(ctx, task, nil); err != nil {
+		finish()
+		return nil, err
+	}
+	grant := task.authority.Load()
 	routes := make(map[string]primaryRootIORoute, len(hints))
 	for _, hint := range hints {
 		if err := ctx.Err(); err != nil {
@@ -93,16 +94,11 @@ func (s *Store) prepareScanOperationRootIO(ctx context.Context, task *scanTask, 
 			finish()
 			return nil, ErrInvalidInput
 		}
-		row, err := s.readScanOperationAuthority(ctx, task, hint.root)
-		if err != nil {
-			finish()
-			return nil, err
-		}
-		if row.revision != hint.bindingRevision {
+		row, ok := grant.roots[hint.root.id]
+		if !ok || row.root != hint.root || row.revision != hint.bindingRevision {
 			finish()
 			return nil, ErrRootBindingConflict
 		}
-		grant := task.authority.Load()
 		route, ok := grant.routes[hint.root.id]
 		if !ok {
 			finish()
@@ -110,7 +106,7 @@ func (s *Store) prepareScanOperationRootIO(ctx context.Context, task *scanTask, 
 		}
 		routes[hint.root.id] = route
 	}
-	if err := ctx.Err(); err != nil {
+	if err := s.checkScanOperationActive(ctx, task, grant); err != nil {
 		finish()
 		return nil, err
 	}

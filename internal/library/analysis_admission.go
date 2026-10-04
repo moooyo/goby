@@ -195,8 +195,14 @@ func analysisAdmissionFingerprint(profile AnalysisProfile, execution AnalysisExe
 // consulting current tool paths or requiring an old worker to remain authorized.
 func ValidateStoredAnalysisAdmission(profileRaw, executionRaw []byte, revision, epoch int64, fingerprint string) error {
 	var wire struct{ Version int }
-	if len(profileRaw) > 32768 || len(executionRaw) > 32768 || revision < 1 || epoch < 1 ||
-		!analysisSHA(fingerprint) || json.Unmarshal(executionRaw, &wire) != nil {
+	if len(profileRaw) > 32768 || len(executionRaw) > 32768 || json.Unmarshal(executionRaw, &wire) != nil {
+		return ErrInvalidInput
+	}
+	if wire.Version == AnalysisExecutionProfileVersion {
+		_, _, err := decodeCurrentAnalysisAdmission(profileRaw, executionRaw, revision, epoch, fingerprint)
+		return err
+	}
+	if revision < 1 || epoch < 1 || !analysisSHA(fingerprint) {
 		return ErrInvalidInput
 	}
 	if wire.Version == analysisStoredExecutionVersionV1 {
@@ -249,12 +255,22 @@ func ValidateStoredAnalysisAdmission(profileRaw, executionRaw []byte, revision, 
 		}
 		return nil
 	}
+	return ErrInvalidInput
+}
+
+// decodeCurrentAnalysisAdmission returns the validated worker profiles from one
+// decoding pass. Historical admissions remain archive facts, not worker authority.
+func decodeCurrentAnalysisAdmission(profileRaw, executionRaw []byte, revision, epoch int64, fingerprint string) (AnalysisProfile, AnalysisExecutionProfile, error) {
 	var profile AnalysisProfile
 	var execution AnalysisExecutionProfile
-	if wire.Version != AnalysisExecutionProfileVersion || analysisStrictJSON(profileRaw, &profile) != nil || analysisStrictJSON(executionRaw, &execution) != nil || ValidateAnalysisProfile(profile) != nil || ValidateAnalysisExecutionProfile(execution) != nil || execution.Available && execution.IntroProfile != "" && execution.IntroSkipperOptions != profile.IntroSkipper || analysisAdmissionFingerprint(profile, execution, revision, epoch) != fingerprint {
-		return ErrInvalidInput
+	if len(profileRaw) > 32768 || len(executionRaw) > 32768 || revision < 1 || epoch < 1 || !analysisSHA(fingerprint) ||
+		analysisStrictJSON(profileRaw, &profile) != nil || analysisStrictJSON(executionRaw, &execution) != nil ||
+		ValidateAnalysisProfile(profile) != nil || ValidateAnalysisExecutionProfile(execution) != nil ||
+		execution.Available && execution.IntroProfile != "" && execution.IntroSkipperOptions != profile.IntroSkipper ||
+		analysisAdmissionFingerprint(profile, execution, revision, epoch) != fingerprint {
+		return AnalysisProfile{}, AnalysisExecutionProfile{}, ErrInvalidInput
 	}
-	return nil
+	return profile, execution, nil
 }
 
 // PrepareAnalysis performs only SQL and pure computation. Both returned closures

@@ -151,6 +151,11 @@ func TestScanOperationAuthorityRetainsCancellationAndOperationIdentity(t *testin
 			trace := &scanOperationAuthoritySQLTracer{}
 			ctx, _, store, state, _, _ := scanCachedVisitFixture(t, trace)
 			root := state.root
+			row, err := state.readPrimaryScanAuthority(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			beforeIO, beforeOwners := originalMediaReadGovernor.Stats(), originalMediaReadOwners.Stats().RegisteredOwners
 			switch change {
 			case "cancelled_context":
 				state.task.cancel()
@@ -164,9 +169,24 @@ func TestScanOperationAuthorityRetainsCancellationAndOperationIdentity(t *testin
 				root.id = "foreign-operation-root"
 			}
 			trace.reset()
-			_, err := store.readScanOperationAuthority(ctx, state.task, root)
+			_, err = store.readScanOperationAuthority(ctx, state.task, root)
 			if err == nil || change == "cancelled_context" && !errors.Is(err, context.Canceled) {
 				t.Fatalf("operation authorization accepted invalid execution state: %v", err)
+			}
+			hints := []mediaSourceRootHint{{root: root, bindingRevision: row.revision}}
+			if change == "foreign_root" {
+				hints = append([]mediaSourceRootHint{{root: state.root, bindingRevision: row.revision}}, hints...)
+			}
+			operation, err := store.prepareScanOperationRootIO(ctx, state.task, hints)
+			if operation != nil {
+				_ = operation.Close()
+				t.Fatal("invalid execution state received a retained root I/O operation")
+			}
+			if err == nil || change == "cancelled_context" && !errors.Is(err, context.Canceled) {
+				t.Fatalf("root I/O preparation accepted invalid execution state: %v", err)
+			}
+			if stats := originalMediaReadGovernor.Stats(); stats != beforeIO || originalMediaReadOwners.Stats().RegisteredOwners != beforeOwners {
+				t.Fatalf("rejected root I/O preparation retained admission resources: before=%+v after=%+v owners=%+v", beforeIO, stats, originalMediaReadOwners.Stats())
 			}
 			if trace.queries.Load() != 0 {
 				t.Fatalf("local operation rejection queried fresh permissions: queries=%d", trace.queries.Load())

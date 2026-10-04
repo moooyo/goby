@@ -18,20 +18,21 @@ type taskSourceOperationKey struct{}
 // This authority is created only by a trusted executor with a live Work.Fence.
 // It is never serialized, reconstructed from catalog facts, or shared by jobs.
 type internalTaskSourceGrant struct {
-	store                       *Store
-	ctx                         context.Context
-	childID, libraryID, scopeID string
-	roots                       map[string]rootBindingRow
-	routes                      map[string]primaryRootIORoute
-	anchors                     map[string]*rootAnchorReference
-	registered                  map[string]*rootAnchorReference
-	revisions                   string
-	finish                      func()
-	fence                       func(OwnedTx) error
-	mu                          sync.Mutex
-	closed                      atomic.Bool
-	closeOnce                   sync.Once
-	closeErr                    error
+	store              *Store
+	ctx                context.Context
+	childID, libraryID string
+	roots              map[string]rootBindingRow
+	rootIDs            []string
+	routes             map[string]primaryRootIORoute
+	anchors            map[string]*rootAnchorReference
+	registered         map[string]*rootAnchorReference
+	revisions          string
+	finish             func()
+	fence              func(OwnedTx) error
+	mu                 sync.Mutex
+	closed             atomic.Bool
+	closeOnce          sync.Once
+	closeErr           error
 }
 
 const taskSourceOperationRootsSQL = `SELECT ` + rootBindingMetadataColumns + `,
@@ -71,9 +72,9 @@ func (s *Store) BeginTaskSourceOperation(ctx context.Context, childID string, fe
 		if err := fence(tx); err != nil {
 			return err
 		}
-		if err := tx.QueryRow(`SELECT library_id,analysis_scope_key FROM task_run_children
+		if err := tx.QueryRow(`SELECT library_id FROM task_run_children
 			WHERE id=$1 AND state='running' AND executor_token IS NOT NULL AND scan_job_id IS NULL`, childID).
-			Scan(&grant.libraryID, &grant.scopeID); err != nil {
+			Scan(&grant.libraryID); err != nil {
 			return err
 		}
 		if !validCatalogLibraryIdentifier(grant.libraryID) {
@@ -102,6 +103,7 @@ func (s *Store) BeginTaskSourceOperation(ctx context.Context, childID string, fe
 				return err
 			}
 			grant.roots[row.root.id], grant.routes[row.root.id] = row, route
+			grant.rootIDs = append(grant.rootIDs, row.root.id)
 		}
 		if err := rows.Err(); err != nil {
 			return err
@@ -112,10 +114,12 @@ func (s *Store) BeginTaskSourceOperation(ctx context.Context, childID string, fe
 	if err != nil {
 		return fail(err)
 	}
-	ids := grant.rootIDs()
-	if len(ids) != 0 {
-		hints := make([]mediaSourceRootHint, 0, len(ids))
-		for _, id := range ids {
+	// Freeze the complete ordering before borrowing any root. Startup failure
+	// cleanup uses the same IDs, including roots opened before a later failure.
+	sort.Strings(grant.rootIDs)
+	if len(grant.rootIDs) != 0 {
+		hints := make([]mediaSourceRootHint, 0, len(grant.rootIDs))
+		for _, id := range grant.rootIDs {
 			row := grant.roots[id]
 			hints = append(hints, mediaSourceRootHint{root: row.root, bindingRevision: row.revision})
 		}
@@ -123,7 +127,7 @@ func (s *Store) BeginTaskSourceOperation(ctx context.Context, childID string, fe
 		if err != nil {
 			return fail(err)
 		}
-		for _, id := range ids {
+		for _, id := range grant.rootIDs {
 			root := grant.roots[id].root
 			err = operation.Run(work, id, primaryio.Background, func(phase context.Context) error {
 				_, err := s.withLibraryRootAnchor(root, func(approved *os.Root) (*os.Root, error) {
@@ -219,21 +223,12 @@ func (grant *internalTaskSourceGrant) check(ctx context.Context, s *Store, child
 	return ctx.Err()
 }
 
-func (grant *internalTaskSourceGrant) rootIDs() []string {
-	ids := make([]string, 0, len(grant.roots))
-	for id := range grant.roots {
-		ids = append(ids, id)
-	}
-	sort.Strings(ids)
-	return ids
-}
-
 func (grant *internalTaskSourceGrant) close() error {
 	grant.closeOnce.Do(func() {
 		grant.mu.Lock()
 		grant.closed.Store(true)
 		grant.mu.Unlock()
-		for _, id := range grant.rootIDs() {
+		for _, id := range grant.rootIDs {
 			if reference := grant.registered[id]; reference != nil {
 				grant.closeErr = errors.Join(grant.closeErr, grant.store.releaseRootAnchor(reference))
 			}
@@ -283,7 +278,7 @@ func checkTaskSourceOperationRoots(tx OwnedTx, ctx context.Context, s *Store, ch
 		return err
 	}
 	rows, err := tx.Query(`SELECT id,library_id,path,allowed_path,relative_path FROM library_roots
-		WHERE id=ANY($1::text[]) ORDER BY id FOR SHARE`, grant.rootIDs())
+		WHERE id=ANY($1::text[]) ORDER BY id FOR SHARE`, grant.rootIDs)
 	if err != nil {
 		return err
 	}
@@ -308,6 +303,8 @@ func checkTaskSourceOperationRoots(tx OwnedTx, ctx context.Context, s *Store, ch
 	return grant.check(ctx, s, childID)
 }
 
+// taskSourceRoute borrows an immutable route. Callers that return its slices to
+// another consumer must copy them; scalar lane lookups need no allocation.
 func (s *Store) taskSourceRoute(ctx context.Context, hint mediaSourceRootHint) (primaryRootIORoute, bool, error) {
 	granted, active, err := s.taskSourceRootHint(ctx, hint.root)
 	if !active || err != nil {
@@ -317,7 +314,5 @@ func (s *Store) taskSourceRoute(ctx context.Context, hint mediaSourceRootHint) (
 		return primaryRootIORoute{}, true, ErrSourceChanged
 	}
 	route := taskSourceGrant(ctx).routes[hint.root.id]
-	route.route.Roots = append([]primaryio.RootKey(nil), route.route.Roots...)
-	route.route.Domains = append([]string(nil), route.route.Domains...)
 	return route, true, nil
 }

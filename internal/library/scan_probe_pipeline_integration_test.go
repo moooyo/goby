@@ -449,17 +449,28 @@ func TestScanProbePipelineIntegrationFlushesBeforeFolderHierarchy(t *testing.T) 
 	}
 	libraryIntegrationFile(t, directory, filepath.Join(folderName, "Nested.mp4"), "video:Nested")
 	entries := scanProbeFixtureNativeEntries(t, directory)
+	if len(entries) > 0 && entries[0].Name() == folderName {
+		// Recreating the folder can move it before the retained media entries.
+		// Recreate one media entry through the same insertion path, then prove
+		// the final native transition before starting the production scanner.
+		mediaName := names[0]
+		if err := os.Remove(filepath.Join(directory, mediaName)); err != nil {
+			t.Fatal(err)
+		}
+		libraryIntegrationFile(t, directory, mediaName, "video:"+strings.TrimSuffix(mediaName, filepath.Ext(mediaName)))
+		entries = scanProbeFixtureNativeEntries(t, directory)
+	}
 	for i, entry := range entries {
 		if entry.Name() == folderName {
 			if !entry.IsDir() || i == 0 || entries[i-1].IsDir() || extensionKind(entries[i-1].Name()) == "" {
-				t.Fatal("fixture has no native media-file transition before its physical folder")
+				t.Fatalf("fixture has no native media-file transition before its physical folder: %v", entries)
 			}
 			blockedName = entries[i-1].Name()
 			break
 		}
 	}
 	if blockedName == "" {
-		t.Fatal("native fixture enumeration omitted its physical folder")
+		t.Fatalf("native fixture enumeration omitted its physical folder: %v", entries)
 	}
 	t.Logf("native hierarchy barrier file=%s folder=%s", blockedName, folderName)
 	library := libraryIntegrationCreate(t, ctx, store, "Pipeline hierarchy", "movies", directory)

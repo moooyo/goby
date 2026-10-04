@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -46,6 +47,12 @@ func analysisCompatibilityLiteral(t *testing.T, version, name string) []byte {
 		return analysisV3Literal(t, name)
 	case "v4":
 		return analysisV4Literal(t, name)
+	case "v5":
+		raw, err := os.ReadFile("testdata/" + name + ".json")
+		if err != nil {
+			t.Fatal(err)
+		}
+		return raw
 	default:
 		t.Fatal("unsupported historical fixture version")
 		return nil
@@ -201,6 +208,10 @@ func TestAnalysisV3AdmissionCannotUseAValidCurrentWorkerFence(t *testing.T) {
 
 func TestAnalysisV4AdmissionCannotUseAValidCurrentWorkerFence(t *testing.T) {
 	checkAnalysisRetiredAdmissionCannotUseCurrentWorkerFence(t, "v4")
+}
+
+func TestAnalysisV5AdmissionCannotUseAValidCurrentWorkerFence(t *testing.T) {
+	checkAnalysisRetiredAdmissionCannotUseCurrentWorkerFence(t, "v5")
 }
 
 func checkAnalysisRetiredAdmissionCannotUseCurrentWorkerFence(t *testing.T, version string) {

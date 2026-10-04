@@ -37,7 +37,7 @@ func (state *scanState) observeCachedSidecarAbsenceWithReader(ctx context.Contex
 	if err := ctx.Err(); err != nil {
 		return cachedSidecarObservation{}, err
 	}
-	if !validMediaSourceRelativePath(relative) || !validImageScanPath(relative) || probe == nil || primary == nil || !primary.Mode().IsRegular() {
+	if !validMediaSourceRelativePath(relative) || probe == nil || primary == nil || !primary.Mode().IsRegular() {
 		return cachedSidecarObservation{}, nil
 	}
 	directoryPath := filepath.Clean(filepath.Dir(relative))

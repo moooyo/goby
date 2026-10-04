@@ -145,15 +145,11 @@ func (s *Store) sourceMetadataRoutes(hint mediaSourceRootHint) (map[string]prima
 }
 
 func (s *Store) sourceMetadataRoutesContext(ctx context.Context, hint mediaSourceRootHint) (map[string]primaryRootIORoute, error) {
-	route, err := s.primaryReadRouteContext(ctx, hint)
+	route, err := s.primaryRootRouteContext(ctx, hint)
 	if err != nil {
 		return nil, err
 	}
-	_, domain, err := s.mediaSourceRootLaneContext(ctx, hint)
-	if err != nil {
-		return nil, err
-	}
-	return map[string]primaryRootIORoute{hint.root.id: {route: route, domain: domain}}, nil
+	return map[string]primaryRootIORoute{hint.root.id: route}, nil
 }
 
 func sourceMetadataClass(ctx context.Context, snapshot indexedMediaSource) primaryio.Class {

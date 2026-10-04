@@ -229,7 +229,7 @@ func (state *scanState) preparePrimaryScanRead() (_ *primaryScanRead, resultErr 
 		return nil, err
 	}
 	input.row = row
-	prepared, err := state.store.scanOperationRoute(work, state.task, row.root)
+	prepared, err := state.task.authority.Load().copyRoute(row.root.id)
 	if err != nil {
 		return nil, err
 	}
@@ -411,12 +411,7 @@ func (input *primaryScanRead) probeContext(ctx context.Context, prober Prober, f
 		// Only a branch that never invoked a backend can retire without a
 		// receipt. A backend violating its opaque contract stays quarantined.
 		if called {
-			input.mu.Lock()
-			input.missingReceipt = true
-			input.mu.Unlock()
 			err = errors.Join(err, media.ErrProcessRetirementUnknown)
-		}
-		if called {
 			return media.Info{}, scanReadFailure(err)
 		}
 		return media.Info{}, err
