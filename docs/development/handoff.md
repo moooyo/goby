@@ -1,4 +1,54 @@
-# Goby handoff - October 4, 2026
+# Goby handoff - October 5, 2026
+
+Latest selected delivery is [scan performance follow-up](scan-performance-followup-20261005.md),
+full source `42cb91f66b6542c2b7dc5c6d7aca1f800d765983`, parent
+`7e959c136f7ed1402513a61841153d505c9cc3b6`, exact seven frozen paths.
+It skips proven empty new-item image transactions, reuses upstream attach Stat,
+and takes a bounded private single-root route path. Live source/manual/token/
+owner/mapping/deletion/retirement guards and startup authorization remain.
+Targeted race passed 76 top-level/110 subtests/23 required, zero skips.
+
+Three completed comparisons remain separate. Stage one H912/Bf5/C7e has 216
+observations/24 groups and a mixed result, including real cold C/H 1.3724 slower
+in every block. Stage two H912/B7e/Cfull42 also has 216/24: cold improves against
+both sources, while directory cached_1 1.0846/incremental 1.1020 and flat-episode
+cached_1 1.0096 retain three adverse C/B blocks. Those results are not dismissed
+as noise or declared resolved.
+
+The fixed descriptor ablation has A7e/Iimage-only924d2f1/Ffull42, nine strict
+formal processes/189 observations/21 groups, no replacement samples. Root
+reconstructed all raw source job values. F/I directory and flat-episode cached_1
+improve in every block; image-only I has adverse samples and is only an experiment.
+F/A cold medians movies 0.8399026 / flat episodes 0.7876278 / directory 0.8575505 improve in every
+block, supporting the full source choice. Residual tradeoffs stay explicit:
+F/A movie incremental is three-of-three slower, median 1.0384958 / +18.506 ms;
+F/I directory force_probe is three-of-three slower, median 1.0423 / +31.434 ms;
+F/A directory incremental is two-of-three slower. All I and earlier adverse
+samples remain in the full tables. F/I tests Stat+route together conditional on
+image optimization, not isolated causes; n=3 gives no stable-tail conclusion.
+F/I malloc medians fall 0.230-0.841 percent in all 21 groups, allocation is mixed.
+Earlier real160 values remain in their own batch, separate from the new reserve.
+
+Capacity history remains retained. I race passed 32/70/10 but its post-race wrapper
+exited 1; three pilots qualified after shared build-cache cleanup. Diagnostic A
+has recovered counts-only raw, qualified=false and null/unknown run metadata;
+only I/F diagnostics qualify strictly. A timing/allocation/pool values are
+excluded. The user-approved /dev/sda1 reserve is applied/read back at 403,374 blocks
+(1 percent), with 5,201,367,040 bytes available after adjustment. All 15 saved
+process identities exited and source/protected bytes stayed unchanged. Owned
+temporary close is complete: five RAM source trees, RAM archives/private cache
+and empty scratch/fixture are gone; persistent raw and five local archives remain
+hash-matched. Shared PostgreSQL/Docker/old -02 and the 1 percent reserve remain.
+Final persistent/RAM availability was 5,173,850,112 / 6,262,153,216 bytes. Closure
+receipt SHA-256 is 55b0497ae1483ff2444735ffeec1b1f8bea6165a01bf892938a2c4d625dd0c6d.
+
+Only the report and this complete historical handoff are delivery documents;
+raw/summary stay outside, with no large repository JSON. External publication
+receipt records main/origin confirmation and preserved 199 byte states/56 WIP
+identities. No other optimization, capacity, Docker or WIP integration scope
+is added. The full previous historical body follows unchanged.
+
+## Previous October 4 internal operation cleanup delivery at 7e959c13
 
 The latest source is [internal operation cleanup](internal-operation-cleanup-20261004.md),
 commit `975d256ef7d8dbae365803caffbc4faff5ae029c`, parent
