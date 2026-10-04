@@ -1,5 +1,41 @@
 # Goby handoff - October 5, 2026
 
+Latest maintenance is [test-environment capacity governance](test-env-capacity-governance-20261005.md),
+with the [persistent cache policy](test-env-capacity-policy.md) referenced from
+[root agent instructions](../../AGENTS.md). Five confirmed inactive private Go
+caches were cleaned: 9,201,483,776 to 61,440 allocated bytes, reclaiming exactly
+9,201,422,336 bytes. Cleanup-window availability rose from 4,829,835,264 to
+14,031,257,600 bytes; earlier metadata reports 14,031,228,928 bytes. The final
+maintenance receipt reports 14,030,917,632 bytes, about 14.03 GB.
+All five retained-sibling/service checks passed; small cache roots remain.
+First-batch receipt SHA-256 is
+8be51827b5f9561a3904c6c0b0da1af818d396495a320148596340c0bcdb84da.
+Final maintenance receipt SHA-256 is
+6679ececdd43f0662327842257f4e60578ab7ded255dd53f0aa5b2d55429d336.
+Temporary retirement verifies 12 exported members and removed owned copies;
+receipt SHA-256 is 58abc5081cad66e316b935f35f7da3c1a4e707acb287be082c2e81fe1bd754fa.
+
+Limited /opt/goby-test classification found no build-work directories and no
+standard Go cache layout among 35 cache-named directories. All 123 /var/tmp entries
+lacked standard Go scratch names; additional eligible targets were zero. The
+2.742 GB Android NDK and other projects' source/evidence/toolchains remain. Whole
+old roots were not treated as caches. Shared build/module caches, source/raw/DB/
+media/artifacts, services and the 403,374-block/1-percent reserve are retained.
+Recent shared-cache objects prove Goby compilation provenance, but no actual
+compiler/launcher was captured; the running Goby service is not writer evidence.
+
+Ordinary tasks reuse shared defaults; explicitly isolated build caches start empty
+with a workload budget. Modules are shared unless their selected contract requires
+isolation. Reclaim disposable cache/scratch after actual worker exit, keeping
+TMPDIR media fixtures separate from GOTMPDIR compiler scratch. Authorized closeout
+needs no new approval step. No global quota, daemon, automatic prune, product test,
+performance matrix or Docker release was added. User testing rules remain unchanged.
+This pure-documentation delivery contains only root AGENTS.md, policy/report and
+handoff, with publication readback and the original 199 byte states/56 WIP hashes
+recorded separately. The complete prior historical body follows unchanged.
+
+## Previous October 5 scan performance follow-up delivery at 5483acc9
+
 Latest selected delivery is [scan performance follow-up](scan-performance-followup-20261005.md),
 full source `42cb91f66b6542c2b7dc5c6d7aca1f800d765983`, parent
 `7e959c136f7ed1402513a61841153d505c9cc3b6`, exact seven frozen paths.
