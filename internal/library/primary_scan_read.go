@@ -81,18 +81,17 @@ func (state *scanState) primaryScanReadError() error {
 	return state.primaryReadErr
 }
 
-// Authority preparation is database-only. It commits before any read queue or
-// source FD delivery; no cached mapping grants task or root authority.
+// The first scan entry commits the operation's complete authorization before
+// source delivery. Later phases reuse it with live cancellation/owner checks.
 func (state *scanState) readPrimaryScanAuthority(ctx context.Context) (rootBindingRow, error) {
 	if ctx == nil || state == nil || state.store == nil || state.task == nil {
 		return rootBindingRow{}, ErrUnavailable
 	}
-	return (&primaryScanRead{state: state, work: ctx}).readAuthority()
+	return state.store.readScanOperationAuthority(ctx, state.task, state.root)
 }
 
-// A retained walk mapping selects admission routing only. Every actual phase
-// still rechecks complete task and root authority after its admission grant.
-// Detached walk rows are never a source of routing preparation.
+// Routing and reads use the same immutable operation grant. A retained walk
+// mapping must agree with it and cannot authorize another root or task.
 func (state *scanState) primaryScanRoutingRow(ctx context.Context) (rootBindingRow, error) {
 	if ctx == nil || state == nil || state.store == nil || state.task == nil {
 		return rootBindingRow{}, ErrUnavailable
@@ -100,11 +99,11 @@ func (state *scanState) primaryScanRoutingRow(ctx context.Context) (rootBindingR
 	if err := ctx.Err(); err != nil {
 		return rootBindingRow{}, err
 	}
-	if state.walkIO == nil {
-		return state.readPrimaryScanAuthority(ctx)
+	row, err := state.readPrimaryScanAuthority(ctx)
+	if err != nil {
+		return rootBindingRow{}, err
 	}
-	row := state.walkRow
-	if row.root != state.root || row.validateMapping() != nil {
+	if state.walkIO != nil && !state.walkRow.same(row) {
 		return rootBindingRow{}, ErrRootBindingConflict
 	}
 	return row, nil
@@ -118,8 +117,8 @@ func (state *scanState) runPrimaryScanMetadata(ctx context.Context, work func(co
 	return state.runPrimaryScanMetadataWithRouting(ctx, row, work)
 }
 
-// The caller may pass the committed mapping from this input's preparation.
-// It cannot replace the fresh authority transaction inside the admitted phase.
+// The caller supplies this operation's committed mapping. Admission still
+// checks live cancellation and ownership before any metadata read starts.
 func (state *scanState) runPrimaryScanMetadataWithRouting(ctx context.Context, row rootBindingRow, work func(context.Context) error) (resultErr error) {
 	if ctx == nil || state == nil || state.store == nil || state.task == nil || work == nil {
 		return ErrUnavailable
@@ -136,7 +135,7 @@ func (state *scanState) runPrimaryScanMetadataWithRouting(ctx context.Context, r
 	operation := state.walkIO
 	if operation == nil {
 		var err error
-		operation, err = state.store.preparePrimaryRootIO(ctx,
+		operation, err = state.store.prepareScanOperationRootIO(ctx, state.task,
 			[]mediaSourceRootHint{{root: row.root, bindingRevision: row.revision}})
 		if err != nil {
 			return err
@@ -171,7 +170,7 @@ func (input *primaryScanRead) preparePublicationIO() (*PrimaryRootIO, error) {
 			return capture.primaryIO.Fork(input.work)
 		}
 	}
-	return state.store.preparePrimaryRootIO(input.work,
+	return state.store.prepareScanOperationRootIO(input.work, state.task,
 		[]mediaSourceRootHint{{root: input.row.root, bindingRevision: input.row.revision}})
 }
 
@@ -180,7 +179,7 @@ func (input *primaryScanRead) runPublicationMetadata(operation *PrimaryRootIO, w
 		return scanReadFailure(ErrUnavailable)
 	}
 	return operation.Run(input.work, input.row.root.id, primaryio.Background, func(ctx context.Context) error {
-		row, err := (&primaryScanRead{state: input.state, work: ctx}).readAuthorityForPublication(true)
+		row, err := input.state.readPrimaryScanAuthority(ctx)
 		if err != nil {
 			return scanReadFailure(err)
 		}
@@ -230,99 +229,25 @@ func (state *scanState) preparePrimaryScanRead() (_ *primaryScanRead, resultErr 
 		return nil, err
 	}
 	input.row = row
-	route, err := state.store.primaryReadRoute(mediaSourceRootHint{root: row.root, bindingRevision: row.revision})
+	prepared, err := state.store.scanOperationRoute(work, state.task, row.root)
 	if err != nil {
 		return nil, err
 	}
-	_, domain, err := state.store.mediaSourceRootLane(mediaSourceRootHint{root: row.root, bindingRevision: row.revision})
+	claim, err := originalMediaReadDomains.acquire(prepared.domain)
 	if err != nil {
 		return nil, err
 	}
-	claim, err := originalMediaReadDomains.acquire(domain)
-	if err != nil {
-		return nil, err
-	}
-	input.route, input.claim = route, claim
+	input.route, input.claim = prepared.route, claim
 	accepted = true
 	return input, nil
 }
 
 func (input *primaryScanRead) readAuthority() (rootBindingRow, error) {
-	return input.readAuthorityForPublication(false)
-}
-
-func (input *primaryScanRead) readAuthorityForPublication(publication bool) (_ rootBindingRow, resultErr error) {
+	if input == nil || input.state == nil {
+		return rootBindingRow{}, ErrUnavailable
+	}
 	state := input.state
-	if err := input.work.Err(); err != nil {
-		return rootBindingRow{}, err
-	}
-	state.store.mu.Lock()
-	active := !state.store.closed && !state.store.closing.Load() && state.store.active[state.task.job.ID] == state.task &&
-		state.store.rootBindingPathConfiguredLocked(state.root.allowedPath)
-	state.store.mu.Unlock()
-	if !active {
-		return rootBindingRow{}, ErrTaskScanInactive
-	}
-	row, accepted, err := input.readAuthorityInOneRequest()
-	if err != nil {
-		return rootBindingRow{}, err
-	}
-	if accepted {
-		if publication {
-			if err := state.task.ctx.Err(); err != nil {
-				return rootBindingRow{}, err
-			}
-		}
-		return row, nil
-	}
-	return input.readAuthorityTransaction(publication)
-}
-
-// Unsuccessful fast-path observations retain the original detailed error and
-// terminal-history contracts in a new transaction with fresh statement views.
-func (input *primaryScanRead) readAuthorityTransaction(publication bool) (_ rootBindingRow, resultErr error) {
-	state := input.state
-	tx, err := state.store.pool.Begin(input.work)
-	if err != nil {
-		return rootBindingRow{}, err
-	}
-	committed := false
-	defer func() {
-		if !committed {
-			resultErr = errors.Join(resultErr, rollbackSidecarTransaction(tx, resultErr))
-		}
-	}()
-	adapter := scanProbeAuthorityTx{ctx: input.work, tx: tx}
-	var relation taskScanRelation
-	if publication {
-		// Preserve publication's existing terminal/history cancellation contract
-		// even though queued metadata now checks authority before taking ownership.
-		relation, err = lockScanPublicationProgress(adapter, state.task)
-	} else {
-		relation, err = lockTaskScanRelation(adapter, state.task.job.ID, state.task.job.TaskChildID)
-	}
-	if err != nil {
-		return rootBindingRow{}, err
-	}
-	if relation.missing || relation.job.ID != state.task.job.ID || relation.job.LibraryID != state.task.job.LibraryID ||
-		relation.job.Status != "Running" || relation.job.TaskChildID != state.task.job.TaskChildID || relation.job.ForceProbe != state.task.job.ForceProbe {
-		return rootBindingRow{}, ErrTaskScanInactive
-	}
-	if relation.job.CancelRequested || relation.child != nil && (!activeTaskRun(relation.child.runState) || relation.child.state != "running") {
-		return rootBindingRow{}, context.Canceled
-	}
-	row, err := readRootBindingScanRow(adapter, state.task.job.LibraryID, state.root.id)
-	if err != nil {
-		return rootBindingRow{}, err
-	}
-	if row.root != state.root || row.validateMapping() != nil {
-		return rootBindingRow{}, ErrRootBindingConflict
-	}
-	if err := tx.Commit(input.work); err != nil {
-		return rootBindingRow{}, err
-	}
-	committed = true
-	return row, nil
+	return state.store.readScanOperationAuthority(input.work, state.task, state.root)
 }
 
 func (input *primaryScanRead) attach(file *os.File, path string) error {
@@ -351,14 +276,14 @@ func (input *primaryScanRead) checkSource() (resultErr error) {
 			if !retained.row.same(input.row) {
 				return scanReadFailure(ErrRootBindingConflict)
 			}
-			if err := retained.Revalidate(work); err != nil {
-				return scanReadFailure(err)
-			}
 		}
 	}
-	current, err := input.state.store.openLibraryRoot(input.row.root)
+	// Reopen the granted anchor and safe registered-name chain independently
+	// of cached Store anchors. Root and exact source identity are checked per
+	// read; complete topology remains a publication and final deletion proof.
+	current, err := input.state.store.openScanOperationRoot(work, input.state.task, input.row.root)
 	if err != nil {
-		return scanReadFailure(err)
+		return scanReadFailure(fmt.Errorf("%w: scan root name is unavailable: %w", ErrUnavailable, err))
 	}
 	defer func() {
 		if err := current.Close(); err != nil {

@@ -58,6 +58,12 @@ func (executor mediaAnalysisTaskExecutor) Execute(ctx context.Context, task task
 	}
 	defer leave()
 	task = task.WithContext(ctx)
+	ctx, closeOperation, err := r.server.library.BeginAnalysisOperation(ctx, task.ChildID, task.Fence)
+	if err != nil {
+		return err
+	}
+	defer func() { resultErr = errors.Join(resultErr, closeOperation()) }()
+	task = task.WithContext(ctx)
 	work, err := r.server.library.GetAnalysisWork(ctx, task.ChildID, task.Fence)
 	if err != nil {
 		return err

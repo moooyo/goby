@@ -75,7 +75,7 @@ func TestScanReconciliationPreflightObservationReleasesOwnership(t *testing.T) {
 }
 
 func TestScanReconciliationPreflightRechecksCurrentFactsAfterObservation(t *testing.T) {
-	for _, scenario := range []string{"candidate_path", "new_cascade_member", "source_reappeared", "root_binding", "cancel_flag"} {
+	for _, scenario := range []string{"candidate_path", "new_cascade_member", "source_reappeared", "root_binding", "root_mapping", "cancel_flag"} {
 		t.Run(scenario, func(t *testing.T) {
 			fixture, _, evidence, staging, trace := scanShortProofTestFixture(t)
 			notifications := catalogChangesTestListener(t, fixture.store)
@@ -102,6 +102,9 @@ func TestScanReconciliationPreflightRechecksCurrentFactsAfterObservation(t *test
 				case "root_binding":
 					_, err := fixture.pool.Exec(fixture.ctx, `UPDATE library_roots SET binding_revision=binding_revision+1 WHERE id=$1`, fixture.scanRoot.id)
 					return err
+				case "root_mapping":
+					_, err := fixture.pool.Exec(fixture.ctx, `UPDATE library_roots SET relative_path='changed' WHERE id=$1`, fixture.scanRoot.id)
+					return err
 				default:
 					_, err := fixture.pool.Exec(fixture.ctx, `UPDATE scan_jobs SET cancel_requested=true WHERE id=$1`, fixture.task.job.ID)
 					return err
@@ -111,27 +114,34 @@ func TestScanReconciliationPreflightRechecksCurrentFactsAfterObservation(t *test
 			scanPreflightTestHookResult(t, trace)
 			want := errScanReconciliationEvidenceUnavailable
 			if scenario == "root_binding" {
+				want = nil
+			} else if scenario == "root_mapping" {
 				want = ErrRootBindingConflict
 			} else if scenario == "cancel_flag" {
 				want = context.Canceled
 			}
 			if !changed.Load() || !errors.Is(err, want) {
-				t.Fatalf("final transaction accepted changed preflight facts: changed=%t error=%v want=%v", changed.Load(), err, want)
+				t.Fatalf("final transaction misclassified changed preflight facts: changed=%t error=%v want=%v", changed.Load(), err, want)
 			}
-			scanReconciliationCommitAssertItem(t, fixture, "short-proof-missing", true)
+			scanReconciliationCommitAssertItem(t, fixture, "short-proof-missing", scenario != "root_binding")
 			if scenario == "new_cascade_member" {
 				scanReconciliationCommitAssertItem(t, fixture, "late-cascade-member", true)
 			}
+			if scenario == "root_binding" {
+				assertCatalogTestChanges(t, nextCatalogTestNotification(t, notifications), []CatalogChange{{
+					Kind: CatalogRemoved, ItemID: "short-proof-missing", LibraryID: fixture.library.ID, ParentID: fixture.library.ID,
+				}})
+			}
 			assertNoCatalogTestNotification(t, notifications)
 			if err := fixture.store.CheckOwnership(fixture.ctx); err != nil {
-				t.Fatalf("rejected preflight transition destroyed healthy ownership: %v", err)
+				t.Fatalf("preflight transition destroyed healthy ownership: %v", err)
 			}
 		})
 	}
 }
 
-func TestScanReconciliationEmptyPreflightStillRechecksAuthorityWithoutFilesystemWork(t *testing.T) {
-	for _, scenario := range []string{"unchanged", "new_candidate", "root_binding", "cancel_flag"} {
+func TestScanReconciliationEmptyPreflightRetainsGrantAndRechecksCurrentFactsWithoutFilesystemWork(t *testing.T) {
+	for _, scenario := range []string{"unchanged", "new_candidate", "root_binding", "root_mapping", "cancel_flag"} {
 		t.Run(scenario, func(t *testing.T) {
 			fixture, adapter, evidence, staging, trace := scanShortProofTestFixtureWithPrepare(t, func(fixture rootBindingScanFixture) {
 				if _, err := fixture.pool.Exec(fixture.ctx, `DELETE FROM items WHERE id='short-proof-missing'`); err != nil {
@@ -158,6 +168,9 @@ func TestScanReconciliationEmptyPreflightStillRechecksAuthorityWithoutFilesystem
 				case "root_binding":
 					_, err := fixture.pool.Exec(fixture.ctx, `UPDATE library_roots SET binding_revision=binding_revision+1 WHERE id=$1`, fixture.scanRoot.id)
 					return err
+				case "root_mapping":
+					_, err := fixture.pool.Exec(fixture.ctx, `UPDATE library_roots SET relative_path='changed' WHERE id=$1`, fixture.scanRoot.id)
+					return err
 				case "cancel_flag":
 					_, err := fixture.pool.Exec(fixture.ctx, `UPDATE scan_jobs SET cancel_requested=true WHERE id=$1`, fixture.task.job.ID)
 					return err
@@ -173,19 +186,19 @@ func TestScanReconciliationEmptyPreflightStillRechecksAuthorityWithoutFilesystem
 			want := error(nil)
 			if scenario == "new_candidate" {
 				want = errScanReconciliationEvidenceUnavailable
-			} else if scenario == "root_binding" {
+			} else if scenario == "root_mapping" {
 				want = ErrRootBindingConflict
 			} else if scenario == "cancel_flag" {
 				want = context.Canceled
 			}
 			if !errors.Is(err, want) {
-				t.Fatalf("empty preflight bypassed final current authority: error=%v want=%v", err, want)
+				t.Fatalf("empty preflight misclassified final current facts: error=%v want=%v", err, want)
 			}
 			if scenario == "new_candidate" {
 				scanReconciliationCommitAssertItem(t, fixture, "late-physical-candidate", true)
 			}
 			if trace.Snapshot().OwnerTransactions != 2 {
-				t.Fatal("empty preflight did not retain both short current-authority transactions")
+				t.Fatal("empty preflight did not retain both short catalog consistency transactions")
 			}
 		})
 	}

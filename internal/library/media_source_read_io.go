@@ -22,6 +22,13 @@ func (s *Store) sealPrimaryMediaReadSnapshot(ctx context.Context, snapshot *inde
 		return ErrUnavailable
 	}
 	hint := mediaSourceRootHint{root: snapshot.root, bindingRevision: snapshot.rootBindingRevision}
+	if granted, active, err := s.taskSourceRootHint(ctx, snapshot.root); active {
+		if err != nil {
+			return err
+		}
+		hint = granted
+		snapshot.rootBindingRevision = granted.bindingRevision
+	}
 	if hint.bindingRevision <= 0 {
 		current, err := s.readMediaSourceRootHint(ctx, snapshot.mediaFile.Item.ID)
 		if err != nil {

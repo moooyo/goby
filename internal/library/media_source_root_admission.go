@@ -53,6 +53,9 @@ func (s *Store) readMediaSourceRootHint(ctx context.Context, itemID string) (med
 	if (rootBindingRow{root: hint.root, revision: hint.bindingRevision}).validateMapping() != nil {
 		return mediaSourceRootHint{}, ErrUnavailable
 	}
+	if granted, active, err := s.taskSourceRootHint(ctx, hint.root); active {
+		return granted, err
+	}
 	return hint, nil
 }
 
@@ -194,7 +197,7 @@ func (s *Store) runPreparedMediaSourceWorker(ctx context.Context, background boo
 	if err != nil {
 		return nil, MediaFile{}, mediaSourceAdmissionFailure(worker, background, err, failureGuards)
 	}
-	root, domain, err := s.mediaSourceRootLane(hint)
+	root, domain, err := s.mediaSourceRootLaneContext(worker, hint)
 	if err != nil {
 		return nil, MediaFile{}, mediaSourceAdmissionFailure(worker, background, err, failureGuards)
 	}

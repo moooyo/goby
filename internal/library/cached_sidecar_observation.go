@@ -113,7 +113,7 @@ func (state *scanState) observeCachedSidecarAbsenceWithReader(ctx context.Contex
 	if probe.FileChangeTimeNs > 0 && media.FileChangeTime(primary) != probe.FileChangeTimeNs {
 		return cachedSidecarObservation{}, nil
 	}
-	currentRoot, err = state.store.openLibraryRoot(state.root)
+	currentRoot, err = state.store.openScanOperationRoot(ctx, state.task, state.root)
 	if err != nil {
 		return cachedSidecarObservation{sourceChanged: true}, nil
 	}

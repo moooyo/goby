@@ -40,7 +40,7 @@ func (s *Store) prepareScanReconciliation(task *scanTask, roots []libraryRoot) (
 	var err error
 	hints := make([]mediaSourceRootHint, 0, len(roots))
 	for _, root := range roots {
-		row, err := s.admitRootBindingScan(task, root, nil, nil, nil)
+		row, err := s.readScanOperationAuthority(task.ctx, task, root)
 		if err != nil {
 			return nil, err
 		}
@@ -49,7 +49,7 @@ func (s *Store) prepareScanReconciliation(task *scanTask, roots []libraryRoot) (
 		}
 		hints = append(hints, mediaSourceRootHint{root: row.root, bindingRevision: row.revision})
 	}
-	pass.primaryIO, err = s.preparePrimaryRootIO(task.ctx, hints)
+	pass.primaryIO, err = s.prepareScanOperationRootIO(task.ctx, task, hints)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func (s *Store) prepareScanReconciliation(task *scanTask, roots []libraryRoot) (
 	}
 	retainedBytes, retainedHandles := int64(0), 0
 	for _, root := range roots {
-		capture, err := s.prepareRootBindingScanWithCapture(task, root, s.captureRootBindingWrite, pass.primaryIO)
+		capture, err := s.prepareRootBindingScanWithCapture(task, root, s.scanRootBindingCapture(task), pass.primaryIO)
 		if err != nil {
 			_ = capture.Close()
 			return nil, errors.Join(err, pass.Close())
@@ -172,7 +172,7 @@ func (pass *scanReconciliationPass) openRoot(s *Store, root libraryRoot) (*os.Ro
 			})
 			return opened, err
 		}
-		return s.openLibraryRoot(root)
+		return s.openScanOperationRoot(pass.task.ctx, pass.task, root)
 	}
 	if capture := pass.byRoot[root.id]; capture != nil && capture.status == RootBindingVerified {
 		// Keep the binding capture alive after the walker releases its own root.
@@ -184,7 +184,7 @@ func (pass *scanReconciliationPass) openRoot(s *Store, root libraryRoot) (*os.Ro
 		})
 		return opened, err
 	}
-	return s.openLibraryRoot(root)
+	return s.openScanOperationRoot(pass.task.ctx, pass.task, root)
 }
 
 type scanReconciliationPreparationFailure struct{ err error }

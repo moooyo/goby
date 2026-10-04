@@ -81,13 +81,13 @@ func TestLocalNFOObservationRejectsSameInodeRewriteWithRestoredModifiedTime(t *t
 	}
 }
 
-func TestLocalNFOFolderQueuedReadRequiresFreshAuthority(t *testing.T) {
+func TestLocalNFOFolderQueuedReadRetainsOperationAuthority(t *testing.T) {
 	for _, change := range []string{"task_cancel", "binding_revision"} {
 		t.Run(change, func(t *testing.T) {
 			fixture := primaryScanReadFixtureAt(t, &primaryScanReadTestProber{joined: true}, "")
 			state := fixture.state
 			path := filepath.Join(state.root.path, "tvshow.nfo")
-			if err := os.WriteFile(path, []byte(`<tvshow><title>Must remain unread</title></tvshow>`), 0o600); err != nil {
+			if err := os.WriteFile(path, []byte(`<tvshow><title>Operation title</title></tvshow>`), 0o600); err != nil {
 				t.Fatal(err)
 			}
 			directory, err := state.opened.Lstat(".")
@@ -129,6 +129,7 @@ func TestLocalNFOFolderQueuedReadRequiresFreshAuthority(t *testing.T) {
 			}
 			result := make(chan error, 1)
 			finished := make(chan struct{})
+			var observed localMetadata
 			t.Cleanup(func() {
 				state.task.cancel()
 				unblock()
@@ -138,7 +139,8 @@ func TestLocalNFOFolderQueuedReadRequiresFreshAuthority(t *testing.T) {
 			})
 			go func() {
 				defer close(finished)
-				_, err := state.folderLocalMetadata("//series/root", ".", "Series", 0)
+				var err error
+				observed, err = state.folderLocalMetadata("//series/root", ".", "Series", 0)
 				result <- err
 			}()
 			wait, cancel := context.WithTimeout(fixture.ctx, 5*time.Second)
@@ -148,24 +150,34 @@ func TestLocalNFOFolderQueuedReadRequiresFreshAuthority(t *testing.T) {
 			if scanProbeOpenDescriptors(t, []string{path})[0] != 0 || state.warnings != 0 {
 				t.Fatal("queued folder metadata opened NFO bytes or mutated scanner warnings")
 			}
-			want := error(context.Canceled)
+			var want error
 			if change == "task_cancel" {
+				want = context.Canceled
 				_, err = fixture.pool.Exec(fixture.ctx, "UPDATE scan_jobs SET cancel_requested=true WHERE id=$1", state.task.job.ID)
 			} else {
-				want = ErrRootBindingConflict
 				_, err = fixture.pool.Exec(fixture.ctx, "UPDATE library_roots SET binding_revision=binding_revision+1 WHERE id=$1", state.root.id)
 			}
 			if err != nil {
 				t.Fatal(err)
 			}
-			unblock()
-			primaryScanReadSignal(t, fixture.ctx, finished, "folder NFO fresh authority rejection")
-			if err := <-result; !errors.Is(err, want) {
-				t.Fatalf("queued folder NFO reused stale authority: got=%v want=%v", err, want)
+			if change == "task_cancel" {
+				state.task.cancel()
 			}
-			assertUnread()
+			unblock()
+			primaryScanReadSignal(t, fixture.ctx, finished, "folder NFO operation completion")
+			if err := <-result; !errors.Is(err, want) {
+				t.Fatalf("queued folder NFO lost operation authority: got=%v want=%v", err, want)
+			}
+			if want != nil {
+				assertUnread()
+				if observed.value != nil {
+					t.Fatalf("canceled NFO read returned parsed metadata: %+v", observed.value)
+				}
+			} else if observed.value == nil || observed.value.Name != "Operation title" || observed.path != "tvshow.nfo" || observed.hash == "" {
+				t.Fatalf("approved NFO read did not parse its actual title: %+v", observed)
+			}
 			if scanProbeOpenDescriptors(t, []string{path})[0] != 0 || state.warnings != 0 {
-				t.Fatal("rejected folder NFO read changed resources or warnings")
+				t.Fatal("folder NFO read changed resources or warnings")
 			}
 			for _, blocker := range blockers {
 				primaryScanReadSignal(t, fixture.ctx, blocker.done, "folder NFO blocker retirement")
@@ -177,7 +189,7 @@ func TestLocalNFOFolderQueuedReadRequiresFreshAuthority(t *testing.T) {
 				}
 			}
 			if stats := originalMediaReadGovernor.Stats(); stats != baseline || originalMediaReadOwners.Stats().RegisteredOwners != owners {
-				t.Fatalf("rejected NFO read retained admission charges: before=%+v after=%+v owners=%+v", baseline, stats, originalMediaReadOwners.Stats())
+				t.Fatalf("NFO read retained admission charges: before=%+v after=%+v owners=%+v", baseline, stats, originalMediaReadOwners.Stats())
 			}
 			if err := operation.Close(); err != nil {
 				t.Fatal(err)

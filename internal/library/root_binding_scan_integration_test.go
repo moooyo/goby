@@ -190,7 +190,88 @@ func TestRootBindingScanIntegrationUnverifiedStoragePreservesApprovalAndAnchor(t
 	}
 }
 
-func TestRootBindingScanIntegrationRechecksExactApprovalAndTaskAfterCapture(t *testing.T) {
+func TestRootBindingScanIntegrationRetainsStartupApprovalAndRefreshesTheNextTask(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		statement  string
+		nextStatus RootBindingStatus
+	}{
+		{"revision", `UPDATE library_roots SET binding_revision = binding_revision + 1 WHERE id = $1`, RootBindingVerified},
+		{"approval time", `UPDATE library_roots SET bound_at = bound_at + interval '1 second' WHERE id = $1`, RootBindingVerified},
+		{"approval actor", `UPDATE library_roots SET bound_by = 'changed-approver' WHERE id = $1`, RootBindingVerified},
+		{"approval document", `UPDATE library_roots SET storage_binding = jsonb_set(storage_binding, '{anchor,filesystem_uuid}', '"ffffffffffffffffffffffffffffffff"'::jsonb) WHERE id = $1`, RootBindingMismatch},
+		{"removed approval", `UPDATE library_roots SET storage_binding = NULL, bound_at = NULL, bound_by = NULL WHERE id = $1`, RootBindingUnbound},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			fixture := newRootBindingScanFixture(t)
+			approved, err := fixture.store.readScanOperationAuthority(fixture.ctx, fixture.task, fixture.scanRoot)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var afterChange string
+			capture := &rootBindingScanTestCapture{snapshot: fixture.snapshot, snapshotHook: func() {
+				if _, err := fixture.pool.Exec(fixture.ctx, test.statement, fixture.scanRoot.id); err != nil {
+					t.Fatal(err)
+				}
+				afterChange = catalogAuditSnapshot(t, fixture.ctx, fixture.pool)
+			}}
+			result, err := fixture.prepare(capture)
+			if result != nil {
+				defer result.Close()
+			}
+			if err != nil || result == nil || result.status != RootBindingVerified || !result.row.same(approved) ||
+				result.opened == nil || result.capture != capture || capture.checks != 2 || capture.closes != 0 {
+				t.Fatalf("ongoing scan lost its startup approval: result = %+v, error = %v, checks = %d, closes = %d", result, err, capture.checks, capture.closes)
+			}
+			if rootBindingScanAnchor(t, fixture.store, fixture.scanRoot.id) != capture.anchor {
+				t.Fatal("ongoing scan did not publish its independently captured anchor")
+			}
+			if after := catalogAuditSnapshot(t, fixture.ctx, fixture.pool); after != afterChange {
+				t.Fatal("ongoing scan changed catalog or approval rows after the controlled metadata update")
+			}
+			opened := result.opened
+			if err := result.Close(); err != nil || capture.closes != 1 {
+				t.Fatalf("close the completed capture: error = %v, closes = %d", err, capture.closes)
+			}
+			if _, err := opened.Stat("."); !errors.Is(err, os.ErrClosed) {
+				t.Fatalf("completed capture retained its independent root: %v", err)
+			}
+			if _, err := capture.anchor.Stat("."); err != nil {
+				t.Fatalf("capture retirement closed the installed Store anchor: %v", err)
+			}
+
+			if _, err := fixture.pool.Exec(fixture.ctx, `UPDATE scan_jobs SET status = 'Completed', finished_at = clock_timestamp() WHERE id = $1`, fixture.task.job.ID); err != nil {
+				t.Fatal(err)
+			}
+			fixture.store.mu.Lock()
+			delete(fixture.store.active, fixture.task.job.ID)
+			fixture.store.mu.Unlock()
+			fixture.task.cancel()
+			fixture.task = rootBindingScanOwnedTask(t, fixture.ctx, fixture.pool, fixture.store, fixture.library)
+			beforeNext := catalogAuditSnapshot(t, fixture.ctx, fixture.pool)
+			nextCapture := &rootBindingScanTestCapture{snapshot: fixture.snapshot}
+			if test.nextStatus == RootBindingUnbound {
+				nextCapture.snapshotHook = func() { t.Fatal("a fresh unbound scan reached filesystem capture") }
+			}
+			next, err := fixture.prepare(nextCapture)
+			if next != nil {
+				defer next.Close()
+			}
+			if err != nil || next == nil || next.status != test.nextStatus || next.row.same(approved) {
+				t.Fatalf("fresh task reused the previous approval: result = %+v, error = %v; want %s", next, err, test.nextStatus)
+			}
+			if test.nextStatus != RootBindingVerified && (next.opened != nil || next.capture != nil ||
+				rootBindingScanAnchor(t, fixture.store, fixture.scanRoot.id) != capture.anchor) {
+				t.Fatal("fresh unverified task acquired deletion evidence or changed the installed anchor")
+			}
+			if after := catalogAuditSnapshot(t, fixture.ctx, fixture.pool); after != beforeNext {
+				t.Fatal("fresh task changed catalog or approval rows while observing its updated grant")
+			}
+		})
+	}
+}
+
+func TestRootBindingScanIntegrationRechecksTaskAndMappingAfterCapture(t *testing.T) {
 	for _, test := range []struct {
 		name      string
 		statement string
@@ -198,12 +279,8 @@ func TestRootBindingScanIntegrationRechecksExactApprovalAndTaskAfterCapture(t *t
 		change    func(rootBindingScanFixture)
 		want      error
 	}{
-		{name: "revision", statement: `UPDATE library_roots SET binding_revision = binding_revision + 1 WHERE id = $1`, rootRow: true, want: ErrRootBindingConflict},
-		{name: "approval time", statement: `UPDATE library_roots SET bound_at = bound_at + interval '1 second' WHERE id = $1`, rootRow: true, want: ErrRootBindingConflict},
-		{name: "approval actor", statement: `UPDATE library_roots SET bound_by = 'changed-approver' WHERE id = $1`, rootRow: true, want: ErrRootBindingConflict},
-		{name: "approval document", statement: `UPDATE library_roots SET storage_binding = jsonb_set(storage_binding, '{anchor,filesystem_uuid}', '"ffffffffffffffffffffffffffffffff"'::jsonb) WHERE id = $1`, rootRow: true, want: ErrRootBindingConflict},
-		{name: "removed approval", statement: `UPDATE library_roots SET storage_binding = NULL, bound_at = NULL, bound_by = NULL WHERE id = $1`, rootRow: true, want: ErrRootBindingConflict},
-		{name: "mapping", statement: `UPDATE library_roots SET relative_path = 'changed' WHERE id = $1`, rootRow: true, want: ErrUnavailable},
+		{name: "registered path", statement: `UPDATE library_roots SET path = path || '/changed', relative_path = 'changed' WHERE id = $1`, rootRow: true, want: ErrRootBindingConflict},
+		{name: "relative mapping", statement: `UPDATE library_roots SET relative_path = 'changed' WHERE id = $1`, rootRow: true, want: ErrRootBindingConflict},
 		{name: "persisted cancellation", statement: `UPDATE scan_jobs SET cancel_requested = true WHERE id = $1`, want: context.Canceled},
 		{name: "terminal job", statement: `UPDATE scan_jobs SET status = 'Completed', finished_at = clock_timestamp() WHERE id = $1`, want: ErrTaskScanInactive},
 		{name: "lost admission", change: func(fixture rootBindingScanFixture) {
@@ -237,7 +314,7 @@ func TestRootBindingScanIntegrationRechecksExactApprovalAndTaskAfterCapture(t *t
 				defer result.Close()
 			}
 			if !errors.Is(err, test.want) || result != nil {
-				t.Fatalf("changed scan approval was admitted: result = %+v, error = %v; want %v", result, err, test.want)
+				t.Fatalf("inactive task or changed root mapping was admitted: result = %+v, error = %v; want %v", result, err, test.want)
 			}
 			if rootBindingScanAnchor(t, fixture.store, fixture.scanRoot.id) != anchor || capture.closes != 1 {
 				t.Fatal("rejected scan changed its Store anchor or retained capture descriptors")

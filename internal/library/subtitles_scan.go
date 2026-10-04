@@ -154,7 +154,7 @@ func (state *scanState) scanSubtitlesAttempt(itemID, relative string, probe *med
 		}
 		// Root and directory identities must still refer to the held objects. A
 		// renamed tree or a changed listing cannot authorize sidecar deletion.
-		currentRoot, err = state.store.openLibraryRoot(state.root)
+		currentRoot, err = state.store.openScanOperationRoot(work, state.task, state.root)
 		if err != nil {
 			state.warnings++
 			return nil

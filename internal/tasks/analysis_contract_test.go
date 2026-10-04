@@ -59,10 +59,10 @@ func TestAnalysisAuthorityAndFenceCannotBeReconstructedFromJSON(t *testing.T) {
 			t.Fatal("run JSON exposed private execution authority")
 		}
 	}
-	work := executionWork(context.Background(), run, Child{ID: "child", RunID: "run", LibraryID: "library", AnalysisScopeKey: "chunk-1"}, "private-executor-token")
+	work := Work{RunID: run.ID, ChildID: "child", LibraryID: "library", AnalysisInput: cloneAnalysisSelection(run.AnalysisInput)}.WithContext(context.Background())
 	encoded, err = json.Marshal(work)
-	if err != nil || strings.Contains(string(encoded), "private-executor-token") || strings.Contains(string(encoded), "original-client") {
-		t.Fatal("work serialized its sealed capability")
+	if err != nil || strings.Contains(string(encoded), "original-client") {
+		t.Fatal("work serialized private execution identity")
 	}
 	var copied Work
 	if err := json.Unmarshal(encoded, &copied); err != nil {
@@ -72,7 +72,7 @@ func TestAnalysisAuthorityAndFenceCannotBeReconstructedFromJSON(t *testing.T) {
 		t.Fatal("JSON reconstructed a publication capability")
 	}
 	for _, invalid := range []Run{
-		{Source: "schedule"}, {Source: "manual", ActorKind: "system"}, {Source: "schedule", ActorKind: "system", ActorSessionID: "borrowed"},
+		{Source: "unknown"}, {Source: "manual", ActorKind: "system"}, {Source: "schedule", ActorKind: "system", ActorSessionID: "borrowed"},
 	} {
 		actor, err := executionActor(invalid)
 		if err == nil && actor == nil {
@@ -84,5 +84,30 @@ func TestAnalysisAuthorityAndFenceCannotBeReconstructedFromJSON(t *testing.T) {
 	}
 	if actor.Audience != identity.AdministratorEmby {
 		t.Fatal("application audience changed")
+	}
+}
+
+func TestExecutionActorRetainsLegacySystemIdentityWithoutHumanCredentials(t *testing.T) {
+	for _, source := range []string{"schedule", "startup", "system_event"} {
+		for _, kind := range []string{"", "system"} {
+			run := Run{Source: source, ActorKind: kind}
+			if actor, err := executionActor(run); err != nil || actor != nil {
+				t.Fatalf("legitimate automatic identity was rejected: source=%s kind=%q error=%v", source, kind, err)
+			}
+			for _, mutate := range []func(*Run){
+				func(run *Run) { run.ActorKind = "admin" },
+				func(run *Run) { run.ActorUserID = "borrowed-user" },
+				func(run *Run) { run.ActorSessionID = "borrowed-session" },
+				func(run *Run) { run.authority.ApplicationKeyID = 1 },
+				func(run *Run) { run.authority.ClientSessionID = "borrowed-client" },
+				func(run *Run) { run.authority.PeerIP = "127.0.0.1" },
+			} {
+				changed := run
+				mutate(&changed)
+				if _, err := executionActor(changed); !errors.Is(err, identity.ErrUnauthorized) {
+					t.Fatalf("automatic identity accepted human credential fields: source=%s kind=%q run=%+v error=%v", source, kind, changed, err)
+				}
+			}
+		}
 	}
 }

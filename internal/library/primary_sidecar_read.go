@@ -115,9 +115,21 @@ func (state *scanState) waitSidecarScanAdmission() error {
 	if err != nil {
 		return err
 	}
-	return state.store.waitSidecarAdmission(state.task.ctx,
-		mediaSourceRootHint{root: row.root, bindingRevision: row.revision}, primaryio.Background,
-		func(work context.Context) error { return state.checkSidecarScanAuthority(work, row) })
+	for {
+		operation, err := state.store.prepareScanOperationRootIO(state.task.ctx, state.task,
+			[]mediaSourceRootHint{{root: row.root, bindingRevision: row.revision}})
+		if err == nil {
+			err = operation.Run(state.task.ctx, row.root.id, primaryio.Background,
+				func(work context.Context) error { return state.checkSidecarScanAuthority(work, row) })
+			err = errors.Join(err, operation.Close())
+		}
+		if !sidecarAdmissionRetryable(err) {
+			return err
+		}
+		if err := waitSidecarRetryBackoff(state.task.ctx); err != nil {
+			return err
+		}
+	}
 }
 
 func ordinarySidecarSourceChange(err error) bool {
@@ -200,9 +212,8 @@ func (s *Store) checkSidecarRootHint(ctx context.Context, expected mediaSourceRo
 	return ctx.Err()
 }
 
-// An active walk contributes only its committed routing row and completion
-// right. Each admitted sidecar phase still reads fresh task and root authority.
-// Standalone preparation commits authority before registering storage routing.
+// An active scan shares its immutable operation authorization and routing.
+// Standalone preparation authorizes the operation before registering storage.
 func (state *scanState) prepareSidecarScanIO() (*PrimaryRootIO, rootBindingRow, error) {
 	row, err := state.primaryScanRoutingRow(state.task.ctx)
 	if err != nil {
@@ -212,7 +223,7 @@ func (state *scanState) prepareSidecarScanIO() (*PrimaryRootIO, rootBindingRow, 
 		operation, err := state.walkIO.Fork(state.task.ctx)
 		return operation, row, err
 	}
-	operation, err := state.store.preparePrimaryRootIO(state.task.ctx,
+	operation, err := state.store.prepareScanOperationRootIO(state.task.ctx, state.task,
 		[]mediaSourceRootHint{{root: row.root, bindingRevision: row.revision}})
 	return operation, row, err
 }
@@ -229,12 +240,8 @@ func (state *scanState) checkSidecarScanAuthority(ctx context.Context, expected 
 }
 
 func (state *scanState) checkSidecarScanRootTx(tx pgx.Tx, expected rootBindingRow) error {
-	current, err := readRootBindingForUpdate(state.task.ctx, tx, expected.root.libraryID, expected.root.id)
-	if err != nil {
+	if _, err := lockScanPublicationProgress(scanProbeAuthorityTx{ctx: state.task.ctx, tx: tx}, state.task); err != nil {
 		return err
 	}
-	if !current.same(expected) {
-		return ErrRootBindingConflict
-	}
-	return nil
+	return state.store.checkScanOperationRootTx(state.task.ctx, tx, state.task, expected)
 }

@@ -96,8 +96,26 @@ func TestScanVirtualFolderCacheRetainsLatestInputAndSkipsRepeatedWrites(t *testi
 	state.task.ctx = ctx
 	// A cache belongs to one walk. The next scan must revisit its owned metadata
 	// contract without creating another version of unchanged accepted facts.
+	if err := store.finishTask(task, "Completed", ""); err != nil {
+		t.Fatal(err)
+	}
+	task.cancel()
+	store.mu.Lock()
+	delete(store.active, task.job.ID)
+	store.mu.Unlock()
 	before = version()
 	next := scanClaimLookupState(t, ctx, store, library, filepath.Dir(path))
+	nextTask, _ := scanUnchangedProgressTask(t, ctx, pool, library)
+	next.task = nextTask
+	store.mu.Lock()
+	store.active[nextTask.job.ID] = nextTask
+	store.mu.Unlock()
+	t.Cleanup(func() {
+		nextTask.cancel()
+		store.mu.Lock()
+		delete(store.active, nextTask.job.ID)
+		store.mu.Unlock()
+	})
 	if idAgain, err := next.folder(relative, "", "Show", "Series", library.ID, 0); err != nil || idAgain != id || version() != before {
 		t.Fatalf("new scan failed to revisit its virtual folder: id=%q error=%v", idAgain, err)
 	}

@@ -303,7 +303,7 @@ func primaryScanReadQueued(t *testing.T, ctx context.Context, baseline primaryio
 	}
 }
 
-func TestPrimaryScanReadQueuedBindingAndTaskFence(t *testing.T) {
+func TestPrimaryScanReadQueuedOperationAuthorityAndSourceFence(t *testing.T) {
 	for _, test := range []struct {
 		name   string
 		change func(primaryScanReadFixture) error
@@ -312,9 +312,16 @@ func TestPrimaryScanReadQueuedBindingAndTaskFence(t *testing.T) {
 		{"binding-revision", func(f primaryScanReadFixture) error {
 			_, err := f.pool.Exec(f.ctx, "UPDATE library_roots SET binding_revision=binding_revision+1 WHERE id=$1", f.state.root.id)
 			return err
-		}, ErrRootBindingConflict},
+		}, nil},
+		{"binding-document", func(f primaryScanReadFixture) error {
+			_, err := f.pool.Exec(f.ctx, `UPDATE library_roots SET storage_binding='{"operation_witness":"changed"}',bound_at=clock_timestamp(),bound_by='operation-test' WHERE id=$1`, f.state.root.id)
+			return err
+		}, nil},
 		{"persisted-task-cancel", func(f primaryScanReadFixture) error {
 			_, err := f.pool.Exec(f.ctx, "UPDATE scan_jobs SET cancel_requested=true WHERE id=$1", f.state.task.job.ID)
+			if err == nil {
+				f.state.task.cancel()
+			}
 			return err
 		}, context.Canceled},
 		{"queued-source-change", func(f primaryScanReadFixture) error {
@@ -353,8 +360,12 @@ func TestPrimaryScanReadQueuedBindingAndTaskFence(t *testing.T) {
 				t.Fatal(got.err)
 			}
 			got := primaryScanReadReceive(t, first.ctx, result)
-			if !errors.Is(got.err, test.want) || candidateProber.calls.Load() != 0 || got.info.Size != 0 {
-				t.Fatalf("grant used stale authority or delivered payload: info=%+v calls=%d error=%v", got.info, candidateProber.calls.Load(), got.err)
+			wantCalls, wantSize := int64(0), int64(0)
+			if test.want == nil {
+				wantCalls, wantSize = 1, int64(len(primaryScanReadSourceBytes))
+			}
+			if !errors.Is(got.err, test.want) || candidateProber.calls.Load() != wantCalls || got.info.Size != wantSize {
+				t.Fatalf("queued read did not retain operation authority and source fencing: info=%+v calls=%d error=%v want=%v", got.info, candidateProber.calls.Load(), got.err, test.want)
 			}
 			var failure *primaryScanReadFailure
 			if test.want == errScanProbeSourceChanged && errors.As(got.err, &failure) {

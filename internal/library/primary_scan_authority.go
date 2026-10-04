@@ -1,109 +1,270 @@
 package library
 
 import (
+	"context"
+	"errors"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/storagebinding"
 )
 
-// The materialized dependencies retain the existing row-lock order. Initial
-// statement-snapshot lookups choose rows only; every accepting predicate uses
-// values returned by FOR UPDATE. At Read Committed, PostgreSQL rechecks a row
-// changed while its lock was awaited. Missing rows, changed associations, and
-// unsuccessful observations fall back after this implicit transaction ends.
-const primaryScanManualAuthoritySQL = `/* primary_scan_authority */
-WITH job_route AS MATERIALIZED (
-	SELECT id, COALESCE(task_child_id, '') AS child_id
-	FROM scan_jobs WHERE id = $1
-), locked_job AS MATERIALIZED (
-	SELECT j.id, j.library_id, j.status, j.force_probe, j.cancel_requested,
-		COALESCE(j.task_child_id, '') AS child_id
-	FROM scan_jobs j JOIN job_route route ON j.id = route.id
-	WHERE route.child_id = $3 AND $3 = ''
-	FOR UPDATE OF j
-), authorized_job AS MATERIALIZED (
-	SELECT library_id FROM locked_job
-	WHERE id = $1 AND library_id = $2 AND child_id = $3
-		AND status = 'Running' AND force_probe = $4 AND NOT cancel_requested
-)
-` + primaryScanAuthorityRootSQL
+// A scan operation authorizes its complete root set once, before storage work.
+// Its identity and approval rows are immutable until the task is retired. Root
+// permission edits affect the next operation; cancellation and Store ownership
+// loss still stop this operation immediately.
+type scanOperationAuthority struct {
+	store                     *Store
+	jobID, childID, libraryID string
+	forceProbe                bool
+	roots                     map[string]rootBindingRow
+	routes                    map[string]primaryRootIORoute
+}
 
-const primaryScanTaskAuthoritySQL = `/* primary_scan_authority */
-WITH job_route AS MATERIALIZED (
-	SELECT id, COALESCE(task_child_id, '') AS child_id
-	FROM scan_jobs WHERE id = $1
-), child_route AS MATERIALIZED (
-	SELECT c.id, c.run_id, route.id AS job_id
-	FROM task_run_children c JOIN job_route route ON c.id = route.child_id
-	WHERE route.child_id = $3 AND $3 <> ''
-), locked_run AS MATERIALIZED (
-	SELECT r.id, r.state, r.task_key, route.id AS child_id, route.job_id
-	FROM task_runs r JOIN child_route route ON r.id = route.run_id
-	FOR UPDATE OF r
-), locked_child AS MATERIALIZED (
-	SELECT c.id, c.library_id, c.state, COALESCE(c.scan_job_id, '') AS scan_id,
-		r.state AS run_state, r.task_key AS run_key, r.job_id
-	FROM task_run_children c JOIN locked_run r ON c.run_id = r.id AND c.id = r.child_id
-	FOR UPDATE OF c
-), locked_job AS MATERIALIZED (
-	SELECT j.id, j.library_id, j.status, j.force_probe, j.cancel_requested,
-		COALESCE(j.task_child_id, '') AS child_id, c.id AS locked_child_id,
-		c.library_id AS child_library_id, c.state AS child_state, c.scan_id,
-		c.run_state, c.run_key
-	FROM scan_jobs j JOIN locked_child c ON j.id = c.job_id
-	FOR UPDATE OF j
-), authorized_job AS MATERIALIZED (
-	SELECT library_id FROM locked_job
-	WHERE id = $1 AND library_id = $2 AND child_id = $3
-		AND status = 'Running' AND force_probe = $4 AND NOT cancel_requested
-		AND locked_child_id = child_id AND child_library_id = library_id AND scan_id = id
-		AND run_state IN ('pending', 'running') AND child_state = 'running'
-		AND ((run_key = 'library.scan' AND NOT force_probe)
-			OR (run_key = 'library.refresh_media' AND force_probe))
-)
-` + primaryScanAuthorityRootSQL
-
-// Keep this projection identical to readRootBindingScanRow, including bounded
-// persisted documents and metadata. The root lock follows all authority locks.
-const primaryScanAuthorityRootSQL = `SELECT ` + rootBindingMetadataColumns + `,
+const scanOperationAuthorityRootsSQL = `/* scan_operation_authority */ SELECT ` + rootBindingMetadataColumns + `,
 	r.storage_binding IS NOT NULL,
-	CASE WHEN octet_length(r.storage_binding::text) <= $6 THEN r.storage_binding::text END,
+	CASE WHEN octet_length(r.storage_binding::text) <= $2 THEN r.storage_binding::text END,
 	r.bound_at, CASE WHEN r.bound_by IS NULL THEN NULL WHEN octet_length(r.bound_by) <= 256 THEN r.bound_by ELSE '' END
-	FROM library_roots r JOIN authorized_job authority ON r.library_id = authority.library_id
-	WHERE r.id = $5 FOR UPDATE OF r`
+	FROM library_roots r WHERE r.library_id=$1 ORDER BY r.id LIMIT $3 FOR UPDATE OF r`
 
-func (input *primaryScanRead) readAuthorityInOneRequest() (rootBindingRow, bool, error) {
-	state := input.state
-	statement := primaryScanManualAuthoritySQL
-	if state.task.job.TaskChildID != "" {
-		statement = primaryScanTaskAuthoritySQL
+// The explicit scanner entry supplies its enumerated roots. Standalone scan
+// helpers use nil and still capture the entire library, never extending an
+// existing operation with a newly authorized root halfway through a scan.
+func (s *Store) prepareScanOperationAuthority(ctx context.Context, task *scanTask, expected []libraryRoot) (resultErr error) {
+	if ctx == nil || s == nil || s.pool == nil || task == nil || task.ctx == nil {
+		return ErrUnavailable
 	}
-	rows, err := state.store.pool.Query(input.work, statement, state.task.job.ID,
-		state.task.job.LibraryID, state.task.job.TaskChildID, state.task.job.ForceProbe,
-		state.root.id, storagebinding.MaxDocumentBytes)
+	if grant := task.authority.Load(); grant != nil {
+		if err := s.checkScanOperationActive(ctx, task, grant); err != nil {
+			return err
+		}
+		return grant.matchesRoots(expected)
+	}
+	task.authorityMu.Lock()
+	defer task.authorityMu.Unlock()
+	if grant := task.authority.Load(); grant != nil {
+		if err := s.checkScanOperationActive(ctx, task, grant); err != nil {
+			return err
+		}
+		return grant.matchesRoots(expected)
+	}
+	grant := &scanOperationAuthority{store: s, jobID: task.job.ID, childID: task.job.TaskChildID,
+		libraryID: task.job.LibraryID, forceProbe: task.job.ForceProbe, roots: make(map[string]rootBindingRow),
+		routes: make(map[string]primaryRootIORoute)}
+	if err := s.checkScanOperationActive(ctx, task, grant); err != nil {
+		return err
+	}
+	work, finish, err := s.beginMediaSourceLifetime(ctx)
 	if err != nil {
-		return rootBindingRow{}, false, fmt.Errorf("read scan authority: %w", err)
+		return err
+	}
+	defer finish()
+	ctx = work
+	s.mediaSourceOwners.mu.Lock()
+	catalog := s.mediaSourceOwners.catalogScope
+	s.mediaSourceOwners.mu.Unlock()
+	s.mu.Lock()
+	configured := make([]string, 0, len(s.roots))
+	for _, root := range s.roots {
+		configured = append(configured, root.path)
+	}
+	s.mu.Unlock()
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			resultErr = errors.Join(resultErr, rollbackSidecarTransaction(tx, resultErr))
+		}
+	}()
+	relation, err := lockTaskScanRelation(scanProbeAuthorityTx{ctx: ctx, tx: tx}, grant.jobID, grant.childID)
+	if err != nil {
+		return err
+	}
+	if relation.missing || relation.job.ID != grant.jobID || relation.job.LibraryID != grant.libraryID ||
+		relation.job.TaskChildID != grant.childID || relation.job.ForceProbe != grant.forceProbe || relation.job.Status != "Running" {
+		return ErrTaskScanInactive
+	}
+	if relation.job.CancelRequested || relation.child != nil && (!activeTaskRun(relation.child.runState) || relation.child.state != "running") {
+		return context.Canceled
+	}
+	rows, err := tx.Query(ctx, scanOperationAuthorityRootsSQL, grant.libraryID, storagebinding.MaxDocumentBytes, maxRegisteredRootBindingList+1)
+	if err != nil {
+		return fmt.Errorf("read scan operation roots: %w", err)
 	}
 	defer rows.Close()
-	var row rootBindingRow
-	count := 0
 	for rows.Next() {
-		count++
+		var row rootBindingRow
 		if err := rows.Scan(&row.root.id, &row.root.libraryID, &row.root.path, &row.root.allowedPath, &row.root.relativePath,
 			&row.revision, &row.stored, &row.document, &row.boundAt, &row.boundBy); err != nil {
-			return rootBindingRow{}, false, fmt.Errorf("read scan root binding: %w", err)
+			return fmt.Errorf("read scan operation root: %w", err)
+		}
+		if row.root.libraryID != grant.libraryID || row.validateMapping() != nil {
+			return ErrRootBindingConflict
+		}
+		if _, err := row.validate(); err != nil {
+			return err
+		}
+		route, err := scanOperationRootRoute(catalog, row.root, configured)
+		if err != nil {
+			return err
+		}
+		grant.roots[row.root.id] = row
+		grant.routes[row.root.id] = route
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("complete scan operation roots: %w", err)
+	}
+	rows.Close()
+	if len(grant.roots) > maxRegisteredRootBindingList {
+		return ErrUnavailable
+	}
+	if err := grant.matchesRoots(expected); err != nil {
+		return err
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if err := task.ctx.Err(); err != nil {
+		return err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return err
+	}
+	committed = true
+	// Publish only after releasing all database locks. No Store mutex is held
+	// while waiting for a task/root row, preserving owned-writer lock ordering.
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.ownership == nil || s.ownership.lost.Load() {
+		return ErrUnavailable
+	}
+	if !s.scanOperationActiveLocked(task, grant) {
+		return ErrTaskScanInactive
+	}
+	if err := task.ctx.Err(); err != nil {
+		return err
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if task.job.CancelRequested {
+		return context.Canceled
+	}
+	task.authority.Store(grant)
+	return nil
+}
+
+func (grant *scanOperationAuthority) matchesRoots(expected []libraryRoot) error {
+	if expected == nil {
+		return nil
+	}
+	if len(expected) != len(grant.roots) {
+		return ErrRootBindingConflict
+	}
+	for _, root := range expected {
+		if row, ok := grant.roots[root.id]; !ok || row.root != root {
+			return ErrRootBindingConflict
 		}
 	}
-	// Exhausting pgx rows consumes ReadyForQuery and releases the pooled
-	// connection. Neither I/O nor the fallback may begin with these locks held.
-	if err := rows.Err(); err != nil {
-		return rootBindingRow{}, false, fmt.Errorf("complete scan authority: %w", err)
+	return nil
+}
+
+func (s *Store) scanOperationActiveLocked(task *scanTask, grant *scanOperationAuthority) bool {
+	return grant.store == s && !s.closed && !s.closing.Load() &&
+		s.ownership != nil && !s.ownership.lost.Load() && s.active[grant.jobID] == task &&
+		task.job.ID == grant.jobID && task.job.LibraryID == grant.libraryID &&
+		task.job.TaskChildID == grant.childID && task.job.ForceProbe == grant.forceProbe && task.job.Status == "Running"
+}
+
+func (s *Store) checkScanOperationActive(ctx context.Context, task *scanTask, grant *scanOperationAuthority) error {
+	if err := ctx.Err(); err != nil {
+		return err
 	}
-	if err := input.work.Err(); err != nil {
-		return rootBindingRow{}, false, err
+	if err := task.ctx.Err(); err != nil {
+		return err
 	}
-	if count != 1 || row.root != state.root || row.validateMapping() != nil {
-		return rootBindingRow{}, false, nil
+	if task.job.CancelRequested {
+		return context.Canceled
 	}
-	return row, true, nil
+	s.mu.Lock()
+	unavailable := s.ownership == nil || s.ownership.lost.Load()
+	active := s.scanOperationActiveLocked(task, grant)
+	s.mu.Unlock()
+	if unavailable {
+		return ErrUnavailable
+	}
+	if !active {
+		return ErrTaskScanInactive
+	}
+	if err := task.ctx.Err(); err != nil {
+		return err
+	}
+	return ctx.Err()
+}
+
+func (s *Store) readScanOperationRoot(ctx context.Context, task *scanTask, rootID string) (rootBindingRow, error) {
+	if err := s.prepareScanOperationAuthority(ctx, task, nil); err != nil {
+		return rootBindingRow{}, err
+	}
+	row, ok := task.authority.Load().roots[rootID]
+	if !ok {
+		return rootBindingRow{}, ErrRootBindingConflict
+	}
+	return row, nil
+}
+
+func (s *Store) readScanOperationAuthority(ctx context.Context, task *scanTask, root libraryRoot) (rootBindingRow, error) {
+	row, err := s.readScanOperationRoot(ctx, task, root.id)
+	if err != nil {
+		return rootBindingRow{}, err
+	}
+	if row.root != root {
+		return rootBindingRow{}, ErrRootBindingConflict
+	}
+	return row, nil
+}
+
+// Final writers fence the physical catalog mapping independently from the
+// operation's permission grant. Approval revisions and documents may change;
+// an accepted source must never be written under a different registered path.
+func (s *Store) checkScanOperationRootTx(ctx context.Context, tx pgx.Tx, task *scanTask, expected rootBindingRow) error {
+	if ctx == nil || s == nil || task == nil || task.ctx == nil || task.authority.Load() == nil {
+		return ErrTaskScanInactive
+	}
+	grant := task.authority.Load()
+	if err := s.checkScanOperationActive(ctx, task, grant); err != nil {
+		return err
+	}
+	granted, ok := grant.roots[expected.root.id]
+	if !ok || !granted.same(expected) {
+		return ErrRootBindingConflict
+	}
+	return checkScanOperationRootMappingTx(ctx, tx, expected.root)
+}
+
+// Callers that already hold Store admission use this data-only check after
+// obtaining their operation grant, without acquiring Store.mu recursively.
+func checkScanOperationRootMappingTx(ctx context.Context, tx pgx.Tx, expected libraryRoot) error {
+	var current libraryRoot
+	err := tx.QueryRow(ctx, `SELECT
+		CASE WHEN octet_length(id) <= 256 THEN id ELSE '' END,
+		CASE WHEN octet_length(library_id) <= 256 THEN library_id ELSE '' END,
+		CASE WHEN octet_length(path) <= 4096 THEN path ELSE '' END,
+		CASE WHEN octet_length(allowed_path) <= 4096 THEN allowed_path ELSE '' END,
+		CASE WHEN octet_length(relative_path) <= 4096 THEN relative_path ELSE '..' END
+		FROM library_roots WHERE id=$1 AND library_id=$2 FOR UPDATE`, expected.id, expected.libraryID).
+		Scan(&current.id, &current.libraryID, &current.path, &current.allowedPath, &current.relativePath)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrRootBindingConflict
+	}
+	if err != nil {
+		return err
+	}
+	if current != expected {
+		return ErrRootBindingConflict
+	}
+	return nil
 }

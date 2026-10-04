@@ -297,7 +297,7 @@ func (state *scanState) publishExtraOwner(ownerID string, files []*preparedTheme
 	if relation.job.LibraryID != state.library.ID {
 		return taskScanAssociationError()
 	}
-	if err := witness.lockRoots(state.task.ctx, tx); err != nil {
+	if err := witness.checkOperationRoots(state.task.ctx, tx); err != nil {
 		return err
 	}
 	var locked []string

@@ -167,11 +167,7 @@ func TestSystemEventStartupRetriesAndManagerCancellationUseRealWorker(t *testing
 			t.Error(err)
 		}
 	})
-	select {
-	case <-executor.started:
-	case <-ctx.Done():
-		t.Fatal(ctx.Err())
-	}
+	waitGenericExecutorStarted(t, ctx, store, definition.ID, executor.started)
 	page, err := store.ListRuns(ctx, definition.ID, Page{})
 	if err != nil || len(page.Items) != 1 {
 		t.Fatalf("startup did not create exactly one run: %v", err)

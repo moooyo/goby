@@ -19,7 +19,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/primaryio"
-	"github.com/moooyo/goby/internal/storagebinding"
 )
 
 type scanPublicationIOQueryKey struct{}
@@ -28,6 +27,14 @@ type scanPublicationIOQuery struct {
 	trace *scanPublicationIOTrace
 	kind  string
 }
+
+var scanPublicationRootMappingStatement = scanPerformanceNormalizeSQL(`SELECT
+	CASE WHEN octet_length(id) <= 256 THEN id ELSE '' END,
+	CASE WHEN octet_length(library_id) <= 256 THEN library_id ELSE '' END,
+	CASE WHEN octet_length(path) <= 4096 THEN path ELSE '' END,
+	CASE WHEN octet_length(allowed_path) <= 4096 THEN allowed_path ELSE '' END,
+	CASE WHEN octet_length(relative_path) <= 4096 THEN relative_path ELSE '..' END
+	FROM library_roots WHERE id=$1 AND library_id=$2 FOR UPDATE`)
 
 // Only the catalog owner's exact root query can start the final-proof gate.
 // Pooled pre-admission authority transactions cannot satisfy this barrier.
@@ -59,8 +66,8 @@ func (trace *scanPublicationIOTrace) TraceQueryStart(ctx context.Context, conn *
 		return ctx
 	}
 	kind := ""
-	if statement == scanPerformanceAuthorityStatements[5] && len(data.Args) == 3 &&
-		data.Args[0] == trace.libraryID && data.Args[1] == trace.rootID && data.Args[2] == storagebinding.MaxDocumentBytes {
+	if statement == scanPublicationRootMappingStatement && len(data.Args) == 2 &&
+		data.Args[0] == trace.rootID && data.Args[1] == trace.libraryID {
 		kind = "root"
 	} else if strings.HasPrefix(statement, "insert into items ") && len(data.Args) != 0 && data.Args[0] == trace.itemID {
 		trace.itemWrites++

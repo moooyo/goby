@@ -16,6 +16,11 @@ import (
 const maxEmbeddedArtworkCacheBytes int64 = 1 << 30
 const maxEmbeddedArtworkCacheEntries int64 = 25000
 
+// Internal extraction fences the media facts independently from permission
+// revisions. Publication still records the current external projection stamp.
+const embeddedArtworkScanSourceSQL = `md5(jsonb_build_array(i.root_id,
+	i.relative_path,i.file_identity,i.file_size,extract(epoch FROM i.modified_at),i.media)::text)`
+
 type embeddedArtworkExtractor interface {
 	ExtractEmbeddedArtwork(context.Context, *os.File, media.Info) (media.EmbeddedArtworkResult, error)
 }
@@ -58,10 +63,10 @@ func (state *scanState) scanEmbeddedArtworkAttempt(itemID, itemType, relative st
 		state.warnings++
 		return nil
 	}
-	var source, cachedSource, cachedStatus string
+	var source, sourceFacts, cachedSource, cachedStatus string
 	var cachedVersion int
-	err = tx.QueryRow(ctx, `SELECT `+embeddedArtworkSourceRevisionSQL+`,COALESCE(e.source_revision,''),COALESCE(e.status,''),COALESCE(e.extraction_version,0)
-		FROM items i LEFT JOIN item_embedded_artwork e ON e.item_id=i.id WHERE i.id=$1`, itemID).Scan(&source, &cachedSource, &cachedStatus, &cachedVersion)
+	err = tx.QueryRow(ctx, `SELECT `+embeddedArtworkSourceRevisionSQL+`,`+embeddedArtworkScanSourceSQL+`,COALESCE(e.source_revision,''),COALESCE(e.status,''),COALESCE(e.extraction_version,0)
+		FROM items i LEFT JOIN item_embedded_artwork e ON e.item_id=i.id WHERE i.id=$1`, itemID).Scan(&source, &sourceFacts, &cachedSource, &cachedStatus, &cachedVersion)
 	if err != nil {
 		return err
 	}
@@ -138,19 +143,20 @@ func (state *scanState) scanEmbeddedArtworkAttempt(itemID, itemType, relative st
 	if err := state.checkSidecarScanRootTx(writeTx, row); err != nil {
 		return err
 	}
-	var currentSource, libraryID, parentID string
-	if err := writeTx.QueryRow(ctx, `SELECT `+embeddedArtworkSourceRevisionSQL+`,i.library_id,COALESCE(i.parent_id,'') FROM items i
-		WHERE i.id=$1 AND i.root_id=$2 AND i.type='Audio' AND NOT i.is_folder FOR UPDATE OF i`, itemID, state.root.id).Scan(&currentSource, &libraryID, &parentID); err != nil {
+	var currentSource, currentFacts, libraryID, parentID string
+	if err := writeTx.QueryRow(ctx, `SELECT `+embeddedArtworkSourceRevisionSQL+`,`+embeddedArtworkScanSourceSQL+`,i.library_id,COALESCE(i.parent_id,'') FROM items i
+		WHERE i.id=$1 AND i.root_id=$2 AND i.type='Audio' AND NOT i.is_folder FOR UPDATE OF i`, itemID, state.root.id).Scan(&currentSource, &currentFacts, &libraryID, &parentID); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			state.warnings++
 			return nil
 		}
 		return err
 	}
-	if currentSource != source || libraryID != state.library.ID {
+	if currentFacts != sourceFacts || libraryID != state.library.ID {
 		state.warnings++
 		return nil
 	}
+	source = currentSource
 	var previousTag, previousSource string
 	if err := writeTx.QueryRow(ctx, `SELECT COALESCE((SELECT source_hash FROM item_embedded_artwork WHERE item_id=$1),''),
 		COALESCE((SELECT source_revision FROM item_embedded_artwork WHERE item_id=$1),'')`, itemID).Scan(&previousTag, &previousSource); err != nil {

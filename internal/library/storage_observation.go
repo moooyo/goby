@@ -135,28 +135,32 @@ func runStorageObservation(ctx context.Context, lifetimes []*storageObservationL
 		// Trusted operation and phase references already supply the process,
 		// root, domain and retained-worker bounds. A separate global storage
 		// gate would let two stalled domains block an unrelated admitted root.
-		return runStorageObservationWithLimit(ctx, make(chan struct{}, 1), storageObservationTimeout, lifetimes, work)
+		return runStorageObservationWithLimit(ctx, nil, storageObservationTimeout, lifetimes, work)
 	}
 	return runStorageObservationWithLimit(ctx, storageObservationSlots, storageObservationTimeout, lifetimes, work)
 }
 
 func runStorageObservationWithLimit(ctx context.Context, slots chan struct{}, timeout time.Duration, lifetimes []*storageObservationLifetime, work func(context.Context) error) error {
-	if ctx == nil || work == nil || slots == nil || timeout <= 0 {
+	if ctx == nil || work == nil || timeout <= 0 || slots == nil && PrimaryRootIOFromContext(ctx) == nil {
 		return ErrInvalidInput
 	}
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	select {
-	case slots <- struct{}{}:
-	default:
-		return errStorageObservationUnavailable
+	if slots != nil {
+		select {
+		case slots <- struct{}{}:
+		default:
+			return errStorageObservationUnavailable
+		}
 	}
 	retained := make([]*storageObservationLifetime, 0, len(lifetimes))
 	for _, lifetime := range lifetimes {
 		if lifetime == nil || !lifetime.retain() {
 			closeErr := releaseStorageObservationLifetimes(ctx, retained)
-			<-slots
+			if slots != nil {
+				<-slots
+			}
 			return errors.Join(errStorageObservationUnavailable, closeErr)
 		}
 		retained = append(retained, lifetime)
@@ -164,7 +168,9 @@ func runStorageObservationWithLimit(ctx context.Context, slots chan struct{}, ti
 	releasePhase, err := retainStorageObservationPhase(ctx)
 	if err != nil {
 		closeErr := releaseStorageObservationLifetimes(ctx, retained)
-		<-slots
+		if slots != nil {
+			<-slots
+		}
 		return errors.Join(err, closeErr)
 	}
 	observation, cancel := context.WithTimeout(ctx, timeout)
@@ -183,7 +189,9 @@ func runStorageObservationWithLimit(ctx context.Context, slots chan struct{}, ti
 			retirementErr := releaseStorageObservationLifetimes(observation, retained)
 			err = errors.Join(err, retirementErr)
 			err = errors.Join(err, releasePhase())
-			<-slots
+			if slots != nil {
+				<-slots
+			}
 			finished <- err
 		}()
 		if observation.Err() != nil {

@@ -552,16 +552,11 @@ func (state *scanState) checkScanProbeAuthorityWithRelation(tx pgx.Tx, path stri
 		authority.jobID != state.task.job.ID || authority.childID != state.task.job.TaskChildID {
 		return ErrTaskScanInactive
 	}
-	// Ownership is already held, preserving the ownership -> Store lock order.
-	state.store.mu.Lock()
-	active := !state.store.closed && !state.store.closing.Load() && state.store.active[authority.jobID] == state.task &&
-		state.store.rootBindingPathConfiguredLocked(authority.root.allowedPath)
-	state.store.mu.Unlock()
-	if !active {
-		return ErrTaskScanInactive
+	granted, err := state.readPrimaryScanAuthority(state.task.ctx)
+	if err != nil {
+		return err
 	}
 	var relation taskScanRelation
-	var err error
 	if locked != nil {
 		relation = *locked
 	} else {
@@ -581,12 +576,11 @@ func (state *scanState) checkScanProbeAuthorityWithRelation(tx pgx.Tx, path stri
 	if capture == nil || capture.closed || capture.status != RootBindingVerified || capture.capture == nil {
 		return ErrRootBindingConflict
 	}
-	current, err := readRootBindingForUpdate(state.task.ctx, tx, authority.libraryID, authority.root.id)
-	if err != nil {
-		return err
-	}
-	if !capture.row.same(current) || current.root != authority.root {
+	if !capture.row.same(granted) || granted.root != authority.root {
 		return ErrRootBindingConflict
+	}
+	if err := state.store.checkScanOperationRootTx(state.task.ctx, tx, state.task, granted); err != nil {
+		return err
 	}
 	if err := state.revalidateScanProbeStorage(tx, path, input); err != nil {
 		return err

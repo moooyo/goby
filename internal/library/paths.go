@@ -314,8 +314,10 @@ func (s *Store) approvedLibraryRootLocked(root libraryRoot) (*os.Root, error) {
 // directory. Each Open rechecks the registered name chain without Store.mu,
 // which transaction callbacks must not acquire to perform filesystem work.
 type libraryRootLease struct {
-	approved     *os.Root
-	relativePath string
+	approved           *os.Root
+	relativePath       string
+	expectedRoot       *os.Root
+	expectedAnchorPath string
 }
 
 func (s *Store) leaseLibraryRoot(root libraryRoot) (*libraryRootLease, error) {
@@ -333,14 +335,34 @@ func (s *Store) leaseLibraryRoot(root libraryRoot) (*libraryRootLease, error) {
 }
 
 func (lease *libraryRootLease) Open() (*os.Root, error) {
+	if lease.expectedAnchorPath != "" {
+		if err := checkTaskSourceAnchorName(lease.expectedAnchorPath, lease.approved); err != nil {
+			return nil, err
+		}
+	}
 	opened, err := openRegisteredRoot(lease.approved, lease.relativePath)
 	if err != nil {
 		return nil, fmt.Errorf("%w: media directory cannot be opened safely", ErrUnavailable)
+	}
+	if lease.expectedRoot != nil {
+		info, err := opened.Stat(".")
+		held, heldErr := lease.expectedRoot.Stat(".")
+		if err != nil || heldErr != nil || !os.SameFile(held, info) {
+			return nil, errors.Join(ErrSourceChanged, err, heldErr, opened.Close())
+		}
+	}
+	if lease.expectedAnchorPath != "" {
+		if err := checkTaskSourceAnchorName(lease.expectedAnchorPath, lease.approved); err != nil {
+			return nil, errors.Join(err, opened.Close())
+		}
 	}
 	return opened, nil
 }
 
 func (lease *libraryRootLease) Close() error {
+	if lease.expectedRoot != nil {
+		return errors.Join(lease.expectedRoot.Close(), lease.approved.Close())
+	}
 	return lease.approved.Close()
 }
 

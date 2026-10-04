@@ -345,6 +345,9 @@ func (s *Store) readProviderSubtitleSnapshot(ctx context.Context, actor *identit
 	if err != nil {
 		return providerSubtitleSnapshot{}, err
 	}
+	if err := s.applyTaskProviderSubtitleSnapshot(ctx, actor, &snapshot); err != nil {
+		return providerSubtitleSnapshot{}, err
+	}
 	if err := tx.Commit(ctx); err != nil {
 		return providerSubtitleSnapshot{}, fmt.Errorf("complete subtitle target read: %w", err)
 	}
@@ -456,7 +459,7 @@ func (s *Store) openProviderSubtitleTargetObserved(ctx context.Context, prepared
 	}
 	snapshot := prepared.snapshot
 	var err error
-	prepared.lease, err = s.leaseLibraryRoot(snapshot.primary.root)
+	prepared.lease, err = s.leaseLibraryRootContext(ctx, snapshot.primary.root)
 	if err != nil {
 		return err
 	}
@@ -890,11 +893,17 @@ func (s *Store) publishProviderSubtitleBeforeFinal(ctx context.Context, actor *i
 		prepared.keep.Store(true)
 	}()
 	itemID := prepared.snapshot.primary.mediaFile.Item.ID
+	if err := s.checkTaskProviderPublication(ctx, protected, tx, actor); err != nil {
+		return err
+	}
 	if err := checkSubtitleProviderActor(protected, tx, actor, itemID, true); err != nil {
 		return err
 	}
 	current, err := queryProviderSubtitleSnapshot(ctx, tx, itemID, true)
 	if err != nil {
+		return err
+	}
+	if err := s.applyTaskProviderSubtitleSnapshot(ctx, actor, &current); err != nil {
 		return err
 	}
 	if !prepared.snapshot.same(current) {
@@ -1007,6 +1016,9 @@ func (s *Store) publishProviderSubtitleBeforeFinal(ctx context.Context, actor *i
 	}
 	// A failed commit can have an unknown outcome. Retain the validated sidecar
 	// once commit is attempted; an ordinary rescan can safely adopt an orphan.
+	if err := s.checkTaskProviderPublication(ctx, protected, tx, actor); err != nil {
+		return err
+	}
 	prepared.keep.Store(true)
 	return tx.Commit(ctx)
 }

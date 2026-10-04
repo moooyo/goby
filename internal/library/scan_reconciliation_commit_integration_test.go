@@ -412,24 +412,94 @@ func TestScanReconciliationCommitIntegrationFindsSurvivingAlbumAboveRemovedFolde
 	assertNoCatalogTestNotification(t, notifications)
 }
 
-func TestScanReconciliationCommitIntegrationChangedApprovalPreservesEntirePass(t *testing.T) {
-	fixture := newRootBindingScanFixture(t)
-	scanReconciliationCommitInsertItem(t, fixture, "approval-protected-missing", "Missing.mkv", "Movie", fixture.library.ID, false)
-	capture := scanReconciliationCommitCapture(t, fixture, nil)
-	evidence := scanReconciliationCommitEvidence(t, capture)
-	if _, err := fixture.pool.Exec(fixture.ctx, `UPDATE library_roots SET binding_revision = binding_revision + 1 WHERE id = $1`, fixture.scanRoot.id); err != nil {
-		t.Fatal(err)
+func TestScanReconciliationCommitIntegrationStartupApprovalAllowsProvenDeletionAfterMetadataChanges(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		statement string
+	}{
+		{"revision", `UPDATE library_roots SET binding_revision = binding_revision + 1 WHERE id = $1`},
+		{"approval time", `UPDATE library_roots SET bound_at = bound_at + interval '1 second' WHERE id = $1`},
+		{"approval actor", `UPDATE library_roots SET bound_by = 'changed-approver' WHERE id = $1`},
+		{"approval document", `UPDATE library_roots SET storage_binding = jsonb_set(storage_binding, '{anchor,filesystem_uuid}', '"ffffffffffffffffffffffffffffffff"'::jsonb) WHERE id = $1`},
+		{"removed approval", `UPDATE library_roots SET storage_binding = NULL, bound_at = NULL, bound_by = NULL WHERE id = $1`},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			fixture := newRootBindingScanFixture(t)
+			libraryIntegrationFile(t, fixture.scanRoot.path, "Present.mkv", "video:retained-physical-source")
+			scanReconciliationCommitInsertItem(t, fixture, "proven-missing", "Missing.mkv", "Movie", fixture.library.ID, false)
+			scanReconciliationCommitInsertItem(t, fixture, "present-physical", "Present.mkv", "Movie", fixture.library.ID, false)
+			capture := scanReconciliationCommitCapture(t, fixture, nil)
+			evidence := scanReconciliationCommitEvidence(t, capture)
+			if err := evidence.MarkSeen("present-physical"); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := fixture.pool.Exec(fixture.ctx, test.statement, fixture.scanRoot.id); err != nil {
+				t.Fatal(err)
+			}
+			var approvalBefore string
+			if err := fixture.pool.QueryRow(fixture.ctx, `SELECT to_jsonb(r)::text FROM library_roots r WHERE id = $1`, fixture.scanRoot.id).Scan(&approvalBefore); err != nil {
+				t.Fatal(err)
+			}
+			notifications := catalogChangesTestListener(t, fixture.store)
+			albums, err := fixture.store.reconcileMissingScanItems(fixture.task, fixture.library, []*rootBindingScanCapture{capture}, evidence, nil)
+			if err != nil || len(albums) != 0 {
+				t.Fatalf("startup approval did not authorize proven deletion: affected albums = %v, error = %v", albums, err)
+			}
+			scanReconciliationCommitAssertItem(t, fixture, "proven-missing", false)
+			scanReconciliationCommitAssertItem(t, fixture, "present-physical", true)
+			scanReconciliationCommitAssertItem(t, fixture, fixture.library.ID, true)
+			var approvalAfter string
+			if err := fixture.pool.QueryRow(fixture.ctx, `SELECT to_jsonb(r)::text FROM library_roots r WHERE id = $1`, fixture.scanRoot.id).Scan(&approvalAfter); err != nil || approvalAfter != approvalBefore {
+				t.Fatalf("reconciliation changed the next operation's approval: error = %v", err)
+			}
+			assertCatalogTestChanges(t, nextCatalogTestNotification(t, notifications), []CatalogChange{{
+				Kind: CatalogRemoved, ItemID: "proven-missing", LibraryID: fixture.library.ID, ParentID: fixture.library.ID,
+			}})
+			assertNoCatalogTestNotification(t, notifications)
+		})
 	}
-	before := scanReconciliationCommitSnapshot(t, fixture)
-	notifications := catalogChangesTestListener(t, fixture.store)
-	albums, err := fixture.store.reconcileMissingScanItems(fixture.task, fixture.library, []*rootBindingScanCapture{capture}, evidence, nil)
-	if !errors.Is(err, ErrRootBindingConflict) || len(albums) != 0 {
-		t.Fatalf("changed storage approval authorized deletion: affected albums = %v, error = %v", albums, err)
+}
+
+func TestScanReconciliationCommitIntegrationChangedRootMappingOrMembershipPreservesEntirePass(t *testing.T) {
+	for _, scenario := range []string{"registered path", "relative mapping", "added root", "removed root"} {
+		t.Run(scenario, func(t *testing.T) {
+			fixture := newRootBindingScanFixture(t)
+			later := scanReconciliationCommitLaterRoot(t, fixture)
+			scanReconciliationCommitInsertItem(t, fixture, "mapping-protected-missing", "Missing.mkv", "Movie", fixture.library.ID, false)
+			captures := []*rootBindingScanCapture{
+				scanReconciliationCommitCapture(t, fixture, nil),
+				scanReconciliationCommitCapture(t, later, nil),
+			}
+			evidence := scanReconciliationCommitEvidence(t, captures...)
+			var err error
+			switch scenario {
+			case "registered path":
+				_, err = fixture.pool.Exec(fixture.ctx, `UPDATE library_roots SET path = path || '/changed', relative_path = 'changed' WHERE id = $1`, fixture.scanRoot.id)
+			case "relative mapping":
+				_, err = fixture.pool.Exec(fixture.ctx, `UPDATE library_roots SET relative_path = 'changed' WHERE id = $1`, fixture.scanRoot.id)
+			case "added root":
+				_, err = fixture.pool.Exec(fixture.ctx, `INSERT INTO library_roots (id, library_id, path, allowed_path, relative_path)
+					VALUES ('unexpected-reconciliation-root', $1, $2, $3, $4)`, fixture.library.ID,
+					filepath.Join(fixture.scanRoot.allowedPath, "unexpected-root"), fixture.scanRoot.allowedPath, "unexpected-root")
+			case "removed root":
+				_, err = fixture.pool.Exec(fixture.ctx, `DELETE FROM library_roots WHERE id = $1`, later.scanRoot.id)
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			before := scanReconciliationCommitSnapshot(t, fixture)
+			notifications := catalogChangesTestListener(t, fixture.store)
+			albums, err := fixture.store.reconcileMissingScanItems(fixture.task, fixture.library, captures, evidence, nil)
+			if !errors.Is(err, ErrRootBindingConflict) || len(albums) != 0 {
+				t.Fatalf("changed root mapping or membership authorized deletion: affected albums = %v, error = %v", albums, err)
+			}
+			if after := scanReconciliationCommitSnapshot(t, fixture); after != before {
+				t.Fatal("changed root mapping or membership allowed catalog or dependent writes")
+			}
+			scanReconciliationCommitAssertItem(t, fixture, "mapping-protected-missing", true)
+			assertNoCatalogTestNotification(t, notifications)
+		})
 	}
-	if after := scanReconciliationCommitSnapshot(t, fixture); after != before {
-		t.Fatal("changed storage approval mutated catalog or dependent rows")
-	}
-	assertNoCatalogTestNotification(t, notifications)
 }
 
 func TestScanReconciliationCommitIntegrationRejectsEvidenceFromAnotherDirectory(t *testing.T) {

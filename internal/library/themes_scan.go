@@ -662,7 +662,7 @@ func (state *scanState) prepareAuxiliaryFiles(group *themeDirectoryScan, role sc
 
 func verifyPreparedThemeFiles(files []*preparedThemeFile) error {
 	return verifyPreparedThemeFilesWithRoots(files, func(state *scanState) (*os.Root, error) {
-		return state.store.openLibraryRoot(state.root)
+		return state.store.openScanOperationRoot(state.task.ctx, state.task, state.root)
 	})
 }
 
@@ -683,7 +683,7 @@ func verifyPreparedThemeFile(file *preparedThemeFile, openRoot func(*scanState) 
 	if !row.same(file.sourceRow) {
 		return scanReadFailure(ErrRootBindingConflict)
 	}
-	operation, err := file.state.store.preparePrimaryRootIO(file.state.task.ctx,
+	operation, err := file.state.store.prepareScanOperationRootIO(file.state.task.ctx, file.state.task,
 		[]mediaSourceRootHint{{root: row.root, bindingRevision: row.revision}})
 	if err != nil {
 		return err
@@ -737,7 +737,7 @@ func (state *scanState) verifyThemeDirectories(ownerDirectory string, all bool) 
 	if state.walkRow.root.id != "" && !state.walkRow.same(row) {
 		return ErrRootBindingConflict
 	}
-	operation, err := state.store.preparePrimaryRootIO(state.task.ctx,
+	operation, err := state.store.prepareScanOperationRootIO(state.task.ctx, state.task,
 		[]mediaSourceRootHint{{root: row.root, bindingRevision: row.revision}})
 	if err != nil {
 		return err
@@ -748,7 +748,7 @@ func (state *scanState) verifyThemeDirectories(ownerDirectory string, all bool) 
 		if err != nil || !row.same(fresh) {
 			return errors.Join(err, ErrRootBindingConflict)
 		}
-		root, err := state.store.openLibraryRoot(state.root)
+		root, err := state.store.openScanOperationRoot(ctx, state.task, state.root)
 		if err != nil {
 			return err
 		}
@@ -1134,8 +1134,8 @@ func (s *Store) prepareAuxiliaryPublicationWitness(task *scanTask, library Libra
 			state.root.id != rootID || state.themes == nil {
 			return nil, fmt.Errorf("%w: auxiliary publication lacks its observed source root", ErrUnavailable)
 		}
-		// This preparation is database-only and finishes before catalog
-		// ownership. One retained operation protects the serial metadata proof;
+		// This preparation reuses the scan's grant before catalog ownership.
+		// One retained operation protects the serial metadata proof;
 		// it never keeps several actual media descriptors behind one charge.
 		row, err := state.readPrimaryScanAuthority(witness.work)
 		if err != nil {
@@ -1207,7 +1207,7 @@ func (s *Store) prepareAuxiliaryPublicationWitness(task *scanTask, library Libra
 		hints = append(hints, mediaSourceRootHint{root: source.row.root, bindingRevision: source.row.revision})
 	}
 	var err error
-	witness.operation, err = s.preparePrimaryRootIO(task.ctx, hints)
+	witness.operation, err = s.prepareScanOperationRootIO(task.ctx, task, hints)
 	if err != nil {
 		return nil, err
 	}
@@ -1219,7 +1219,7 @@ func (s *Store) prepareAuxiliaryPublicationWitness(task *scanTask, library Libra
 			if err != nil || !source.row.same(fresh) {
 				return errors.Join(err, ErrRootBindingConflict)
 			}
-			source.lease, err = s.leaseLibraryRoot(source.row.root)
+			source.lease, err = s.leaseScanOperationRoot(ctx, task, source.row.root)
 			return err
 		}); err != nil {
 			return nil, err
@@ -1240,9 +1240,10 @@ func (s *Store) prepareAuxiliaryPublicationWitness(task *scanTask, library Libra
 	return witness, nil
 }
 
-// The caller first locks the task relation, then every source root in stable
-// order, before locking owner/item rows. Final storage workers perform no SQL.
-func (witness *auxiliaryPublicationWitness) lockRoots(ctx context.Context, tx pgx.Tx) error {
+// The caller locks the task relation before root mappings and owner/item rows.
+// Permission comes from the operation grant; mapping changes still invalidate
+// source facts. Final storage workers perform no SQL.
+func (witness *auxiliaryPublicationWitness) checkOperationRoots(ctx context.Context, tx pgx.Tx) error {
 	if witness == nil {
 		return nil
 	}
@@ -1253,12 +1254,8 @@ func (witness *auxiliaryPublicationWitness) lockRoots(ctx context.Context, tx pg
 	sort.Strings(ids)
 	for _, id := range ids {
 		source := witness.sources[id]
-		row, err := readRootBindingForUpdate(ctx, tx, source.row.root.libraryID, id)
-		if err != nil {
+		if err := source.state.store.checkScanOperationRootTx(ctx, tx, source.state.task, source.row); err != nil {
 			return err
-		}
-		if !source.row.same(row) {
-			return ErrRootBindingConflict
 		}
 	}
 	return ctx.Err()
@@ -1410,13 +1407,11 @@ func (s *Store) planThemePublication(task *scanTask, library Library, owner them
 		}
 		candidate := themeCandidate{relative: resource.Relative, kind: classification.Kind, layout: classification.Layout}
 		if !expectedSet[resource.ID] && completeRoots[resource.RootID] {
-			var record libraryRoot
-			if err := s.pool.QueryRow(task.ctx, `SELECT id,library_id,path,allowed_path,relative_path FROM library_roots
-				WHERE id=$1 AND library_id=$2`, resource.RootID, library.ID).Scan(&record.id, &record.libraryID, &record.path,
-				&record.allowedPath, &record.relativePath); err != nil {
+			row, err := s.readScanOperationRoot(task.ctx, task, resource.RootID)
+			if err != nil {
 				return plan, false, err
 			}
-			root, err := s.openLibraryRoot(record)
+			root, err := s.openScanOperationRoot(task.ctx, task, row.root)
 			if err != nil {
 				return plan, false, err
 			}
@@ -1510,7 +1505,7 @@ func (s *Store) publishThemeOwner(task *scanTask, library Library, owner themeDi
 	if relation.job.LibraryID != library.ID {
 		return false, taskScanAssociationError()
 	}
-	if err := witness.lockRoots(task.ctx, tx); err != nil {
+	if err := witness.checkOperationRoots(task.ctx, tx); err != nil {
 		return false, err
 	}
 	// Lock both the owner and affected resource rows in a stable order. This
@@ -1658,7 +1653,7 @@ func (s *Store) publishThemeOwner(task *scanTask, library Library, owner themeDi
 	if err := tx.Commit(task.ctx); err != nil {
 		return false, err
 	}
-	task.job = published
+	task.job.Scanned, task.job.Added, task.job.Updated = published.Scanned, published.Added, published.Updated
 	for _, file := range files {
 		file.state.themes.seen[file.id] = true
 		if file.input.stored.itemType == "Audio" {
@@ -1855,7 +1850,7 @@ func (s *Store) finishCollectionThemes(task *scanTask, library Library, shared *
 			rows.Close()
 			return 1, nil
 		}
-		root, err := s.openLibraryRoot(state.root)
+		root, err := s.openScanOperationRoot(task.ctx, task, state.root)
 		if err != nil {
 			rows.Close()
 			return 1, nil

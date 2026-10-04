@@ -56,6 +56,8 @@ type Work struct {
 // Fence must precede business locks and be called again after all publication
 // writes/events as the final database operation. Its captured capability is
 // process-local; marshaling or reconstructing Work never transfers authority.
+// It retains the worker's initial permission approval while checking live
+// cancellation and durable execution ownership on every call.
 func (work Work) Fence(tx library.OwnedTx) error {
 	if work.fence == nil || tx == nil {
 		return ErrUnavailable

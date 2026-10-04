@@ -439,7 +439,7 @@ func (s *Store) admitScheduledOccurrence(tx library.OwnedTx, definition Definiti
 			return err
 		}
 		actorKind := ""
-		if isAnalysisTask(definition.Key) {
+		if _, generic := s.executors.lookup(definition.Key); generic {
 			actorKind = "system"
 		}
 		if _, err := tx.Exec(`INSERT INTO task_runs

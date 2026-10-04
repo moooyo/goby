@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/systemevents"
 )
 
@@ -133,7 +132,6 @@ func (m *Manager) reconcileExecution(ctx context.Context, run Run, child Child, 
 		m.lastAnalysisRunID = run.ID
 	}
 	entry, registered := m.store.executors.lookup(run.TaskKey)
-	work := executionWork(workCtx, run, child, token)
 	go func() {
 		defer func() {
 			if recover() != nil {
@@ -146,11 +144,10 @@ func (m *Manager) reconcileExecution(ctx context.Context, run Run, child Child, 
 			execution.err = ErrUnavailable
 			return
 		}
-		if isAnalysisTask(run.TaskKey) {
-			if err := m.store.owner.WithOwnedTx(workCtx, func(tx library.OwnedTx) error { return work.Fence(tx) }); err != nil {
-				execution.err = err
-				return
-			}
+		work, err := m.store.executionWork(workCtx, run, child, token)
+		if err != nil {
+			execution.err = err
+			return
 		}
 		execution.err = entry.Executor.Execute(workCtx, work, func(progress Progress) error {
 			if err := workCtx.Err(); err != nil {

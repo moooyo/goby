@@ -36,7 +36,10 @@ func (run *Run) UnmarshalJSON(data []byte) error {
 
 func executionActor(run Run) (*Actor, error) {
 	if run.Source == "schedule" || run.Source == "startup" || run.Source == "system_event" {
-		if run.ActorKind != "system" || run.ActorUserID != "" || run.ActorSessionID != "" || run.authority != (executionAuthority{}) {
+		// Older generic schedules stored an empty kind for the same system
+		// identity. Accept it only when every human credential field is empty;
+		// the initial fence still proves the exact durable run and worker claim.
+		if (run.ActorKind != "system" && run.ActorKind != "") || run.ActorUserID != "" || run.ActorSessionID != "" || run.authority != (executionAuthority{}) {
 			return nil, identity.ErrUnauthorized
 		}
 		return nil, nil
@@ -62,7 +65,13 @@ func sameExecutionIdentity(first, second Run) bool {
 		first.AnalysisConfigFingerprint == second.AnalysisConfigFingerprint && sameAnalysisInput(first.AnalysisInput, second.AnalysisInput)
 }
 
-func executionWork(ctx context.Context, run Run, child Child, token string) Work {
+// executionWork approves one worker execution before returning its process-local
+// publication capability. Later permission changes apply to future executions;
+// cancellation, durable worker ownership, and publication identity remain live.
+func (s *Store) executionWork(ctx context.Context, run Run, child Child, token string) (Work, error) {
+	if ctx == nil {
+		return Work{}, context.Canceled
+	}
 	// The capability captures different storage than the exported DTO so an
 	// executor cannot redirect it by changing a Work field or selection slice.
 	sealed := run
@@ -81,17 +90,6 @@ func executionWork(ctx context.Context, run Run, child Child, token string) Work
 		}
 		if token == "" || child.RunID != sealed.ID {
 			return ErrInconsistent
-		}
-		actor, err := executionActor(sealed)
-		if err != nil {
-			return err
-		}
-		// Actor locks precede run/child and any publication business locks. A
-		// second call in this transaction retains those same locks and rechecks.
-		if actor != nil {
-			if err := checkActor(tx, *actor, true); err != nil {
-				return err
-			}
 		}
 		current, err := readRun(tx, sealed.ID, true)
 		if err != nil {
@@ -118,12 +116,24 @@ func executionWork(ctx context.Context, run Run, child Child, token string) Work
 		if !active || ctx.Err() != nil {
 			return context.Canceled
 		}
+		return ctx.Err()
+	}
+	err := s.owner.WithOwnedTx(ctx, func(tx library.OwnedTx) error {
+		actor, err := executionActor(sealed)
+		if err != nil {
+			return err
+		}
+		// Authorize before taking run/child locks. The approval belongs only to
+		// this worker; it is never persisted or reconstructed from a Run DTO.
 		if actor != nil {
-			if err := checkActor(tx, *actor, false); err != nil {
+			if err := checkActor(tx, *actor, true); err != nil {
 				return err
 			}
 		}
-		return ctx.Err()
+		return work.Fence(tx)
+	})
+	if err != nil {
+		return Work{}, err
 	}
-	return work
+	return work, nil
 }

@@ -341,7 +341,7 @@ func (s *Store) reconcileMissingScanItemsAttempt(task *scanTask, library Library
 	for _, capture := range scanReconciliationCaptureValues(roots) {
 		hints = append(hints, mediaSourceRootHint{root: capture.row.root, bindingRevision: capture.row.revision})
 	}
-	operation, err := s.preparePrimaryRootIO(task.ctx, hints)
+	operation, err := s.prepareScanOperationRootIO(task.ctx, task, hints)
 	if err != nil {
 		return nil, err
 	}
@@ -602,7 +602,7 @@ func scanReconciliationCapturedRoots(ctx context.Context, libraryID string, capt
 	return roots, nil
 }
 
-func (s *Store) admitScanReconciliationLocked(task *scanTask, roots map[string]*rootBindingScanCapture) error {
+func (s *Store) admitScanReconciliationLocked(task *scanTask, _ map[string]*rootBindingScanCapture) error {
 	if err := task.ctx.Err(); err != nil {
 		return err
 	}
@@ -614,11 +614,6 @@ func (s *Store) admitScanReconciliationLocked(task *scanTask, roots map[string]*
 	}
 	if task.job.CancelRequested {
 		return context.Canceled
-	}
-	for _, capture := range roots {
-		if !s.rootBindingPathConfiguredLocked(capture.row.root.allowedPath) {
-			return ErrUnavailable
-		}
 	}
 	return nil
 }
@@ -649,44 +644,39 @@ func validateScanReconciliationRoots(tx OwnedTx, library Library, roots map[stri
 	if collectionType != library.CollectionType {
 		return ErrRootBindingConflict
 	}
-	// Locking the library also fences insertion of additional registered roots
-	// through their foreign key, while exact existing rows are locked below.
-	rows, err := tx.Query(`SELECT CASE WHEN octet_length(id)<=256 THEN id ELSE '' END
+	// Locking the library fences new registered roots through their foreign key.
+	// Existing mappings remain a data-integrity fence for complete deletion
+	// evidence; approval metadata comes from the operation's retained grant.
+	rows, err := tx.Query(`SELECT CASE WHEN octet_length(id)<=256 THEN id ELSE '' END,
+		library_id,path,allowed_path,relative_path
 		FROM library_roots WHERE library_id=$1 ORDER BY id LIMIT $2 FOR UPDATE`, library.ID, scanReconciliationMaxRoots+1)
 	if err != nil {
 		return err
 	}
-	var ids []string
+	var current []libraryRoot
 	for rows.Next() {
-		var id string
-		if err := rows.Scan(&id); err != nil {
+		var root libraryRoot
+		if err := rows.Scan(&root.id, &root.libraryID, &root.path, &root.allowedPath, &root.relativePath); err != nil {
 			rows.Close()
 			return err
 		}
-		if len(ids) >= scanReconciliationMaxRoots {
+		if len(current) >= scanReconciliationMaxRoots {
 			rows.Close()
 			return scanReconciliationBudget()
 		}
-		ids = append(ids, id)
+		current = append(current, root)
 	}
 	err = rows.Err()
 	rows.Close()
 	if err != nil {
 		return err
 	}
-	if len(ids) == 0 || len(ids) != len(roots) {
+	if len(current) == 0 || len(current) != len(roots) {
 		return ErrRootBindingConflict
 	}
-	for _, id := range ids {
-		capture := roots[id]
-		if capture == nil {
-			return ErrRootBindingConflict
-		}
-		current, err := readRootBindingScanRow(tx, library.ID, id)
-		if err != nil {
-			return err
-		}
-		if !capture.row.same(current) {
+	for _, root := range current {
+		capture := roots[root.id]
+		if capture == nil || capture.row.root != root {
 			return ErrRootBindingConflict
 		}
 	}

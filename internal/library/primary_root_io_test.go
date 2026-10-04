@@ -366,7 +366,7 @@ func TestPrimaryRootIOContextCannotSpawnUnboundedObservationWorkers(t *testing.T
 				defer cancel()
 				first := make(chan error, 1)
 				go func() {
-					first <- runStorageObservationWithLimit(firstCtx, make(chan struct{}, 1), time.Minute, nil,
+					first <- runStorageObservation(firstCtx, nil,
 						func(context.Context) error { close(started); <-allowActual; return nil })
 				}()
 				primaryRootIOTestWait(t, started, "first bounded observation worker")
@@ -380,7 +380,7 @@ func TestPrimaryRootIOContextCannotSpawnUnboundedObservationWorkers(t *testing.T
 					return errors.New("first observation caller did not return")
 				}
 				called := false
-				if err := runStorageObservationWithLimit(ctx, make(chan struct{}, 1), time.Minute, nil,
+				if err := runStorageObservation(ctx, nil,
 					func(context.Context) error { called = true; return nil }); !errors.Is(err, ErrBusy) || called {
 					return fmt.Errorf("copied context launched another actual worker: called=%t err=%v", called, err)
 				}

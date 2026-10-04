@@ -20,6 +20,7 @@ import (
 
 type primarySidecarQueuedAuthorityTrace struct {
 	authority    scanPerformanceSQLTracer
+	startup      scanOperationAuthoritySQLTracer
 	owner        atomic.Pointer[pgx.Conn]
 	begins       atomic.Int64
 	ownedBegins  atomic.Int64
@@ -29,6 +30,7 @@ type primarySidecarQueuedAuthorityTrace struct {
 
 func (trace *primarySidecarQueuedAuthorityTrace) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
 	ctx = trace.authority.TraceQueryStart(ctx, conn, data)
+	ctx = trace.startup.TraceQueryStart(ctx, conn, data)
 	statement := strings.ToLower(strings.TrimSpace(data.SQL))
 	if statement == "begin" {
 		trace.begins.Add(1)
@@ -47,17 +49,19 @@ func (trace *primarySidecarQueuedAuthorityTrace) TraceQueryStart(ctx context.Con
 
 func (trace *primarySidecarQueuedAuthorityTrace) TraceQueryEnd(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryEndData) {
 	trace.authority.TraceQueryEnd(ctx, conn, data)
+	trace.startup.TraceQueryEnd(ctx, conn, data)
 }
 
 func (trace *primarySidecarQueuedAuthorityTrace) reset() {
 	trace.authority.reset()
+	trace.startup.reset()
 	trace.begins.Store(0)
 	trace.ownedBegins.Store(0)
 	trace.ownedCommits.Store(0)
 	trace.imageWrites.Store(0)
 }
 
-func TestPrimarySidecarQueuedWalkRoutingRequiresFreshAuthority(t *testing.T) {
+func TestPrimarySidecarQueuedWalkRetainsOperationAuthority(t *testing.T) {
 	for _, scenario := range []struct {
 		name      string
 		statement string
@@ -65,8 +69,8 @@ func TestPrimarySidecarQueuedWalkRoutingRequiresFreshAuthority(t *testing.T) {
 		want      error
 	}{
 		{"persisted_task_cancel", "UPDATE scan_jobs SET cancel_requested=true WHERE id=$1", true, context.Canceled},
-		{"binding_revision", "UPDATE library_roots SET binding_revision=binding_revision+1 WHERE id=$1", false, ErrRootBindingConflict},
-		{"binding_document", `UPDATE library_roots SET storage_binding=jsonb_set(storage_binding, '{registered_root,handle}', '"c3dhcHBlZC1oYW5kbGU="'::jsonb) WHERE id=$1`, false, ErrRootBindingConflict},
+		{"binding_revision", "UPDATE library_roots SET binding_revision=binding_revision+1 WHERE id=$1", false, nil},
+		{"binding_document", `UPDATE library_roots SET storage_binding=jsonb_set(storage_binding, '{registered_root,handle}', '"c3dhcHBlZC1oYW5kbGU="'::jsonb) WHERE id=$1`, false, nil},
 	} {
 		t.Run(scenario.name, func(t *testing.T) {
 			prober := &libraryFixtureProber{}
@@ -117,6 +121,9 @@ func TestPrimarySidecarQueuedWalkRoutingRequiresFreshAuthority(t *testing.T) {
 			}
 			if scenario.name == "binding_document" && (!row.stored || row.document == nil) {
 				t.Fatal("queued document fixture needs a stored root binding")
+			}
+			if trace.startup.startups.Load() != 1 {
+				t.Fatalf("sidecar fixture did not establish one operation grant: startups=%d", trace.startup.startups.Load())
 			}
 			walkIO, err := store.preparePrimaryRootIO(ctx, []mediaSourceRootHint{{root: row.root, bindingRevision: row.revision}})
 			if err != nil {
@@ -214,39 +221,33 @@ func TestPrimarySidecarQueuedWalkRoutingRequiresFreshAuthority(t *testing.T) {
 			if changed.RowsAffected() != 1 {
 				t.Fatalf("queued authority mutation affected %d rows, want one", changed.RowsAffected())
 			}
-			unblock()
-			mediaSourceAdmissionTestWait(t, scanDone, "fresh sidecar authority rejection after actual grant")
-			if !errors.Is(scanErr, scenario.want) {
-				t.Fatalf("queued sidecar reused preparation authority: got=%v want=%v", scanErr, scenario.want)
-			}
-			wantBegins, wantSingleRows, wantEmpty := int64(0), int64(1), int64(0)
 			if scenario.job {
-				// Cancellation produces no fast-path row and retains the original
-				// explicit transaction's detailed rejection. Changed root facts
-				// are returned by the fast path and rejected against the route.
-				wantBegins, wantSingleRows, wantEmpty = 1, 0, 1
+				state.task.cancel()
 			}
-			if trace.authority.authorityImplicitAttempts.Load() != 1 || trace.authority.authorityImplicitCommits.Load() != 1 ||
-				trace.authority.authorityImplicitSingleRows.Load() != wantSingleRows || trace.authority.authorityImplicitEmpty.Load() != wantEmpty ||
-				trace.authority.authorityImplicitErrors.Load() != 0 || trace.authority.authorityImplicitUnconfirmed.Load() != 0 ||
-				trace.authority.authorityImplicitUnexpectedRows.Load() != 0 {
-				t.Fatalf("queued sidecar did not retain its fresh authority request: attempts=%d commits=%d single_rows=%d empty=%d errors=%d unconfirmed=%d unexpected=%d",
-					trace.authority.authorityImplicitAttempts.Load(), trace.authority.authorityImplicitCommits.Load(),
-					trace.authority.authorityImplicitSingleRows.Load(), trace.authority.authorityImplicitEmpty.Load(),
-					trace.authority.authorityImplicitErrors.Load(), trace.authority.authorityImplicitUnconfirmed.Load(),
-					trace.authority.authorityImplicitUnexpectedRows.Load())
+			unblock()
+			mediaSourceAdmissionTestWait(t, scanDone, "queued sidecar completion after actual grant")
+			if !errors.Is(scanErr, scenario.want) {
+				t.Fatalf("queued sidecar did not retain operation authority: got=%v want=%v", scanErr, scenario.want)
 			}
-			if trace.begins.Load() != wantBegins || trace.ownedBegins.Load() != 0 || trace.ownedCommits.Load() != 0 || trace.imageWrites.Load() != 0 ||
-				state.imageDirectories != nil || state.warnings != 0 {
-				t.Fatalf("rejected sidecar entered payload or catalog publication: begins=%d owned_begin=%d owned_commit=%d writes=%d directories=%v warnings=%d",
+			primaryScanRoutingAssertNoRepeatedAuthority(t, &trace.authority)
+			if trace.startup.startups.Load() != 0 {
+				t.Fatalf("queued sidecar repeated startup authorization: startups=%d", trace.startup.startups.Load())
+			}
+			wantTransactions, wantWrites := int64(0), int64(0)
+			if scenario.want == nil {
+				wantTransactions, wantWrites = 1, 2
+			}
+			if trace.begins.Load() != wantTransactions || trace.ownedBegins.Load() != wantTransactions || trace.ownedCommits.Load() != wantTransactions || trace.imageWrites.Load() != wantWrites ||
+				(state.imageDirectories != nil) != (scenario.want == nil) || state.warnings != 0 {
+				t.Fatalf("sidecar operation changed its publication boundary: begins=%d owned_begin=%d owned_commit=%d writes=%d directories=%v warnings=%d",
 					trace.begins.Load(), trace.ownedBegins.Load(), trace.ownedCommits.Load(), trace.imageWrites.Load(), state.imageDirectories, state.warnings)
 			}
 			if current := imageScanTestList(t, ctx, store, userID, item.ID, "Primary"); !reflect.DeepEqual(current, before) {
-				t.Fatalf("queued authority change published image rows: before=%+v after=%+v", before, current)
+				t.Fatalf("queued operation changed image values: before=%+v after=%+v", before, current)
 			}
 			assertNoCatalogTestNotification(t, notifications)
 			if count := mediaSourceWarmPipelineTestFileCount(t, poster); count != 0 {
-				t.Fatalf("rejected sidecar retained %d actual payload descriptors", count)
+				t.Fatalf("sidecar retained %d actual payload descriptors", count)
 			}
 			for _, blocker := range blockers {
 				mediaSourceAdmissionTestWait(t, blocker.done, "queued sidecar BG blocker retirement")
@@ -261,7 +262,7 @@ func TestPrimarySidecarQueuedWalkRoutingRequiresFreshAuthority(t *testing.T) {
 			active, phase, handles := walkIO.handle.state.active, walkIO.handle.state.phase, walkIO.handle.state.handles
 			walkIO.handle.state.mu.Unlock()
 			if active != 0 || phase != nil || handles != 1 {
-				t.Fatalf("rejected sidecar retained its actual phase or completion fork: active=%d phase=%v handles=%d", active, phase, handles)
+				t.Fatalf("sidecar retained its actual phase or completion fork: active=%d phase=%v handles=%d", active, phase, handles)
 			}
 			if err := walkIO.Close(); err != nil {
 				t.Fatal(err)
@@ -270,7 +271,7 @@ func TestPrimarySidecarQueuedWalkRoutingRequiresFreshAuthority(t *testing.T) {
 			defer cancelDrain()
 			primaryReadTestWaitOwners(t, drain, baselineOwners)
 			if stats := originalMediaReadGovernor.Stats(); stats.Active != baselineIO.Active || stats.Background != baselineIO.Background || stats.Queued != baselineIO.Queued {
-				t.Fatalf("queued sidecar phases did not drain after rejection: before=%+v after=%+v", baselineIO, stats)
+				t.Fatalf("queued sidecar phases did not drain: before=%+v after=%+v", baselineIO, stats)
 			}
 		})
 	}

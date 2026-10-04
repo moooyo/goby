@@ -266,6 +266,9 @@ func scanCachedVisitFixture(t *testing.T, observers ...pgx.QueryTracer) (context
 		t.Fatal(err)
 	}
 	state.directoryIdentities = map[string]os.FileInfo{".": info}
+	if err := store.prepareScanOperationAuthority(ctx, task, []libraryRoot{state.root}); err != nil {
+		t.Fatal(err)
+	}
 	return ctx, pool, store, state, trace, root
 }
 
@@ -297,15 +300,13 @@ func TestCachedScanImageAbsenceCombinesOneCompletionCheckpoint(t *testing.T) {
 			if err := state.scanFile("Film.mp4", "video", hierarchy{parentID: state.library.ID}); err != nil {
 				t.Fatal(err)
 			}
-			wantBegins, maximumAuthority, wantCombined := int64(2), int64(5), int64(0)
+			wantBegins, wantCombined := int64(2), int64(0)
 			if scenario == "stable_absence" {
-				wantBegins, maximumAuthority, wantCombined = 1, 3, 1
+				wantBegins, wantCombined = 1, 1
 			} else if scenario == "valid_candidate" || scenario == "invalid_candidate" {
-				wantBegins, maximumAuthority = 3, 7
-			} else if scenario == "missing_directory_proof" {
-				maximumAuthority = 3
+				wantBegins = 3
 			}
-			primaryScanRoutingAssertAuthorityBudget(t, trace, maximumAuthority)
+			primaryScanRoutingAssertNoRepeatedAuthority(t, trace)
 			begins, commits := trace.begins.Load(), trace.commits.Load()
 			combined := trace.cachedCompletionChecks.Load()
 			t.Logf("cached visit boundaries: checkpoint=%d/%d authority_single_rows=%d combined=%d",

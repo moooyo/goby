@@ -141,11 +141,15 @@ func (reservation *sourceMetadataReservation) preparedRoutes() map[string]primar
 }
 
 func (s *Store) sourceMetadataRoutes(hint mediaSourceRootHint) (map[string]primaryRootIORoute, error) {
-	route, err := s.primaryReadRoute(hint)
+	return s.sourceMetadataRoutesContext(context.Background(), hint)
+}
+
+func (s *Store) sourceMetadataRoutesContext(ctx context.Context, hint mediaSourceRootHint) (map[string]primaryRootIORoute, error) {
+	route, err := s.primaryReadRouteContext(ctx, hint)
 	if err != nil {
 		return nil, err
 	}
-	_, domain, err := s.mediaSourceRootLane(hint)
+	_, domain, err := s.mediaSourceRootLaneContext(ctx, hint)
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +213,7 @@ func (s *Store) runSourceMetadata(ctx context.Context, snapshot indexedMediaSour
 	routes := reservation.preparedRoutes()
 	if routes == nil {
 		var err error
-		routes, err = s.sourceMetadataRoutes(hint)
+		routes, err = s.sourceMetadataRoutesContext(ctx, hint)
 		if err != nil {
 			return err
 		}

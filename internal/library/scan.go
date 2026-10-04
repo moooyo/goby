@@ -93,6 +93,9 @@ func (s *Store) scanLibrary(task *scanTask) (message string, resultErr error) {
 	if len(roots) > maxRegisteredRootBindingList {
 		return "Library directory count exceeds the complete scan limit; existing catalog records were retained", ErrUnavailable
 	}
+	if err := s.prepareScanOperationAuthority(task.ctx, task, roots); err != nil {
+		return "Library storage approval or scan ownership changed; existing catalog records were retained", err
+	}
 	reconciliation, err := s.prepareScanReconciliation(task, roots)
 	if err != nil {
 		return "Library storage approval or scan ownership changed; existing catalog records were retained", err
@@ -223,7 +226,7 @@ func (state *scanState) walk(relative string, current hierarchy, depth int) (res
 				return ErrRootBindingConflict
 			}
 		}
-		operation, err := state.store.preparePrimaryRootIO(state.task.ctx,
+		operation, err := state.store.prepareScanOperationRootIO(state.task.ctx, state.task,
 			[]mediaSourceRootHint{{root: row.root, bindingRevision: row.revision}})
 		if err != nil {
 			return err
@@ -683,18 +686,22 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 			resultErr = errors.Join(resultErr, rollbackSidecarTransaction(tx, resultErr))
 		}
 	}()
+	// Every primary write fences the immutable operation identity before root
+	// or item locks, including independent scans using the synchronous path.
+	relation, err := lockScanPublicationProgress(scanProbeAuthorityTx{ctx: state.task.ctx, tx: tx}, state.task)
+	if err != nil {
+		return err
+	}
 	var publicationProgress *taskScanRelation
 	if state.task.job.TaskChildID != "" {
-		relation, err := lockScanPublicationProgress(scanProbeAuthorityTx{ctx: state.task.ctx, tx: tx}, state.task)
-		if err != nil {
-			return err
-		}
 		publicationProgress = &relation
 	}
 	if input.authority != nil {
-		if err := state.checkScanProbeAuthorityWithRelation(tx, path, input, publicationProgress); err != nil {
+		if err := state.checkScanProbeAuthorityWithRelation(tx, path, input, &relation); err != nil {
 			return err
 		}
+	} else if err := state.store.checkScanOperationRootTx(state.task.ctx, tx, state.task, input.primary.row); err != nil {
+		return err
 	}
 	beforeCatalog, err := readScanCatalogItem(state.task.ctx, tx, id)
 	if err != nil {
@@ -794,20 +801,21 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 			return ErrUnavailable
 		}
 	}
-	if publicationProgress != nil {
-		if err := state.task.ctx.Err(); err != nil {
-			return err
-		}
-		if state.store.closing.Load() {
-			return ErrUnavailable
-		}
+	if err := state.task.ctx.Err(); err != nil {
+		return err
+	}
+	if state.store.closing.Load() {
+		return ErrUnavailable
 	}
 	if err := tx.Commit(state.task.ctx); err != nil {
 		return err
 	}
 	*committed = true
 	if publicationProgress != nil {
-		state.task.job = committedProgress
+		// Probe workers may still read the immutable operation identity. Refresh
+		// accepted progress without rewriting those shared identity fields.
+		state.task.job.Scanned, state.task.job.Added, state.task.job.Updated =
+			committedProgress.Scanned, committedProgress.Added, committedProgress.Updated
 	} else {
 		state.task.job.Added, state.task.job.Updated = candidateProgress.Added, candidateProgress.Updated
 	}
@@ -849,11 +857,8 @@ func (state *scanState) folder(relative, path, name, itemType, parentID string, 
 	virtual := scannedVirtualFolder{path: path, name: name, itemType: itemType, parentID: parentID, indexNumber: indexNumber}
 	if metadataPath == "" && strings.HasPrefix(relative, "//") {
 		if cached, exists := state.virtualFolders[relative]; exists && cached.sameInput(virtual) {
-			if err := state.task.ctx.Err(); err != nil {
+			if _, err := state.readPrimaryScanAuthority(state.task.ctx); err != nil {
 				return "", err
-			}
-			if !state.store.Available() {
-				return "", ErrUnavailable
 			}
 			if err := state.recordScanSeen(cached.id); err != nil {
 				return "", err
@@ -878,11 +883,21 @@ func (state *scanState) folder(relative, path, name, itemType, parentID string, 
 		return "", err
 	}
 	insertID := id
+	granted, err := state.readPrimaryScanAuthority(state.task.ctx)
+	if err != nil {
+		return "", err
+	}
 	tx, err := state.store.beginOwnedTx(state.task.ctx)
 	if err != nil {
 		return "", err
 	}
 	defer rollback(tx)
+	if _, err := lockScanPublicationProgress(scanProbeAuthorityTx{ctx: state.task.ctx, tx: tx}, state.task); err != nil {
+		return "", err
+	}
+	if err := state.store.checkScanOperationRootTx(state.task.ctx, tx, state.task, granted); err != nil {
+		return "", err
+	}
 	beforeCatalog, err := readScanCatalogFolder(state.task.ctx, tx, state.root.id, relative)
 	if err != nil {
 		return "", err
@@ -955,6 +970,12 @@ func (state *scanState) folder(relative, path, name, itemType, parentID string, 
 	}
 	if err := beforeAuxiliary.record(state.task.ctx, tx, nil); err != nil {
 		return "", err
+	}
+	if err := state.task.ctx.Err(); err != nil {
+		return "", err
+	}
+	if state.store.closing.Load() {
+		return "", ErrUnavailable
 	}
 	if err := tx.Commit(state.task.ctx); err != nil {
 		return "", err
@@ -1088,17 +1109,14 @@ func (state *scanState) findStoredFileForRole(relative string, info os.FileInfo,
 	for _, candidate := range candidates {
 		oldRoot := state.opened
 		if candidate.rootID != state.root.id {
-			var record libraryRoot
-			err := state.store.pool.QueryRow(state.task.ctx, `SELECT id, library_id, path, allowed_path, relative_path
-				FROM library_roots WHERE id = $1 AND library_id = $2`, candidate.rootID, state.library.ID).
-				Scan(&record.id, &record.libraryID, &record.path, &record.allowedPath, &record.relativePath)
+			granted, err := state.store.readScanOperationRoot(state.task.ctx, state.task, candidate.rootID)
 			if err != nil {
-				if errors.Is(err, pgx.ErrNoRows) {
+				if errors.Is(err, ErrRootBindingConflict) {
 					continue
 				}
 				return storedFile{}, err
 			}
-			oldRoot, err = state.store.openLibraryRoot(record)
+			oldRoot, err = state.store.openScanOperationRoot(state.task.ctx, state.task, granted.root)
 			if err != nil {
 				continue
 			}

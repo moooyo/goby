@@ -192,8 +192,9 @@ func scanProbeOpenDescriptors(t *testing.T, paths []string) []int {
 	return counts
 }
 
-func TestScanProbePipelineIntegrationRejectsStalePublication(t *testing.T) {
-	for _, mutation := range []string{"source", "role", "root", "job", "ctime", "replacement"} {
+func TestScanProbePipelineIntegrationOperationAuthorityAndStalePublication(t *testing.T) {
+	const refreshedDurationTicks = 42 * media.TicksPerSecond
+	for _, mutation := range []string{"source", "role", "binding_approval", "job", "ctime", "replacement"} {
 		t.Run(mutation, func(t *testing.T) {
 			entered, release := make(chan struct{}, 1), make(chan struct{})
 			var blocked atomic.Bool
@@ -207,7 +208,11 @@ func TestScanProbePipelineIntegrationRejectsStalePublication(t *testing.T) {
 						return media.Info{}, ctx.Err()
 					}
 				}
-				return scanProbeFixtureInfo(file)
+				info, err := scanProbeFixtureInfo(file)
+				if err == nil && mutation == "binding_approval" && blocked.Load() {
+					info.DurationTicks = refreshedDurationTicks
+				}
+				return info, err
 			})
 			ctx, pool, store, root, _ := libraryIntegrationStore(t, prober)
 			t.Cleanup(func() { releaseOnce.Do(func() { close(release) }) })
@@ -237,9 +242,8 @@ func TestScanProbePipelineIntegrationRejectsStalePublication(t *testing.T) {
 				_, err = pool.Exec(ctx, `UPDATE items SET media=jsonb_set(media,'{DurationTicks}',to_jsonb(123456789::bigint)) WHERE id=$1`, itemID)
 			case "role":
 				_, err = pool.Exec(ctx, "INSERT INTO theme_reserved_paths(root_id,relative_path,is_directory) VALUES($1,'A.mp4',false)", rootID)
-			case "root":
+			case "binding_approval":
 				_, err = pool.Exec(ctx, "UPDATE library_roots SET binding_revision=binding_revision+1 WHERE id=$1", rootID)
-				wantStatus = "Failed"
 			case "job":
 				_, err = pool.Exec(ctx, "UPDATE scan_jobs SET cancel_requested=true WHERE id=$1", job.ID)
 				wantStatus = "Cancelled"
@@ -272,8 +276,24 @@ func TestScanProbePipelineIntegrationRejectsStalePublication(t *testing.T) {
 			releaseOnce.Do(func() { close(release) })
 			job = libraryIntegrationWaitJob(t, ctx, store, job.ID, wantStatus)
 			var after string
-			if err := pool.QueryRow(ctx, "SELECT media::text FROM items WHERE id=$1", itemID).Scan(&after); err != nil {
+			var durationTicks int64
+			if err := pool.QueryRow(ctx, "SELECT media::text,(media->>'DurationTicks')::bigint FROM items WHERE id=$1", itemID).Scan(&after, &durationTicks); err != nil {
 				t.Fatal(err)
+			}
+			paths := []string{path}
+			if mutation == "replacement" {
+				paths = append(paths, path+".retained")
+			}
+			for _, count := range scanProbeOpenDescriptors(t, paths) {
+				if count != 0 {
+					t.Fatalf("completed scan retained %d actual source descriptors", count)
+				}
+			}
+			if mutation == "binding_approval" {
+				if job.Error != "" || job.Scanned != 1 || job.Added != 0 || job.Updated != 1 || before == after || durationTicks != refreshedDurationTicks {
+					t.Fatalf("operation approval did not publish its completed cold probe: job=%+v duration=%d before=%s after=%s", job, durationTicks, before, after)
+				}
+				return
 			}
 			if before != after || job.Added != 0 || job.Updated != 0 {
 				t.Fatalf("stale probe was published: job=%+v before=%s after=%s", job, before, after)

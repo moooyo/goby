@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/primaryio"
-	"github.com/moooyo/goby/internal/storagebinding"
 )
 
 // rootBindingScanCapture retains the exact approval read before walking and
@@ -27,7 +25,7 @@ type rootBindingScanCapture struct {
 
 // Revalidate never accesses Store.mu and can run inside an owned transaction.
 // The original scan context must be supplied even when SQL uses a protected
-// transaction context. Approval rows still require an independent final read.
+// transaction context. Permission remains in the scan's operation grant.
 func (capture *rootBindingScanCapture) Revalidate(ctx context.Context) error {
 	if ctx == nil {
 		return ErrInvalidInput
@@ -108,7 +106,38 @@ type rootBindingScanRootCloner interface {
 // and updates to continue through its ordinary root-opening path. Database,
 // mapping, ownership and task failures remain errors and must not be downgraded.
 func (s *Store) prepareRootBindingScan(task *scanTask, root libraryRoot) (*rootBindingScanCapture, error) {
-	return s.prepareRootBindingScanWithCapture(task, root, s.captureRootBindingWrite)
+	return s.prepareRootBindingScanWithCapture(task, root, s.scanRootBindingCapture(task))
+}
+
+// Internal captures use the operation's approved path without consulting live
+// configuration again. The named topology and exact descriptors remain fresh
+// source observations; administrator binding updates retain their own factory.
+func (s *Store) scanRootBindingCapture(task *scanTask) rootBindingCaptureFactory {
+	return func(ctx context.Context, root libraryRoot) (rootBindingWriteCapture, error) {
+		row, err := s.readScanOperationAuthority(ctx, task, root)
+		if err != nil {
+			return nil, err
+		}
+		approved := approvedRoot{path: row.root.allowedPath}
+		if err := openApprovedRoot(&approved); err != nil {
+			return nil, err
+		}
+		lease := &libraryRootLease{approved: approved.root, relativePath: row.root.relativePath}
+		registered, err := lease.Open()
+		if err != nil {
+			_ = lease.Close()
+			return nil, err
+		}
+		capture, err := lease.CaptureTopology(ctx, RootTopologyMapping{
+			ApprovedPath: row.root.allowedPath, RegisteredPath: row.root.path,
+		}, registered)
+		if err != nil {
+			_ = registered.Close()
+			_ = lease.Close()
+			return nil, err
+		}
+		return &rootBindingNamedCapture{RootTopologyCapture: capture, lease: lease, registered: registered}, nil
+	}
 }
 
 func (s *Store) prepareRootBindingScanWithCapture(task *scanTask, root libraryRoot, captureRoot rootBindingCaptureFactory, prepared ...*PrimaryRootIO) (*rootBindingScanCapture, error) {
@@ -142,7 +171,7 @@ func (s *Store) prepareRootBindingScanWithCapture(task *scanTask, root libraryRo
 	if len(prepared) == 1 {
 		operation = prepared[0]
 	} else {
-		operation, err = s.preparePrimaryRootIO(task.ctx, []mediaSourceRootHint{{root: previous.root, bindingRevision: previous.revision}})
+		operation, err = s.prepareScanOperationRootIO(task.ctx, task, []mediaSourceRootHint{{root: previous.root, bindingRevision: previous.revision}})
 		if err != nil {
 			return nil, err
 		}
@@ -153,7 +182,7 @@ func (s *Store) prepareRootBindingScanWithCapture(task *scanTask, root libraryRo
 		return nil, err
 	}
 
-	// Every descriptor is acquired before the second owned transaction. A
+	// Every descriptor is acquired before the owned publication transaction. A
 	// caller-owned scan root and the Store candidate are separate from the
 	// capture's original lease, registered root and topology descriptors.
 	var anchor *os.Root
@@ -214,9 +243,9 @@ func (s *Store) prepareRootBindingScanWithCapture(task *scanTask, root libraryRo
 	if result.status == RootBindingVerified {
 		matched, candidate = result, &anchor
 	}
-	// Recheck the job and exact row even after an unavailable observation. Only
-	// filesystem observation errors are recoverable; a lost owner or changed
-	// mapping must not accidentally authorize ordinary scan work with stale data.
+	// Recheck the operation even after an unavailable observation. Only
+	// filesystem observation errors are recoverable; a lost owner or cancelled
+	// task must not resume ordinary scan work.
 	for {
 		_, err = s.admitRootBindingScan(task, root, &previous, matched, candidate)
 		retry, waitErr := waitDirectoryPrimaryError(task.ctx, err)
@@ -284,10 +313,20 @@ func rootBindingScanObservationOnly(err error) (error, bool) {
 	return observation, observation != nil
 }
 
-// admitRootBindingScan retains admission through commit and anchor publication.
-// All filesystem acquisition precedes this call, and revalidation never takes
-// Store.mu. Ownership is acquired before the admission mutex.
+// admitRootBindingScan reuses the operation grant. Captured anchor publication
+// retains ownership and task cancellation fences through commit; filesystem
+// acquisition precedes that publication and revalidation never takes Store.mu.
 func (s *Store) admitRootBindingScan(task *scanTask, root libraryRoot, previous *rootBindingRow, capture *rootBindingScanCapture, anchor **os.Root) (rootBindingRow, error) {
+	current, err := s.readScanOperationAuthority(task.ctx, task, root)
+	if err != nil {
+		return rootBindingRow{}, err
+	}
+	if previous != nil && !previous.same(current) {
+		return rootBindingRow{}, ErrRootBindingConflict
+	}
+	if capture == nil && (anchor == nil || *anchor == nil) {
+		return current, nil
+	}
 	raw, err := s.beginOwnedAdmission(task.ctx, false)
 	if err != nil {
 		return rootBindingRow{}, err
@@ -297,16 +336,12 @@ func (s *Store) admitRootBindingScan(task *scanTask, root libraryRoot, previous 
 	if err := task.ctx.Err(); err != nil {
 		return rootBindingRow{}, err
 	}
-	if !s.rootBindingPathConfiguredLocked(root.allowedPath) {
-		return rootBindingRow{}, ErrUnavailable
-	}
 	if s.active[task.job.ID] != task || task.job.LibraryID != root.libraryID || task.job.Status != "Running" {
 		return rootBindingRow{}, ErrTaskScanInactive
 	}
 	if task.job.CancelRequested {
 		return rootBindingRow{}, context.Canceled
 	}
-	var current rootBindingRow
 	err = s.withOwnedTxCallback(raw, func(tx OwnedTx) error {
 		if err := task.ctx.Err(); err != nil {
 			return err
@@ -322,15 +357,8 @@ func (s *Store) admitRootBindingScan(task *scanTask, root libraryRoot, previous 
 		if relation.job.CancelRequested || relation.child != nil && (!activeTaskRun(relation.child.runState) || relation.child.state != "running") {
 			return context.Canceled
 		}
-		current, err = readRootBindingScanRow(tx, root.libraryID, root.id)
-		if err != nil {
+		if err := checkScanOperationRootMappingTx(task.ctx, raw, current.root); err != nil {
 			return err
-		}
-		if _, err := current.validate(); err != nil {
-			return err
-		}
-		if current.root != root || previous != nil && !previous.same(current) {
-			return ErrRootBindingConflict
 		}
 		if capture != nil {
 			if capture.primaryIO == nil {
@@ -355,21 +383,4 @@ func (s *Store) admitRootBindingScan(task *scanTask, root libraryRoot, previous 
 		*anchor = nil
 	}
 	return current, nil
-}
-
-func readRootBindingScanRow(tx OwnedTx, libraryID, rootID string) (rootBindingRow, error) {
-	var row rootBindingRow
-	err := tx.QueryRow(`SELECT `+rootBindingMetadataColumns+`, r.storage_binding IS NOT NULL,
-		CASE WHEN octet_length(r.storage_binding::text) <= $3 THEN r.storage_binding::text END,
-		r.bound_at, CASE WHEN r.bound_by IS NULL THEN NULL WHEN octet_length(r.bound_by) <= 256 THEN r.bound_by ELSE '' END
-		FROM library_roots r WHERE r.library_id = $1 AND r.id = $2 FOR UPDATE OF r`, libraryID, rootID, storagebinding.MaxDocumentBytes).
-		Scan(&row.root.id, &row.root.libraryID, &row.root.path, &row.root.allowedPath, &row.root.relativePath,
-			&row.revision, &row.stored, &row.document, &row.boundAt, &row.boundBy)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return rootBindingRow{}, ErrNotFound
-	}
-	if err != nil {
-		return rootBindingRow{}, fmt.Errorf("read scan root binding: %w", err)
-	}
-	return row, nil
 }

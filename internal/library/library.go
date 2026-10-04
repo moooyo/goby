@@ -136,9 +136,11 @@ type libraryRoot struct {
 }
 
 type scanTask struct {
-	job    Job
-	ctx    context.Context
-	cancel context.CancelFunc
+	job         Job
+	ctx         context.Context
+	cancel      context.CancelFunc
+	authorityMu sync.Mutex
+	authority   atomic.Pointer[scanOperationAuthority]
 }
 
 // Store runs exactly two scan workers. Administrators must be authorized by the

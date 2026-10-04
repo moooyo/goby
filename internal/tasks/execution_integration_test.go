@@ -58,6 +58,39 @@ func waitGenericRun(t *testing.T, ctx context.Context, store *Store, id string, 
 	}
 }
 
+func waitGenericExecutorStarted(t *testing.T, ctx context.Context, store *Store, taskID string, started <-chan struct{}) {
+	t.Helper()
+	deadline := time.NewTimer(10 * time.Second)
+	defer deadline.Stop()
+	tick := time.NewTicker(20 * time.Millisecond)
+	defer tick.Stop()
+	for {
+		select {
+		case <-started:
+			return
+		case <-deadline.C:
+			t.Fatal("generic executor did not start within its startup budget")
+		case <-ctx.Done():
+			t.Fatal(ctx.Err())
+		case <-tick.C:
+			page, err := store.ListRuns(ctx, taskID, Page{Limit: 1})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(page.Items) == 1 && !page.Items[0].State.Active() {
+				select {
+				case <-started:
+					return
+				default:
+				}
+				run := page.Items[0]
+				children, childErr := store.ListChildren(ctx, run.ID, Page{})
+				t.Fatalf("generic executor terminated before startup: run=%s state=%s children=%+v error=%v", run.ID, run.State, children.Items, childErr)
+			}
+		}
+	}
+}
+
 func TestGenericExecutorPersistsProgressReceiptAndCancellation(t *testing.T) {
 	for _, cancelWork := range []bool{false, true} {
 		name := "complete"

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -19,11 +20,22 @@ const mediaPublicationLibraryActiveSQL = `SELECT EXISTS (
 func readMediaPublicationRevision(ctx context.Context, query mediaOperationQuerier, source indexedMediaSource) (string, error) {
 	var revision string
 	var publishing bool
-	err := query.QueryRow(ctx, `SELECT `+MediaOperationSourceRevisionSQL+`,EXISTS (
+	sourceRevision := MediaOperationSourceRevisionSQL
+	args := []any{source.mediaFile.Item.ID, source.root.id, source.root.libraryID}
+	if grant := taskSourceGrant(ctx); grant != nil {
+		hint, _, err := grant.store.taskSourceRootHint(ctx, source.root)
+		if err != nil {
+			return "", err
+		}
+		sourceRevision = strings.ReplaceAll(sourceRevision,
+			"(SELECT ir.binding_revision FROM library_roots ir WHERE ir.id=i.root_id)", "$4::bigint")
+		args = append(args, hint.bindingRevision)
+	}
+	err := query.QueryRow(ctx, `SELECT `+sourceRevision+`,EXISTS (
 		SELECT 1 FROM media_operations publication WHERE publication.source_item_id=i.id
 		AND publication.publication_phase IN ('prepared','catalog_committed'))
 		FROM items i JOIN library_roots r ON r.id=i.root_id AND r.library_id=i.library_id
-		WHERE i.id=$1 AND i.root_id=$2 AND i.library_id=$3`, source.mediaFile.Item.ID, source.root.id, source.root.libraryID).
+		WHERE i.id=$1 AND i.root_id=$2 AND i.library_id=$3`, args...).
 		Scan(&revision, &publishing)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", ErrNotFound

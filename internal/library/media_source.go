@@ -319,7 +319,7 @@ func (s *Store) openMediaSource(ctx context.Context, snapshot indexedMediaSource
 func (s *Store) openMediaSourceFilesystem(ctx context.Context, snapshot indexedMediaSource) (resultFile *os.File, resultErr error) {
 	openedAt := time.Now()
 	defer func() { mediaSourceAdmissionMeasurement.fileOpenNS.Add(uint64(time.Since(openedAt))) }()
-	root, err := s.openLibraryRoot(snapshot.root)
+	root, err := s.openLibraryRootContext(ctx, snapshot.root)
 	if err != nil {
 		return nil, err
 	}
@@ -357,7 +357,7 @@ func (s *Store) openMediaSourceFilesystem(ctx context.Context, snapshot indexedM
 	if !snapshot.matches(opened) || !sameMediaSourceFile(before, opened) {
 		return nil, fmt.Errorf("%w: %w while opening; rescan required", ErrUnavailable, ErrSourceChanged)
 	}
-	currentRoot, err := s.openLibraryRoot(snapshot.root)
+	currentRoot, err := s.openLibraryRootContext(ctx, snapshot.root)
 	if err != nil {
 		return nil, err
 	}

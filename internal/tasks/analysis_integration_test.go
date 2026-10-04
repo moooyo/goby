@@ -158,6 +158,15 @@ func (f *analysisTestFixture) claim(t *testing.T) (Run, Child, Work) {
 		t.Fatal("missing analysis child")
 	}
 	child := children[0]
+	work, err := f.claimWork(t, run, child)
+	if err != nil {
+		t.Fatalf("initial execution authorization: %v", err)
+	}
+	return run, child, work
+}
+
+func (f *analysisTestFixture) claimWork(t *testing.T, run Run, child Child) (Work, error) {
+	t.Helper()
 	token, err := randomID()
 	if err != nil {
 		t.Fatal(err)
@@ -165,11 +174,18 @@ func (f *analysisTestFixture) claim(t *testing.T) (Run, Child, Work) {
 	if _, err = f.store.claimExecution(f.ctx, run.ID, child.ID, token); err != nil {
 		t.Fatal(err)
 	}
-	work := executionWork(f.ctx, run, child, token)
-	if err = f.owner.WithOwnedTx(f.ctx, func(tx library.OwnedTx) error { return work.Fence(tx) }); err != nil {
-		t.Fatalf("initial publication fence: %v", err)
+	return f.store.executionWork(f.ctx, run, child, token)
+}
+
+func (f *analysisTestFixture) completeWork(t *testing.T, run Run, child Child) {
+	t.Helper()
+	var token string
+	if err := f.pool.QueryRow(f.ctx, `SELECT executor_token FROM task_run_children WHERE id=$1`, child.ID).Scan(&token); err != nil {
+		t.Fatal(err)
 	}
-	return run, child, work
+	if err := f.store.finishExecution(f.ctx, run.ID, child.ID, token, nil, false); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestAnalysisAdmissionBindsSelectionAndConfigurationWithoutChangingReceiptReplay(t *testing.T) {
@@ -321,7 +337,10 @@ func TestAnalysisSchedulerUsesExplicitSystemAuthorityAndRecoveryFencesOldWork(t 
 	if _, err = f.store.claimExecution(f.ctx, run.ID, child.ID, token); err != nil {
 		t.Fatal(err)
 	}
-	work := executionWork(f.ctx, run, child, token)
+	work, err := f.store.executionWork(f.ctx, run, child, token)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if _, err = f.pool.Exec(f.ctx, `UPDATE sessions SET revoked_at=clock_timestamp() WHERE id=$1`, f.actor.Principal.SessionID); err != nil {
 		t.Fatal(err)
 	}
@@ -339,21 +358,13 @@ func TestAnalysisSchedulerUsesExplicitSystemAuthorityAndRecoveryFencesOldWork(t 
 	}
 }
 
-func TestAnalysisPublicationFenceRejectsCurrentAuthorityAndExecutionChanges(t *testing.T) {
-	for _, scenario := range []string{"revoked", "disabled", "demoted", "expired", "stopped", "deadline", "token", "library", "scope", "recovered"} {
+func TestAnalysisPublicationFenceRejectsCurrentExecutionChanges(t *testing.T) {
+	for _, scenario := range []string{"stopped", "deadline", "token", "library", "scope", "recovered"} {
 		t.Run(scenario, func(t *testing.T) {
 			f := newAnalysisTestFixture(t, 0)
 			run, child, work := f.claim(t)
 			var err error
 			switch scenario {
-			case "revoked":
-				_, err = f.pool.Exec(f.ctx, `UPDATE sessions SET revoked_at=clock_timestamp() WHERE id=$1`, f.actor.Principal.SessionID)
-			case "disabled":
-				_, err = f.pool.Exec(f.ctx, `UPDATE users SET is_disabled=true WHERE id=$1`, f.actor.Principal.User.ID)
-			case "demoted":
-				_, err = f.pool.Exec(f.ctx, `UPDATE users SET is_administrator=false WHERE id=$1`, f.actor.Principal.User.ID)
-			case "expired":
-				_, err = f.pool.Exec(f.ctx, `UPDATE sessions SET created_at=clock_timestamp()-interval '2 hours',expires_at=clock_timestamp()-interval '1 hour' WHERE id=$1`, f.actor.Principal.SessionID)
 			case "stopped":
 				_, err = f.store.Stop(f.ctx, f.actor, run.ID)
 			case "deadline":
@@ -371,17 +382,97 @@ func TestAnalysisPublicationFenceRejectsCurrentAuthorityAndExecutionChanges(t *t
 				t.Fatal(err)
 			}
 			err = f.owner.WithOwnedTx(f.ctx, func(tx library.OwnedTx) error { return work.Fence(tx) })
-			if err == nil {
-				t.Fatal("stale worker retained publication authority")
-			}
-			if scenario == "revoked" || scenario == "disabled" || scenario == "demoted" || scenario == "expired" {
-				if !errors.Is(err, identity.ErrUnauthorized) {
-					t.Fatalf("authority denial: %v", err)
-				}
-			} else if !errors.Is(err, context.Canceled) {
+			if !errors.Is(err, context.Canceled) {
 				t.Fatalf("execution denial: %v", err)
 			}
 		})
+	}
+}
+
+func (f *analysisTestFixture) invalidateActor(t *testing.T, scenario string) {
+	t.Helper()
+	var err error
+	switch scenario {
+	case "revoked":
+		_, err = f.pool.Exec(f.ctx, `UPDATE sessions SET revoked_at=clock_timestamp() WHERE id=$1`, f.actor.Principal.SessionID)
+	case "disabled":
+		_, err = f.pool.Exec(f.ctx, `UPDATE users SET is_disabled=true WHERE id=$1`, f.actor.Principal.User.ID)
+	case "demoted":
+		_, err = f.pool.Exec(f.ctx, `UPDATE users SET is_administrator=false WHERE id=$1`, f.actor.Principal.User.ID)
+	case "expired":
+		_, err = f.pool.Exec(f.ctx, `UPDATE sessions SET created_at=clock_timestamp()-interval '2 hours',expires_at=clock_timestamp()-interval '1 hour' WHERE id=$1`, f.actor.Principal.SessionID)
+	default:
+		t.Fatalf("unknown actor invalidation %q", scenario)
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestAnalysisExecutionAuthorizationRejectsChangesBeforeWorkerStart(t *testing.T) {
+	for _, scenario := range []string{"revoked", "disabled", "demoted", "expired"} {
+		t.Run(scenario, func(t *testing.T) {
+			f := newAnalysisTestFixture(t, 0)
+			run := f.start(t, library.TaskIntroAnalysisKey, &library.AnalysisSelection{LibraryIDs: []string{"library-1"}})
+			f.invalidateActor(t, scenario)
+			work, err := f.claimWork(t, run, f.children(t, run)[0])
+			if !errors.Is(err, identity.ErrUnauthorized) {
+				t.Fatalf("worker reused request admission after authorization changed: %v", err)
+			}
+			if err := f.owner.WithOwnedTx(f.ctx, func(tx library.OwnedTx) error { return work.WithContext(context.Background()).Fence(tx) }); !errors.Is(err, ErrUnavailable) {
+				t.Fatalf("failed initial authorization leaked a publication capability: %v", err)
+			}
+		})
+	}
+}
+
+func TestAnalysisExecutionAuthorizationIsScopedToEachWorker(t *testing.T) {
+	for _, scenario := range []string{"revoked", "disabled", "demoted", "expired"} {
+		t.Run(scenario, func(t *testing.T) {
+			f := newAnalysisTestFixture(t, 0)
+			run := f.start(t, library.TaskIntroAnalysisKey, &library.AnalysisSelection{LibraryIDs: []string{"library-1", "library-2"}})
+			children := f.children(t, run)
+			work, err := f.claimWork(t, run, children[0])
+			if err != nil {
+				t.Fatal(err)
+			}
+			f.invalidateActor(t, scenario)
+			if err := f.owner.WithOwnedTx(f.ctx, func(tx library.OwnedTx) error {
+				if err := work.Fence(tx); err != nil {
+					return err
+				}
+				if _, err := tx.Exec(`INSERT INTO analysis_publication_witness(value) VALUES('approved-worker')`); err != nil {
+					return err
+				}
+				return work.Fence(tx)
+			}); err != nil {
+				t.Fatalf("actor change invalidated the current worker's approval: %v", err)
+			}
+			f.completeWork(t, run, children[0])
+			if _, err := f.claimWork(t, run, children[1]); !errors.Is(err, identity.ErrUnauthorized) {
+				t.Fatalf("next worker reused the previous worker's approval: %v", err)
+			}
+		})
+	}
+}
+
+func TestAnalysisApprovedWorkCannotBeReconstructedFromJSON(t *testing.T) {
+	f := newAnalysisTestFixture(t, 0)
+	_, child, work := f.claim(t)
+	var token string
+	if err := f.pool.QueryRow(f.ctx, `SELECT executor_token FROM task_run_children WHERE id=$1`, child.ID).Scan(&token); err != nil {
+		t.Fatal(err)
+	}
+	encoded, err := json.Marshal(work)
+	if err != nil || strings.Contains(string(encoded), token) {
+		t.Fatalf("approved work exposed its worker token: %v", err)
+	}
+	var reconstructed Work
+	if err := json.Unmarshal(encoded, &reconstructed); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.owner.WithOwnedTx(f.ctx, func(tx library.OwnedTx) error { return reconstructed.WithContext(context.Background()).Fence(tx) }); !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("JSON reconstruction acquired execution approval: %v", err)
 	}
 }
 
@@ -423,7 +514,7 @@ func TestAnalysisPublicationFenceRollsBackLateInvalidationAndCannotBeRedirected(
 	}
 }
 
-func TestAnalysisApplicationFenceRetainsOriginalKeyAndClientBinding(t *testing.T) {
+func TestAnalysisExecutionApprovalRetainsOriginalKeyAndClientBinding(t *testing.T) {
 	f := newAnalysisTestFixture(t, 0)
 	identities := identity.NewWithApplicationKeyVault(f.pool, identity.NewApplicationKeyVault(filepath.Join(t.TempDir(), "analysis-key-vault")))
 	key, err := identities.CreateApplicationKey(f.ctx, f.actor.Principal, "Analysis application", "", identity.Client{Name: "Analysis", DeviceID: "analysis-server", Device: "Server", Version: "1"})
@@ -435,7 +526,8 @@ func TestAnalysisApplicationFenceRetainsOriginalKeyAndClientBinding(t *testing.T
 		t.Fatal(err)
 	}
 	f.actor = Actor{Principal: principal, Audience: identity.AdministratorEmby}
-	run, _, work := f.claim(t)
+	run, child, work := f.claim(t)
+	next := f.start(t, library.TaskPreviewGenerationKey, &library.AnalysisSelection{LibraryIDs: []string{"library-1"}})
 	var keyID int64
 	var client string
 	if err := f.pool.QueryRow(f.ctx, `SELECT actor_application_key_id,actor_client_session_id FROM task_runs WHERE id=$1`, run.ID).Scan(&keyID, &client); err != nil || keyID != principal.ApplicationKeyID || client != principal.ClientSessionID {
@@ -444,8 +536,12 @@ func TestAnalysisApplicationFenceRetainsOriginalKeyAndClientBinding(t *testing.T
 	if _, err := f.pool.Exec(f.ctx, `DELETE FROM application_key_clients WHERE id=$1`, principal.ClientSessionID); err != nil {
 		t.Fatal(err)
 	}
-	if err := f.owner.WithOwnedTx(f.ctx, func(tx library.OwnedTx) error { return work.Fence(tx) }); !errors.Is(err, identity.ErrUnauthorized) {
-		t.Fatalf("removed application client retained publication: %v", err)
+	if err := f.owner.WithOwnedTx(f.ctx, func(tx library.OwnedTx) error { return work.Fence(tx) }); err != nil {
+		t.Fatalf("removed application client invalidated an approved execution: %v", err)
+	}
+	f.completeWork(t, run, child)
+	if _, err := f.claimWork(t, next, f.children(t, next)[0]); !errors.Is(err, identity.ErrUnauthorized) {
+		t.Fatalf("a new execution reused the removed client's approval: %v", err)
 	}
 	var raw string
 	if err := f.pool.QueryRow(f.ctx, `SELECT to_jsonb(r)::text FROM task_runs r WHERE id=$1`, run.ID).Scan(&raw); err != nil || strings.Contains(raw, key.Token) {
@@ -453,12 +549,9 @@ func TestAnalysisApplicationFenceRetainsOriginalKeyAndClientBinding(t *testing.T
 	}
 }
 
-func TestAnalysisFinalFenceRejectsCredentialExpiryAfterPublicationWrites(t *testing.T) {
+func TestAnalysisFinalFenceRetainsApprovalAfterCredentialExpiry(t *testing.T) {
 	f := newAnalysisTestFixture(t, 0)
 	_, _, work := f.claim(t)
-	if _, err := f.pool.Exec(f.ctx, `UPDATE sessions SET expires_at=clock_timestamp()+interval '2 seconds' WHERE id=$1`, f.actor.Principal.SessionID); err != nil {
-		t.Fatal(err)
-	}
 	entered := false
 	err := f.owner.WithOwnedTx(f.ctx, func(tx library.OwnedTx) error {
 		if err := work.Fence(tx); err != nil {
@@ -468,17 +561,17 @@ func TestAnalysisFinalFenceRejectsCredentialExpiryAfterPublicationWrites(t *test
 		if _, err := tx.Exec(`INSERT INTO analysis_publication_witness(value) VALUES('expired-publication')`); err != nil {
 			return err
 		}
-		if _, err := tx.Exec(`SELECT pg_sleep(GREATEST(0,extract(epoch FROM expires_at-clock_timestamp()))+0.05) FROM sessions WHERE id=$1`, f.actor.Principal.SessionID); err != nil {
+		if _, err := tx.Exec(`UPDATE sessions SET created_at=clock_timestamp()-interval '2 hours',expires_at=clock_timestamp()-interval '1 hour' WHERE id=$1`, f.actor.Principal.SessionID); err != nil {
 			return err
 		}
 		return work.Fence(tx)
 	})
-	if !entered || !errors.Is(err, identity.ErrUnauthorized) {
-		t.Fatalf("late credential expiry was not independently fenced: entered=%t %v", entered, err)
+	if !entered || err != nil {
+		t.Fatalf("late credential expiry invalidated an approved execution: entered=%t %v", entered, err)
 	}
 	var count int
-	if err := f.pool.QueryRow(f.ctx, `SELECT count(*) FROM analysis_publication_witness`).Scan(&count); err != nil || count != 0 {
-		t.Fatal("expired credential committed publication")
+	if err := f.pool.QueryRow(f.ctx, `SELECT count(*) FROM analysis_publication_witness`).Scan(&count); err != nil || count != 1 {
+		t.Fatal("approved execution did not commit its publication")
 	}
 }
 
@@ -499,7 +592,10 @@ func TestAnalysisPublicationContextOnlyNarrowsSealedAuthority(t *testing.T) {
 			defer stopOriginal()
 			limited, stopLimited := context.WithCancel(f.ctx)
 			defer stopLimited()
-			base := executionWork(original, run, child, token)
+			base, err := f.store.executionWork(original, run, child, token)
+			if err != nil {
+				t.Fatal(err)
+			}
 			narrowed := base.WithContext(limited).WithContext(context.Background())
 			err = f.owner.WithOwnedTx(f.ctx, func(tx library.OwnedTx) error {
 				if err := narrowed.Fence(tx); err != nil {
@@ -556,13 +652,14 @@ func TestAnalysisPublicationContextIsRecheckedAfterTheSealedDatabaseFence(t *tes
 	}
 }
 
-func TestAnalysisFenceRetainsAuthenticatedPeerForCurrentRemotePolicy(t *testing.T) {
+func TestAnalysisExecutionApprovalRetainsAuthenticatedPeer(t *testing.T) {
 	for _, peer := range []string{"127.0.0.1", "198.51.100.8"} {
 		t.Run(peer, func(t *testing.T) {
 			f := newAnalysisTestFixture(t, 0)
 			f.actor = taskCompatibilityActor(t, f.ctx, f.pool, f.actor)
 			f.actor.Principal.PeerIP = peer
-			run, _, work := f.claim(t)
+			run, child, work := f.claim(t)
+			next := f.start(t, library.TaskPreviewGenerationKey, &library.AnalysisSelection{LibraryIDs: []string{"library-1"}})
 			var saved string
 			if err := f.pool.QueryRow(f.ctx, `SELECT actor_peer_ip FROM task_runs WHERE id=$1`, run.ID).Scan(&saved); err != nil || saved != peer {
 				t.Fatal("task admission did not retain the authenticated transport peer")
@@ -570,9 +667,13 @@ func TestAnalysisFenceRetainsAuthenticatedPeerForCurrentRemotePolicy(t *testing.
 			if _, err := f.pool.Exec(f.ctx, `UPDATE users SET policy=policy||'{"EnableRemoteAccess":false}'::jsonb WHERE id=$1`, f.actor.Principal.User.ID); err != nil {
 				t.Fatal(err)
 			}
-			err := f.owner.WithOwnedTx(f.ctx, func(tx library.OwnedTx) error { return work.Fence(tx) })
+			if err := f.owner.WithOwnedTx(f.ctx, func(tx library.OwnedTx) error { return work.Fence(tx) }); err != nil {
+				t.Fatalf("remote policy change invalidated an approved execution: %v", err)
+			}
+			f.completeWork(t, run, child)
+			_, err := f.claimWork(t, next, f.children(t, next)[0])
 			if peer == "127.0.0.1" && err != nil || peer != "127.0.0.1" && !errors.Is(err, identity.ErrUnauthorized) {
-				t.Fatalf("publication did not use current policy with its original peer: %v", err)
+				t.Fatalf("a new execution did not authorize its original peer against current policy: %v", err)
 			}
 		})
 	}
@@ -594,6 +695,61 @@ func analysisWaitDone(t *testing.T, done <-chan struct{}) {
 	case <-done:
 	case <-time.After(5 * time.Second):
 		t.Fatal("executor did not return ownership")
+	}
+}
+
+func TestGenericExecutionAuthorizationRunsBeforeExecutorAndSurvivesRevocation(t *testing.T) {
+	for _, revokeBeforeStart := range []bool{false, true} {
+		t.Run(fmt.Sprintf("before_start=%t", revokeBeforeStart), func(t *testing.T) {
+			f := newAnalysisTestFixture(t, 0)
+			executor := f.executors[CacheMaintainKey]
+			executor.release = make(chan struct{})
+			run := f.start(t, CacheMaintainKey, nil)
+			child := f.children(t, run)[0]
+			ctx, cancel := context.WithCancel(f.ctx)
+			defer cancel()
+			manager := &Manager{store: f.store, ctx: ctx, wake: make(chan struct{}, 1), executions: map[string]*workerExecution{}, runtimeDeadlines: map[string]time.Time{}}
+			t.Cleanup(func() { manager.drainExecutions() })
+			if revokeBeforeStart {
+				f.invalidateActor(t, "revoked")
+			}
+			if full, err := manager.reconcileExecution(f.ctx, run, child, false); err != nil || full {
+				t.Fatalf("dispatch: full=%t %v", full, err)
+			}
+			execution := manager.executions[child.ID]
+			if execution == nil {
+				t.Fatal("worker was not dispatched")
+			}
+			if !revokeBeforeStart {
+				work := analysisReceiveWork(t, executor)
+				f.invalidateActor(t, "revoked")
+				if err := f.owner.WithOwnedTx(f.ctx, func(tx library.OwnedTx) error { return work.Fence(tx) }); err != nil {
+					t.Fatalf("generic worker lost its initial approval: %v", err)
+				}
+				close(executor.release)
+			}
+			analysisWaitDone(t, execution.done)
+			wantState := RunCompleted
+			if revokeBeforeStart {
+				wantState = RunFailed
+				if !errors.Is(execution.err, identity.ErrUnauthorized) {
+					t.Fatalf("generic worker ignored initial denial: %v", execution.err)
+				}
+				select {
+				case <-executor.started:
+					t.Fatal("executor ran before its execution was authorized")
+				default:
+				}
+			} else if execution.err != nil {
+				t.Fatalf("approved generic execution failed: %v", execution.err)
+			}
+			if err := manager.reapExecutions(f.ctx, false); err != nil {
+				t.Fatal(err)
+			}
+			if current, err := f.store.GetRun(f.ctx, run.ID); err != nil || current.State != wantState {
+				t.Fatalf("execution outcome was not persisted: state=%s want=%s error=%v", current.State, wantState, err)
+			}
+		})
 	}
 }
 

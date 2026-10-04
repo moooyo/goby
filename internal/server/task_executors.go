@@ -40,7 +40,7 @@ func (executor managementTaskExecutor) Available() bool {
 	return false
 }
 
-func (executor managementTaskExecutor) Execute(ctx context.Context, work tasks.Work, progress func(tasks.Progress) error) error {
+func (executor managementTaskExecutor) Execute(ctx context.Context, work tasks.Work, progress func(tasks.Progress) error) (resultErr error) {
 	s := executor.server
 	if s.library == nil || s.settings == nil || work.TaskKey != executor.key {
 		return tasks.ErrUnavailable
@@ -53,6 +53,15 @@ func (executor managementTaskExecutor) Execute(ctx context.Context, work tasks.W
 	client := providers.New(providerConfig)
 	workCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
+	if executor.key == tasks.SubtitleDownloadKey {
+		work = work.WithContext(workCtx)
+		granted, release, err := s.library.BeginTaskSourceOperation(workCtx, work.ChildID, work.Fence)
+		if err != nil {
+			return err
+		}
+		defer func() { resultErr = errors.Join(resultErr, release()) }()
+		workCtx = granted
+	}
 	var progressMu sync.Mutex
 	var progressErr error
 	report := func(value library.ProviderProgress) {

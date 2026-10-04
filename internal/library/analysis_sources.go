@@ -29,12 +29,15 @@ var analysisPhysicalSQL = `NOT i.is_folder AND i.type IN ('Movie','Episode','Vid
  AND COALESCE((i.media->>'FileChangeTimeNs')::bigint,0)>0
  AND COALESCE((i.media->>'ProbeVersion')::integer,0)>=` + strconv.Itoa(media.CurrentProbeVersion)
 
-const analysisSourceColumns = `i.id,i.library_id,i.root_id,COALESCE(s.id,''),COALESCE(p.id,''),
+const analysisSourceColumnsPrefix = `i.id,i.library_id,i.root_id,COALESCE(s.id,''),COALESCE(p.id,''),
  CASE WHEN i.type='Episode' AND p.type='Season' AND p.is_folder AND s.type='Series' AND s.is_folder
  AND i.index_number>0 AND p.index_number>0 AND (i.parent_index_number IS NULL OR i.parent_index_number=p.index_number)
- THEN jsonb_build_array(i.library_id,s.id,p.index_number,i.index_number)::text ELSE '' END,
-	` + introSourceRevisionSQL + `,` + analysisHierarchyRevisionSQL + `,i.type,i.file_size,(i.media->>'DurationTicks')::bigint,
+ THEN jsonb_build_array(i.library_id,s.id,p.index_number,i.index_number)::text ELSE '' END,`
+
+const analysisSourceColumnsSuffix = `,` + analysisHierarchyRevisionSQL + `,i.type,i.file_size,(i.media->>'DurationTicks')::bigint,
  COALESCE(manual.revision,0)::text,COALESCE(decision.revision,0)::text,COALESCE(preview.revision,0)::text`
+
+const analysisSourceColumns = analysisSourceColumnsPrefix + introSourceRevisionSQL + analysisSourceColumnsSuffix
 
 func scanAnalysisSource(row rowScanner) (AnalysisSource, error) {
 	var value AnalysisSource
@@ -133,7 +136,7 @@ func sameAnalysisSource(a, b AnalysisSource) bool {
 	return a.ItemID == b.ItemID && a.LibraryID == b.LibraryID && a.RootID == b.RootID && a.SourceRevision == b.SourceRevision && a.HierarchyRevision == b.HierarchyRevision && a.EpisodeKey == b.EpisodeKey && a.DurationTicks == b.DurationTicks && a.Size == b.Size
 }
 
-func validateCurrentAnalysisWork(tx OwnedTx, work AnalysisWork) error {
+func validateCurrentAnalysisWork(tx OwnedTx, work AnalysisWork, bindings string) error {
 	var revision string
 	var epoch int64
 	if err := tx.QueryRow(`SELECT revision::text,publication_epoch FROM analysis_settings WHERE id=1 FOR SHARE`).Scan(&revision, &epoch); err != nil {
@@ -163,7 +166,8 @@ func validateCurrentAnalysisWork(tx OwnedTx, work AnalysisWork) error {
 	if err != nil {
 		return err
 	}
-	rows, err = tx.Query(`SELECT `+analysisSourceColumns+` FROM items i `+analysisSourceJoins+` WHERE i.id=ANY($1::text[]) AND `+analysisPhysicalSQL, ids)
+	columns, parameters := analysisOperationSourceColumns(bindings, ids)
+	rows, err = tx.Query(`SELECT `+columns+` FROM items i `+analysisSourceJoins+` WHERE i.id=ANY($1::text[]) AND `+analysisPhysicalSQL, parameters...)
 	if err != nil {
 		return err
 	}
@@ -192,7 +196,8 @@ func validateCurrentAnalysisWork(tx OwnedTx, work AnalysisWork) error {
 	}
 	population := []AnalysisSource{work.Sources[0]}
 	if work.TaskKey == TaskIntroAnalysisKey && work.Sources[0].EpisodeKey != "" {
-		rows, err := tx.Query(`SELECT `+analysisSourceColumns+` FROM items i `+analysisSourceJoins+` WHERE i.library_id=$1 AND i.parent_id=$2 AND `+analysisPhysicalSQL+` ORDER BY i.id LIMIT 100001`, work.LibraryID, work.Sources[0].SeasonID)
+		columns, parameters := analysisOperationSourceColumns(bindings, work.LibraryID, work.Sources[0].SeasonID)
+		rows, err := tx.Query(`SELECT `+columns+` FROM items i `+analysisSourceJoins+` WHERE i.library_id=$1 AND i.parent_id=$2 AND `+analysisPhysicalSQL+` ORDER BY i.id LIMIT 100001`, parameters...)
 		if err != nil {
 			return err
 		}
@@ -231,6 +236,10 @@ func (s *Store) withAnalysisWork(ctx context.Context, childID string, fence Anal
 	if fence == nil || callback == nil || !analysisOpaque(childID, 128) {
 		return ErrInvalidInput
 	}
+	bindings, _, err := taskSourceBindingRevisions(ctx, s, childID)
+	if err != nil {
+		return err
+	}
 	return s.WithOwnedTx(ctx, func(tx OwnedTx) error {
 		if err := analysisContext(ctx); err != nil {
 			return err
@@ -242,7 +251,10 @@ func (s *Store) withAnalysisWork(ctx context.Context, childID string, fence Anal
 		if err != nil {
 			return err
 		}
-		if err := validateCurrentAnalysisWork(tx, work); err != nil {
+		if err := checkTaskSourceOperationRoots(tx, ctx, s, childID); err != nil {
+			return err
+		}
+		if err := validateCurrentAnalysisWork(tx, work, bindings); err != nil {
 			return err
 		}
 		if err := callback(tx, work); err != nil {
@@ -285,7 +297,7 @@ func (s *Store) OpenAnalysisSource(ctx context.Context, childID, itemID string, 
 	file, mediaFile, err := s.runPreparedMediaSourceWorker(ctx, true, func(ctx context.Context) (mediaSourceRootHint, error) {
 		return s.readMediaSourceRootHint(ctx, itemID)
 	}, func(ctx context.Context) (*os.File, MediaFile, error) {
-		snapshot, err := s.readAdmittedAnalysisSource(ctx, expected)
+		snapshot, err := s.readAdmittedAnalysisSource(ctx, childID, expected)
 		if err != nil {
 			return nil, MediaFile{}, err
 		}
@@ -302,7 +314,14 @@ func (s *Store) OpenAnalysisSource(ctx context.Context, childID, itemID string, 
 	return file, mediaFile, nil
 }
 
-func (s *Store) readAdmittedAnalysisSource(ctx context.Context, expected AnalysisSource) (indexedMediaSource, error) {
+func (s *Store) readAdmittedAnalysisSource(ctx context.Context, childID string, expected AnalysisSource) (indexedMediaSource, error) {
+	if !analysisOpaque(expected.ItemID, 128) {
+		return indexedMediaSource{}, ErrInvalidInput
+	}
+	bindings, _, err := taskSourceBindingRevisions(ctx, s, childID)
+	if err != nil {
+		return indexedMediaSource{}, err
+	}
 	ctx, release, err := beginMediaSourceAuthorization(ctx)
 	if err != nil {
 		return indexedMediaSource{}, err
@@ -313,7 +332,8 @@ func (s *Store) readAdmittedAnalysisSource(ctx context.Context, expected Analysi
 		return indexedMediaSource{}, err
 	}
 	defer rollback(tx)
-	current, err := readAnalysisSourceUsing(ctx, tx, unrestrictedLibraryAccess(), expected.ItemID, false)
+	columns, parameters := analysisOperationSourceColumns(bindings, expected.ItemID)
+	current, err := scanAnalysisSource(tx.QueryRow(ctx, `SELECT `+columns+` FROM items i `+analysisSourceJoins+` WHERE i.id=$1 AND `+analysisPhysicalSQL, parameters...))
 	if err != nil {
 		return indexedMediaSource{}, err
 	}

@@ -11,8 +11,8 @@ import (
 	"time"
 )
 
-// Retain the same committed mapping and opaque operation that walk uses. The
-// retained row is only an admission route; it must never grant actual I/O.
+// Retain the startup grant's mapping and opaque operation that walk uses.
+// Actual I/O still requires its own bounded admission lease.
 func primaryScanRoutingRetainWalk(t *testing.T, state *scanState) *PrimaryRootIO {
 	t.Helper()
 	row, err := state.readPrimaryScanAuthority(state.task.ctx)
@@ -60,27 +60,26 @@ func primaryScanRoutingWatchSource(t *testing.T, path string) func() {
 		if err != nil {
 			t.Fatalf("observe routing source access: %v", err)
 		}
-		t.Fatalf("source was opened or read before rejected fresh authority: event_bytes=%d", count)
+		t.Fatalf("source was opened or read before operation admission: event_bytes=%d", count)
 	}
 }
 
-// These are upper workload budgets. Freshness is established by the queued
-// mutation and locked-tuple tests, rather than by requiring redundant phases.
-func primaryScanRoutingAssertAuthorityBudget(t *testing.T, trace *scanPerformanceSQLTracer, maximum int64) {
+// Startup authorization must not be repeated by later scan phases.
+func primaryScanRoutingAssertNoRepeatedAuthority(t *testing.T, trace *scanPerformanceSQLTracer) {
 	t.Helper()
 	singleRows, attempts := trace.authorityImplicitSingleRows.Load(), trace.authorityImplicitAttempts.Load()
-	if singleRows == 0 || singleRows > maximum || attempts != singleRows || trace.authorityImplicitCommits.Load() != singleRows ||
-		trace.authorityQueries.Load() != attempts || trace.authorityBegins.Load() != 0 || trace.authorityCommits.Load() != 0 ||
+	if singleRows != 0 || attempts != 0 || trace.authorityImplicitCommits.Load() != 0 ||
+		trace.authorityQueries.Load() != 0 || trace.authorityBegins.Load() != 0 || trace.authorityCommits.Load() != 0 ||
 		trace.authorityRollbacks.Load() != 0 || trace.authorityImplicitErrors.Load() != 0 || trace.authorityImplicitEmpty.Load() != 0 ||
-		trace.authorityImplicitUnexpectedRows.Load() != 0 {
-		t.Fatalf("successful scan exceeded its one-request authority budget: single_rows=%d attempts=%d commits=%d SQL=%d explicit=%d/%d/%d errors=%d empty=%d unexpected=%d maximum=%d",
+		trace.authorityImplicitUnexpectedRows.Load() != 0 || trace.authorityImplicitUnconfirmed.Load() != 0 {
+		t.Fatalf("scan phase repeated database authorization: single_rows=%d attempts=%d commits=%d SQL=%d explicit=%d/%d/%d errors=%d empty=%d unexpected=%d unconfirmed=%d",
 			singleRows, attempts, trace.authorityImplicitCommits.Load(), trace.authorityQueries.Load(), trace.authorityBegins.Load(),
 			trace.authorityCommits.Load(), trace.authorityRollbacks.Load(), trace.authorityImplicitErrors.Load(),
-			trace.authorityImplicitEmpty.Load(), trace.authorityImplicitUnexpectedRows.Load(), maximum)
+			trace.authorityImplicitEmpty.Load(), trace.authorityImplicitUnexpectedRows.Load(), trace.authorityImplicitUnconfirmed.Load())
 	}
 }
 
-func TestPrimaryScanRoutingPreparationKeepsFreshAuthority(t *testing.T) {
+func TestPrimaryScanRoutingPreparationUsesOperationAuthority(t *testing.T) {
 	for _, retained := range []bool{false, true} {
 		name := "standalone"
 		if retained {
@@ -100,11 +99,7 @@ func TestPrimaryScanRoutingPreparationKeepsFreshAuthority(t *testing.T) {
 			if err := input.close(); err != nil {
 				t.Fatal(err)
 			}
-			maximumAuthority := int64(2)
-			if retained {
-				maximumAuthority = 1
-			}
-			primaryScanRoutingAssertAuthorityBudget(t, trace, maximumAuthority)
+			primaryScanRoutingAssertNoRepeatedAuthority(t, trace)
 			if trace.begins.Load() != 1 || trace.commits.Load() != 1 ||
 				trace.rollbacks.Load() != 0 || trace.itemRows.Load() != 0 || trace.metadataRows.Load() != 0 {
 				t.Fatalf("routing preparation changed entry checkpoint or primary writes: begin=%d commit=%d rollback=%d items=%d metadata=%d",
@@ -117,7 +112,7 @@ func TestPrimaryScanRoutingPreparationKeepsFreshAuthority(t *testing.T) {
 	}
 }
 
-func TestPrimaryScanRoutingRetainedWalkCachedVisitKeepsAuthorityBudget(t *testing.T) {
+func TestPrimaryScanRoutingRetainedWalkCachedVisitUsesOperationAuthority(t *testing.T) {
 	ctx, pool, store, state, trace, _ := scanCachedVisitFixture(t)
 	primaryScanRoutingRetainWalk(t, state)
 	beforeIO, beforeOwners := originalMediaReadGovernor.Stats(), originalMediaReadOwners.Stats().RegisteredOwners
@@ -125,7 +120,7 @@ func TestPrimaryScanRoutingRetainedWalkCachedVisitKeepsAuthorityBudget(t *testin
 	if err := state.scanFile("Film.mp4", "video", hierarchy{parentID: state.library.ID}); err != nil {
 		t.Fatal(err)
 	}
-	primaryScanRoutingAssertAuthorityBudget(t, trace, 2)
+	primaryScanRoutingAssertNoRepeatedAuthority(t, trace)
 	if trace.begins.Load() != 1 || trace.commits.Load() != 1 || trace.cachedCompletionChecks.Load() != 1 {
 		t.Fatalf("cached retained walk changed checkpoint boundaries: total=%d/%d completion=%d",
 			trace.begins.Load(), trace.commits.Load(), trace.cachedCompletionChecks.Load())
@@ -144,7 +139,7 @@ func TestPrimaryScanRoutingRetainedWalkCachedVisitKeepsAuthorityBudget(t *testin
 	}
 }
 
-func TestPrimaryScanRoutingMetadataRechecksQueuedAuthority(t *testing.T) {
+func TestPrimaryScanRoutingMetadataQueuedOperationAuthority(t *testing.T) {
 	for _, phase := range []string{"prepare_source", "metadata"} {
 		for _, retained := range []bool{false, true} {
 			for _, change := range []string{"task_cancel", "binding_revision", "binding_document"} {
@@ -161,15 +156,11 @@ func TestPrimaryScanRoutingMetadataRechecksQueuedAuthority(t *testing.T) {
 					first := primaryScanReadFixtureAt(t, firstGate, "")
 					second := primaryScanReadFixtureAt(t, secondGate, first.state.root.allowedPath)
 					candidate := primaryScanReadFixtureAt(t, &primaryScanReadTestProber{joined: true}, first.state.root.allowedPath)
-					if change == "binding_document" {
-						if _, err := candidate.pool.Exec(candidate.ctx, `UPDATE library_roots
-							SET storage_binding='{"routing_witness":"before"}',bound_at=clock_timestamp(),bound_by='routing-test' WHERE id=$1`, candidate.state.root.id); err != nil {
-							t.Fatal(err)
-						}
-					}
 					var walk *PrimaryRootIO
 					if retained {
 						walk = primaryScanRoutingRetainWalk(t, candidate.state)
+					} else if _, err := candidate.state.readPrimaryScanAuthority(candidate.state.task.ctx); err != nil {
+						t.Fatal(err)
 					}
 					assertUnread := primaryScanRoutingWatchSource(t, candidate.path)
 					first.prepare(t)
@@ -219,9 +210,9 @@ func TestPrimaryScanRoutingMetadataRechecksQueuedAuthority(t *testing.T) {
 					primaryScanReadQueued(t, candidate.ctx, baseline, result)
 					assertUnread()
 					if called.Load() || scanProbeOpenDescriptors(t, []string{candidate.path})[0] != 0 {
-						t.Fatal("queued metadata delivered a source descriptor before fresh authority")
+						t.Fatal("queued metadata delivered a source descriptor before admission")
 					}
-					want := error(ErrRootBindingConflict)
+					var want error
 					var err error
 					switch change {
 					case "task_cancel":
@@ -235,17 +226,31 @@ func TestPrimaryScanRoutingMetadataRechecksQueuedAuthority(t *testing.T) {
 					if err != nil {
 						t.Fatal(err)
 					}
+					if change == "task_cancel" {
+						candidate.state.task.cancel()
+					}
 					firstGate.openGate()
 					if got := primaryScanReadReceive(t, first.ctx, firstResult); got.err != nil {
 						t.Fatal(got.err)
 					}
 					got := primaryScanReadReceive(t, candidate.ctx, result)
-					assertUnread()
-					if !errors.Is(got.err, want) || called.Load() || scanProbeOpenDescriptors(t, []string{candidate.path})[0] != 0 ||
-						candidate.state.task.job.Scanned != beforeJob.Scanned || candidate.state.warnings != 0 {
-						t.Fatalf("metadata grant accepted stale authority: called=%v scanned=%d warnings=%d error=%v want=%v",
+					if want != nil {
+						assertUnread()
+					}
+					wantScanned := beforeJob.Scanned
+					if phase == "prepare_source" && want == nil {
+						wantScanned++
+					}
+					if !errors.Is(got.err, want) || called.Load() != (want == nil) || scanProbeOpenDescriptors(t, []string{candidate.path})[0] != 0 ||
+						candidate.state.task.job.Scanned != wantScanned || candidate.state.warnings != 0 {
+						t.Fatalf("metadata did not honor operation authority: called=%v scanned=%d warnings=%d error=%v want=%v",
 							called.Load(), candidate.state.task.job.Scanned, candidate.state.warnings, got.err, want)
 					}
+					job, err := candidate.store.GetJob(candidate.ctx, beforeJob.ID)
+					if err != nil || job.Scanned != wantScanned || job.Added != beforeJob.Added || job.Updated != beforeJob.Updated {
+						t.Fatalf("metadata changed unexpected persisted counters: job=%+v error=%v", job, err)
+					}
+					taskScanAssertChild(t, candidate.ctx, candidate.pool, beforeJob.TaskChildID, job)
 					secondGate.openGate()
 					if got := primaryScanReadReceive(t, second.ctx, secondResult); got.err != nil {
 						t.Fatal(got.err)
@@ -262,7 +267,7 @@ func TestPrimaryScanRoutingMetadataRechecksQueuedAuthority(t *testing.T) {
 						candidate.state.walkIO = nil
 					}
 					if stats := originalMediaReadGovernor.Stats(); stats != initialIO || originalMediaReadOwners.Stats().RegisteredOwners != initialOwners {
-						t.Fatalf("rejected metadata retained owners or phases: before=%+v after=%+v owners=%+v", initialIO, stats, originalMediaReadOwners.Stats())
+						t.Fatalf("metadata retained owners or phases: before=%+v after=%+v owners=%+v", initialIO, stats, originalMediaReadOwners.Stats())
 					}
 				})
 			}
@@ -270,7 +275,7 @@ func TestPrimaryScanRoutingMetadataRechecksQueuedAuthority(t *testing.T) {
 	}
 }
 
-func TestPrimaryScanRoutingRetainsDetachedWalkBindingFence(t *testing.T) {
+func TestPrimaryScanRoutingDetachedWalkRetainsOperationAuthority(t *testing.T) {
 	f := primaryScanReadFixtureAt(t, &primaryScanReadTestProber{joined: true}, "")
 	operation := primaryScanRoutingRetainWalk(t, f.state)
 	if err := operation.Close(); err != nil {
@@ -281,8 +286,8 @@ func TestPrimaryScanRoutingRetainsDetachedWalkBindingFence(t *testing.T) {
 		t.Fatal(err)
 	}
 	called := false
-	if err := f.state.runPrimaryScanMetadata(f.state.task.ctx, func(context.Context) error { called = true; return nil }); !errors.Is(err, ErrRootBindingConflict) || called || scanProbeOpenDescriptors(t, []string{f.path})[0] != 0 {
-		t.Fatalf("detached walk mapping lost its existing binding fence: called=%v error=%v", called, err)
+	if err := f.state.runPrimaryScanMetadata(f.state.task.ctx, func(context.Context) error { called = true; return nil }); err != nil || !called || scanProbeOpenDescriptors(t, []string{f.path})[0] != 0 {
+		t.Fatalf("detached walk lost the operation grant: called=%v error=%v", called, err)
 	}
 }
 
