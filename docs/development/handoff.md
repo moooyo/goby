@@ -1,5 +1,87 @@
 # Goby handoff - October 4, 2026
 
+Latest accepted source is [internal operation authorization simplification](scan-operation-authorization-20261004.md),
+source commit `46dec288998bd9dab5898ba974979c4758989943`, with complete
+[structured evidence](scan-operation-authorization-20261004.json). All 24 current
+C/B phase groups improve in every matched block (72/72 C<B). Descriptor paired
+median job time falls 35.7-40.4 percent cold, 49.7-60.8 percent cached_1 and
+70.1-85.3 percent cached_2. Real cold/warm/force fall 31.6/40.6/38.5 percent.
+At n=3, full wide ranges and every sample remain retained; there is no stable
+tail or isolated authorization-time causation claim.
+
+Historical H is not uniformly restored: 14/24 C/H medians are slower and 38/72
+observations are adverse. Real cold/warm/force still run 9.9/8.9/3.0 percent
+slower than H; flat_movies cold is slower in all three H blocks too. Complete
+C/H tables and every adverse denominator are labeled sourceH and retained.
+TRACE1 flat_movies/cached_1 raw SQL falls B 1539 to C 1203 (21.8 percent), versus
+H 1205; n=1 diagnostic counts do not assign TRACE0 milliseconds. Old AUTH labels
+are partial for new startup SQL: recognized zero is not zero authorization.
+
+Internal scans/generic tasks authorize the operation at startup. Later user/session
+authorization changes and edits to root approvals or allowed-root configuration
+apply to future operations. Scans retain startup root/route snapshots; Analysis
+and provider grants retain actual root handles. Cancellation,
+token/owner, physical source/data/mapping, concurrent writes, complete deletion
+proof and actual retirement remain live; external admin/API/playback/download
+and provider credentials remain fresh. External Analysis source/cache/cohort
+protocol is unchanged, so an internal startup-stamped completion can later be
+externally stale after an approval change.
+
+Measured H is `912354f2a48b5043a8824246f2fa011f8f34bbf1`, B is
+`b30e78c8924380cd404588890f20dd0949394dde`, and C is the v7 environment-labelled
+identical-v6 source archive SHA-256
+`5cd7da1e1c2f89f175da77cc7280f233523cf9b5aa142ee40649cd8dfd3292ab`.
+Freeze SHA-256 is
+`71d7f91df9f6e2da53c14f15662e19cd832fee910f556c5f5ef6640525ac6c93`.
+The later source commit has exact 61 changed paths and four unchanged drivers
+matched by Git archive; archive measurement identity is separate from delivery.
+Full inventory decisions are included in the report, with its final status
+updated to 61/completed evidence rather than old inspection-time pending text.
+
+Current status is qualified_and_closed. All four correctness cases, four builds,
+six pilots, six diagnostics and eighteen formal processes passed; all 29 library
+required tests and real 10,000-file guard passed, with exactly eleven allowed
+library opt-in skips. All 146 sealed actual files match (missing 0/mismatch 0);
+root independently reconstructed 216 observations/24 groups from 18 immutable raw
+records and obtained exactly the accepted paired results. Final seal SHA-256 is
+`8fd55870229de03cc0c1a15b26eaceceb212591e1c344158ab76dc343439e963`;
+-02 closure receipt SHA-256 is
+`6dd3af2be403f53e47e07ca91553b21455e43b493d4683630be740bc289d7a08`.
+PG 3522880/start 64992308, mount 490 and loop0 are exactly closed with zero owned
+references/mounts/errors. Closed -02 sources/PG/image/cache/modules remain
+retained remotely; EXPORT COMPLETE archive stream hashes match.
+
+Six failed attempts and independent v4 focused/v5-v6 tasks passes remain
+explicit. V1-v3 were test fixture adaptations; v4 tasks exposed a real automatic
+actor_kind='' compatibility defect repaired by canonical system and narrowly
+allowed human-empty legacy automatic sources in v5. V5 library failed stale SQL
+matchers and a fake next scan, repaired by two test files only in v6. V6 library
+failed from PG ENOSPC, with cascading schema errors; it is not qualified and
+no performance ran. V7 pre-Go staging NameError and evidence-only SSH parsing/
+export retries are retained without product reruns or altered sample counts.
+No failed history is converted into passed qualification or formal statistics.
+
+Both migration exceptions remain explicit. Two old closed-root build caches
+were fully archived/member-verified before exact remote cache-copy deletion.
+The entire failed -01 root was then exactly closed, completely archived locally
+and verified before removing only that root: 1256225101 bytes/70842 members,
+SHA-256 `472357819c196420d40002e73a957659211ddb34acba731531d9856bdfb3d73c`,
+validation SHA-256
+`fc1cc8614080816a2cd8dd2d5a3a97a88ae9360c60fd64e1805072e435f113e7`.
+-01 source/data/evidence are locally recoverable, not still at the remote path.
+Five old environments/shared services were unchanged by that migration; the
+earlier two-cache exception remains separate. Fresh -02 met setup 5 GB/library
+launch 3 GB/512 MiB stop budgets, which are admission limits rather than peaks.
+
+Directory-index/reconciliation redesign, new cache/quota policy, client A/V,
+Analysis PART2, GPU/native-hard, whole-service capacity, images and deployment
+remain unselected. The separate publication receipt records exact document/main
+push identities. Documentation preparation ran no product verification or SSH.
+All accepted historical
+outcomes and scope limits are preserved below.
+
+## Previous October 4 cached-observation consolidation and NFO repair, batch 2
+
 Batch 2 has a mixed outcome. Descriptor cold C/B medians are 1.036 for
 directory_episodes (three of three blocks slower), 1.003 for flat_episodes and
 1.006 for flat_movies (each two of three slower). Descriptor force_probe medians
