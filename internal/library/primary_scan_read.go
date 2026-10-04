@@ -250,15 +250,16 @@ func (input *primaryScanRead) readAuthority() (rootBindingRow, error) {
 	return state.store.readScanOperationAuthority(input.work, state.task, state.root)
 }
 
-func (input *primaryScanRead) attach(file *os.File, path string) error {
+func (input *primaryScanRead) attach(file *os.File, path string, stamp os.FileInfo) error {
 	input.file, input.path = file, path
 	if file == nil || input.namedRoot == nil {
 		return scanReadFailure(ErrUnavailable)
 	}
-	stamp, err := file.Stat()
-	if err != nil || !stamp.Mode().IsRegular() {
-		return scanReadFailure(errors.Join(err, errScanProbeSourceChanged))
+	if stamp == nil || !stamp.Mode().IsRegular() {
+		return scanReadFailure(errScanProbeSourceChanged)
 	}
+	// Reuse the walker's first observation. checkSource still observes the live
+	// descriptor and named path before this input can enter the probe queue.
 	input.stamp = stamp
 	return input.checkSource()
 }

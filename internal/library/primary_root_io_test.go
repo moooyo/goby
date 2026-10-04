@@ -125,6 +125,92 @@ func TestPrimaryRootIONestedSubsetReusesAtomicPhase(t *testing.T) {
 	}
 }
 
+func TestPrimaryRootIOSingleRoutePreservesAdmissionAndCallerIsolation(t *testing.T) {
+	for _, scenario := range []string{"single", "bounded_duplicates", "oversized_duplicates", "invalid_root", "invalid_domain", "oversized_distinct"} {
+		t.Run(scenario, func(t *testing.T) {
+			fixture, governor, owners, _ := primaryRootIOTestFixture(t, 1)
+			prepared := fixture.handle.state.routes["root-0"]
+			expectedRoot, expectedDomain := prepared.route.Roots[0], prepared.route.Domains[0]
+			source := primaryio.Route{Roots: []primaryio.RootKey{expectedRoot}, Domains: []string{expectedDomain}}
+			wantError := false
+			switch scenario {
+			case "bounded_duplicates":
+				source.Roots = append(source.Roots, expectedRoot)
+				source.Domains = append(source.Domains, expectedDomain)
+			case "oversized_duplicates":
+				for len(source.Roots) < 9 {
+					source.Roots = append(source.Roots, expectedRoot)
+				}
+				for len(source.Domains) < 17 {
+					source.Domains = append(source.Domains, expectedDomain)
+				}
+			case "invalid_root":
+				source.Roots[0].Catalog = ""
+				wantError = true
+			case "invalid_domain":
+				source.Domains[0] = ""
+				wantError = true
+			case "oversized_distinct":
+				for len(source.Domains) < 17 {
+					source.Domains = append(source.Domains, fmt.Sprintf("%s-%d", expectedDomain, len(source.Domains)))
+				}
+				wantError = true
+			}
+			operation, err := newPrimaryRootIO(context.Background(), owners, fixture.handle.state.domains,
+				map[string]primaryRootIORoute{"selected": {route: source, domain: prepared.domain}}, func() {})
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() {
+				if err := operation.Close(); err != nil {
+					t.Error(err)
+				}
+			})
+			// The constructor must detach these slices before any phase borrows
+			// the retained route, including immediate and nested admissions.
+			source.Roots[0] = primaryio.RootKey{Catalog: "changed", RootID: "changed"}
+			source.Domains[0] = "changed"
+			for _, run := range []func(context.Context, string, primaryio.Class, func(context.Context) error) error{operation.Run, operation.RunImmediate} {
+				called := false
+				err := run(context.Background(), "", primaryio.Background, func(ctx context.Context) error {
+					called = true
+					before := governor.Stats()
+					if before.Active != 1 || before.ActiveRoots != 1 || before.ActiveDomains != 1 {
+						return fmt.Errorf("single retained route changed its actual charge: %+v", before)
+					}
+					phase, _ := ctx.Value(primaryRootIOPhaseKey{}).(*primaryRootIOPhase)
+					for _, root := range phase.route.Roots {
+						if root != expectedRoot {
+							return errors.New("caller mutation changed the retained root")
+						}
+					}
+					for _, domain := range phase.route.Domains {
+						if domain != expectedDomain {
+							return errors.New("caller mutation changed the retained domain")
+						}
+					}
+					return operation.RunImmediate(ctx, "selected", primaryio.Background, func(context.Context) error {
+						if after := governor.Stats(); after != before {
+							return fmt.Errorf("nested single route changed its existing charge: %+v", after)
+						}
+						return nil
+					})
+				})
+				if wantError {
+					if !errors.Is(err, ErrUnavailable) || called {
+						t.Fatalf("invalid route reached actual work: called=%v error=%v", called, err)
+					}
+				} else if err != nil || !called {
+					t.Fatalf("valid single route lost admission: called=%v error=%v", called, err)
+				}
+				if stats := governor.Stats(); stats.Active != 0 || stats.Queued != 0 {
+					t.Fatalf("completed single route retained a phase: %+v", stats)
+				}
+			}
+		})
+	}
+}
+
 func TestPrimaryRootIOExpandedNestedRouteNeverWaits(t *testing.T) {
 	operation, governor, _, _ := primaryRootIOTestFixture(t, 2)
 	if err := operation.Run(context.Background(), "root-0", primaryio.Background, func(ctx context.Context) error {

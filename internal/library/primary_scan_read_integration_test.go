@@ -201,7 +201,12 @@ func (f *primaryScanReadFixture) prepare(t *testing.T) {
 		_ = primaryScanReadClose(t, input, nil)
 		t.Fatal(err)
 	}
-	if err := input.attach(file, "Feature.mp4"); err != nil {
+	stamp, err := file.Stat()
+	if err != nil {
+		_ = primaryScanReadClose(t, input, file.Close)
+		t.Fatal(err)
+	}
+	if err := input.attach(file, "Feature.mp4", stamp); err != nil {
 		_ = primaryScanReadClose(t, input, file.Close)
 		t.Fatal(err)
 	}
@@ -213,6 +218,39 @@ func (f *primaryScanReadFixture) prepare(t *testing.T) {
 			t.Errorf("retire actual scan input: %v", err)
 		}
 	})
+}
+
+func TestPrimaryScanReadAttachmentRetainsFirstSourceObservation(t *testing.T) {
+	f := primaryScanReadFixtureAt(t, &primaryScanReadTestProber{joined: true}, "")
+	input, err := f.state.preparePrimaryScanRead()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var file *os.File
+	t.Cleanup(func() {
+		var closeFile func() error
+		if file != nil {
+			closeFile = file.Close
+		}
+		if err := primaryScanReadClose(t, input, closeFile); err != nil {
+			t.Error(err)
+		}
+	})
+	file, err = openScanFile(f.state.opened, "Feature.mp4")
+	if err != nil {
+		t.Fatal(err)
+	}
+	stamp, err := file.Stat()
+	if err != nil {
+		t.Fatal(err)
+	}
+	changed := stamp.ModTime().Add(time.Second)
+	if err := os.Chtimes(f.path, changed, changed); err != nil {
+		t.Fatal(err)
+	}
+	if err := input.attach(file, "Feature.mp4", stamp); !errors.Is(err, errScanProbeSourceChanged) {
+		t.Fatalf("attachment replaced the original source observation: %v", err)
+	}
 }
 
 func primaryScanReadClose(t *testing.T, input *primaryScanRead, closeFile func() error) error {

@@ -369,6 +369,26 @@ func (state *primaryRootIOState) route(rootIDs []string) (primaryio.Route, []str
 	if len(rootIDs) < 1 || len(rootIDs) > 8 {
 		return primaryio.Route{}, nil, ErrInvalidInput
 	}
+	if len(rootIDs) == 1 {
+		rootID := rootIDs[0]
+		if rootID == "" && len(state.routes) == 1 {
+			for selected := range state.routes {
+				rootID = selected
+			}
+		}
+		prepared, ok := state.routes[rootID]
+		if !ok {
+			return primaryio.Route{}, nil, ErrUnavailable
+		}
+		if len(prepared.route.Roots) >= 1 && len(prepared.route.Roots) <= 8 &&
+			len(prepared.route.Domains) >= 1 && len(prepared.route.Domains) <= 16 {
+			// The private phase only reads these constructor-owned slices. Every
+			// new governor admission copies and validates them; nested phases
+			// reuse an already admitted superset. Oversized raw routes retain the
+			// general path so repeated keys still receive their original bounds.
+			return prepared.route, []string{prepared.domain}, nil
+		}
+	}
 	var combined primaryio.Route
 	var domains []string
 	seenRoots, seenDomains, seenClaims := map[primaryio.RootKey]bool{}, map[string]bool{}, map[string]bool{}

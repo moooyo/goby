@@ -828,7 +828,11 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 	if err := state.scanSubtitles(id, path, probe); err != nil {
 		return err
 	}
-	if err := state.scanImagesWithKnownAbsence(id, itemType, path, false, stored.id != "" && !stored.hasLocalImages); err != nil {
+	// A newly allocated ID absent before the successful primary write had no
+	// older image rows: item_images requires an existing item through its FK.
+	// Renames reuse stored.id and must retain that item's captured image state.
+	knownNoLocalImages := stored.id != "" && !stored.hasLocalImages || stored.id == "" && !beforeCatalog.present
+	if err := state.scanImagesWithKnownAbsence(id, itemType, path, false, knownNoLocalImages); err != nil {
 		return err
 	}
 	if probe != nil {

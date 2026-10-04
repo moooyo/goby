@@ -341,7 +341,7 @@ func (state *scanState) prepareScannedMedia(path, kind string, role scannedMedia
 			rejected = &scanInputInspectionRejection{err: errors.Join(err, errScanProbeSourceChanged)}
 			return rejected
 		}
-		return primary.attach(file, path)
+		return primary.attach(file, path, info)
 	})
 	if err != nil {
 		if scanInputInspectionRejectedOnly(err, rejected) {
