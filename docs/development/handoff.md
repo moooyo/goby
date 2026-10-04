@@ -1,5 +1,46 @@
 # Goby handoff - October 4, 2026
 
+The latest source is [internal operation cleanup](internal-operation-cleanup-20261004.md),
+commit `975d256ef7d8dbae365803caffbc4faff5ae029c`, parent
+`f5b09298b21cd47f7c6e79344f9c501898c948a8`. Exactly fifteen committed paths
+match the accepted v2 freeze. Nine mechanical cleanups affect the original
+fourteen paths; the fifteenth is only a native-order fixture repair before
+StartScan, without another production change.
+
+The selected remote race matrix is qualified: tasks-identity v1 reuse 25/32 PASS
+with 5 required, scan-grant v2 37/66 with 8, analysis-admission v2 25/45 with 13,
+and source-lifetime-routing v2 45/23 with 9. Totals are 132 top-level/166 subtest
+PASS and 35 required, zero skips/failures. All packages/processes passed/exited,
+source/protected identities stayed unchanged, owned fixture cleanup completed,
+and TMP remaining was empty. Raw/immutable receipt hashes and independent root
+acceptance are in the cleanup report and retained external evidence.
+
+V1 scan-grant remains failed history: 36/66 PASS and all 8 required, skip 0,
+but one fixture prerequisite failed before StartScan. V2 repairs only that test;
+tasks-v1 reuse is approved because task sources/dependencies are unchanged.
+V2 durations 125.5795/16.8632/12.1953 seconds include compilation and are not
+performance measurements.
+
+Duplicate checks/lookups/copies, startup root-ID sorting, unused grant storage,
+and Analysis JSON encoding/decoding are simplified. Both lease checks remain:
+real mutex waiting permits context/closed/Store changes, and timely rejection
+and error priority remain necessary. Source/manual/cohort/owner/token/mapping/
+deletion/retirement and authorization policy are unchanged.
+
+Standard random-schema fixtures were used. After the capacity gate, the user
+approved only shared Go build-cache cleanup: 2,873,466,880 to 12,288 bytes, with
+about 3.2 GB then available. V2 used a task-owned memory-backed GOCACHE; module
+cache and old environments were unchanged. No worktree/evidence/WIP was removed.
+
+Performance was not remeasured. The f5 data below belongs to the previously
+measured operation-authorization archive/source 46dec288, not this cleanup or
+later HEAD. No full-library/10k/build/H-B-C/HTTP campaign or large repository JSON
+was added. This publication adds only the cleanup report and handoff; exact
+main/origin confirmation and the 199/56 WIP preservation are in the external
+publication receipt. The complete previous historical body follows unchanged.
+
+## Previous October 4 operation authorization delivery at f5b09298
+
 Latest accepted source is [internal operation authorization simplification](scan-operation-authorization-20261004.md),
 source commit `46dec288998bd9dab5898ba974979c4758989943`, with complete
 [structured evidence](scan-operation-authorization-20261004.json). All 24 current
