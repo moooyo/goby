@@ -77,6 +77,12 @@ PG logs contained no matching event, which is not proof of no wait. No strace/pe
 installation or broader experiment was added, and these results do not establish
 stable tails or transfer an n=1 magnitude to previous three-block measurements.
 
+Later correction: the optional log reader's UTC-suffix filter did not cover the
+server's Asia/Shanghai timestamps, so the retained no-match result is an
+incomplete search. The [force diagnosis](scan-force-regression-20261005.md#log-timezone-correction)
+documents the corrected reader and events recovered for the later progress-batching
+formal window; those events are not reassigned to this earlier A/I/F window.
+
 The time shape is retained across all five runs. Reference F cold scans remained
 faster, but its large slow suffix began at ordinal 9. Diagnostic A's first six
 phases were slow and then recovered; diagnostic F's first eleven were broadly

@@ -1,5 +1,58 @@
 # Goby handoff - October 5, 2026
 
+Latest selected work is the [two force-regression diagnosis](scan-force-regression-20261005.md).
+Production stays d993454fef258301d3ff967c083fa2b2173be802; this delivery contains
+only diagnosis/handoff documents and a log-timezone correction. The original
+three-pair force regressions remain unresolved acceptance findings: flat episodes
+C/B median 1.049313307342171 with 3/3 adverse, directory 1.3174699239223628 with
+2/3 adverse. New n=1 observations do not replace or dismiss those measurements.
+
+Exactly four complete descriptor processes passed in reference B/C then diagnostic
+C/B order, each 21 phases/803 probes. Unsampled references reverse direction
+(flat 3596.142 to 2492.384 ms; directory 1632.843 to 827.349 ms). Instrumented
+jobs have C slower by 93.472/181.989 ms. Job-clipped client COMMIT increases by
+82.589743/102.206469 ms despite counts falling 411 to 219 and 129 to 81.
+Standalone progress commits disappear (192/48 to zero); retained primary and
+folder publication commits have longer waits. Directory also adds 49.267202 ms
+of non-COMMIT SQL union across existing queries, without increased work counts.
+
+Independent job-worker traces have zero transition mismatches and confirm COMMIT
+socket-wait increases of 88.687/103.101 ms. Standalone progress COMMIT waits
+disappear. No scan-worker owner-mutex waiting is observed; PrimaryIO-class waits
+are at most 29 microseconds per capture. Probe-result/Ping/runnable differences
+are small; directory's other costs include existing SQL, storage helpers and
+Running time. Running is not exact CPU, and SQL/trace/PG measures overlap.
+
+The new server evidence matches active COMMITs by PID/start/time: IO/WalSync
+sample counts B/C are 76/85 for flat and 14/45 for directory, with additional
+WalWrite/internal WALWrite samples retained separately. This proves specific
+server WAL waits, not their exact continuous duration or the cause of old formal
+differences. Roughly 5.1 ms sampling misses short commits; idle/NULL/unknown remain
+separate. The observer adds load and is absent from references. PostgreSQL
+durability settings are unchanged and timing counters are disabled/uncollected.
+
+The old optional log reader's UTC-suffix matching missed Asia/Shanghai coverage.
+Corrected reads recover checkpoint completion/start at UTC01:20:32/01:20:51 in
+the prior progress-batching formal window. The current four-case window has no
+selected logged event. These are separate cluster background windows and establish
+no per-job checkpoint cause. Old raw/no-match evidence is preserved and qualified.
+
+No new production fix, cross-media batch, lock removal or durability relaxation
+is selected. If further diagnosis is requested, isolate surviving commit-arrival
+cadence and concurrent storage latency with fixed durability before changing
+transaction semantics. Do not replay the completed broad matrix by default.
+
+All four invocations and forty profile tools exited; all 130 remote evidence
+entries and four binary exports are retained locally with matched hashes. Owned
+RAM profiles, compiler scratch and empty media TMPDIR are closed with no live
+references. Sources/raw, shared caches and old roots remain. PG/Goby and reserve
+403,374 are unchanged; closing persistent availability is 7,531,958,272 bytes.
+Closure SHA-256 is a552798f621fb8a0b6eb5b518ea4a489171d92aa4711aa858e9a0b02ad32025d.
+The publication receipt retains exact main/origin identity and all original
+199 WIP byte states/56 historical hashes. The complete prior body follows.
+
+## Previous October 5 scan progress batching delivery at 9abc7abf
+
 Latest selected source is [scan progress batching](scan-progress-batching-20261005.md),
 commit d993454fef258301d3ff967c083fa2b2173be802 after main 3585a84, with exactly
 15 changed paths (seven production/eight tests) and four unchanged archive drivers.
