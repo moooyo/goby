@@ -82,7 +82,6 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 	}()
 	noCandidates := true
 	var replaceTypes []string
-	var replaceCounts []int
 	ready := false
 	err = operation.Run(state.task.ctx, state.root.id, primaryio.Background, func(ctx context.Context) error {
 		if err := state.checkSidecarScanAuthority(ctx, row); err != nil {
@@ -178,11 +177,9 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 			}
 		}
 		replaceTypes = make([]string, 0, len(scannedImageTypes))
-		replaceCounts = make([]int, 0, len(scannedImageTypes))
 		for _, imageType := range scannedImageTypes {
 			if !preserve[imageType] {
 				replaceTypes = append(replaceTypes, imageType)
-				replaceCounts = append(replaceCounts, len(images[imageType]))
 			}
 		}
 		if len(replaceTypes) == 0 {
@@ -207,6 +204,10 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 			return completionCheck[0]()
 		}
 		return state.store.CheckOwnership(state.task.ctx)
+	}
+	replaceCounts := make([]int, len(replaceTypes))
+	for index, imageType := range replaceTypes {
+		replaceCounts[index] = len(images[imageType])
 	}
 	tx, err := state.store.beginOwnedTx(state.task.ctx)
 	if err != nil {
