@@ -155,6 +155,7 @@ func newHLSRuntime(ctx context.Context, server *Server) (*hlsRuntime, error) {
 		return ctx.Err()
 	}
 	managerOptions.SubtitleSource = server.readBurnSubtitleAsset
+	managerOptions.BitmapSubtitleSource = server.readBurnBitmapSubtitleAsset
 	managerOptions.LivePublish = server.publishDynamicSegment
 	managerOptions.LiveSubtitle = server.receiveDynamicSubtitles
 	managerOptions.LiveCaption = server.receiveDynamicCaption
@@ -491,7 +492,7 @@ func (s *Server) authorizeHLS(ctx context.Context, principal identity.Principal,
 		return nil, library.MediaFile{}, library.ErrForbidden
 	}
 	if plan.Subtitle.ExternalTag != "" {
-		if _, err := s.readPlannedExternalSubtitle(ctx, fresh, scope, plan); err != nil {
+		if err := s.validatePlannedExternalSubtitle(ctx, fresh, scope, plan); err != nil {
 			return nil, library.MediaFile{}, err
 		}
 	}

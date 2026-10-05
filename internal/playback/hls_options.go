@@ -93,6 +93,18 @@ func configureEncodedSubtitle(plan *transcode.Plan, source Source, subtitle *med
 			return fail()
 		}
 		plan.Subtitle.ExternalTag = subtitle.SubtitleTag
+		if transcode.IsBitmapSubtitle(subtitle.Codec) {
+			plan.Subtitle.ExternalStreamIndex = subtitle.SubtitleSourceStreamIndex
+			for _, stream := range source.Info.Streams {
+				if stream.Index == plan.VideoStreamIndex && stream.CodecType == "video" {
+					plan.Subtitle.ExternalCanvasWidth, plan.Subtitle.ExternalCanvasHeight = stream.Width, stream.Height
+					break
+				}
+			}
+			if plan.Subtitle.ExternalCanvasWidth <= 0 || plan.Subtitle.ExternalCanvasHeight <= 0 {
+				return fail()
+			}
+		}
 	}
 	var indexes []int
 	for _, stream := range source.Info.Streams {

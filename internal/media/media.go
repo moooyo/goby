@@ -53,42 +53,45 @@ type Stream struct {
 	// Dynamic sources bind an operator declaration and lease instead; their
 	// current generation and authority are checked before reading each source.
 	// Primary probing leaves it empty; the library projection supplies it.
-	SubtitleTag          string
-	Width                int
-	Height               int
-	Channels             int
-	SampleRate           int
-	Bitrate              int64
-	Profile              string
-	Level                int
-	BitDepth             int
-	CodecTag             string
-	CodecTagString       string
-	PixelFormat          string
-	TimeBase             string
-	AverageFrameRate     string
-	RealFrameRate        string
-	ChannelLayout        string
-	RefFrames            int
-	FieldOrder           string
-	IsInterlaced         bool
-	InterlaceKnown       bool
-	IsAVC                bool
-	IsAVCKnown           bool
-	IsAttachedPicture    bool
-	ColorRange           string
-	ColorSpace           string
-	ColorTransfer        string
-	ColorPrimaries       string
-	VideoRange           string
-	VideoRangeKnown      bool
-	DolbyVision          *DolbyVisionMetadata
-	IsDefault            bool
-	IsForced             bool
-	IsHearingImpaired    bool
-	IsExternal           bool
-	IsTextSubtitleStream bool
-	AudioTiming          *AudioTiming
+	SubtitleTag string
+	// SubtitleSourceStreamIndex identifies the selected demux stream inside an
+	// external bitmap sidecar. Index remains the public catalog stream identity.
+	SubtitleSourceStreamIndex int `json:",omitempty"`
+	Width                     int
+	Height                    int
+	Channels                  int
+	SampleRate                int
+	Bitrate                   int64
+	Profile                   string
+	Level                     int
+	BitDepth                  int
+	CodecTag                  string
+	CodecTagString            string
+	PixelFormat               string
+	TimeBase                  string
+	AverageFrameRate          string
+	RealFrameRate             string
+	ChannelLayout             string
+	RefFrames                 int
+	FieldOrder                string
+	IsInterlaced              bool
+	InterlaceKnown            bool
+	IsAVC                     bool
+	IsAVCKnown                bool
+	IsAttachedPicture         bool
+	ColorRange                string
+	ColorSpace                string
+	ColorTransfer             string
+	ColorPrimaries            string
+	VideoRange                string
+	VideoRangeKnown           bool
+	DolbyVision               *DolbyVisionMetadata
+	IsDefault                 bool
+	IsForced                  bool
+	IsHearingImpaired         bool
+	IsExternal                bool
+	IsTextSubtitleStream      bool
+	AudioTiming               *AudioTiming
 }
 
 // DolbyVisionMetadata preserves the probed Dolby Vision profile and layer flags.

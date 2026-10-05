@@ -24,6 +24,12 @@ type SubtitlePlan struct {
 	OffsetTicks     int64  `json:"OffsetTicks,omitempty"`
 	FontStreams     string `json:"FontStreams,omitempty"`
 	ExternalTag     string `json:"ExternalTag,omitempty"`
+	// ExternalStreamIndex belongs to the authorized sidecar demuxer, while
+	// StreamIndex remains the stable public catalog identity.
+	ExternalStreamIndex int `json:"ExternalStreamIndex,omitempty"`
+	// Map the sidecar raster onto the selected source video before composition.
+	ExternalCanvasWidth  int `json:"ExternalCanvasWidth,omitempty"`
+	ExternalCanvasHeight int `json:"ExternalCanvasHeight,omitempty"`
 }
 
 type subtitleSourceContextKey struct{}
@@ -72,7 +78,17 @@ func ValidateSubtitlePlan(p Plan) error {
 		return invalid()
 	}
 	text := media.SubtitleExtractFormat(s.Codec) != ""
-	if s.ExternalTag != "" && !text {
+	externalBitmap := externalBitmapSubtitleFormat(s) != ""
+	if s.ExternalTag != "" && !text && !externalBitmap ||
+		externalBitmap && (s.ExternalStreamIndex < 0 || s.ExternalStreamIndex > 31 || s.Codec == "hdmv_pgs_subtitle" && s.ExternalStreamIndex != 0) ||
+		!externalBitmap && s.ExternalStreamIndex != 0 {
+		return invalid()
+	}
+	if externalBitmap {
+		if s.ExternalCanvasWidth < 1 || s.ExternalCanvasHeight < 1 || s.ExternalCanvasWidth > 16384 || s.ExternalCanvasHeight > 16384 || int64(s.ExternalCanvasWidth)*int64(s.ExternalCanvasHeight) > 32<<20 {
+			return invalid()
+		}
+	} else if s.ExternalCanvasWidth != 0 || s.ExternalCanvasHeight != 0 {
 		return invalid()
 	}
 	if _, err := subtitleFontIndexes(s.FontStreams); err != nil {
@@ -155,8 +171,11 @@ func BitmapSubtitleGraph(p Plan, videoFilters string) (string, string, error) {
 	} else {
 		processing = "null"
 	}
-	graph += processing + ",settb=AVTB[goby_canvas];[1:" + strconv.Itoa(p.Subtitle.StreamIndex) + "]"
+	graph += processing + ",settb=AVTB[goby_canvas];[1:" + strconv.Itoa(bitmapSubtitleInputStream(p)) + "]"
 	subtitleFilters := []string{"settb=AVTB"}
+	if canvas := externalBitmapCanvasFilter(p); canvas != "" {
+		subtitleFilters = append(subtitleFilters, canvas)
+	}
 	if p.Subtitle.OffsetTicks != 0 {
 		seconds := strconv.FormatFloat(float64(p.Subtitle.OffsetTicks)/float64(ticksPerSecond), 'f', 7, 64)
 		subtitleFilters = append(subtitleFilters, "setpts=PTS+("+seconds+")/TB")
@@ -181,7 +200,10 @@ func gpuSubtitleGraph(p Plan) (string, string, error) {
 		// Sparse bitmap events and sub2video EOF heartbeats are not video
 		// frames. Sample only the transparent subtitle plane on the primary
 		// video's exact clock before GPU composition; leave video untouched.
-		graph += ",split=2[goby_canvas][goby_blank];[goby_blank]settb=AVTB,format=rgba,colorchannelmixer=rr=0:gg=0:bb=0:aa=0," + subtitleColor + "[goby_subtitle_clock];[1:" + strconv.Itoa(p.Subtitle.StreamIndex) + "]settb=AVTB,"
+		graph += ",split=2[goby_canvas][goby_blank];[goby_blank]settb=AVTB,format=rgba,colorchannelmixer=rr=0:gg=0:bb=0:aa=0," + subtitleColor + "[goby_subtitle_clock];[1:" + strconv.Itoa(bitmapSubtitleInputStream(p)) + "]settb=AVTB,"
+		if canvas := externalBitmapCanvasFilter(p); canvas != "" {
+			graph += canvas + ","
+		}
 		if p.Subtitle.OffsetTicks != 0 {
 			seconds := strconv.FormatFloat(float64(p.Subtitle.OffsetTicks)/float64(ticksPerSecond), 'f', 7, 64)
 			graph += "setpts=PTS+(" + seconds + ")/TB,"
@@ -218,14 +240,35 @@ func hasBitmapSubtitleInput(p Plan) bool {
 	return p.Subtitle.Mode == "burn" && IsBitmapSubtitle(p.Subtitle.Codec)
 }
 
-// appendBitmapSubtitleInputArgs reopens the same authorized descriptor. It does
-// not accept another pathname, seek past an active bitmap, or decode video/audio.
+// appendBitmapSubtitleInputArgs reopens the authorized descriptor or the fixed
+// private sidecar assets. It never seeks past an active bitmap or decodes AV.
 func appendBitmapSubtitleInputArgs(args []string, p Plan, threads int) []string {
 	if !hasBitmapSubtitleInput(p) {
 		return args
 	}
 	if p.SourceMode == "stream" {
 		return appendLiveBitmapInputArgs(args, p, threads)
+	}
+	if format := externalBitmapSubtitleFormat(p.Subtitle); format != "" {
+		origin := p.StartTicks
+		if p.OutputMode == "progressive" {
+			// Sidecar events already use the movie-relative clock, independent
+			// of the original container's probed presentation origin.
+			origin = 0
+		}
+		formats, filename := "sup", "subtitle.sup"
+		if format == "vobsub" {
+			formats, filename = "vobsub,mpeg", "subtitle.idx"
+		}
+		args = append(args, "-threads", strconv.Itoa(threads), "-protocol_whitelist", "file", "-format_whitelist", formats,
+			"-f", format, "-seek_timestamp", "1", "-itsoffset", signedTickSeconds(-origin))
+		if format == "vobsub" {
+			args = append(args, "-sub_name", "subtitle.sub")
+		}
+		// An absolute input clock prevents FFmpeg from normalizing the first
+		// subtitle event to zero. No -ss is supplied: active cues retain their
+		// entire decoder history before a requested playback window.
+		return append(args, "-i", filename)
 	}
 	origin := p.StartTicks
 	if p.OutputMode == "progressive" {
@@ -266,11 +309,17 @@ func PrepareSubtitleAssets(ctx context.Context, executable, directory string, in
 	if err := ValidateSubtitlePlan(p); err != nil {
 		return err
 	}
-	if p.Subtitle.Mode != "burn" || IsBitmapSubtitle(p.Subtitle.Codec) {
+	if p.Subtitle.Mode != "burn" {
 		return nil
 	}
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
+	if IsBitmapSubtitle(p.Subtitle.Codec) {
+		if p.Subtitle.ExternalTag != "" {
+			return prepareExternalBitmapSubtitleAssets(ctx, directory, input, p)
+		}
+		return nil
+	}
 	var data []byte
 	var err error
 	if p.Subtitle.ExternalTag != "" {

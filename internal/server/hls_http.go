@@ -209,7 +209,7 @@ func (s *Server) resolveHLS(ctx context.Context, r *http.Request, values map[str
 		return nil, nil, library.MediaFile{}, err
 	}
 	if decision.Plan.Subtitle.ExternalTag != "" {
-		if _, err := s.readPlannedExternalSubtitle(ctx, principal, transcode.Scope{ItemID: source.Item.ID, SourceID: source.SourceID}, *decision.Plan); err != nil {
+		if err := s.validatePlannedExternalSubtitle(ctx, principal, transcode.Scope{ItemID: source.Item.ID, SourceID: source.SourceID}, *decision.Plan); err != nil {
 			_ = file.Close()
 			return nil, nil, library.MediaFile{}, err
 		}

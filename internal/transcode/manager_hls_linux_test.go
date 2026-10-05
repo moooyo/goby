@@ -72,7 +72,7 @@ func TestManagerHLSArtifactsRequireTheCompleteScope(t *testing.T) {
 			}
 		})
 	}
-	for _, name := range []string{"../init.mp4", "v0/init.mp4", `v0\init.mp4`, "v4.m3u8", "init.mp4.tmp", "segment-list.m3u8", "main.m3u8.publish.tmp", "stream.bin", "subtitle.ass", "font-0.ttf"} {
+	for _, name := range []string{"../init.mp4", "v0/init.mp4", `v0\init.mp4`, "v4.m3u8", "init.mp4.tmp", "segment-list.m3u8", "main.m3u8.publish.tmp", "stream.bin", "subtitle.ass", "font-0.ttf", "subtitle.sup", "subtitle.idx", "subtitle.sub"} {
 		if handle, err := m.TryOpen(spec.Scope, record.ID, name); handle != nil || !errors.Is(err, ErrOutputUnavailable) {
 			if handle != nil {
 				_ = handle.Close()
@@ -84,7 +84,7 @@ func TestManagerHLSArtifactsRequireTheCompleteScope(t *testing.T) {
 }
 
 func TestManagerHLSExtendedArtifactsCountTowardJobQuota(t *testing.T) {
-	for _, name := range []string{"v0.m3u8", "init.mp4", "v0-init.mp4", "segment-000000.m4s", "segment-000000.aac", "segment-000000.mp3", "segment-000000.vtt", "v0-segment-000000.m4s.tmp", "subtitle.ass", "font-15.ttf"} {
+	for _, name := range []string{"v0.m3u8", "init.mp4", "v0-init.mp4", "segment-000000.m4s", "segment-000000.aac", "segment-000000.mp3", "segment-000000.vtt", "v0-segment-000000.m4s.tmp", "subtitle.ass", "font-15.ttf", "subtitle.sup", "subtitle.idx", "subtitle.sub"} {
 		t.Run(name, func(t *testing.T) {
 			run := func(_ context.Context, _, dir string, _ *os.File, _ Plan, _ int, _ func(Progress)) (RunResult, error) {
 				if err := publishManagerTestOutput(dir, 188); err != nil {

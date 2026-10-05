@@ -102,7 +102,7 @@ func (s *Server) videoStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if decision.Conversion.Plan.Subtitle.ExternalTag != "" {
-		_, err := s.readPlannedExternalSubtitle(prepare, principal, transcode.Scope{ItemID: source.Item.ID, SourceID: source.SourceID}, *decision.Conversion.Plan)
+		err := s.validatePlannedExternalSubtitle(prepare, principal, transcode.Scope{ItemID: source.Item.ID, SourceID: source.SourceID}, *decision.Conversion.Plan)
 		if err != nil {
 			s.videoError(w, r, err)
 			return

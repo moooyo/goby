@@ -16,6 +16,8 @@ import (
 	"time"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/moooyo/goby/internal/media"
 )
 
 var (
@@ -81,6 +83,11 @@ type Options struct {
 	// SubtitleSource reauthorizes an external track immediately before burn-in.
 	// It returns bounded ASS bytes bound to Spec.Plan.Subtitle.ExternalTag.
 	SubtitleSource func(context.Context, Spec) ([]byte, error)
+	// BitmapSubtitleSource calls exactly one synchronous bounded consumer and
+	// must not retain that callback. The loader owns the borrowed descriptors,
+	// joins the consumer even on cancellation, and revalidates both the media
+	// source and every sidecar component after the consumer returns.
+	BitmapSubtitleSource func(context.Context, Spec, func(context.Context, media.ExternalSubtitleTimelineInput) error) error
 	// LivePublish synchronously copies one complete aligned bundle into the
 	// authorized time-shift store. Borrowed files expire when the call returns.
 	// LiveSubtitle consumes a bounded incremental subtitle stream; it must not
@@ -388,8 +395,11 @@ func (m *Manager) ensureInputs(ctx context.Context, spec Spec, inputs StreamInpu
 		if err := validateStreamInputs(inputs, spec.Plan); err != nil {
 			return Record{}, err
 		}
-		if spec.Plan.Subtitle.Mode == "burn" && spec.Plan.Subtitle.ExternalTag != "" && m.options.SubtitleSource == nil {
-			return Record{}, ErrInvalidOptions
+		if spec.Plan.Subtitle.Mode == "burn" && spec.Plan.Subtitle.ExternalTag != "" {
+			if IsBitmapSubtitle(spec.Plan.Subtitle.Codec) && m.options.BitmapSubtitleSource == nil ||
+				!IsBitmapSubtitle(spec.Plan.Subtitle.Codec) && m.options.SubtitleSource == nil {
+				return Record{}, ErrInvalidOptions
+			}
 		}
 		if input == nil {
 			return Record{}, ErrInvalidInput
@@ -1403,6 +1413,7 @@ func (m *Manager) runJob(j *managedJob) {
 		}
 	}
 	runContext := withSubtitleSource(j.ctx, j.record.Spec, m.options.SubtitleSource)
+	runContext = withBitmapSubtitleSource(runContext, j.record.Spec, m.options.BitmapSubtitleSource)
 	if j.sourceRead != nil {
 		runContext = j.sourceRead.Context(runContext)
 	}

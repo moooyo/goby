@@ -240,7 +240,7 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if conversion.Plan != nil && conversion.Plan.Subtitle.ExternalTag != "" {
-		if _, err := s.readPlannedExternalSubtitle(ctx, principal, transcode.Scope{ItemID: source.Item.ID, SourceID: source.SourceID}, *conversion.Plan); err != nil {
+		if err := s.validatePlannedExternalSubtitle(ctx, principal, transcode.Scope{ItemID: source.Item.ID, SourceID: source.SourceID}, *conversion.Plan); err != nil {
 			s.playbackError(w, r, err)
 			return
 		}

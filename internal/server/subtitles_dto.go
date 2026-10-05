@@ -29,6 +29,12 @@ func playbackMediaInfo(item library.Item) media.Info {
 			Language: source.Language, Title: source.Title, IsDefault: source.IsDefault, IsForced: source.IsForced,
 			IsExternal: true, IsTextSubtitleStream: true, IsHearingImpaired: source.IsHearingImpaired, SubtitleTag: source.Tag})
 	}
+	for _, source := range item.BitmapSubtitles {
+		info.Streams = append(info.Streams, media.Stream{Index: source.Index, Codec: source.Codec, CodecType: "subtitle",
+			Language: source.Language, Title: source.Title, IsDefault: source.IsDefault, IsForced: source.IsForced,
+			IsExternal: true, IsHearingImpaired: source.IsHearingImpaired, SubtitleTag: source.Tag,
+			SubtitleSourceStreamIndex: source.SourceStreamIndex})
+	}
 	return info
 }
 
@@ -147,7 +153,7 @@ func itemMediaStreamsDTO(item library.Item) []map[string]any {
 			"Language": source.Language, "Title": source.Title, "DisplayTitle": externalSubtitleDisplayTitle(metadata, language),
 			"IsDefault": source.IsDefault, "IsForced": source.IsForced, "IsHearingImpaired": source.IsHearingImpaired,
 			"IsExternal": true, "IsTextSubtitleStream": false, "SupportsExternalStream": false,
-			"GobySubtitleTimelineOnly": true,
+			"DeliveryMethod": "Encode",
 		}
 		if language != "" {
 			stream["DisplayLanguage"] = language

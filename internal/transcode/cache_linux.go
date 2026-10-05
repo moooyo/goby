@@ -853,7 +853,7 @@ func validCacheFileName(name string) bool {
 // They count toward storage limits and are removed through the same descriptor
 // checks as output files, but never become public artifacts or nested paths.
 func privateCacheAssetName(name string) bool {
-	if name == "subtitle.ass" {
+	if name == "subtitle.ass" || name == "subtitle.sup" || name == "subtitle.idx" || name == "subtitle.sub" {
 		return true
 	}
 	if !strings.HasPrefix(name, "font-") || !strings.HasSuffix(name, ".ttf") {

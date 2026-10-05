@@ -27,12 +27,11 @@ func (s *Server) readPlannedExternalSubtitle(ctx context.Context, principal iden
 	return content, nil
 }
 
-// readBurnSubtitleAsset resolves the session principal only after a queued job
-// starts. Both the primary media stamp and indexed subtitle hash are checked
-// again before immutable bytes enter the runner's private cache directory.
-func (s *Server) readBurnSubtitleAsset(ctx context.Context, spec transcode.Spec) ([]byte, error) {
+// Resolve the session principal only after a queued job starts. Text and bitmap
+// loaders share this scope check, then reauthorize their source-specific assets.
+func (s *Server) burnSubtitlePrincipal(spec transcode.Spec) (identity.Principal, error) {
 	if s.hls == nil || spec.Plan.Subtitle.Mode != "burn" || spec.Plan.Subtitle.ExternalTag == "" {
-		return nil, library.ErrNotFound
+		return identity.Principal{}, library.ErrNotFound
 	}
 	var principal identity.Principal
 	found := false
@@ -52,7 +51,15 @@ func (s *Server) readBurnSubtitleAsset(ctx context.Context, spec transcode.Spec)
 	}
 	s.hls.mu.Unlock()
 	if !found {
-		return nil, library.ErrNotFound
+		return identity.Principal{}, library.ErrNotFound
+	}
+	return principal, nil
+}
+
+func (s *Server) readBurnSubtitleAsset(ctx context.Context, spec transcode.Spec) ([]byte, error) {
+	principal, err := s.burnSubtitlePrincipal(spec)
+	if err != nil {
+		return nil, err
 	}
 	input, _, err := s.authorizeHLS(ctx, principal, spec.Scope, spec.SourceStamp, spec.Plan)
 	if err != nil {

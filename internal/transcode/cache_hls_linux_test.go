@@ -140,11 +140,14 @@ func TestCachePrivateSubtitleAssetsAreAccountedWithoutMakingOutputReady(t *testi
 			path := filepath.Join(cache.RootPath(), cacheTestJobA)
 			writeCacheTestFile(t, filepath.Join(path, "subtitle.ass"), "style")
 			writeCacheTestFile(t, filepath.Join(path, "font-0.ttf"), "font")
+			writeCacheTestFile(t, filepath.Join(path, "subtitle.sup"), "pgs")
+			writeCacheTestFile(t, filepath.Join(path, "subtitle.idx"), "index")
+			writeCacheTestFile(t, filepath.Join(path, "subtitle.sub"), "dvd")
 			plan := Plan{OutputMode: mode}
-			if bytes, ready, err := cache.ScanPlanJob(cacheTestJobA, plan); err != nil || ready || bytes != 9 {
+			if bytes, ready, err := cache.ScanPlanJob(cacheTestJobA, plan); err != nil || ready || bytes != 20 {
 				t.Fatalf("private assets established readiness or escaped accounting: %d, %v, %v", bytes, ready, err)
 			}
-			for _, name := range []string{"subtitle.ass", "font-0.ttf"} {
+			for _, name := range []string{"subtitle.ass", "font-0.ttf", "subtitle.sup", "subtitle.idx", "subtitle.sub"} {
 				if file, err := cache.OpenJobFile(cacheTestJobA, name); file != nil || !errors.Is(err, ErrCacheInvalid) {
 					if file != nil {
 						_ = file.Close()
@@ -166,7 +169,7 @@ func TestCachePrivateSubtitleAssetsAreAccountedWithoutMakingOutputReady(t *testi
 			}
 		})
 	}
-	for _, name := range []string{"font-16.ttf", "font-00.ttf", "font--1.ttf", "font-0.otf", "fonts/font-0.ttf", "subtitle.ass.tmp"} {
+	for _, name := range []string{"font-16.ttf", "font-00.ttf", "font--1.ttf", "font-0.otf", "fonts/font-0.ttf", "subtitle.ass.tmp", "subtitle.sup.tmp", "movie.idx", "subtitle.sub/child"} {
 		if validCacheFileName(name) {
 			t.Errorf("unbounded private asset name was accepted: %s", name)
 		}
