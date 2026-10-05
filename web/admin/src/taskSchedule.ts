@@ -7,7 +7,7 @@ export const durationUnits = { seconds: ticksPerSecond, minutes: 60n * ticksPerS
 export type DurationUnit = keyof typeof durationUnits;
 export interface DurationDraft { value: string; unit: DurationUnit }
 export interface TriggerDraft { key: string; kind: TaskTriggerKind; systemEvent: TaskSystemEvent; interval: DurationDraft; time: string; day: number; runtime: DurationDraft; limitRuntime: boolean }
-export const systemEvents: { value: TaskSystemEvent; label: string }[] = [{ value: 'ServerStarted', label: 'Server started' }, { value: 'LibraryChanged', label: 'Library changed' }, { value: 'ConfigurationChanged', label: 'Configuration changed' }, { value: 'IntroAnalysisRequested', label: 'Intro detection requested' }, { value: 'PreviewGenerationRequested', label: 'Seek preview generation requested' }];
+export const systemEvents: { value: TaskSystemEvent; label: string }[] = [{ value: 'ServerStarted', label: 'Server started' }, { value: 'LibraryChanged', label: 'Library changed' }, { value: 'ConfigurationChanged', label: 'Configuration changed' }, { value: 'IntroAnalysisRequested', label: 'Intro detection requested' }, { value: 'PreviewGenerationRequested', label: 'Seek preview generation requested' }, { value: 'BackgroundPreviewGenerationRequested', label: '请求生成背景短片' }, { value: 'AudioWaveformGenerationRequested', label: '请求生成音轨波形' }, { value: 'CreditsAnalysisRequested', label: '请求识别片尾' }, { value: 'SubtitleTimelineGenerationRequested', label: '请求生成字幕时间轴' }];
 export interface ScheduleDraft { timezone: string; triggers: TriggerDraft[] }
 export const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -99,7 +99,13 @@ export function describeTrigger(trigger: TaskTrigger): string {
     case 'daily': return `Daily at ${timeFromTicks(trigger.TimeOfDayTicks ?? '0')}`;
     case 'weekly': return `${weekdays[trigger.DayOfWeek ?? 0]} at ${timeFromTicks(trigger.TimeOfDayTicks ?? '0')}`;
     case 'startup': return 'At server startup';
-    case 'system_event': return `When ${systemEvents.find((event) => event.value === trigger.SystemEvent)?.label.toLowerCase() ?? 'a system event occurs'}`;
+    case 'system_event': {
+      if (trigger.SystemEvent === 'BackgroundPreviewGenerationRequested') return '请求生成背景短片时';
+      if (trigger.SystemEvent === 'AudioWaveformGenerationRequested') return '请求生成音轨波形时';
+      if (trigger.SystemEvent === 'CreditsAnalysisRequested') return '请求识别片尾时';
+      if (trigger.SystemEvent === 'SubtitleTimelineGenerationRequested') return '请求生成字幕时间轴时';
+      return `When ${systemEvents.find((event) => event.value === trigger.SystemEvent)?.label.toLowerCase() ?? 'a system event occurs'}`;
+    }
   }
 }
 

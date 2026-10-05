@@ -83,7 +83,7 @@ func currentMigrationVersion(t *testing.T) int64 {
 
 // The inventory includes schema_migrations and every current application table.
 // Historical fixture counts remain pinned to their original schema versions.
-const currentMigrationTableCount = 72
+const currentMigrationTableCount = 84
 
 // Original-column snapshots prove row preservation; these checks account for
 // every binding column added by the current migration without inferring approval.

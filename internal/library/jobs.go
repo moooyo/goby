@@ -283,12 +283,20 @@ func (s *Store) finishTask(task *scanTask, status, message string) error {
 			if _, err := tx.Exec("UPDATE libraries SET last_scan_at = clock_timestamp() WHERE id = $1", finished.LibraryID); err != nil {
 				return err
 			}
-			var detectIntros, generatePreviews bool
+			var detectIntros, generatePreviews, generateBackgrounds, generateWaveforms, detectCredits, generateSubtitleTimelines bool
 			if err := tx.QueryRow(`SELECT collection_type='tvshows'
 				AND COALESCE((options->>'EnableIntroDetection')::boolean,false),
 				collection_type IN ('movies','tvshows','mixed')
-				AND COALESCE((options->>'EnablePreviewGeneration')::boolean,false)
-				FROM libraries WHERE id=$1`, finished.LibraryID).Scan(&detectIntros, &generatePreviews); err != nil {
+				AND COALESCE((options->>'EnablePreviewGeneration')::boolean,false),
+				collection_type IN ('movies','tvshows','mixed')
+				AND COALESCE((options->>'EnableBackgroundPreviewGeneration')::boolean,false),
+				collection_type IN ('movies','tvshows','mixed')
+				AND COALESCE((options->>'EnableAudioWaveformGeneration')::boolean,false),
+				collection_type IN ('movies','tvshows','mixed')
+				AND COALESCE((options->>'EnableCreditsDetection')::boolean,false),
+				collection_type IN ('movies','tvshows','mixed')
+				AND COALESCE((options->>'EnableSubtitleTimelineGeneration')::boolean,false)
+				FROM libraries WHERE id=$1`, finished.LibraryID).Scan(&detectIntros, &generatePreviews, &generateBackgrounds, &generateWaveforms, &detectCredits, &generateSubtitleTimelines); err != nil {
 				return err
 			}
 			if detectIntros {
@@ -300,6 +308,26 @@ func (s *Store) finishTask(task *scanTask, status, message string) error {
 			}
 			if generatePreviews {
 				if err := systemevents.Record(tx.Exec, systemevents.PreviewGenerationRequested); err != nil {
+					return err
+				}
+			}
+			if generateBackgrounds {
+				if err := systemevents.Record(tx.Exec, systemevents.BackgroundPreviewGenerationRequested); err != nil {
+					return err
+				}
+			}
+			if generateWaveforms {
+				if err := systemevents.Record(tx.Exec, systemevents.AudioWaveformGenerationRequested); err != nil {
+					return err
+				}
+			}
+			if detectCredits {
+				if err := systemevents.Record(tx.Exec, systemevents.CreditsAnalysisRequested); err != nil {
+					return err
+				}
+			}
+			if generateSubtitleTimelines {
+				if err := systemevents.Record(tx.Exec, systemevents.SubtitleTimelineGenerationRequested); err != nil {
 					return err
 				}
 			}

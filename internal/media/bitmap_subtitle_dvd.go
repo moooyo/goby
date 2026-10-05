@@ -103,7 +103,25 @@ func walkDVDSubtitles(ctx context.Context, packets []bitmapSubtitlePacket, extra
 		}
 		size := int(binary.BigEndian.Uint16(pending[:2]))
 		if size == 0 {
-			return nil, fmt.Errorf("HD-DVD subpictures are unsupported")
+			// HD-DVD uses a zero marker followed by 32-bit packet size and
+			// control offset. A short zero-prefixed fragment is not evidence
+			// of a supported envelope and must remain a corrupt-input error.
+			if len(pending) < 10 {
+				continue
+			}
+			hdSize := uint64(binary.BigEndian.Uint32(pending[2:6]))
+			control := uint64(binary.BigEndian.Uint32(pending[6:10]))
+			if hdSize < 17 || hdSize > 65535 || hdSize < uint64(len(pending)) || control < 10 || control > hdSize-7 {
+				return nil, fmt.Errorf("invalid HD-DVD SPU packet envelope")
+			}
+			if uint64(len(pending)) < hdSize {
+				continue
+			}
+			next := uint64(binary.BigEndian.Uint32(pending[control+2 : control+6]))
+			if next < control || next > hdSize-7 {
+				return nil, fmt.Errorf("invalid HD-DVD control offset")
+			}
+			return nil, fmt.Errorf("%w: HD-DVD subpictures are unsupported", errBitmapSubtitleUnsupported)
 		}
 		if size < 10 || size < len(pending) {
 			return nil, fmt.Errorf("invalid DVD SPU packet length")
@@ -286,6 +304,17 @@ func decodeDVDSPU(ctx context.Context, data []byte, pts, duration int64, palette
 				}
 				state.offsets = true
 				cursor += 4
+			case 0x07:
+				// CHG_COLCON is a known variable-length command. Reject its
+				// truncated envelope as corrupt before reporting the feature.
+				if !need(6) {
+					return nil, nil, style, fmt.Errorf("truncated DVD color-change command")
+				}
+				length := int(binary.BigEndian.Uint16(data[cursor : cursor+2]))
+				if length < 6 || !need(length) {
+					return nil, nil, style, fmt.Errorf("invalid DVD color-change command length")
+				}
+				return nil, nil, style, fmt.Errorf("%w: unsupported DVD subpicture command 0x%02x", errBitmapSubtitleUnsupported, command)
 			case 0xff:
 				terminated = true
 			default:

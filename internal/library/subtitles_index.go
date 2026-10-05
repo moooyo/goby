@@ -22,10 +22,12 @@ type subtitleDirectoryIndex struct {
 	info     os.FileInfo
 	byStem   map[string][]subtitleCandidate
 	overflow map[string]bool
+	bitmap   *bitmapSubtitleDirectoryIndex
 }
 
 func newSubtitleDirectoryIndex(entries []os.DirEntry, collectionType string, info os.FileInfo) *subtitleDirectoryIndex {
-	index := &subtitleDirectoryIndex{info: info, byStem: make(map[string][]subtitleCandidate), overflow: make(map[string]bool)}
+	index := &subtitleDirectoryIndex{info: info, byStem: make(map[string][]subtitleCandidate), overflow: make(map[string]bool),
+		bitmap: newBitmapSubtitleDirectoryIndex(entries, collectionType)}
 	mediaStems := make(map[string]bool)
 	names := make([]string, 0, len(entries))
 	for _, entry := range entries {

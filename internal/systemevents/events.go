@@ -12,16 +12,20 @@ import (
 type Event string
 
 const (
-	ServerStarted              Event = "ServerStarted"
-	LibraryChanged             Event = "LibraryChanged"
-	ConfigurationChanged       Event = "ConfigurationChanged"
-	IntroAnalysisRequested     Event = "IntroAnalysisRequested"
-	PreviewGenerationRequested Event = "PreviewGenerationRequested"
+	ServerStarted                        Event = "ServerStarted"
+	LibraryChanged                       Event = "LibraryChanged"
+	ConfigurationChanged                 Event = "ConfigurationChanged"
+	IntroAnalysisRequested               Event = "IntroAnalysisRequested"
+	PreviewGenerationRequested           Event = "PreviewGenerationRequested"
+	BackgroundPreviewGenerationRequested Event = "BackgroundPreviewGenerationRequested"
+	AudioWaveformGenerationRequested     Event = "AudioWaveformGenerationRequested"
+	CreditsAnalysisRequested             Event = "CreditsAnalysisRequested"
+	SubtitleTimelineGenerationRequested  Event = "SubtitleTimelineGenerationRequested"
 )
 
 func Valid(event Event) bool {
 	return event == ServerStarted || event == LibraryChanged || event == ConfigurationChanged ||
-		event == IntroAnalysisRequested || event == PreviewGenerationRequested
+		event == IntroAnalysisRequested || event == PreviewGenerationRequested || event == BackgroundPreviewGenerationRequested || event == AudioWaveformGenerationRequested || event == CreditsAnalysisRequested || event == SubtitleTimelineGenerationRequested
 }
 
 type Exec func(string, ...any) (pgconn.CommandTag, error)

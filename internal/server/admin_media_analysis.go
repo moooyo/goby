@@ -81,6 +81,14 @@ func (s *Server) adminMediaAnalysis(w http.ResponseWriter, r *http.Request) {
 	if s.mediaAnalysis != nil {
 		runtime = s.mediaAnalysis.Status()
 	}
+	runtime.SubtitleTimelineAvailable = (subtitleTimelineTaskExecutor{s}).Available()
+	if !runtime.SubtitleTimelineAvailable {
+		reason := "not_configured"
+		if s.subtitleTimelines != nil && s.subtitleTimelines.reason != "" {
+			reason = s.subtitleTimelines.reason
+		}
+		runtime.SubtitleTimelineReasons = []string{reason}
+	}
 	if err := s.checkAdminMediaAnalysisActor(r.Context(), actor); err != nil {
 		s.mediaAnalysisError(w, r, err)
 		return
@@ -146,6 +154,18 @@ func (s *Server) adminMediaAnalysisItem(w http.ResponseWriter, r *http.Request) 
 func (s *Server) startAdminMediaAnalysisRun(w http.ResponseWriter, r *http.Request) {
 	input, ok := decodeAdminMediaAnalysisRun(w, r)
 	if !ok {
+		return
+	}
+	if input.TaskKey == library.TaskBackgroundPreviewGenerationKey {
+		s.startAdminBackgroundPreviewRun(w, r, input)
+		return
+	}
+	if input.TaskKey == library.TaskAudioWaveformGenerationKey {
+		s.startAdminAudioWaveformRun(w, r, input)
+		return
+	}
+	if input.TaskKey == library.TaskSubtitleTimelineGenerationKey {
+		s.startAdminSubtitleTimelineRun(w, r, input)
 		return
 	}
 	if s.taskStore == nil || s.taskManager == nil {

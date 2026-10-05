@@ -17,7 +17,7 @@ import (
 func readNavigationFilters(w http.ResponseWriter, r *http.Request, query *library.Query) bool {
 	names := map[string]string{}
 	for _, name := range []string{"ExcludeItemTypes", "Years", "MinPremiereDate", "MaxPremiereDate", "MinDateCreated", "MaxDateCreated", "MinCommunityRating",
-		"NameStartsWith", "NameStartsWithOrGreater", "NameLessThan", "HasOverview", "HasSubtitles", "IsHD",
+		"NameStartsWith", "NameStartsWithOrGreater", "NameLessThan", "HasOverview", "HasSubtitles", "IsHD", "Is4K", "ExtendedVideoTypes", "GobyAggregateVideoFilters",
 		"ArtistStartsWithOrGreater", "AlbumArtistStartsWithOrGreater", "IsMissing", "IsVirtualUnaired", "IsPlaceHolder", "IsUnaired", "IsStandaloneSpecial"} {
 		names[strings.ToLower(name)] = name
 	}
@@ -65,6 +65,20 @@ func readNavigationFilters(w http.ResponseWriter, r *http.Request, query *librar
 			query.Years = append(query.Years, year)
 		}
 	}
+	if raw := values["ExtendedVideoTypes"]; raw != "" {
+		parts := strings.Split(raw, ",")
+		if len(parts) > 5 {
+			return invalid()
+		}
+		for _, part := range parts {
+			switch strings.ToLower(strings.TrimSpace(part)) {
+			case "none", "hdr10", "hdr10plus", "hyperloggamma", "dolbyvision":
+			default:
+				return invalid()
+			}
+		}
+		query.ExtendedVideoTypes = parts
+	}
 	for _, field := range []struct {
 		name   string
 		target **time.Time
@@ -101,7 +115,8 @@ func readNavigationFilters(w http.ResponseWriter, r *http.Request, query *librar
 	for _, field := range []struct {
 		name   string
 		target **bool
-	}{{"HasOverview", &query.HasOverview}, {"HasSubtitles", &query.HasSubtitles}, {"IsHD", &query.IsHD},
+	}{{"HasOverview", &query.HasOverview}, {"HasSubtitles", &query.HasSubtitles}, {"IsHD", &query.IsHD}, {"Is4K", &query.Is4K},
+		{"GobyAggregateVideoFilters", &query.GobyAggregateVideoFilters},
 		{"IsMissing", &query.IsMissing}, {"IsVirtualUnaired", &query.IsVirtualUnaired}, {"IsPlaceHolder", &query.IsPlaceHolder}, {"IsUnaired", &query.IsUnaired},
 		{"IsStandaloneSpecial", &query.IsStandaloneSpecial}} {
 		if raw := values[field.name]; raw != "" {
@@ -119,6 +134,7 @@ func hasNavigationFilters(query library.Query) bool {
 	return len(query.ExcludeItemTypes) > 0 || len(query.Years) > 0 || query.MinPremiereDate != nil || query.MaxPremiereDate != nil ||
 		query.MinDateCreated != nil || query.MaxDateCreated != nil || query.MinCommunityRating != nil || query.NameStartsWith != "" ||
 		query.NameStartsWithOrGreater != "" || query.NameLessThan != "" || query.HasOverview != nil || query.HasSubtitles != nil || query.IsHD != nil ||
+		query.Is4K != nil || len(query.ExtendedVideoTypes) > 0 || query.GobyAggregateVideoFilters != nil ||
 		query.ArtistStartsWithOrGreater != "" || query.AlbumArtistStartsWithOrGreater != "" || query.IsMissing != nil || query.IsVirtualUnaired != nil ||
 		query.IsPlaceHolder != nil || query.IsUnaired != nil || query.IsStandaloneSpecial != nil
 }

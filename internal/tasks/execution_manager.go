@@ -87,7 +87,7 @@ func (m *Manager) reconcileExecution(ctx context.Context, run Run, child Child, 
 		return false, nil
 	}
 	group := ""
-	if isAnalysisTask(run.TaskKey) {
+	if isMediaAnalysisExecution(run.TaskKey) {
 		group = analysisConcurrencyGroup
 		for _, execution := range m.executions {
 			if execution.group == group {
@@ -146,7 +146,7 @@ func (m *Manager) reconcileExecution(ctx context.Context, run Run, child Child, 
 			execution.err = ErrUnavailable
 			return
 		}
-		if isAnalysisTask(run.TaskKey) {
+		if isMediaAnalysisExecution(run.TaskKey) {
 			if err := m.store.owner.WithOwnedTx(workCtx, func(tx library.OwnedTx) error { return work.Fence(tx) }); err != nil {
 				execution.err = err
 				return

@@ -40,11 +40,14 @@ func TestHTTPAdminMediaAnalysisConfigurationAuthenticationStrictCASAndSafeOvervi
 		t.Fatal("overview exposed an undocumented root field")
 	}
 	configuration, runtime := objectValue(t, initial, "Configuration"), objectValue(t, initial, "Runtime")
-	if len(configuration) != 4 || configuration["Revision"] != "1" || len(runtime) != 5 {
+	if len(configuration) != 4 || configuration["Revision"] != "1" || len(runtime) != 9 {
 		t.Fatal("overview omitted its closed configuration/runtime shape")
 	}
 	if _, ok := runtime["Reasons"].([]any); !ok {
 		t.Fatal("runtime reasons were not an array")
+	}
+	if _, ok := runtime["SubtitleTimelineReasons"].([]any); !ok || runtime["SubtitleTimelineAvailable"] != false {
+		t.Fatal("unconfigured timeline runtime omitted its capability or reasons")
 	}
 	for _, secret := range []string{"CacheRoot", "FFmpegPath", "FFprobePath", "FingerprintPath", "SessionId", "ActorId", "ExecutorToken"} {
 		if _, exists := runtime[secret]; exists {

@@ -228,9 +228,9 @@ func TestHTTPScheduledTasksRequireManagementTokensAndExposeOnlyTaskInfo(t *testi
 		target string
 		count  int
 	}{
-		{"/emby/ScheduledTasks", 7},
-		{"/ScheduledTasks", 7},
-		{"/EmBy/sChEdUlEdTaSkS?iShIdDeN=false&iSeNaBlEd=true", 7},
+		{"/emby/ScheduledTasks", 11},
+		{"/ScheduledTasks", 11},
+		{"/EmBy/sChEdUlEdTaSkS?iShIdDeN=false&iSeNaBlEd=true", 11},
 		{"/ScheduledTasks?IsHidden=true", 0},
 		{"/ScheduledTasks?IsEnabled=false", 0},
 		{"/ScheduledTasks?IsHidden=false&IsEnabled=false", 0},
@@ -246,12 +246,20 @@ func TestHTTPScheduledTasksRequireManagementTokensAndExposeOnlyTaskInfo(t *testi
 		if test.count != 0 {
 			assertPublishedTaskCollection(t, f, items)
 			expectedAnalysis := map[string]string{
-				"GobyAnalyzeIntroductions": "Analyze episode introductions",
-				"GobyGenerateSeekPreviews": "Generate seek previews",
+				"GobyAnalyzeIntroductions":       "Analyze episode introductions",
+				"GobyAnalyzeCredits":             "Analyze credits",
+				"GobyGenerateSeekPreviews":       "Generate seek previews",
+				"GobyGenerateBackgroundPreviews": "Generate background clips",
+				"GobyGenerateAudioWaveforms":     "Generate audio waveforms",
+				"GobyGenerateSubtitleTimelines":  "Generate subtitle timelines",
 			}
 			analysisEvents := map[string]systemevents.Event{
-				"GobyAnalyzeIntroductions": systemevents.IntroAnalysisRequested,
-				"GobyGenerateSeekPreviews": systemevents.PreviewGenerationRequested,
+				"GobyAnalyzeIntroductions":       systemevents.IntroAnalysisRequested,
+				"GobyAnalyzeCredits":             systemevents.CreditsAnalysisRequested,
+				"GobyGenerateSeekPreviews":       systemevents.PreviewGenerationRequested,
+				"GobyGenerateBackgroundPreviews": systemevents.BackgroundPreviewGenerationRequested,
+				"GobyGenerateAudioWaveforms":     systemevents.AudioWaveformGenerationRequested,
+				"GobyGenerateSubtitleTimelines":  systemevents.SubtitleTimelineGenerationRequested,
 			}
 			seenAnalysis := make(map[string]bool, len(expectedAnalysis))
 			for _, info := range items {

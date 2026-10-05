@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "repository": "https://github.com/intro-skipper/intro-skipper",
+  "commit": "6e0cb179007ac4c16cd9f358e9a617e791e9bf06",
+  "release": "12.0.4.0",
+  "license": "GPL-3.0-only",
+  "derivedPackage": "internal/creditsskipper",
+  "scope": "Default chapter, current black-frame, entropy, combination, and time-adjustment stages of CreditsPass",
+  "upstreamDefaultsPreserved": true,
+  "sourceFiles": [
+    {
+      "path": "IntroSkipper/Analyzers/ChapterAnalyzer.cs",
+      "sha256": "d267a694a45fef8d3d39b31bf36b6609c304ef2ad04402a70982a9848e4b6b6e"
+    },
+    {
+      "path": "IntroSkipper/Analyzers/BlackFrameThresholdHelper.cs",
+      "sha256": "04d40ea6f2f467f6b8bd1eed0eaf7dd74389be06181bca05eadf3a6750914d3c"
+    },
+    {
+      "path": "IntroSkipper/Analyzers/CreditsBlackFrameAnalyzer.cs",
+      "sha256": "38a10bd702d1d09fd739dd45fb54b9a16338fe8e9a6e2d7384f84f3a03b723e6"
+    },
+    {
+      "path": "IntroSkipper/Analyzers/Credits/CreditDetectionPolicy.cs",
+      "sha256": "0cdb6c2d4431070d7b191f0e4c4bf99de488203bc3f37ab21f58a8457334e34e"
+    },
+    {
+      "path": "IntroSkipper/Analyzers/Credits/CreditSceneMetrics.cs",
+      "sha256": "b1ece1094a101f0c283ec275e093131ce0e72719522291ce23b1e2aeaa1d05dc"
+    },
+    {
+      "path": "IntroSkipper/Analyzers/Credits/CreditSceneBuilder.cs",
+      "sha256": "d3e978e17fdd8f8bc61bd6bd10812c3e10c3571711e4e1557a7ff6c924225444"
+    },
+    {
+      "path": "IntroSkipper/Analyzers/Credits/CreditEntropyFallback.cs",
+      "sha256": "aebe58ea9e0f6f82194cca583f5691150b6a5f9e2d649e647e75ed3f96ca20e8"
+    },
+    {
+      "path": "IntroSkipper/Analyzers/Credits/CreditsBoundaryHelper.cs",
+      "sha256": "8015fa288597385e960a0d646f420b44deb0633c756c1e9dd6389936bce5e851"
+    },
+    {
+      "path": "IntroSkipper/Analyzers/Credits/CreditsCandidateCombiner.cs",
+      "sha256": "29bcb38a489f236990200b31d21810a65a3232069d8d31418786747146864c61"
+    },
+    {
+      "path": "IntroSkipper/Analyzers/Credits/CreditsPass.cs",
+      "sha256": "6fa1e2a7b0f94907e18742e0d9dde699a451c656f7bf93d50e7f18d5e5e7b157"
+    },
+    {
+      "path": "IntroSkipper/Analyzers/TimeAdjustmentHelper.cs",
+      "sha256": "1d1ca4129a0d47a4484b6fb68e1aae1433dd12b28542a3ce71bba661f2624807"
+    },
+    {
+      "path": "IntroSkipper/Configuration/PluginConfiguration.cs",
+      "sha256": "52c4e3a484ea9f4f35fec7d335c4a603512cf290856f433642461529eb4edc98"
+    },
+    {
+      "path": "IntroSkipper/Data/BlackFrame.cs",
+      "sha256": "b100686124804e8012dc7f8506f7eeda9d700cb16fb3e7e776677a3c0f100cee"
+    },
+    {
+      "path": "IntroSkipper/Data/BlackInterval.cs",
+      "sha256": "79fbb469df8ab4f69ab47696980136610976b4d8438bf194615cde8c06c3b522"
+    },
+    {
+      "path": "IntroSkipper/Data/KeyframeVisual.cs",
+      "sha256": "9d7d096684bd4c208e537b5ba69eb8276a6f984fd4ee8d590528e0f67b4719c3"
+    },
+    {
+      "path": "IntroSkipper/Data/Segment.cs",
+      "sha256": "fe66d52133b004b211acd48a203e834cbec85fe17408e41c116afde464bf6acc"
+    },
+    {
+      "path": "IntroSkipper/Data/TimeRange.cs",
+      "sha256": "1d904893ade28350b60da7a6f7e776e3808b4cada6d0722f1e4c0f622bbaad05"
+    },
+    {
+      "path": "IntroSkipper/FFmpeg/FFmpegService.cs",
+      "sha256": "6181ea9736e11ecf8f7e1972ed3535027c56e51f2d61eb7f04312ac96184b748"
+    },
+    {
+      "path": "IntroSkipper/FFmpeg/FFmpegOutputParser.cs",
+      "sha256": "e7d9eae5f898a92dccb971271ce680478e5d332e3121e56dbee1bf3b51f5957f"
+    },
+    {
+      "path": "IntroSkipper.Tests/TestBlackFrames.cs",
+      "sha256": "543b07eb34003c01aa1545f94bf3912bbbc561762d670995c8ec9d7905ddb7e3"
+    },
+    {
+      "path": "IntroSkipper.Tests/TestChapterAnalyzer.cs",
+      "sha256": "91dc7cbd56695f00fd86df62a9a80cd50eaba57f23a79b510aa5a29831b6bc66"
+    },
+    {
+      "path": "IntroSkipper.Tests/TestCreditsCandidateCombiner.cs",
+      "sha256": "d063a005822dc27221dbfcfbd4bf762084ea3aa7bd08f6cb91f8838ba46a9ec5"
+    },
+    {
+      "path": "IntroSkipper.Tests/TestTimeAdjustmentHelper.cs",
+      "sha256": "0e124b50e1fa97179aec4d94e99215ac653a1073789af11ab1605563b366a036"
+    }
+  ],
+  "gobyDifferences": [
+    "Injected authorized bounded probe interface",
+    "Probe errors fail the request rather than becoming no-match",
+    "Finite source-bounded input and stored evidence",
+    "Strict provenance and deterministic relationship validation"
+  ]
+}

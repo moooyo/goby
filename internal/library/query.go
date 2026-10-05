@@ -26,7 +26,7 @@ var itemColumns = `i.id, i.library_id, COALESCE(i.parent_id, ''), i.name,
 	i.sort_name, i.type, i.path, i.overview, i.is_folder, i.index_number,
 	i.parent_index_number, i.created_at, i.media,
 	` + itemMetadataColumn + `, ` + itemEntitiesColumn + `,
-	` + itemAlbumChildCountColumn + `, ` + itemAlbumColumn + `, ` + itemTVParentsColumn + `, ` + itemIntroColumn
+	` + itemAlbumChildCountColumn + `, ` + itemAlbumColumn + `, ` + itemTVParentsColumn + `, ` + itemIntroColumn + `, ` + itemCreditsColumn
 
 var itemAlbumAncestorsSQL = `WITH RECURSIVE album_ancestors AS (
 		SELECT parent.id, parent.parent_id, parent.name, parent.type, parent.is_folder,
@@ -259,7 +259,7 @@ func (s *Store) getItemForOnPool(ctx context.Context, subject Subject, id string
 		return item, nil
 	}
 	var analysisSourceRevision string
-	item, err := scanItem(tx.QueryRow(ctx, "SELECT "+access.itemColumnsSQL()+`, CASE WHEN i.type='Episode' AND NOT i.is_folder THEN `+introSourceRevisionSQL+` ELSE '' END FROM items i
+	item, err := scanItem(tx.QueryRow(ctx, "SELECT "+access.itemColumnsSQL()+`, CASE WHEN i.type IN ('Movie','Episode') AND NOT i.is_folder THEN `+introSourceRevisionSQL+` ELSE '' END FROM items i
 		WHERE i.id = $1 AND ($2::boolean OR i.library_id = ANY($3::text[]) OR i.library_id = `+policySQLString(collectionLibraryID)+`) AND `+access.directSQL("i"),
 		id, access.all, access.folders), &analysisSourceRevision)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -758,10 +758,10 @@ func escapeLikeLiteral(value string) string {
 
 func scanItem(row rowScanner, additional ...any) (Item, error) {
 	var item Item
-	var encoded, encodedMetadata, encodedEntities, encodedAlbum, encodedTVParents, encodedIntro []byte
+	var encoded, encodedMetadata, encodedEntities, encodedAlbum, encodedTVParents, encodedIntro, encodedCredits []byte
 	destinations := []any{&item.ID, &item.LibraryID, &item.ParentID, &item.Name, &item.SortName,
 		&item.Type, &item.Path, &item.Overview, &item.IsFolder, &item.IndexNumber,
-		&item.ParentIndexNumber, &item.CreatedAt, &encoded, &encodedMetadata, &encodedEntities, &item.ChildCount, &encodedAlbum, &encodedTVParents, &encodedIntro}
+		&item.ParentIndexNumber, &item.CreatedAt, &encoded, &encodedMetadata, &encodedEntities, &item.ChildCount, &encodedAlbum, &encodedTVParents, &encodedIntro, &encodedCredits}
 	err := row.Scan(append(destinations, additional...)...)
 	if err != nil {
 		return Item{}, err
@@ -795,6 +795,9 @@ func scanItem(row rowScanner, additional ...any) (Item, error) {
 		item.Series, item.Season = parents.Series, parents.Season
 	}
 	if err := projectItemIntro(&item, encodedIntro); err != nil {
+		return Item{}, err
+	}
+	if err := projectItemCredits(&item, encodedCredits); err != nil {
 		return Item{}, err
 	}
 	return item, nil

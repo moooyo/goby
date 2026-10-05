@@ -31,8 +31,16 @@ func CompatibilityKey(key string) string {
 		return "GobyMaintainProviderCache"
 	case library.TaskIntroAnalysisKey:
 		return "GobyAnalyzeIntroductions"
+	case library.TaskCreditsAnalysisKey:
+		return "GobyAnalyzeCredits"
 	case library.TaskPreviewGenerationKey:
 		return "GobyGenerateSeekPreviews"
+	case library.TaskBackgroundPreviewGenerationKey:
+		return "GobyGenerateBackgroundPreviews"
+	case library.TaskAudioWaveformGenerationKey:
+		return "GobyGenerateAudioWaveforms"
+	case library.TaskSubtitleTimelineGenerationKey:
+		return "GobyGenerateSubtitleTimelines"
 	default:
 		return ""
 	}

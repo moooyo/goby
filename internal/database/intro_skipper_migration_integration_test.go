@@ -40,7 +40,8 @@ func TestIntroSkipperMigrationPreservesHistoricalPublicationAuthority(t *testing
 				'detections',(SELECT jsonb_agg(jsonb_build_object('row',to_jsonb(d),'xmin',d.xmin::text)) FROM analysis_detections d),
 				'decisions',(SELECT jsonb_agg(jsonb_build_object('row',to_jsonb(d),'xmin',d.xmin::text)) FROM analysis_intro_decisions d),
 				'cache',(SELECT jsonb_agg(jsonb_build_object('row',to_jsonb(c),'xmin',c.xmin::text)) FROM analysis_feature_cache c),
-				'events',(SELECT jsonb_agg(to_jsonb(e) ORDER BY name) FROM task_system_events e))::text`
+				'events',(SELECT jsonb_agg(to_jsonb(e) ORDER BY name) FROM task_system_events e
+					WHERE name NOT IN ('BackgroundPreviewGenerationRequested','AudioWaveformGenerationRequested','CreditsAnalysisRequested','SubtitleTimelineGenerationRequested')))::text`
 			var before, after string
 			if err := pool.QueryRow(ctx, retainedQuery).Scan(&before); err != nil {
 				t.Fatal(err)
@@ -54,6 +55,32 @@ func TestIntroSkipperMigrationPreservesHistoricalPublicationAuthority(t *testing
 			}
 			if err := pool.QueryRow(ctx, retainedQuery).Scan(&after); err != nil || after != before {
 				t.Fatalf("migration changed existing settings, publication, evidence, cache, or scheduled rebuilds: %v", err)
+			}
+			// Schema57 appends one neutral event without scheduling a rebuild or
+			// mutating the five event rows included in the historical snapshot.
+			var backgroundEvent bool
+			if err := pool.QueryRow(ctx, `SELECT count(*)=CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=57)
+				THEN 1 ELSE 0 END FROM task_system_events WHERE name='BackgroundPreviewGenerationRequested'
+				AND sequence=0 AND lifecycle_key='' AND occurred_at IS NOT NULL`).Scan(&backgroundEvent); err != nil || !backgroundEvent {
+				t.Fatalf("migration did not append the exact neutral background event: %v", err)
+			}
+			var waveformEvent bool
+			if err := pool.QueryRow(ctx, `SELECT count(*)=CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=58)
+				THEN 1 ELSE 0 END FROM task_system_events WHERE name='AudioWaveformGenerationRequested'
+				AND sequence=0 AND lifecycle_key='' AND occurred_at IS NOT NULL`).Scan(&waveformEvent); err != nil || !waveformEvent {
+				t.Fatalf("migration did not append the exact neutral waveform event: %v", err)
+			}
+			var creditsEvent bool
+			if err := pool.QueryRow(ctx, `SELECT count(*)=CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=59)
+				THEN 1 ELSE 0 END FROM task_system_events WHERE name='CreditsAnalysisRequested'
+				AND sequence=0 AND lifecycle_key='' AND occurred_at IS NOT NULL`).Scan(&creditsEvent); err != nil || !creditsEvent {
+				t.Fatalf("migration did not append the exact neutral credits event: %v", err)
+			}
+			var subtitleTimelineEvent bool
+			if err := pool.QueryRow(ctx, `SELECT count(*)=CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=60)
+				THEN 1 ELSE 0 END FROM task_system_events WHERE name='SubtitleTimelineGenerationRequested'
+				AND sequence=0 AND lifecycle_key='' AND occurred_at IS NOT NULL`).Scan(&subtitleTimelineEvent); err != nil || !subtitleTimelineEvent {
+				t.Fatalf("migration did not append the exact neutral subtitle timeline event: %v", err)
 			}
 			var retained string
 			if err := pool.QueryRow(ctx, `SELECT jsonb_agg(to_jsonb(m) ORDER BY version)::text FROM schema_migrations m WHERE version<=53`).Scan(&retained); err != nil || retained != history {

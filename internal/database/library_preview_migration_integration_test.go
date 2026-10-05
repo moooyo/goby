@@ -46,8 +46,16 @@ func TestLibraryPreviewMigrationPreservesSchema51AndAddsDisabledPolicy(t *testin
 			var defaults bool
 			if err := pool.QueryRow(ctx, `SELECT count(*)=4 FROM libraries WHERE id IN
 				('preview-new-tv','preview-new-movie','preview-new-mixed','preview-new-music')
-				AND options='{"EnableLocalMetadata":true,"EnableLocalImages":true,"EnableEmbeddedArtwork":true,"EnableIntroDetection":false,"EnablePreviewGeneration":false}'::jsonb`).Scan(&defaults); err != nil || !defaults {
-				t.Fatalf("new library defaults did not keep both automation switches disabled: %v", err)
+				AND options='{"EnableLocalMetadata":true,"EnableLocalImages":true,"EnableEmbeddedArtwork":true,"EnableIntroDetection":false,"EnablePreviewGeneration":false}'::jsonb
+					|| CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=57)
+						THEN '{"EnableBackgroundPreviewGeneration":false}'::jsonb ELSE '{}'::jsonb END
+					|| CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=58)
+						THEN '{"EnableAudioWaveformGeneration":false}'::jsonb ELSE '{}'::jsonb END
+					|| CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=59)
+						THEN '{"EnableCreditsDetection":false}'::jsonb ELSE '{}'::jsonb END
+					|| CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=60)
+						THEN '{"EnableSubtitleTimelineGeneration":false}'::jsonb ELSE '{}'::jsonb END`).Scan(&defaults); err != nil || !defaults {
+				t.Fatalf("new library defaults did not keep the installed automation switches disabled: %v", err)
 			}
 			if _, err := pool.Exec(ctx, `UPDATE libraries SET options=options||'{"EnablePreviewGeneration":true}'::jsonb
 				WHERE id IN ('preview-new-tv','preview-new-movie','preview-new-mixed')`); err != nil {

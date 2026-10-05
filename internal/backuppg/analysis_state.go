@@ -2,6 +2,7 @@ package backuppg
 
 import (
 	"context"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/library"
@@ -22,7 +23,7 @@ func validateAnalysisState(ctx context.Context, tx pgx.Tx, version int64) error 
 		return ErrDatabase
 	}
 	var valid bool
-	if err := tx.QueryRow(ctx, analysisStateRelationsSQL).Scan(&valid); err != nil {
+	if err := tx.QueryRow(ctx, analysisStateRelationsForVersion(version)).Scan(&valid); err != nil {
 		return classifyResourceStateError(ctx, err)
 	}
 	if err := ctx.Err(); err != nil {
@@ -53,17 +54,32 @@ func validateAnalysisState(ctx context.Context, tx pgx.Tx, version int64) error 
 		return ErrSchema
 	}
 	for _, validate := range []func(context.Context, pgx.Tx) error{
-		validateAnalysisTaskState,
+		func(ctx context.Context, tx pgx.Tx) error { return validateAnalysisTaskState(ctx, tx, version) },
 		func(ctx context.Context, tx pgx.Tx) error { return validateAnalysisAdmissionState(ctx, tx, version) },
 		func(ctx context.Context, tx pgx.Tx) error { return validateAnalysisFeatureState(ctx, tx, version) },
 		validateAnalysisPreviewState,
 		func(ctx context.Context, tx pgx.Tx) error { return validateAnalysisDetectionState(ctx, tx, version) },
+		func(ctx context.Context, tx pgx.Tx) error { return validateAnalysisCreditsState(ctx, tx, version) },
 	} {
 		if err := validate(ctx, tx); err != nil {
 			return err
 		}
 	}
 	return ctx.Err()
+}
+
+// Schema 59 adds credits to the shared admission protocol without changing the
+// earlier SQL contract. Intro detection and BIF relations below retain their
+// own task identities, and credits result tables are inspected separately.
+func analysisStateRelationsForVersion(version int64) string {
+	if version < 59 {
+		return analysisStateRelationsSQL
+	}
+	statement := strings.ReplaceAll(analysisStateRelationsSQL,
+		"('media.intro_analysis','media.preview_generation')",
+		"('media.intro_analysis','media.preview_generation','media.credits_analysis')")
+	return strings.ReplaceAll(statement, "(run.task_key='media.intro_analysis')",
+		"(run.task_key IN ('media.intro_analysis','media.credits_analysis'))")
 }
 
 // Available intro results bind the exact admitted detector. An unavailable

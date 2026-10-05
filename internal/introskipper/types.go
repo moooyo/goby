@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
-// Package introskipper ports the pinned Intro Skipper Introduction raw-candidate
-// matcher. It accepts complete caller-admitted Chromaprint sequences and does
-// not perform I/O, optional boundary adjustment, or visual verification.
+// Package introskipper ports the pinned Intro Skipper Introduction and Credits
+// raw-candidate matchers. It accepts complete caller-admitted Chromaprint
+// sequences and does not perform I/O, optional boundary adjustment, or visual
+// verification.
 package introskipper
 
 import (

@@ -197,14 +197,22 @@ func decodeAdminMediaAnalysisRun(w http.ResponseWriter, r *http.Request) (adminM
 		return result, false
 	}
 	invalid := make(map[string]string)
-	kind := adminMediaAnalysisText(values["Kind"], "Kind", 16, false, invalid)
+	kind := adminMediaAnalysisText(values["Kind"], "Kind", 32, false, invalid)
 	switch kind {
 	case "intro":
 		result.TaskKey = library.TaskIntroAnalysisKey
+	case "credits":
+		result.TaskKey = library.TaskCreditsAnalysisKey
 	case "previews":
 		result.TaskKey = library.TaskPreviewGenerationKey
+	case "background":
+		result.TaskKey = library.TaskBackgroundPreviewGenerationKey
+	case "waveform":
+		result.TaskKey = library.TaskAudioWaveformGenerationKey
+	case "subtitle-timeline":
+		result.TaskKey = library.TaskSubtitleTimelineGenerationKey
 	default:
-		invalid["Kind"] = "Choose intro or previews."
+		invalid["Kind"] = "Choose intro, credits, previews, background, waveform or subtitle-timeline."
 	}
 	result.RequestID = adminMediaAnalysisText(values["RequestId"], "RequestId", tasks.MaxRequestIDBytes, false, invalid)
 	adminMediaAnalysisValue(values["LibraryIds"], "LibraryIds", &result.Selection.LibraryIDs, invalid)

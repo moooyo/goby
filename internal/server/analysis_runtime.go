@@ -18,24 +18,26 @@ import (
 // storage and all operations until their actual processes and I/O have returned.
 // Publication and reference pruning share one cancellable serialization gate.
 type mediaAnalysisRuntime struct {
-	server           *Server
-	configuration    config.MediaAnalysisConfig
-	extractor        media.AnalysisExtractor
-	availability     media.AnalysisAvailability
-	profiles         map[string]library.AnalysisExecutionProfile
-	cache            *analysiscache.Store
-	ctx              context.Context
-	cancel           context.CancelFunc
-	publish          chan struct{}
-	previewSlots     chan struct{}
-	mu               sync.Mutex
-	closing          bool
-	failures         map[string]string
-	activeOperations map[*mediaAnalysisOperation]struct{}
-	operations       sync.WaitGroup
-	closeOnce        sync.Once
-	done             chan struct{}
-	closeErr         error
+	server              *Server
+	configuration       config.MediaAnalysisConfig
+	extractor           media.AnalysisExtractor
+	availability        media.AnalysisAvailability
+	creditsVisual       media.CreditsVisualCapabilities
+	creditsAudioProfile string
+	profiles            map[string]library.AnalysisExecutionProfile
+	cache               *analysiscache.Store
+	ctx                 context.Context
+	cancel              context.CancelFunc
+	publish             chan struct{}
+	previewSlots        chan struct{}
+	mu                  sync.Mutex
+	closing             bool
+	failures            map[string]string
+	activeOperations    map[*mediaAnalysisOperation]struct{}
+	operations          sync.WaitGroup
+	closeOnce           sync.Once
+	done                chan struct{}
+	closeErr            error
 }
 
 type mediaAnalysisOperation struct {
@@ -52,7 +54,7 @@ func newMediaAnalysisRuntime(ctx context.Context, server *Server) (*mediaAnalysi
 	lifetime, cancel := context.WithCancel(context.Background())
 	r := &mediaAnalysisRuntime{server: server, configuration: server.cfg.MediaAnalysis,
 		ctx: lifetime, cancel: cancel, publish: make(chan struct{}, 1), previewSlots: make(chan struct{}, 4), done: make(chan struct{}),
-		profiles: make(map[string]library.AnalysisExecutionProfile, 2)}
+		profiles: make(map[string]library.AnalysisExecutionProfile, 3)}
 	r.setUnavailableProfiles("not_configured")
 	if !r.configuration.Enabled {
 		return r, nil
@@ -99,11 +101,15 @@ func newMediaAnalysisRuntime(ctx context.Context, server *Server) (*mediaAnalysi
 			FingerprintSHA256: availability.IntroFFmpegSHA256, DetectorVersion: introskipper.Version,
 			IntroSkipperOptions: introskipper.DefaultOptions(), IntroProfile: profile}
 	}
+	if err := r.initializeCreditsProfile(ctx); err != nil {
+		cancel()
+		return nil, errors.Join(err, cache.Close(context.Background()))
+	}
 	return r, nil
 }
 
 func (r *mediaAnalysisRuntime) setUnavailableProfiles(reason string) {
-	for _, key := range []string{library.TaskIntroAnalysisKey, library.TaskPreviewGenerationKey} {
+	for _, key := range []string{library.TaskIntroAnalysisKey, library.TaskPreviewGenerationKey, library.TaskCreditsAnalysisKey} {
 		r.profiles[key] = library.AnalysisExecutionProfile{Version: library.AnalysisExecutionProfileVersion, UnavailableReason: reason}
 	}
 }
@@ -159,7 +165,7 @@ func (r *mediaAnalysisRuntime) rememberFailure(key string, err error) {
 	if r.failures == nil {
 		r.failures = make(map[string]string)
 	}
-	for _, candidate := range []string{library.TaskIntroAnalysisKey, library.TaskPreviewGenerationKey} {
+	for _, candidate := range []string{library.TaskIntroAnalysisKey, library.TaskPreviewGenerationKey, library.TaskCreditsAnalysisKey} {
 		if key == "" || key == candidate {
 			r.failures[candidate] = reason
 		}
@@ -167,18 +173,33 @@ func (r *mediaAnalysisRuntime) rememberFailure(key string, err error) {
 }
 
 func (r *mediaAnalysisRuntime) Status() adminMediaAnalysisRuntimeStatus {
-	result := adminMediaAnalysisRuntimeStatus{Reasons: []string{}}
+	result := adminMediaAnalysisRuntimeStatus{Reasons: []string{}, CreditsReasons: []string{}}
 	if r == nil {
 		result.Reasons = append(result.Reasons, "not_configured")
 		return result
 	}
 	result.Configured = r.configuration.Enabled
 	result.IntroAvailable = r.Available(library.TaskIntroAnalysisKey)
+	result.CreditsAvailable = r.Available(library.TaskCreditsAnalysisKey)
 	result.PreviewAvailable = r.Available(library.TaskPreviewGenerationKey)
 	r.mu.Lock()
 	closing := r.closing
 	introFailure, previewFailure := r.failures[library.TaskIntroAnalysisKey], r.failures[library.TaskPreviewGenerationKey]
+	creditsFailure := r.failures[library.TaskCreditsAnalysisKey]
 	r.mu.Unlock()
+	if !result.CreditsAvailable {
+		reason := creditsFailure
+		if reason == "" {
+			reason = r.creditsVisual.Reason
+		}
+		if reason == "" {
+			reason = r.profiles[library.TaskCreditsAnalysisKey].UnavailableReason
+		}
+		if reason == "" {
+			reason = "catalog_unavailable"
+		}
+		result.CreditsReasons = append(result.CreditsReasons, reason)
+	}
 	if closing {
 		result.Reasons = append(result.Reasons, "closing")
 	} else if !r.configuration.Enabled {

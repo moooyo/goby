@@ -1,8 +1,8 @@
 # Intro Skipper derived code
 
 `internal/introskipper/core.go` is a mechanical Go translation of the
-Introduction raw-candidate matching logic in Intro Skipper 12.0.4.0, pinned to
-commit `6e0cb179007ac4c16cd9f358e9a617e791e9bf06`.
+Introduction and Credits raw-candidate matching logic in Intro Skipper 12.0.4.0,
+pinned to commit `6e0cb179007ac4c16cd9f358e9a617e791e9bf06`.
 
 Upstream repository: <https://github.com/intro-skipper/intro-skipper>
 
@@ -26,3 +26,8 @@ Changes in this port include Go types and storage contracts, context cancellatio
 bounded input and work admission, actual winning-pair provenance, and exported
 configuration validation. Core successful matching decisions preserve the pinned
 raw-candidate behavior. Optional boundary adjustment is not included.
+
+The credits entry point additionally ports the episode tail-window default,
+the relative-window maximum duration guard, and the per-source absolute-time
+offset from the same pinned sources. The chapter/black-frame analyzers and the
+full credits candidate combiner are not included.

@@ -10,7 +10,7 @@ import (
 )
 
 func normalizeNavigationFilters(query Query) (Query, error) {
-	if len(query.ExcludeItemTypes) > 32 || len(query.Years) > 256 {
+	if len(query.ExcludeItemTypes) > 32 || len(query.Years) > 256 || len(query.ExtendedVideoTypes) > 5 {
 		return Query{}, ErrInvalidInput
 	}
 	var err error
@@ -49,6 +49,12 @@ func normalizeNavigationFilters(query Query) (Query, error) {
 	}
 	if value := query.MinCommunityRating; value != nil && (math.IsNaN(*value) || math.IsInf(*value, 0) || *value < 0 || *value > 10) {
 		return Query{}, ErrInvalidInput
+	}
+	query.ExtendedVideoTypes, err = normalizeQueryValues(query.ExtendedVideoTypes, map[string]string{
+		"none": "None", "hdr10": "Hdr10", "hdr10plus": "Hdr10Plus", "hyperloggamma": "HyperLogGamma", "dolbyvision": "DolbyVision",
+	})
+	if err != nil {
+		return Query{}, err
 	}
 	return query, nil
 }
@@ -111,6 +117,9 @@ func addNavigationConditions(query Query, conditions []string, args []any) ([]st
 			"WHERE subtitle.item_id=i.id AND subtitle.root_id=i.root_id AND subtitle.active AND NOT i.is_folder AND i.media IS NOT NULL " +
 			"AND subtitle.source_revision=" + ownedSubtitleSourceRevisionSQL + " " +
 			"AND subtitle.stream_index>COALESCE((SELECT max(" + navigationNumberSQL("embedded", "Index") + ") FROM " + streams + " embedded),-1)) " +
+			"OR EXISTS(SELECT 1 FROM item_bitmap_subtitles subtitle JOIN library_roots subtitle_root ON subtitle_root.id=subtitle.root_id AND subtitle_root.library_id=i.library_id " +
+			"WHERE subtitle.item_id=i.id AND subtitle.root_id=i.root_id AND subtitle.active AND NOT i.is_folder AND i.media IS NOT NULL " +
+			"AND subtitle.stream_index>COALESCE((SELECT max(" + navigationNumberSQL("embedded", "Index") + ") FROM " + streams + " embedded),-1)) " +
 			"OR EXISTS(SELECT 1 FROM " + streams + " stream WHERE stream->>'CodecType'='subtitle'))"
 		add(predicate, "=", "::boolean", *query.HasSubtitles)
 	}
@@ -120,5 +129,6 @@ func addNavigationConditions(query Query, conditions []string, args []any) ([]st
 		add("("+predicate+")", "=", "::boolean", *query.IsHD)
 	}
 	conditions, args = addExpectedEpisodeConditions(query, conditions, args)
+	conditions, args = addVideoNavigationConditions(query, conditions, args)
 	return conditions, args
 }

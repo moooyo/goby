@@ -113,14 +113,15 @@ func validOwnedSubtitleMetadata(language, title string) bool {
 	return true
 }
 
-// subtitleCatalogCapacity must be called while the item row is locked. Both
+// subtitleCatalogCapacity must be called while the item row is locked. All
 // namespaces retain inactive identities forever, preventing a stale stream URL
 // from selecting a new OCR result or a newly discovered sidecar.
 func subtitleCatalogCapacity(ctx context.Context, tx pgx.Tx, itemID string) (total, highest, active int, err error) {
 	err = tx.QueryRow(ctx, `SELECT count(*),COALESCE(max(stream_index),-1),count(*) FILTER(WHERE active)
 		FROM (SELECT s.stream_index,s.active FROM item_subtitles s WHERE s.item_id=$1
 		UNION ALL SELECT s.stream_index,s.active AND s.root_id=i.root_id AND s.source_revision=`+ownedSubtitleSourceRevisionSQL+`
-		FROM item_owned_subtitles s JOIN items i ON i.id=s.item_id WHERE s.item_id=$1) tracks`, itemID).
+		FROM item_owned_subtitles s JOIN items i ON i.id=s.item_id WHERE s.item_id=$1
+		UNION ALL SELECT s.stream_index,s.active FROM item_bitmap_subtitles s WHERE s.item_id=$1) tracks`, itemID).
 		Scan(&total, &highest, &active)
 	return
 }

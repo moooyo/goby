@@ -63,7 +63,7 @@ func (executor mediaAnalysisTaskExecutor) Execute(ctx context.Context, task task
 		return err
 	}
 	execution, err := r.executionProfile(executor.key)
-	if executor.key == library.TaskIntroAnalysisKey && execution.Available {
+	if (executor.key == library.TaskIntroAnalysisKey || executor.key == library.TaskCreditsAnalysisKey) && execution.Available {
 		execution.IntroSkipperOptions = work.Profile.IntroSkipper
 	}
 	if err != nil || !reflect.DeepEqual(execution, work.Execution) || work.TaskKey != task.TaskKey ||
@@ -75,11 +75,16 @@ func (executor mediaAnalysisTaskExecutor) Execute(ctx context.Context, task task
 		return err
 	}
 	if work.Reason != "" {
+		if executor.key == library.TaskCreditsAnalysisKey {
+			return r.publishCreditsAbstention(ctx, task, work, work.Reason)
+		}
 		return r.server.library.PublishAnalysisAbstention(ctx, work.ChildID, task.Fence, work.Reason)
 	}
 	switch executor.key {
 	case library.TaskIntroAnalysisKey:
 		return r.executeIntroAnalysis(ctx, task, work, progress)
+	case library.TaskCreditsAnalysisKey:
+		return r.executeCreditsAnalysis(ctx, task, work, progress)
 	case library.TaskPreviewGenerationKey:
 		return r.executePreviewAnalysis(ctx, task, work, progress)
 	default:

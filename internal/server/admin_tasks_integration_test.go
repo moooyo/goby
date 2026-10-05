@@ -30,13 +30,17 @@ func adminTaskHTTPFixtureForKey(t *testing.T, key string) (*serverFixture, *http
 	expectStatus(t, response, http.StatusOK)
 	page := jsonObject(t, response)
 	items, ok := page["Items"].([]any)
-	if !ok || len(items) != 7 || page["TotalRecordCount"] != float64(7) {
-		t.Fatal("task startup did not register the seven task executors")
+	if !ok || len(items) != 11 || page["TotalRecordCount"] != float64(11) {
+		t.Fatal("task startup did not register the eleven task executors")
 	}
-	expected := map[string]string{tasks.LibraryScanKey: "Scan media library", tasks.LibraryRefreshMediaKey: "Refresh media details", tasks.MetadataRefreshKey: "Refresh online metadata", tasks.SubtitleDownloadKey: "Download missing subtitles", tasks.CacheMaintainKey: "Maintain provider cache", library.TaskIntroAnalysisKey: "Analyze episode introductions", library.TaskPreviewGenerationKey: "Generate seek previews"}
+	expected := map[string]string{tasks.LibraryScanKey: "Scan media library", tasks.LibraryRefreshMediaKey: "Refresh media details", tasks.MetadataRefreshKey: "Refresh online metadata", tasks.SubtitleDownloadKey: "Download missing subtitles", tasks.CacheMaintainKey: "Maintain provider cache", library.TaskIntroAnalysisKey: "Analyze episode introductions", library.TaskCreditsAnalysisKey: "Analyze credits", library.TaskPreviewGenerationKey: "Generate seek previews", library.TaskBackgroundPreviewGenerationKey: "Generate background clips", library.TaskAudioWaveformGenerationKey: "Generate audio waveforms", library.TaskSubtitleTimelineGenerationKey: "Generate subtitle timelines"}
 	analysisEvents := map[string]systemevents.Event{
-		library.TaskIntroAnalysisKey:     systemevents.IntroAnalysisRequested,
-		library.TaskPreviewGenerationKey: systemevents.PreviewGenerationRequested,
+		library.TaskIntroAnalysisKey:               systemevents.IntroAnalysisRequested,
+		library.TaskCreditsAnalysisKey:             systemevents.CreditsAnalysisRequested,
+		library.TaskPreviewGenerationKey:           systemevents.PreviewGenerationRequested,
+		library.TaskBackgroundPreviewGenerationKey: systemevents.BackgroundPreviewGenerationRequested,
+		library.TaskAudioWaveformGenerationKey:     systemevents.AudioWaveformGenerationRequested,
+		library.TaskSubtitleTimelineGenerationKey:  systemevents.SubtitleTimelineGenerationRequested,
 	}
 	definitions := make(map[string]map[string]any)
 	identities := make(map[string]bool)

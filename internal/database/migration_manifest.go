@@ -79,6 +79,12 @@ var publishedMigrations = [...]publishedMigration{
 	{53, "0053_analysis_refinement_cache.sql", "32b9855ed30f64989f914badb2a422a32f6c048a84b2bc53954e6600cf9f2f61"},
 	{54, "0054_intro_skipper_options.sql", "6a522d73fbacbbe6949519e7f2fd73e50f7f95740659b1d5016a29e4b44aa27d"},
 	{55, "0055_playback_demand_revision.sql", "8e2f2b3663e4af9b9c45fbfad7df7177630692a2c49d3f8983b2519b8a1e7809"},
+	{56, "0056_credits_markers.sql", "bd28da2a4b24d12ed88816d5255dd7d4f134859260e28ca43695167f3d2a0d2a"},
+	{57, "0057_background_previews.sql", "112eab5cd47fe8304bc57d3a6e9f377b0ea4a353911ef9dac642bee81b1fd88d"},
+	{58, "0058_audio_waveforms.sql", "0a01ada175c880c217083ed104e6cedeca32169594a5cad016c3ca2b97885e9a"},
+	{59, "0059_credits_analysis.sql", "41a31239de50aa859f95654750c3b1ee3ad402af1a12999e3e925ea77e59d9e7"},
+	{60, "0060_subtitle_timelines.sql", "e8c704760274d884a37991275073bd639550bd785e80130a42646e0e6dde2251"},
+	{61, "0061_external_bitmap_subtitles.sql", "e2e9821726b7cded5f147c5b5ff0c04ce84185ab40b903fb34dbeba1e961e0d3"},
 }
 
 func validatePublishedMigrations(available []migration) error {

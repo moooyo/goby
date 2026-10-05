@@ -6,9 +6,9 @@ import (
 	"time"
 )
 
-// At most two analysis definitions have 32 startup rules each, plus one
+// At most five media definitions have 32 startup rules each, plus one
 // interval and one event conflict per definition in a bounded dispatch pass.
-const MaxAnalysisDeferrals = 2*MaxTriggers + 4
+const MaxAnalysisDeferrals = 5*MaxTriggers + 10
 
 type AnalysisDeferral struct {
 	TaskID    string
@@ -64,11 +64,11 @@ func splitAnalysisDeferrals(err error) ([]AnalysisDeferral, error) {
 // Retry only the previously deferred startup rules. Already consumed startup
 // occurrences and unrelated schedule timestamps are not rewritten each tick.
 func (s *Store) retryAnalysisStartups(ctx context.Context, startupAt time.Time, pending []AnalysisDeferral) error {
-	if len(pending) > 2*MaxTriggers {
+	if len(pending) > len(analysisTaskKeys())*MaxTriggers {
 		return ErrInconsistent
 	}
 	deferred := []AnalysisDeferral{}
-	blockedTasks := make(map[string]bool, 2)
+	blockedTasks := make(map[string]bool, len(analysisTaskKeys()))
 	for _, entry := range pending {
 		if entry.Source != "startup" || !isAnalysisTask(entry.TaskKey) {
 			return ErrInconsistent

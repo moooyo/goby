@@ -66,11 +66,15 @@ type Item struct {
 	CreatedAt                                                     time.Time
 	Media                                                         *media.Info
 	Intro                                                         *IntroInterval
-	AnalysisSourceRevision                                        string `json:"-"`
+	Credits                                                       *CreditsPoint
+	DetectedCredits                                               []CreditsInterval `json:"-"`
+	AnalysisSourceRevision                                        string            `json:"-"`
 	Metadata                                                      *metadata.Metadata
 	Entities                                                      ItemEntities
 	UserData                                                      *UserData
 	Subtitles                                                     []Subtitle
+	BitmapSubtitles                                               []BitmapSubtitle `json:"-"`
+	bitmapSubtitleFacts                                           []storedBitmapSubtitle
 	CanPlay                                                       bool
 	PlaylistItemID                                                string
 	Collection                                                    *CollectionInfo
@@ -119,6 +123,9 @@ type Query struct {
 	NameStartsWith, NameStartsWithOrGreater, NameLessThan     string
 	ArtistStartsWithOrGreater, AlbumArtistStartsWithOrGreater string
 	HasOverview, HasSubtitles, IsHD                           *bool
+	Is4K                                                      *bool
+	ExtendedVideoTypes                                        []string
+	GobyAggregateVideoFilters                                 *bool
 }
 
 type ItemResult struct {

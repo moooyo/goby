@@ -41,8 +41,20 @@ func nativeLibraryCreationOptions(update *library.LibraryOptionsUpdate) library.
 		if update.EnableIntroDetection != nil {
 			options.EnableIntroDetection = *update.EnableIntroDetection
 		}
+		if update.EnableCreditsDetection != nil {
+			options.EnableCreditsDetection = *update.EnableCreditsDetection
+		}
 		if update.EnablePreviewGeneration != nil {
 			options.EnablePreviewGeneration = *update.EnablePreviewGeneration
+		}
+		if update.EnableBackgroundPreviewGeneration != nil {
+			options.EnableBackgroundPreviewGeneration = *update.EnableBackgroundPreviewGeneration
+		}
+		if update.EnableAudioWaveformGeneration != nil {
+			options.EnableAudioWaveformGeneration = *update.EnableAudioWaveformGeneration
+		}
+		if update.EnableSubtitleTimelineGeneration != nil {
+			options.EnableSubtitleTimelineGeneration = *update.EnableSubtitleTimelineGeneration
 		}
 	}
 	return options

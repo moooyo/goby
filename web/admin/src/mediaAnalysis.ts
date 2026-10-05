@@ -23,7 +23,7 @@ export interface AnalysisCache {
 }
 export interface AnalysisOverview {
   Configuration: AnalysisConfiguration;
-  Runtime: { Configured: boolean; IntroAvailable: boolean; PreviewAvailable: boolean; Reasons: string[]; Cache: AnalysisCache | null };
+  Runtime: { Configured: boolean; IntroAvailable: boolean; PreviewAvailable: boolean; CreditsAvailable?: boolean; CreditsReasons?: string[]; SubtitleTimelineAvailable?: boolean; SubtitleTimelineReasons?: string[]; Reasons: string[]; Cache: AnalysisCache | null };
 }
 export interface AnalysisInterval { StartTicks: number; EndTicks: number }
 export interface AnalysisSupport { EpisodeKey: string; SourceKey: string; ContentIdentity: string; Interval: AnalysisInterval }
@@ -48,7 +48,7 @@ export interface AnalysisItem {
   Previews: { Width: number; Height: number; Size: number; FrameCount: number; Status: string; FailureCode: string; UpdatedAt: string }[];
 }
 export interface AnalysisItems { Items: AnalysisItem[]; TotalRecordCount: number; StartIndex: number; Limit: number }
-export interface AnalysisRunInput { Kind: 'intro' | 'previews'; RequestId: string; LibraryIds: string[]; ItemIds: string[]; Force: boolean }
+export interface AnalysisRunInput { Kind: 'intro' | 'previews' | 'credits'; RequestId: string; LibraryIds: string[]; ItemIds: string[]; Force: boolean }
 export interface AnalysisRunReceipt { RunId: string; TaskId: string; Admitted: boolean }
 export interface AnalysisPrune { RemovedEntries: number; RemovedBytes: number; RemainingBytes: number; BusyEntries: number }
 export type AnalysisAction = 'accept' | 'reject' | 'reset';
@@ -100,6 +100,10 @@ export function validAnalysisOverview(value: unknown): value is AnalysisOverview
   if (!record(value) || !validAnalysisConfiguration(value.Configuration) || !record(value.Runtime)) return false;
   const runtime = value.Runtime;
   return ['Configured', 'IntroAvailable', 'PreviewAvailable'].every((key) => typeof runtime[key] === 'boolean') && strings(runtime.Reasons)
+    && (!('CreditsAvailable' in runtime) || typeof runtime.CreditsAvailable === 'boolean')
+    && (!('CreditsReasons' in runtime) || strings(runtime.CreditsReasons))
+    && (!('SubtitleTimelineAvailable' in runtime) || typeof runtime.SubtitleTimelineAvailable === 'boolean')
+    && (!('SubtitleTimelineReasons' in runtime) || strings(runtime.SubtitleTimelineReasons))
     && (runtime.Cache === null || record(runtime.Cache) && ['ReadyEntries', 'BuildingEntries', 'PendingPublications', 'Readers', 'ReadyBytes', 'ReservedBytes', 'ControlBytes', 'TotalBytes', 'MaxBytes'].every((key) => count((runtime.Cache as Record<string, unknown>)[key])));
 }
 function interval(value: unknown): value is AnalysisInterval { return record(value) && count(value.StartTicks) && count(value.EndTicks) && value.EndTicks > value.StartTicks; }

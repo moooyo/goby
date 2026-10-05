@@ -25,11 +25,11 @@ func (tx *resourceStateTestTx) QueryRow(context.Context, string, ...any) pgx.Row
 func TestValidateResourceStatePreservesHistoricalSchemaBoundaries(t *testing.T) {
 	for _, version := range []int64{23, 24, 25, 26, 27} {
 		t.Run(fmt.Sprintf("schema_%d", version), func(t *testing.T) {
-			tx := &resourceStateTestTx{rows: []themeStateTestRow{{valid: true}, {valid: true}}}
+			tx := &resourceStateTestTx{rows: []themeStateTestRow{{valid: true}, {valid: true}, {valid: true}}}
 			if err := validateResourceState(context.Background(), tx, version); err != nil {
 				t.Fatalf("validate historical semantic boundary: %v", err)
 			}
-			want := 0
+			want := 1 // Reserved future task key validation uses schema 19 tables.
 			if version >= 26 {
 				want++
 			}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/identity"
@@ -35,6 +36,17 @@ const analysisSourceColumns = `i.id,i.library_id,i.root_id,COALESCE(s.id,''),COA
  THEN jsonb_build_array(i.library_id,s.id,p.index_number,i.index_number)::text ELSE '' END,
 	` + introSourceRevisionSQL + `,` + analysisHierarchyRevisionSQL + `,i.type,i.file_size,(i.media->>'DurationTicks')::bigint,
  COALESCE(manual.revision,0)::text,COALESCE(decision.revision,0)::text,COALESCE(preview.revision,0)::text`
+
+// The existing immutable manual_revision column belongs to the marker kind
+// selected by task_key. This preserves the V6 wire and historical intro rows.
+func analysisSourceColumnsForTask(taskKey string) string {
+	if taskKey != TaskCreditsAnalysisKey {
+		return analysisSourceColumns
+	}
+	return strings.Replace(analysisSourceColumns,
+		`COALESCE(manual.revision,0)::text,COALESCE(decision.revision,0)::text,COALESCE(preview.revision,0)::text`,
+		`COALESCE((SELECT credits.revision FROM item_credits_state credits WHERE credits.item_id=i.id),0)::text,'0'::text,'0'::text`, 1)
+}
 
 func scanAnalysisSource(row rowScanner) (AnalysisSource, error) {
 	var value AnalysisSource
@@ -100,7 +112,7 @@ func readAnalysisWork(tx OwnedTx, childID string) (AnalysisWork, error) {
 	// Historical admissions remain valid archive facts but are never upgraded
 	// into worker authority by filling newly introduced fields with zero values.
 	if analysisStrictJSON(profileRaw, &work.Profile) != nil || analysisStrictJSON(executionRaw, &work.Execution) != nil ||
-		ValidateAnalysisExecutionProfile(work.Execution) != nil {
+		ValidateAnalysisExecutionForTask(work.TaskKey, work.Execution) != nil {
 		return AnalysisWork{}, ErrUnavailable
 	}
 	work.ConfigurationRevision = strconv.FormatInt(revision, 10)
@@ -163,7 +175,7 @@ func validateCurrentAnalysisWork(tx OwnedTx, work AnalysisWork) error {
 	if err != nil {
 		return err
 	}
-	rows, err = tx.Query(`SELECT `+analysisSourceColumns+` FROM items i `+analysisSourceJoins+` WHERE i.id=ANY($1::text[]) AND `+analysisPhysicalSQL, ids)
+	rows, err = tx.Query(`SELECT `+analysisSourceColumnsForTask(work.TaskKey)+` FROM items i `+analysisSourceJoins+` WHERE i.id=ANY($1::text[]) AND `+analysisPhysicalSQL, ids)
 	if err != nil {
 		return err
 	}
@@ -189,9 +201,12 @@ func validateCurrentAnalysisWork(tx OwnedTx, work AnalysisWork) error {
 		if source.Target && ((work.TaskKey == TaskIntroAnalysisKey && (source.ManualRevision != now.ManualRevision || source.DecisionRevision != now.DecisionRevision)) || (work.TaskKey == TaskPreviewGenerationKey && source.PreviewRevision != now.PreviewRevision)) {
 			return ErrAnalysisConflict
 		}
+		if source.Target && work.TaskKey == TaskCreditsAnalysisKey && source.ManualRevision != now.ManualRevision {
+			return ErrAnalysisConflict
+		}
 	}
 	population := []AnalysisSource{work.Sources[0]}
-	if work.TaskKey == TaskIntroAnalysisKey && work.Sources[0].EpisodeKey != "" {
+	if (work.TaskKey == TaskIntroAnalysisKey || work.TaskKey == TaskCreditsAnalysisKey) && work.Sources[0].EpisodeKey != "" {
 		rows, err := tx.Query(`SELECT `+analysisSourceColumns+` FROM items i `+analysisSourceJoins+` WHERE i.library_id=$1 AND i.parent_id=$2 AND `+analysisPhysicalSQL+` ORDER BY i.id LIMIT 100001`, work.LibraryID, work.Sources[0].SeasonID)
 		if err != nil {
 			return err
