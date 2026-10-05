@@ -46,7 +46,7 @@ func lockPlaybackMediaAuthorityBatch(ctx context.Context, tx pgx.Tx, principal i
 // Source facts are completely consumed and validated before issuing this
 // batch. Busy, malformed or unavailable sources cannot wait on a play lock.
 func readPlaybackMediaPlayBatch(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, playID string) (PlaySession, time.Time, error) {
-	play, observedAt, _, _, err := readPlaybackMediaPlayAndBindingBatch(ctx, tx, owner, playID, "", false)
+	play, observedAt, _, _, _, err := readPlaybackMediaPlayAndBindingBatch(ctx, tx, owner, playID, "", false)
 	return play, observedAt, err
 }
 
@@ -55,7 +55,7 @@ func readPlaybackMediaPlayBatch(ctx context.Context, tx pgx.Tx, owner PlaybackOw
 // from the primary play/batch error so callers can preserve fresh principal and
 // playback error precedence before inspecting the prepared root. Neither root
 // locks nor publication queries nor filesystem operations enter this batch.
-func readPlaybackMediaPlayAndBindingBatch(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, playID, itemID string, prepareBinding bool) (PlaySession, time.Time, mediaSourceRootHint, error, error) {
+func readPlaybackMediaPlayAndBindingBatch(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, playID, itemID string, prepareBinding bool) (PlaySession, time.Time, string, mediaSourceRootHint, error, error) {
 	batch := &pgx.Batch{}
 	arguments := []any{playID, owner.UserID, owner.SessionID, owner.DeviceID, owner.ApplicationClientID}
 	batch.Queue(`SELECT id FROM play_sessions
@@ -69,7 +69,7 @@ func readPlaybackMediaPlayAndBindingBatch(ctx context.Context, tx pgx.Tx, owner 
 	}
 	// Keep the clock query last: any play lock wait and optional binding
 	// observation must finish before this database-clock value is evaluated.
-	batch.Queue("SELECT "+playSessionColumns+`, clock_timestamp() FROM play_sessions
+	batch.Queue("SELECT "+playSessionColumns+`, clock_timestamp(), current_setting('transaction_isolation') FROM play_sessions
 		WHERE id=$1 AND user_id IS NOT DISTINCT FROM NULLIF($2,'') AND auth_session_id=$3 AND device_id=$4
 		AND application_client_id IS NOT DISTINCT FROM NULLIF($5,'')`, arguments...)
 	results := tx.SendBatch(ctx, batch)
@@ -78,9 +78,9 @@ func readPlaybackMediaPlayAndBindingBatch(ctx context.Context, tx pgx.Tx, owner 
 	if err := results.QueryRow().Scan(&id); err != nil {
 		_ = results.Close()
 		if errors.Is(err, pgx.ErrNoRows) {
-			return PlaySession{}, time.Time{}, mediaSourceRootHint{}, nil, ErrNotFound
+			return PlaySession{}, time.Time{}, "", mediaSourceRootHint{}, nil, ErrNotFound
 		}
-		return PlaySession{}, time.Time{}, mediaSourceRootHint{}, nil, err
+		return PlaySession{}, time.Time{}, "", mediaSourceRootHint{}, nil, err
 	}
 	var hint mediaSourceRootHint
 	var bindingErr error
@@ -94,20 +94,21 @@ func readPlaybackMediaPlayAndBindingBatch(ctx context.Context, tx pgx.Tx, owner 
 		}
 	}
 	var observedAt time.Time
+	var isolation string
 	var closeErr error
 	// Consume and close the entire batch before any Go authority or mapping
 	// validator runs. A SQL-fatal binding failure also fails the final play
 	// result or the drain and must never be treated as a valid authority read.
-	play, err := scanPlaySession(playbackMediaBatchClockRow{Row: results.QueryRow(), observedAt: &observedAt,
+	play, err := scanPlaySession(playbackMediaBatchClockRow{Row: results.QueryRow(), observedAt: &observedAt, isolation: &isolation,
 		results: results, closeErr: &closeErr})
 	if errors.Is(err, pgx.ErrNoRows) {
-		return PlaySession{}, time.Time{}, mediaSourceRootHint{}, bindingErr, ErrNotFound
+		return PlaySession{}, time.Time{}, "", mediaSourceRootHint{}, bindingErr, ErrNotFound
 	}
 	if err != nil {
-		return PlaySession{}, time.Time{}, mediaSourceRootHint{}, bindingErr, err
+		return PlaySession{}, time.Time{}, "", mediaSourceRootHint{}, bindingErr, err
 	}
 	if closeErr != nil {
-		return PlaySession{}, time.Time{}, mediaSourceRootHint{}, bindingErr, fmt.Errorf("%w: complete playback clock batch: %w", ErrUnavailable, closeErr)
+		return PlaySession{}, time.Time{}, "", mediaSourceRootHint{}, bindingErr, fmt.Errorf("%w: complete playback clock batch: %w", ErrUnavailable, closeErr)
 	}
 	if prepareBinding && bindingErr == nil {
 		if err := (rootBindingRow{root: hint.root, revision: hint.bindingRevision}).validateMapping(); err != nil {
@@ -117,7 +118,7 @@ func readPlaybackMediaPlayAndBindingBatch(ctx context.Context, tx pgx.Tx, owner 
 	if bindingErr != nil {
 		hint = mediaSourceRootHint{}
 	}
-	return play, observedAt, hint, bindingErr, nil
+	return play, observedAt, isolation, hint, bindingErr, nil
 }
 
 // scanPlaySession validates and decodes its values after Scan returns. Close
@@ -125,12 +126,13 @@ func readPlaybackMediaPlayAndBindingBatch(ctx context.Context, tx pgx.Tx, owner 
 type playbackMediaBatchClockRow struct {
 	pgx.Row
 	observedAt *time.Time
+	isolation  *string
 	results    pgx.BatchResults
 	closeErr   *error
 }
 
 func (row playbackMediaBatchClockRow) Scan(destinations ...any) error {
-	err := (playbackMediaClockRow{Row: row.Row, observedAt: row.observedAt}).Scan(destinations...)
+	err := (playbackMediaClockRow{Row: row.Row, observedAt: row.observedAt, isolation: row.isolation}).Scan(destinations...)
 	*row.closeErr = row.results.Close()
 	return err
 }

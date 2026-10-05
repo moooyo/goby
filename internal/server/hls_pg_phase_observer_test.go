@@ -30,18 +30,21 @@ const hlsPGObserverApplicationPIDLimit = 16
 
 type hlsPGObserverSpanContextKey struct{}
 
-type hlsPGCommitSpan struct {
-	ID                int64     `json:"span_id"`
-	PID               uint32    `json:"backend_pid"`
-	Group             string    `json:"request_group"`
-	Ordinal           int64     `json:"request_ordinal"`
-	Role              string    `json:"transaction_role"`
-	StartedAt         time.Time `json:"commit_started_at"`
-	EndedAt           time.Time `json:"commit_ended_at,omitempty"`
-	ValidSamples      int64     `json:"valid_samples"`
-	ConsistentSamples int64     `json:"time_consistent_client_samples"`
-	observer          *hlsPGPhaseObserver
-	requestStarted    time.Time
+type hlsPGTransactionEndSpan struct {
+	ID                  int64     `json:"span_id"`
+	PID                 uint32    `json:"backend_pid"`
+	Group               string    `json:"request_group"`
+	Ordinal             int64     `json:"request_ordinal"`
+	Role                string    `json:"transaction_role"`
+	EndCommand          string    `json:"end_command"`
+	AcknowledgedCommand string    `json:"acknowledged_command"`
+	StartedAt           time.Time `json:"transaction_end_started_at"`
+	EndedAt             time.Time `json:"transaction_end_ended_at,omitempty"`
+	HadError            bool      `json:"transaction_end_had_error"`
+	ValidSamples        int64     `json:"valid_samples"`
+	ConsistentSamples   int64     `json:"time_consistent_client_samples"`
+	observer            *hlsPGPhaseObserver
+	requestStarted      time.Time
 }
 
 type hlsPGObserverTransaction struct {
@@ -55,6 +58,7 @@ type hlsPGObserverPoint struct {
 	Group                string    `json:"request_group"`
 	Ordinal              int64     `json:"request_ordinal"`
 	Role                 string    `json:"transaction_role"`
+	EndCommand           string    `json:"client_end_command"`
 	ObserverStarted      time.Time `json:"observer_query_started_at"`
 	ObserverEnded        time.Time `json:"observer_query_ended_at"`
 	ServerObserved       time.Time `json:"server_observed_at"`
@@ -93,12 +97,13 @@ type hlsPGPhaseObserver struct {
 	username     string
 	clockMin     time.Duration
 	clockMax     time.Duration
-	active       map[uint32]*hlsPGCommitSpan
+	active       map[uint32]*hlsPGTransactionEndSpan
 	transactions map[uint32]hlsPGObserverTransaction
 	generations  map[uint32]time.Time
 	known        map[uint32]bool
 	counts       map[string]int64
 	roleCounts   map[string]map[string]int64
+	commandRoles map[string]map[string]map[string]int64
 	waits        map[string]int64
 	points       []hlsPGObserverPoint
 	metadata     map[string]any
@@ -190,10 +195,11 @@ func hlsStartPGPhaseObserver(t *testing.T, ctx context.Context, pool *pgxpool.Po
 	}
 	observer := &hlsPGPhaseObserver{connection: connection, ctx: ctx, trace: trace, stop: make(chan struct{}), done: make(chan struct{}),
 		database: configuration.Database, username: configuration.User, searchPath: searchPath,
-		active: make(map[uint32]*hlsPGCommitSpan), transactions: make(map[uint32]hlsPGObserverTransaction),
+		active: make(map[uint32]*hlsPGTransactionEndSpan), transactions: make(map[uint32]hlsPGObserverTransaction),
 		generations: make(map[uint32]time.Time), known: make(map[uint32]bool), counts: make(map[string]int64),
 		roleCounts: make(map[string]map[string]int64), waits: make(map[string]int64), metadata: make(map[string]any),
-		exportFile: path, dimensions: dimensions}
+		commandRoles: make(map[string]map[string]map[string]int64),
+		exportFile:   path, dimensions: dimensions}
 	t.Cleanup(func() { observer.finish(t) })
 	observer.counts["observer_connections_opened"] = 1
 	observer.counts["connection_open_elapsed_ns"] = time.Since(openedAt).Nanoseconds()
@@ -283,18 +289,22 @@ func (observer *hlsPGPhaseObserver) queryStart(ctx context.Context, connection *
 		}
 	}
 	observer.transactions[pid] = transaction
-	if category == "transaction_rollback" {
-		delete(observer.transactions, pid)
-	}
-	if category != "transaction_commit" {
+	command := ""
+	switch category {
+	case "transaction_commit":
+		command = "commit"
+	case "transaction_rollback":
+		command = "rollback"
+	default:
 		return ctx
 	}
-	span := &hlsPGCommitSpan{ID: observer.sequence.Add(1), PID: pid, Group: request.group, Ordinal: request.summary.Ordinal,
-		Role: transaction.role, StartedAt: time.Now(), observer: observer, requestStarted: request.started}
+	span := &hlsPGTransactionEndSpan{ID: observer.sequence.Add(1), PID: pid, Group: request.group, Ordinal: request.summary.Ordinal,
+		Role: transaction.role, EndCommand: command, StartedAt: time.Now(), observer: observer, requestStarted: request.started}
 	observer.active[pid] = span
-	observer.counts["commit_spans_started"]++
-	if int64(len(observer.active)) > observer.counts["maximum_active_commit_spans"] {
-		observer.counts["maximum_active_commit_spans"] = int64(len(observer.active))
+	observer.counts["transaction_end_spans_started"]++
+	observer.counts[command+"_spans_started"]++
+	if int64(len(observer.active)) > observer.counts["maximum_active_transaction_end_spans"] {
+		observer.counts["maximum_active_transaction_end_spans"] = int64(len(observer.active))
 	}
 	return context.WithValue(ctx, hlsPGObserverSpanContextKey{}, span)
 }
@@ -323,8 +333,26 @@ func (observer *hlsPGPhaseObserver) batchStart(ctx context.Context, connection *
 	observer.transactions[pid] = hlsPGObserverTransaction{requestStarted: request.started, role: "fresh_authority_transaction"}
 }
 
-func hlsPGObserverQueryEnd(ctx context.Context, failed bool) {
-	span, _ := ctx.Value(hlsPGObserverSpanContextKey{}).(*hlsPGCommitSpan)
+// A nil protocol error alone does not make COMMIT successful: an aborted
+// transaction can acknowledge a requested COMMIT with a ROLLBACK command tag.
+// This predicate also serves phase timing when the PG sampler is disabled.
+func hlsPGObserverEndFailed(ctx context.Context, data pgx.TraceQueryEndData) bool {
+	if data.Err != nil {
+		return true
+	}
+	if span, _ := ctx.Value(hlsPhaseTimingContextKey{}).(*hlsPhaseTimingSpan); span != nil {
+		switch span.category {
+		case "transaction_commit":
+			return data.CommandTag.String() != "COMMIT"
+		case "transaction_rollback":
+			return data.CommandTag.String() != "ROLLBACK"
+		}
+	}
+	return false
+}
+
+func hlsPGObserverQueryEnd(ctx context.Context, data pgx.TraceQueryEndData) {
+	span, _ := ctx.Value(hlsPGObserverSpanContextKey{}).(*hlsPGTransactionEndSpan)
 	if span == nil {
 		return
 	}
@@ -335,22 +363,62 @@ func hlsPGObserverQueryEnd(ctx context.Context, failed bool) {
 		return
 	}
 	span.EndedAt = time.Now()
+	switch data.CommandTag.String() {
+	case "COMMIT":
+		span.AcknowledgedCommand = "commit"
+	case "ROLLBACK":
+		span.AcknowledgedCommand = "rollback"
+	default:
+		span.AcknowledgedCommand = "other_or_unknown"
+	}
+	span.HadError = data.Err != nil || span.AcknowledgedCommand != span.EndCommand
 	if observer.active[span.PID] == span {
 		delete(observer.active, span.PID)
 		delete(observer.transactions, span.PID)
 	}
-	observer.counts["commit_spans_ended"]++
-	if failed {
-		observer.counts["commit_span_errors"]++
+	observer.counts["transaction_end_spans_ended"]++
+	observer.counts[span.EndCommand+"_spans_ended"]++
+	observer.counts["acknowledged_"+span.AcknowledgedCommand+"_end_spans"]++
+	if span.HadError {
+		observer.counts["transaction_end_span_errors"]++
+		observer.counts[span.EndCommand+"_span_errors"]++
+	} else {
+		observer.counts["transaction_end_spans_successful"]++
+		observer.counts[span.EndCommand+"_spans_successful"]++
 	}
 	role := observer.roleCounts[span.Role]
 	if role == nil {
 		role = make(map[string]int64)
 		observer.roleCounts[span.Role] = role
 	}
+	hlsPGObserverRecordEnd(role, span)
+	commandRoles := observer.commandRoles[span.EndCommand]
+	if commandRoles == nil {
+		commandRoles = make(map[string]map[string]int64)
+		observer.commandRoles[span.EndCommand] = commandRoles
+	}
+	commandRole := commandRoles[span.Role]
+	if commandRole == nil {
+		commandRole = make(map[string]int64)
+		commandRoles[span.Role] = commandRole
+	}
+	hlsPGObserverRecordEnd(commandRole, span)
+}
+
+func hlsPGObserverRecordEnd(role map[string]int64, span *hlsPGTransactionEndSpan) {
 	elapsed := span.EndedAt.Sub(span.StartedAt).Nanoseconds()
 	role["count"]++
 	role["elapsed_ns"] += elapsed
+	if span.HadError {
+		role["error_count"]++
+		role["error_elapsed_ns"] += elapsed
+	} else {
+		role["successful_count"]++
+		role["successful_elapsed_ns"] += elapsed
+		if elapsed > role["successful_maximum_ns"] {
+			role["successful_maximum_ns"] = elapsed
+		}
+	}
 	if elapsed > role["maximum_ns"] {
 		role["maximum_ns"] = elapsed
 	}
@@ -390,13 +458,13 @@ func (observer *hlsPGPhaseObserver) run() {
 			}
 			previous = started
 			observer.counts["ticks"]++
-			spans := make(map[uint32]*hlsPGCommitSpan, len(observer.active))
+			spans := make(map[uint32]*hlsPGTransactionEndSpan, len(observer.active))
 			pids := make([]int32, 0, len(observer.active))
 			for pid, span := range observer.active {
 				spans[pid], pids = span, append(pids, int32(pid))
 			}
 			if len(pids) == 0 {
-				observer.counts["ticks_without_active_commit"]++
+				observer.counts["ticks_without_active_transaction_end"]++
 			}
 			observer.mu.Unlock()
 			if len(pids) > 0 {
@@ -412,11 +480,12 @@ func (observer *hlsPGPhaseObserver) run() {
 	}
 }
 
-func (observer *hlsPGPhaseObserver) sample(started time.Time, spans map[uint32]*hlsPGCommitSpan, pids []int32) {
+func (observer *hlsPGPhaseObserver) sample(started time.Time, spans map[uint32]*hlsPGTransactionEndSpan, pids []int32) {
 	queryCtx, cancel := context.WithTimeout(observer.ctx, hlsPGObserverQueryDeadline)
 	defer cancel()
 	rows, err := observer.connection.Query(queryCtx, `SELECT pid,state,wait_event_type,wait_event,backend_start,query_start,clock_timestamp(),
-		CASE WHEN query IS NULL THEN 'not_visible' WHEN lower(btrim(query,E' ;\t\r\n'))='commit' THEN 'commit' ELSE 'other' END,
+		CASE WHEN query IS NULL THEN 'not_visible' WHEN lower(btrim(query,E' ;\t\r\n'))='commit' THEN 'commit'
+		WHEN lower(btrim(query,E' ;\t\r\n'))='rollback' THEN 'rollback' ELSE 'other' END,
 		CASE WHEN wait_event_type='Lock' THEN pg_blocking_pids(pid) ELSE ARRAY[]::integer[] END
 		FROM pg_catalog.pg_stat_activity WHERE pid=ANY($1::integer[]) AND datname=$2
 		AND usesysid=(SELECT oid FROM pg_catalog.pg_roles WHERE rolname=current_user) AND backend_type='client backend'`, pids, observer.database)
@@ -448,7 +517,7 @@ func (observer *hlsPGPhaseObserver) sample(started time.Time, spans map[uint32]*
 		if span == nil {
 			continue
 		}
-		point := hlsPGObserverPoint{SpanID: span.ID, PID: pid, Group: span.Group, Ordinal: span.Ordinal, Role: span.Role,
+		point := hlsPGObserverPoint{SpanID: span.ID, PID: pid, Group: span.Group, Ordinal: span.Ordinal, Role: span.Role, EndCommand: span.EndCommand,
 			ObserverStarted: started.UTC(), ServerObserved: serverObserved.UTC(), BackendStarted: backendStarted.UTC(),
 			State: hlsPGObserverSafeLabel(state), CommandClass: commandClass, BlockingPIDs: blockers}
 		if waitType.Valid {
@@ -469,14 +538,14 @@ func (observer *hlsPGPhaseObserver) sample(started time.Time, spans map[uint32]*
 		switch {
 		case known && !generation.Equal(backendStarted):
 			point.InvalidReason = "backend_generation_changed"
-		case commandClass != "commit":
-			point.InvalidReason = "backend_command_not_commit"
+		case commandClass != span.EndCommand:
+			point.InvalidReason = "backend_command_not_matching_transaction_end"
 		case observer.active[pid] != span:
 			point.InvalidReason = "span_ended_or_replaced_before_row_consumption"
 		case !queryStarted.Valid:
 			point.InvalidReason = "missing_query_start"
 		case queryStarted.Time.Add(-observer.clockMin).Before(span.StartedAt.Add(-time.Millisecond)):
-			point.InvalidReason = "query_start_before_commit_span"
+			point.InvalidReason = "query_start_before_transaction_end_span"
 		case queryStarted.Time.Add(-observer.clockMax).After(time.Now().Add(time.Millisecond)):
 			point.InvalidReason = "query_start_after_observation"
 		default:
@@ -488,12 +557,12 @@ func (observer *hlsPGPhaseObserver) sample(started time.Time, spans map[uint32]*
 				point.ValidQuerySpan = true
 				span.ValidSamples++
 				observer.counts["valid_query_span_rows"]++
-				bucket = "active_server_commit"
+				bucket = "active_server_transaction_end"
 			} else {
 				point.InvalidReason = "backend_not_active"
-				observer.counts["client_commit_span_backend_not_active_rows"]++
+				observer.counts["client_end_span_backend_not_active_rows"]++
 			}
-			wait := bucket + ":" + point.State + ":" + point.WaitType + ":" + point.WaitEvent
+			wait := bucket + ":" + span.EndCommand + ":" + point.State + ":" + point.WaitType + ":" + point.WaitEvent
 			if _, exists := observer.waits[wait]; !exists && len(observer.waits) >= 127 {
 				wait = "other_wait_bucket"
 			}
@@ -581,7 +650,7 @@ func (observer *hlsPGPhaseObserver) finish(t *testing.T) {
 		observer.trace.pgObserver.CompareAndSwap(observer, nil)
 		observer.mu.Lock()
 		observer.stopping = true
-		observer.counts["active_commit_spans_at_stop"] = int64(len(observer.active))
+		observer.counts["active_transaction_end_spans_at_stop"] = int64(len(observer.active))
 		observer.mu.Unlock()
 		// Initialization failure has no sampling goroutine to join.
 		if observer.metadata["initialization_failed"] != true {
@@ -619,18 +688,22 @@ func (observer *hlsPGPhaseObserver) finish(t *testing.T) {
 		}
 		valid := observer.metadata["initialization_failed"] != true && observer.counts["observer_connections_opened"] == 1 && observer.counts["observer_connections_closed"] == 1 &&
 			observer.counts["rejected_schema_or_pid_budget"] == 0 && observer.counts["rejected_batch_pid"] == 0 && observer.counts["invalid_backend_generation_changed"] == 0 &&
-			observer.counts["active_commit_spans_at_stop"] == 0 && observer.counts["commit_span_errors"] == 0 &&
-			observer.counts["commit_spans_started"] == observer.counts["commit_spans_ended"] && observer.counts["connection_closed_during_sampling"] == 0 &&
+			observer.counts["active_transaction_end_spans_at_stop"] == 0 && observer.counts["transaction_end_span_errors"] == 0 &&
+			observer.counts["transaction_end_spans_started"] == observer.counts["transaction_end_spans_ended"] &&
+			observer.counts["commit_spans_started"] == observer.counts["commit_spans_ended"] &&
+			observer.counts["rollback_spans_started"] == observer.counts["rollback_spans_ended"] && observer.counts["connection_closed_during_sampling"] == 0 &&
 			observer.counts["sampling_error_deadline"] == 0 && observer.counts["sampling_error_canceled"] == 0 && observer.counts["sampling_error_postgres_error"] == 0 && observer.counts["sampling_error_connection_or_query_error"] == 0 && closeErr == nil
 		encoded, err := json.Marshal(map[string]any{
-			"schema_version": 1, "measurement_kind": "pg_commit_wait_diagnostic_only", "dimensions": observer.dimensions,
-			"metadata": observer.metadata, "interval_ns": hlsPGObserverInterval.Nanoseconds(), "query_deadline_ns": hlsPGObserverQueryDeadline.Nanoseconds(),
-			"counts": observer.counts, "commit_roles": observer.roleCounts, "valid_query_span_waits": observer.waits, "observations": observer.points,
+			"schema_version": 2, "measurement_kind": "pg_transaction_end_wait_diagnostic_only", "dimensions": observer.dimensions,
+			"transaction_end_commands": []string{"commit", "rollback"},
+			"metadata":                 observer.metadata, "interval_ns": hlsPGObserverInterval.Nanoseconds(), "query_deadline_ns": hlsPGObserverQueryDeadline.Nanoseconds(),
+			"counts": observer.counts, "transaction_end_roles": observer.roleCounts, "transaction_end_command_roles": observer.commandRoles,
+			"valid_query_span_waits": observer.waits, "observations": observer.points,
 			"validity": map[string]any{"complete_span_and_connection_accounting": valid, "has_valid_query_span_observations": observer.counts["valid_query_span_rows"] > 0,
 				"has_time_consistent_client_span_observations": observer.counts["time_consistent_client_span_rows"] > 0,
 				"no_observation_row_truncation":                observer.counts["dropped_activity_rows"] == 0},
 			"before_server_global_statistics": observer.before, "after_server_global_statistics": after, "server_global_deltas": deltas,
-			"interpretation": "One observer connection is evidence overhead and never borrows application or lease capacity. Schema/database/user-bound application PIDs and backend generations fence observations. The server returns only a commit/other/not_visible command enum; SQL text is not returned. Client spans and time consistency are checked at row consumption; short or completed spans can be rejected. valid_query_span additionally requires an active server COMMIT. Time-consistent client spans with a non-active backend are retained separately, never counted as active server COMMIT waits. Timing includes observation cost. Null waits and active/idle states do not independently prove CPU, scheduler, WAL or row-lock causes. Server-global deltas require unchanged reset markers and monotonic counters and are not per-request attribution.",
+			"interpretation": "Version 2 records acknowledged COMMIT and ROLLBACK endpoints, with successful and error outcomes separated. Success requires no protocol error and a matching command tag; a requested COMMIT acknowledged as ROLLBACK is an error endpoint. An acknowledged cleanup rollback does not itself prove successful HTTP authorization; retain original response and freshness assertions. Total endpoint and per-command starts/ends must balance. One observer connection is evidence overhead and never borrows application or lease capacity. Schema/database/user-bound application PIDs and backend generations fence observations. The server returns only commit/rollback/other/not_visible; SQL text is not returned. Client spans and time consistency are checked at row consumption; short or completed spans can be rejected. valid_query_span requires an active server command matching the client endpoint. Time-consistent client spans with a non-active backend are separate, never active endpoint waits. Fewer COMMITs do not imply fewer transaction endings or zero WAL. Timings include observation cost; null waits and active/idle states do not independently prove CPU, scheduler, WAL or row-lock causes. Server-global deltas require unchanged reset markers and monotonic counters and are not per-request attribution.",
 		})
 		observer.mu.Unlock()
 		if err != nil || os.WriteFile(observer.exportFile, append(encoded, '\n'), 0600) != nil {

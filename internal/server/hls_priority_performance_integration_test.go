@@ -214,8 +214,8 @@ func recordHLSProfileSQL(ctx context.Context, sql string) {
 }
 
 func (*hlsPriorityProfileTracer) TraceQueryEnd(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryEndData) {
-	hlsPhaseTimingQueryEnd(ctx, data.Err != nil)
-	hlsPGObserverQueryEnd(ctx, data.Err != nil)
+	hlsPhaseTimingQueryEnd(ctx, hlsPGObserverEndFailed(ctx, data))
+	hlsPGObserverQueryEnd(ctx, data)
 }
 
 func (trace *hlsPriorityProfileTracer) TraceBatchStart(ctx context.Context, connection *pgx.Conn, data pgx.TraceBatchStartData) context.Context {

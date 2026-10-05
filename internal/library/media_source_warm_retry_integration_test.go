@@ -17,10 +17,10 @@ import (
 	"github.com/moooyo/goby/internal/identity"
 )
 
-// Only the second complete AUTH transaction pauses. The first commits before
+// Only the second complete AUTH transaction pauses. The first completes before
 // its miss, and a third fallback transaction must be able to complete normally.
 type mediaSourceWarmRetryCommitTracer struct {
-	commits                 atomic.Int32
+	completions             atomic.Int32
 	entered, resume         chan struct{}
 	enteredOnce, resumeOnce sync.Once
 }
@@ -33,8 +33,10 @@ func (trace *mediaSourceWarmRetryCommitTracer) release() {
 	trace.resumeOnce.Do(func() { close(trace.resume) })
 }
 
-func (trace *mediaSourceWarmRetryCommitTracer) TraceQueryStart(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
-	if strings.EqualFold(strings.TrimSpace(data.SQL), "commit") && trace.commits.Add(1) == 2 {
+func (trace *mediaSourceWarmRetryCommitTracer) TraceQueryStart(ctx context.Context, connection *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
+	command := strings.ToLower(strings.TrimSpace(data.SQL))
+	owned, _ := ctx.Value(mediaSourceAuthorizationOwnedKey{}).(bool)
+	if owned && connection.PgConn().TxStatus() == 'T' && (command == "commit" || command == "rollback") && trace.completions.Add(1) == 2 {
 		trace.enteredOnce.Do(func() { close(trace.entered) })
 		<-trace.resume
 	}
@@ -165,7 +167,7 @@ func TestMediaSourceWarmPipelineSecondMissUsesBoundedFreshFallback(t *testing.T)
 				mediaSourceAdmissionTestWait(t, trace.entered, "first queued refresh without foreground IO")
 				mediaSourceWarmPipelineTestCounts(t, root, 2, 1)
 				playbackMediaPipelineTestOwnerCounts(t, root, 2, 1)
-				// Refill the foreground lane while AUTH2 is at its commit boundary.
+				// Refill the foreground lane while AUTH2 is at its completion boundary.
 				// Its next pure try must miss and queue the final held-IO refresh.
 				foreground := mediaSourceWarmRetryTestHold(t, ctx, root, domain, false)
 				trace.release()

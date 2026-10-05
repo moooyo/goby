@@ -185,8 +185,9 @@ func (s *Store) openPlaybackMediaAuthorization(ctx context.Context, principal id
 			mediaSourceAdmissionMeasurement.warm.Add(1)
 			snapshot, current, err = s.readPlaybackMediaAuthorizationPrepared(worker, principal, owner, playID, itemID, sourceID, includeSubtitles, &hint, nil)
 			if err == nil {
-				// AUTH1 has committed and released its lease. The helper may retain
-				// its local facts only across memory operations with no enqueue.
+				// AUTH1 has completed its transaction and released its lease. The
+				// helper may retain its local facts only across memory operations
+				// with no enqueue.
 				release, refresh, acquireErr := acquirePlaybackMediaInitialIO(worker, mediaSourceAdmission, root, domain, &snapshot, &current, nil)
 				if acquireErr != nil {
 					if refresh {

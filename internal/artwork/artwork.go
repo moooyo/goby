@@ -280,16 +280,30 @@ func (r contextReader) Read(data []byte) (int, error) {
 }
 
 func loadImage(ctx context.Context, reader io.Reader) (loadedImage, error) {
+	data, err := readImageData(ctx, reader)
+	if err != nil {
+		return loadedImage{}, err
+	}
+	return decodeImageData(ctx, data, "")
+}
+
+func readImageData(ctx context.Context, reader io.Reader) ([]byte, error) {
 	if reader == nil {
-		return loadedImage{}, fmt.Errorf("%w: reader is nil", ErrInvalidImage)
+		return nil, fmt.Errorf("%w: reader is nil", ErrInvalidImage)
 	}
 	data, err := io.ReadAll(io.LimitReader(contextReader{ctx: ctx, reader: reader}, maxInputBytes+1))
 	if err != nil {
-		return loadedImage{}, fmt.Errorf("read artwork: %w", err)
+		return nil, fmt.Errorf("read artwork: %w", err)
 	}
 	if len(data) > maxInputBytes {
-		return loadedImage{}, fmt.Errorf("%w: input exceeds 20 MiB", ErrLimitExceeded)
+		return nil, fmt.Errorf("%w: input exceeds 20 MiB", ErrLimitExceeded)
 	}
+	return data, nil
+}
+
+// data has passed readImageData's byte bound. A supplied tag is the complete
+// digest computed by the inspection cache; ordinary loads compute it below.
+func decodeImageData(ctx context.Context, data []byte, tag string) (loadedImage, error) {
 	config, format, err := image.DecodeConfig(bytes.NewReader(data))
 	if err != nil {
 		if errors.Is(err, image.ErrFormat) {
@@ -309,8 +323,11 @@ func loadImage(ctx context.Context, reader io.Reader) (loadedImage, error) {
 	if err := ctx.Err(); err != nil {
 		return loadedImage{}, err
 	}
+	if tag == "" {
+		tag = contentHash(data)
+	}
 	source := loadedImage{
-		info: Info{Format: format, MIMEType: mimeType(format), Tag: contentHash(data), Width: config.Width, Height: config.Height},
+		info: Info{Format: format, MIMEType: mimeType(format), Tag: tag, Width: config.Width, Height: config.Height},
 		data: data,
 	}
 	if format == "gif" {
