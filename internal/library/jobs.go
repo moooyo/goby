@@ -203,6 +203,7 @@ func (s *Store) runTask(task *scanTask) {
 	if task.ctx.Err() == nil {
 		started, err := s.startTaskScan(task)
 		if err == nil && started {
+			task.recordSavedProgress(task.job, time.Now())
 			message, err = s.scanLibrary(task)
 		} else if err == nil {
 			status, message = task.job.Status, task.job.Error
@@ -258,7 +259,7 @@ func (s *Store) finishTask(task *scanTask, status, message string) error {
 			return err
 		}
 		if relation.missing {
-			return validateRetainedTaskSnapshot(relation.child, task.job)
+			return validateRetainedTaskSnapshot(relation.child, task.retainedProgressSnapshot())
 		}
 		finished = relation.job
 		if finished.Status != "Queued" && finished.Status != "Running" {
@@ -309,6 +310,7 @@ func (s *Store) finishTask(task *scanTask, status, message string) error {
 	if err == nil {
 		if finished.ID != "" {
 			task.job = finished
+			task.recordSavedProgress(finished, time.Now())
 		}
 		s.notifyScanUpdate()
 	}
@@ -334,7 +336,7 @@ func lockScanPublicationProgress(tx OwnedTx, task *scanTask) (taskScanRelation, 
 		return taskScanRelation{}, err
 	}
 	if relation.missing {
-		if err := validateRetainedTaskSnapshot(relation.child, task.job); err != nil {
+		if err := validateRetainedTaskSnapshot(relation.child, task.retainedProgressSnapshot()); err != nil {
 			return taskScanRelation{}, err
 		}
 		return taskScanRelation{}, context.Canceled
@@ -401,7 +403,7 @@ func (s *Store) persistProgress(task *scanTask) error {
 		}
 		if relation.missing {
 			cancelled = true
-			return validateRetainedTaskSnapshot(relation.child, task.job)
+			return validateRetainedTaskSnapshot(relation.child, task.retainedProgressSnapshot())
 		}
 		if relation.job.Status != "Queued" && relation.job.Status != "Running" {
 			cancelled = true
@@ -434,6 +436,7 @@ func (s *Store) persistProgress(task *scanTask) error {
 	if err == nil {
 		if accepted.ID != "" {
 			task.job.Scanned, task.job.Added, task.job.Updated = accepted.Scanned, accepted.Added, accepted.Updated
+			task.recordSavedProgress(accepted, time.Now())
 		}
 		s.notifyScanUpdate()
 	}

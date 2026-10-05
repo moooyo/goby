@@ -130,9 +130,11 @@ func TestThemePublicationFinalSourceRejectionRollsBackProgress(t *testing.T) {
 	}
 	taskScanWaitOwnerBlocked(t, ctx, pool, store, gate.Conn().PgConn().PID())
 	visible, err := store.GetJob(ctx, admission.Job.ID)
-	if err != nil || visible.Status != "Running" || visible.Scanned != 2 || visible.Added != 0 || visible.Updated != 0 {
+	if err != nil || visible.Status != "Running" || visible.Scanned < 0 || visible.Scanned > 2 || visible.Added != 0 || visible.Updated != 0 {
 		t.Fatalf("uncommitted theme progress became visible: job=%+v error=%v", visible, err)
 	}
+	// The pending entry batch may still be invisible, while accepted resource
+	// counters must remain zero until their catalog transaction commits.
 	taskScanAssertChild(t, ctx, pool, childID, visible)
 	taskScanExpectCount(t, ctx, pool, "SELECT count(*) FROM item_theme_resources", 0)
 	if err := os.WriteFile(theme, []byte("audio:changed-after-the-progress-write"), 0o600); err != nil {

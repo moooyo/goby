@@ -1654,6 +1654,7 @@ func (s *Store) publishThemeOwner(task *scanTask, library Library, owner themeDi
 		return false, err
 	}
 	task.job.Scanned, task.job.Added, task.job.Updated = published.Scanned, published.Added, published.Updated
+	task.recordSavedProgress(published, time.Now())
 	for _, file := range files {
 		file.state.themes.seen[file.id] = true
 		if file.input.stored.itemType == "Audio" {

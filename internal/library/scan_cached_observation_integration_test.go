@@ -62,14 +62,15 @@ func TestCachedScanObservationReusesOperationAuthorityOutsideOwnedIO(t *testing.
 			observer.authorityQueries.Load(), observer.ownedInRead.Load())
 	}
 	if len(prober.calls()) != beforeProbes || state.warnings != 0 || trace.itemRows.Load() != 0 || trace.metadataRows.Load() != 0 ||
-		trace.begins.Load() != 1 || trace.commits.Load() != 1 || trace.cachedCompletionChecks.Load() != 1 {
+		trace.begins.Load() != 0 || trace.commits.Load() != 0 || trace.cachedCompletionChecks.Load() != 0 {
 		t.Fatalf("unchanged observation probed, wrote facts, or changed checkpoints: probes=%d/%d warnings=%d items=%d metadata=%d tx=%d/%d completion=%d",
 			len(prober.calls()), beforeProbes, state.warnings, trace.itemRows.Load(), trace.metadataRows.Load(),
 			trace.begins.Load(), trace.commits.Load(), trace.cachedCompletionChecks.Load())
 	}
 	job, err := store.GetJob(ctx, state.task.job.ID)
-	if err != nil || job.Scanned != state.task.job.Scanned || job.Added != state.task.job.Added || job.Updated != state.task.job.Updated {
-		t.Fatalf("cached observation lost accepted counters: job=%+v error=%v", job, err)
+	if err != nil || job.Scanned != state.task.progress.scanned || state.task.job.Scanned != job.Scanned+1 ||
+		job.Added != state.task.job.Added || job.Updated != state.task.job.Updated {
+		t.Fatalf("cached observation lost its pending progress prefix: job=%+v error=%v", job, err)
 	}
 	taskScanAssertChild(t, ctx, pool, state.task.job.TaskChildID, job)
 	afterDescriptors := scanProbeOpenDescriptors(t, []string{path, state.root.path})
@@ -206,12 +207,9 @@ func TestCachedScanObservationRetainsOperationAuthorityAfterQueuedPublication(t 
 				t.Fatalf("queued publication lost operation authority or its cancellation fence: error=%v want=%v warnings=%d scanned=%d/%d items=%d metadata=%d",
 					result, scenario.want, state.warnings, state.task.job.Scanned, beforeJob.Scanned, trace.itemRows.Load(), trace.metadataRows.Load())
 			}
-			wantCompletion := int64(1)
-			if scenario.job {
-				wantCompletion = 0
-			}
-			// Inspection and its entry checkpoint finished before reset. This
-			// unchanged publication only needs the implicit completion query.
+			wantCompletion := int64(0)
+			// The inspection entry remains in the open batch. An unchanged
+			// publication must not query with pending counters on every leaf.
 			if trace.cachedCompletionChecks.Load() != wantCompletion || trace.begins.Load() != 0 ||
 				trace.commits.Load() != 0 || trace.rollbacks.Load() != 0 || authorization.startups.Load() != 0 {
 				t.Fatalf("cached publication changed its implicit completion boundary: checks=%d/%d begin=%d commit=%d rollback=%d startup=%d",
@@ -271,6 +269,7 @@ func TestCachedScanObservationKeepsFinalCancellationCheckpoint(t *testing.T) {
 		}
 	})
 	before := state.task.job
+	state.task.progress.savedAt = time.Time{}
 	barrier.owner = store.ownership.conn.Conn()
 	barrier.armed.Store(true)
 	trace.reset()
@@ -298,7 +297,7 @@ func TestCachedScanObservationKeepsFinalCancellationCheckpoint(t *testing.T) {
 	unblock()
 	mediaSourceAdmissionTestWait(t, done, "cached final cancellation checkpoint")
 	assertUnread()
-	if !errors.Is(result, context.Canceled) || trace.cachedCompletionChecks.Load() != 1 ||
+	if !errors.Is(result, context.Canceled) || trace.cachedCompletionChecks.Load() != 0 ||
 		trace.itemRows.Load() != 0 || trace.metadataRows.Load() != 0 || state.warnings != 0 {
 		t.Fatalf("observation skipped its final cancellation fence: error=%v completion=%d items=%d metadata=%d warnings=%d",
 			result, trace.cachedCompletionChecks.Load(), trace.itemRows.Load(), trace.metadataRows.Load(), state.warnings)

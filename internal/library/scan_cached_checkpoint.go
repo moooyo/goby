@@ -5,14 +5,10 @@ import (
 	"time"
 )
 
-// checkCachedTaskScanProgress replaces the already required image-absence
-// ownership query at the end of one unchanged media visit. It is not a reusable
-// authorization result. Dependent materialized CTEs lock run, child, then job in
-// the established order and observe post-wait state in this one statement.
-//
-// This statement still has one PostgreSQL autocommit transaction. Combining it
-// with an existing query removes the separate completion checkpoint transaction;
-// replacing that checkpoint alone would only remove explicit BEGIN/COMMIT.
+// checkCachedTaskScanProgress is a forced completion check for error repair and
+// explicit callers. Normal visits use maybePersistProgress so buffered counters
+// do not trigger this query and its repair on every file. The statement locks
+// run, child, then job and observes post-wait state in one autocommit transaction.
 func (s *Store) checkCachedTaskScanProgress(task *scanTask) error {
 	if task == nil || task.job.TaskChildID == "" {
 		return ErrInvalidInput
@@ -62,6 +58,7 @@ func (s *Store) checkCachedTaskScanProgress(task *scanTask) error {
 		return err
 	}
 	if unchanged {
+		task.recordSavedProgress(task.job, time.Now())
 		return nil
 	}
 	// A changed or missing relation is never accepted from the read path. The

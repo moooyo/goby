@@ -269,10 +269,11 @@ func scanCachedVisitFixture(t *testing.T, observers ...pgx.QueryTracer) (context
 	if err := store.prepareScanOperationAuthority(ctx, task, []libraryRoot{state.root}); err != nil {
 		t.Fatal(err)
 	}
+	scanProgressBatchHoldWindow(task)
 	return ctx, pool, store, state, trace, root
 }
 
-func TestCachedScanImageAbsenceCombinesOneCompletionCheckpoint(t *testing.T) {
+func TestCachedScanImageAbsenceUsesBatchedProgressCheckpoints(t *testing.T) {
 	for _, scenario := range []string{"stable_absence", "disabled_images", "valid_candidate", "invalid_candidate", "missing_directory_proof"} {
 		t.Run(scenario, func(t *testing.T) {
 			ctx, pool, store, state, trace, root := scanCachedVisitFixture(t)
@@ -300,11 +301,9 @@ func TestCachedScanImageAbsenceCombinesOneCompletionCheckpoint(t *testing.T) {
 			if err := state.scanFile("Film.mp4", "video", hierarchy{parentID: state.library.ID}); err != nil {
 				t.Fatal(err)
 			}
-			wantBegins, wantCombined := int64(2), int64(0)
-			if scenario == "stable_absence" {
-				wantBegins, wantCombined = 1, 1
-			} else if scenario == "valid_candidate" || scenario == "invalid_candidate" {
-				wantBegins = 3
+			wantBegins, wantCombined := int64(0), int64(0)
+			if scenario == "valid_candidate" || scenario == "invalid_candidate" {
+				wantBegins = 1
 			}
 			primaryScanRoutingAssertNoRepeatedAuthority(t, trace)
 			begins, commits := trace.begins.Load(), trace.commits.Load()
@@ -325,8 +324,9 @@ func TestCachedScanImageAbsenceCombinesOneCompletionCheckpoint(t *testing.T) {
 				}
 			}
 			job, err := store.GetJob(ctx, state.task.job.ID)
-			if err != nil || job.Scanned != state.task.job.Scanned || job.Added != state.task.job.Added || job.Updated != state.task.job.Updated {
-				t.Fatalf("cached visit lost persisted counters: job=%+v error=%v", job, err)
+			if err != nil || job.Scanned != state.task.progress.scanned || state.task.job.Scanned != job.Scanned+1 ||
+				job.Added != state.task.job.Added || job.Updated != state.task.job.Updated {
+				t.Fatalf("cached visit changed its pending progress prefix: job=%+v error=%v", job, err)
 			}
 			taskScanAssertChild(t, ctx, pool, state.task.job.TaskChildID, job)
 		})

@@ -61,6 +61,7 @@ func scanOperationPublicationFixtureAt(t *testing.T, prober Prober, collectionTy
 	if err := store.prepareScanOperationAuthority(ctx, task, []libraryRoot{root}); err != nil {
 		t.Fatal(err)
 	}
+	scanProgressBatchHoldWindow(task)
 	return scanOperationPublicationFixture{ctx: ctx, pool: pool, store: store, state: state, alternateLibraryID: alternate.ID}
 }
 
@@ -140,7 +141,7 @@ func TestScanOperationAuthorityManualPrimaryPublicationFencesIdentity(t *testing
 				if err != nil {
 					return media.Info{}, err
 				}
-				// Preparation has persisted its entry checkpoint. The synchronous
+				// Preparation has retained its pending entry. The synchronous
 				// writer must check identity again after this actual source read.
 				mutationErr = fixture.mutate(test.name)
 				if mutationErr != nil {
@@ -173,8 +174,12 @@ func TestScanOperationAuthorityManualPrimaryPublicationFencesIdentity(t *testing
 				}
 				assertNoCatalogTestNotification(t, notifications)
 			}
+			wantScanned := 0
+			if test.want == nil {
+				wantScanned = 1
+			}
 			job, jobErr := fixture.store.GetJob(fixture.ctx, fixture.state.task.job.ID)
-			if jobErr != nil || job.Scanned != 1 || job.Added != wantAdded || job.Updated != 0 ||
+			if jobErr != nil || job.Scanned != wantScanned || job.Added != wantAdded || job.Updated != 0 ||
 				fixture.state.task.job.Scanned != 1 || fixture.state.task.job.Added != wantAdded || fixture.state.task.job.Updated != 0 || fixture.state.warnings != 0 {
 				t.Fatalf("manual primary changed its accepted progress: persisted=%+v memory=%+v warnings=%d error=%v", job, fixture.state.task.job, fixture.state.warnings, jobErr)
 			}

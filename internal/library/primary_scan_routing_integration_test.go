@@ -100,9 +100,9 @@ func TestPrimaryScanRoutingPreparationUsesOperationAuthority(t *testing.T) {
 				t.Fatal(err)
 			}
 			primaryScanRoutingAssertNoRepeatedAuthority(t, trace)
-			if trace.begins.Load() != 1 || trace.commits.Load() != 1 ||
+			if trace.begins.Load() != 0 || trace.commits.Load() != 0 ||
 				trace.rollbacks.Load() != 0 || trace.itemRows.Load() != 0 || trace.metadataRows.Load() != 0 {
-				t.Fatalf("routing preparation changed entry checkpoint or primary writes: begin=%d commit=%d rollback=%d items=%d metadata=%d",
+				t.Fatalf("routing preparation wrote a pending checkpoint or primary facts: begin=%d commit=%d rollback=%d items=%d metadata=%d",
 					trace.begins.Load(), trace.commits.Load(), trace.rollbacks.Load(), trace.itemRows.Load(), trace.metadataRows.Load())
 			}
 			if stats := originalMediaReadGovernor.Stats(); stats != beforeIO || originalMediaReadOwners.Stats().RegisteredOwners != beforeOwners {
@@ -121,7 +121,7 @@ func TestPrimaryScanRoutingRetainedWalkCachedVisitUsesOperationAuthority(t *test
 		t.Fatal(err)
 	}
 	primaryScanRoutingAssertNoRepeatedAuthority(t, trace)
-	if trace.begins.Load() != 1 || trace.commits.Load() != 1 || trace.cachedCompletionChecks.Load() != 1 {
+	if trace.begins.Load() != 0 || trace.commits.Load() != 0 || trace.cachedCompletionChecks.Load() != 0 {
 		t.Fatalf("cached retained walk changed checkpoint boundaries: total=%d/%d completion=%d",
 			trace.begins.Load(), trace.commits.Load(), trace.cachedCompletionChecks.Load())
 	}
@@ -130,8 +130,9 @@ func TestPrimaryScanRoutingRetainedWalkCachedVisitUsesOperationAuthority(t *test
 			trace.rollbacks.Load(), trace.itemRows.Load(), trace.metadataRows.Load())
 	}
 	job, err := store.GetJob(ctx, state.task.job.ID)
-	if err != nil || job.Scanned != state.task.job.Scanned || job.Added != state.task.job.Added || job.Updated != state.task.job.Updated {
-		t.Fatalf("cached routing visit changed persisted counters: job=%+v error=%v", job, err)
+	if err != nil || job.Scanned != state.task.progress.scanned || state.task.job.Scanned != job.Scanned+1 ||
+		job.Added != state.task.job.Added || job.Updated != state.task.job.Updated {
+		t.Fatalf("cached routing visit lost its pending progress prefix: job=%+v error=%v", job, err)
 	}
 	taskScanAssertChild(t, ctx, pool, state.task.job.TaskChildID, job)
 	if stats := originalMediaReadGovernor.Stats(); stats != beforeIO || originalMediaReadOwners.Stats().RegisteredOwners != beforeOwners {

@@ -141,6 +141,7 @@ type scanTask struct {
 	cancel      context.CancelFunc
 	authorityMu sync.Mutex
 	authority   atomic.Pointer[scanOperationAuthority]
+	progress    scanProgressCheckpoint
 }
 
 // Store runs exactly two scan workers. Administrators must be authorized by the

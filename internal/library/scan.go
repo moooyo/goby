@@ -453,10 +453,13 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 	completionRequired, completionChecked := false, false
 	defer func() {
 		if completionRequired && !completionChecked {
-			// Fresh sidecar admission may reject a stopped parent before its
-			// optional work begins. Preserve that error while the canonical
-			// completion path repairs cancellation and the accepted prefix.
-			resultErr = errors.Join(resultErr, state.store.checkCachedTaskScanProgress(state.task))
+			if resultErr != nil {
+				// Failed sidecar work still forces canonical cancellation/accepted
+				// prefix repair without replacing the original failure.
+				resultErr = errors.Join(resultErr, state.store.checkCachedTaskScanProgress(state.task))
+			} else {
+				resultErr = state.store.maybePersistProgress(state.task)
+			}
 		}
 	}()
 	if input.authority != nil {
@@ -636,11 +639,11 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 		checked := false
 		if combineCompletion {
 			// Only a task-owned visit with no stored local images moves images
-			// last. Its complete stable-absence owner query can also be the final
-			// fresh task fence. No sidecar/staging write follows that check.
+			// last. Apply the checkpoint policy after complete stable absence;
+			// no sidecar or staging write follows this completion boundary.
 			completionCheck := func() error {
 				completionChecked = true
-				err := state.store.checkCachedTaskScanProgress(state.task)
+				err := state.store.maybePersistProgress(state.task)
 				checked = err == nil
 				return err
 			}
@@ -654,13 +657,13 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 				}
 			}
 		}
-		// The entry checkpoint already persisted Scanned for an independent scan.
-		// A cached visit does not change the primary item counters.
-		if state.task.job.TaskChildID == "" || checked {
+		// Long sidecar observations can make the checkpoint due after entry.
+		// Cached visits otherwise retain their counters in memory.
+		if checked {
 			return state.task.ctx.Err()
 		}
 		completionChecked = true
-		return state.store.persistProgress(state.task)
+		return state.store.maybePersistProgress(state.task)
 	}
 	mediaJSON, err := json.Marshal(probe)
 	if err != nil {
@@ -811,14 +814,17 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 		return err
 	}
 	*committed = true
+	savedProgress := candidateProgress
 	if publicationProgress != nil {
 		// Probe workers may still read the immutable operation identity. Refresh
 		// accepted progress without rewriting those shared identity fields.
 		state.task.job.Scanned, state.task.job.Added, state.task.job.Updated =
 			committedProgress.Scanned, committedProgress.Added, committedProgress.Updated
+		savedProgress = committedProgress
 	} else {
 		state.task.job.Added, state.task.job.Updated = candidateProgress.Added, candidateProgress.Updated
 	}
+	state.task.recordSavedProgress(savedProgress, time.Now())
 	if progressInItemTx {
 		state.store.notifyScanUpdate()
 	}
@@ -844,7 +850,8 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 	if err := state.recordScanSeen(id); err != nil {
 		return err
 	}
-	return state.task.ctx.Err()
+	completionChecked = true
+	return state.store.maybePersistProgress(state.task)
 }
 
 func (state *scanState) folder(relative, path, name, itemType, parentID string, indexNumber int, nfoRelative ...string) (string, error) {

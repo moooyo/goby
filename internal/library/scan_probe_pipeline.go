@@ -351,7 +351,7 @@ func (state *scanState) prepareScannedMedia(path, kind string, role scannedMedia
 		return nil, scanReadFailure(err)
 	}
 	state.task.job.Scanned++
-	if err := state.store.persistProgress(state.task); err != nil {
+	if err := state.store.maybePersistProgress(state.task); err != nil {
 		return nil, err
 	}
 	stored, err := state.findStoredFileForRole(filepath.ToSlash(path), info, role)

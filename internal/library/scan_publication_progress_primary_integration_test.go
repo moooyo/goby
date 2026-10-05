@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -100,6 +101,7 @@ func TestScanPrimaryPublicationCommitsTaskCountersWithCatalog(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			ctx, pool, store, state, input, path, _ := scanPrimaryPublicationFixture(t, update)
 			before := state.task.job
+			beforeCheckpoint := state.task.progress
 			wantAdded, wantUpdated := before.Added, before.Updated
 			if update {
 				wantUpdated++
@@ -139,6 +141,9 @@ func TestScanPrimaryPublicationCommitsTaskCountersWithCatalog(t *testing.T) {
 					if state.task.job.Added != before.Added || state.task.job.Updated != before.Updated {
 						observationErr = errors.New("publication changed in-memory accepted counters before Commit returned")
 					}
+					if state.task.progress != beforeCheckpoint {
+						observationErr = errors.New("publication advanced its checkpoint watermark before Commit returned")
+					}
 				}
 			})
 			t.Cleanup(func() { store.SetCatalogChangeListener(nil) })
@@ -150,6 +155,10 @@ func TestScanPrimaryPublicationCommitsTaskCountersWithCatalog(t *testing.T) {
 			}
 			if state.task.job.Added != wantAdded || state.task.job.Updated != wantUpdated {
 				t.Fatalf("committed counters were not published to the worker: %+v", state.task.job)
+			}
+			if state.task.progress.scanned != state.task.job.Scanned || state.task.progress.added != wantAdded ||
+				state.task.progress.updated != wantUpdated || state.task.progress.savedAt == beforeCheckpoint.savedAt {
+				t.Fatalf("committed publication did not become the saved progress watermark: %+v", state.task.progress)
 			}
 			job, err := store.GetJob(ctx, before.ID)
 			if err != nil {
@@ -165,6 +174,7 @@ func TestScanPrimaryPublicationRollsBackCatalogAndAcceptedCounters(t *testing.T)
 		t.Run(table, func(t *testing.T) {
 			ctx, pool, store, state, input, path, _ := scanPrimaryPublicationFixture(t, false)
 			before := state.task.job
+			beforeCheckpoint := state.task.progress
 			snapshot := scanUnchangedProgressSnapshot(t, ctx, pool, state.task)
 			if _, err := pool.Exec(ctx, `CREATE FUNCTION fail_primary_publication_progress() RETURNS trigger LANGUAGE plpgsql AS $$
 				BEGIN
@@ -187,6 +197,9 @@ func TestScanPrimaryPublicationRollsBackCatalogAndAcceptedCounters(t *testing.T)
 			}
 			if state.task.job.Added != before.Added || state.task.job.Updated != before.Updated || notifications != 0 {
 				t.Fatalf("rolled-back publication escaped to memory or listeners: job=%+v notifications=%d", state.task.job, notifications)
+			}
+			if state.task.progress != beforeCheckpoint {
+				t.Fatal("rolled-back publication advanced the saved progress watermark")
 			}
 			if scanUnchangedProgressSnapshot(t, ctx, pool, state.task) != snapshot {
 				t.Fatal("rolled-back publication changed the accepted job or child snapshot")
@@ -301,7 +314,7 @@ func TestScanPrimaryPublicationRetainsDurableCountersAfterRejection(t *testing.T
 	}
 }
 
-func TestScanPrimaryPublicationRechecksTaskAfterCommittedItem(t *testing.T) {
+func TestScanPrimaryPublicationChecksDatabaseStopAtNextCheckpoint(t *testing.T) {
 	ctx, pool, store, state, input, path, runID := scanPrimaryPublicationFixture(t, false)
 	before := state.task.job
 	var stopErr error
@@ -314,11 +327,17 @@ func TestScanPrimaryPublicationRechecksTaskAfterCommittedItem(t *testing.T) {
 		}
 	})
 	t.Cleanup(func() { store.SetCatalogChangeListener(nil) })
-	if err := state.publishScannedMedia(path, "video", hierarchy{parentID: state.library.ID}, input); !errors.Is(err, context.Canceled) {
-		t.Fatalf("post-publication completion check ignored a stopped parent: %v", err)
+	if err := state.publishScannedMedia(path, "video", hierarchy{parentID: state.library.ID}, input); err != nil && !errors.Is(err, context.Canceled) {
+		t.Fatalf("post-publication stop returned an unrelated failure: %v", err)
 	}
 	if stopErr != nil {
 		t.Fatal(stopErr)
+	}
+	// The committed item already supplies this batch's watermark. A database-
+	// only stop must be observed by the next due checkpoint without discarding it.
+	state.task.progress.savedAt = time.Time{}
+	if err := store.maybePersistProgress(state.task); !errors.Is(err, context.Canceled) {
+		t.Fatalf("due checkpoint ignored the committed item's stopped parent: %v", err)
 	}
 	job, err := store.GetJob(ctx, before.ID)
 	if err != nil || job.Added != before.Added+1 || job.Updated != before.Updated || !job.CancelRequested ||
