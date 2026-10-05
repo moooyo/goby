@@ -377,7 +377,7 @@ func httpGetStopRemeasureFence(t *testing.T, h *hlsHTTPFixture, graph hlsHTTPGra
 func httpGetStopRemeasureBurst(t *testing.T, ctx context.Context, samples []hlsPriorityProfileResponse, expected []byte) map[string]int {
 	t.Helper()
 	counts := map[string]int{"ok": 0, "not_found": 0, "limited": 0, "interrupted": 0}
-	for _, sample := range samples {
+	for sampleOrdinal, sample := range samples {
 		switch {
 		case sample.err != nil:
 			var networkError net.Error
@@ -396,7 +396,17 @@ func httpGetStopRemeasureBurst(t *testing.T, ctx context.Context, samples []hlsP
 		case sample.status == http.StatusTooManyRequests:
 			counts["limited"]++
 		default:
-			t.Fatalf("unexpected cancellation-burst status=%d", sample.status)
+			bodyPrefix := sample.data
+			if len(bodyPrefix) > 256 {
+				bodyPrefix = bodyPrefix[:256]
+			}
+			bodyTruncated := len(sample.data) > len(bodyPrefix)
+			bodyRedacted := regexp.MustCompile(`(?i)([a-z][a-z0-9+.-]*://|/emby(?:/|\?)|[?&](?:api_key|access_token|token)=)`).Match(bodyPrefix)
+			if bodyRedacted {
+				bodyPrefix = []byte("<redacted URL-like response>")
+			}
+			t.Fatalf("unexpected cancellation-burst status=%d sample_ordinal=%d body_prefix=%q body_bytes=%d body_truncated=%t body_redacted=%t",
+				sample.status, sampleOrdinal+1, bodyPrefix, len(sample.data), bodyTruncated, bodyRedacted)
 		}
 	}
 	return counts
@@ -464,6 +474,7 @@ func TestHTTPCachedHLSGetStopRemeasurePerformance(t *testing.T) {
 				httpGetStopRemeasureWarmHTTP(t, h, trace, client, controls, target, expected, headers)
 				current, authority := &hlsPriorityProfileCase{}, &httpGetStopRemeasureAuthorityCase{}
 				current.stoppingGET.entered = make(chan struct{})
+				stopDiagnostic := hlsStopDiagnosticBegin(t)
 				trace.priority.current.Store(current)
 				trace.authority.Store(authority)
 				defer trace.priority.current.Store(nil)
@@ -522,11 +533,12 @@ func TestHTTPCachedHLSGetStopRemeasurePerformance(t *testing.T) {
 				go func() { burstDone <- hlsPriorityProfileWave(h.f.ctx, client, target, "stop_get", callers, 1) }()
 				select {
 				case <-current.stoppingGET.entered:
+					hlsStopDiagnosticGateReceived(stopDiagnostic)
 				case <-h.f.ctx.Done():
 					t.Fatal("cached Stop burst did not reach real playback validation")
 				}
 				stopStarted := time.Now()
-				stopped := hlsPriorityProfileRequest(h.f.ctx, controls, http.MethodPost, h.server.URL+"/emby/Sessions/Playing/Stopped", "stopped", body, headers)
+				stopped := hlsPriorityProfileRequest(hlsStopDiagnosticClientContext(h.f.ctx, stopDiagnostic), controls, http.MethodPost, h.server.URL+"/emby/Sessions/Playing/Stopped", "stopped", body, headers)
 				record["stop_response_ns"], record["stop_status"], record["stop_overlap_handlers"] = stopped.duration.Nanoseconds(), stopped.status, current.stopOverlap.Load()
 				if stopped.err != nil || stopped.status != http.StatusNoContent || current.stopOverlap.Load() == 0 {
 					t.Fatal("standard Stop failed or did not enter during a live same-scope cached GET")
@@ -549,6 +561,7 @@ func TestHTTPCachedHLSGetStopRemeasurePerformance(t *testing.T) {
 				record["stop_lifetime_output_lease_completion_observed_upper_bound_ns"] = time.Since(stopStarted).Nanoseconds()
 				record["stop_lifetime_output_lease_complete"], record["encoder_reap_measured"] = true, false
 				record["timing_contract"] = "GET and Stop client spans include Do, bounded complete body consumption and Body.Close over TCP; p50 averages the middle two, p95/p99 use nearest rank; drain/owner-completion values are observation upper bounds including joins/assertions; cancelled completed history and accounted cache bytes may remain until fixture Close; allocation/pool/admission deltas include natural process work and recorder cost, and overlapping stage sums are not additive or isolated filesystem/SQL execution time"
+				hlsStopDiagnosticExport(t, record, current, stopDiagnostic)
 				hlsProfileLogPhaseTiming(t, current, map[string]any{"workload": "matched_cached_get_stop", "application_key": application, "callers": callers})
 			})
 			if t.Failed() {

@@ -458,18 +458,24 @@ func (s *Server) hlsSegment(audioOnly bool) http.HandlerFunc {
 		w.Header().Set("Cache-Control", "private, no-transform")
 		w.Header().Set("ETag", "\""+hex.EncodeToString(digest[:])+"\"")
 		w.Header().Set("Access-Control-Expose-Headers", "Accept-Ranges, Content-Length, Content-Range, ETag, Last-Modified")
-		controller := http.NewResponseController(w)
-		_ = controller.SetWriteDeadline(time.Now().Add(30 * time.Second))
-		interrupted := make(chan struct{})
-		stop := context.AfterFunc(work, func() { _ = controller.SetWriteDeadline(time.Now()); _ = handle.Close(); close(interrupted) })
-		http.ServeContent(w, r, "segment.ts", info.ModTime(), handle)
+		// Keep the fixed content deadline while flushing under cancellation-aware
+		// write deadlines, including errors from a concurrently closed descriptor.
+		contentCtx, cancelContent := context.WithTimeout(work, 30*time.Second)
+		defer cancelContent()
+		interrupt := context.AfterFunc(contentCtx, func() { _ = handle.Close() })
+		defer interrupt()
+		writer, err := newIdleResponseWriter(w, contentCtx, mediaWriteIdle)
+		if err != nil {
+			panic(http.ErrAbortHandler)
+		}
+		defer writer.finish()
+		http.ServeContent(writer, r.WithContext(contentCtx), "segment.ts", info.ModTime(), handle)
+		if contentCtx.Err() != nil {
+			panic(http.ErrAbortHandler)
+		}
 		if work.Err() == nil && r.Method != http.MethodHead {
 			s.touchMediaPolicy(work, principal, session.key.scope)
 		}
-		if !stop() {
-			<-interrupted
-		}
-		_ = controller.SetWriteDeadline(time.Time{})
 	}
 }
 

@@ -24,13 +24,15 @@ type hlsPhaseTimingBatchContextKey struct{}
 type hlsPhaseTimingAcquireContextKey struct{}
 
 type hlsPhaseTimingEvent struct {
-	Kind       string `json:"kind"`
-	Category   string `json:"category"`
-	StartNS    int64  `json:"start_offset_ns"`
-	ElapsedNS  int64  `json:"elapsed_ns"`
-	BackendPID uint32 `json:"backend_pid,omitempty"`
-	PoolMax    int32  `json:"pool_max,omitempty"`
-	HadError   bool   `json:"had_error,omitempty"`
+	Kind           string                            `json:"kind"`
+	Category       string                            `json:"category"`
+	StartNS        int64                             `json:"start_offset_ns"`
+	ElapsedNS      int64                             `json:"elapsed_ns"`
+	BackendPID     uint32                            `json:"backend_pid,omitempty"`
+	PoolMax        int32                             `json:"pool_max,omitempty"`
+	HadError       bool                              `json:"had_error,omitempty"`
+	SQLFingerprint string                            `json:"sql_fingerprint_sha256,omitempty"`
+	Prepare        *hlsStopDiagnosticPrepareEvidence `json:"prepare,omitempty"`
 }
 
 type hlsPhaseTimingStatistic struct {
@@ -65,13 +67,14 @@ type hlsPhaseTimingCase struct {
 }
 
 type hlsPhaseTimingSpan struct {
-	ended    sync.Once
-	request  *hlsPhaseTimingRequest
-	started  time.Time
-	previous time.Time
-	category string
-	pid      uint32
-	poolMax  int32
+	ended      sync.Once
+	request    *hlsPhaseTimingRequest
+	started    time.Time
+	previous   time.Time
+	category   string
+	pid        uint32
+	poolMax    int32
+	diagnostic *hlsStopDiagnosticQueryDetail
 }
 
 func hlsPhaseTimingEnabled() bool { return os.Getenv("GOBY_HLS_PHASE_TIMING") == "1" }
@@ -84,10 +87,14 @@ func hlsPhaseTimingFor(ctx context.Context) *hlsPhaseTimingRequest {
 	return facts.phaseTiming
 }
 
-func (request *hlsPhaseTimingRequest) record(kind, category string, started time.Time, pid uint32, poolMax int32, failed bool) {
+func (request *hlsPhaseTimingRequest) record(kind, category string, started time.Time, pid uint32, poolMax int32, failed bool, diagnostic ...*hlsStopDiagnosticQueryDetail) {
 	now := time.Now()
 	event := hlsPhaseTimingEvent{Kind: kind, Category: category, StartNS: started.Sub(request.started).Nanoseconds(),
 		ElapsedNS: now.Sub(started).Nanoseconds(), BackendPID: pid, PoolMax: poolMax, HadError: failed}
+	if len(diagnostic) == 1 && diagnostic[0] != nil {
+		event.SQLFingerprint = diagnostic[0].Fingerprint
+		event.Prepare = diagnostic[0].Prepare
+	}
 	key := kind + ":" + category
 	request.mu.Lock()
 	defer request.mu.Unlock()
@@ -211,12 +218,13 @@ func hlsPhaseTimingQueryStart(ctx context.Context, connection *pgx.Conn, sql str
 		return ctx
 	}
 	return context.WithValue(ctx, hlsPhaseTimingContextKey{}, &hlsPhaseTimingSpan{
-		request: request, started: time.Now(), category: hlsPhaseTimingCategory(sql), pid: connection.PgConn().PID()})
+		request: request, started: time.Now(), category: hlsPhaseTimingCategory(sql), pid: connection.PgConn().PID(),
+		diagnostic: hlsStopDiagnosticQueryDetailFor(request, sql)})
 }
 
 func hlsPhaseTimingQueryEnd(ctx context.Context, failed bool) {
 	if span, _ := ctx.Value(hlsPhaseTimingContextKey{}).(*hlsPhaseTimingSpan); span != nil {
-		span.request.record("query", span.category, span.started, span.pid, 0, failed)
+		span.request.record("query", span.category, span.started, span.pid, 0, failed, span.diagnostic)
 	}
 }
 

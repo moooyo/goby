@@ -139,13 +139,23 @@ func scanUserData(row rowScanner) (UserData, error) {
 }
 
 func lockUserData(ctx context.Context, tx pgx.Tx, userID, itemID string) (UserData, error) {
-	if _, err := tx.Exec(ctx, `INSERT INTO user_item_data (user_id, item_id) VALUES ($1, $2)
-		ON CONFLICT (user_id, item_id) DO NOTHING`, userID, itemID); err != nil {
+	batch := &pgx.Batch{}
+	batch.Queue(`INSERT INTO user_item_data (user_id, item_id) VALUES ($1, $2)
+		ON CONFLICT (user_id, item_id) DO NOTHING`, userID, itemID)
+	batch.Queue("SELECT "+userDataColumns+" FROM user_item_data WHERE user_id = $1 AND item_id = $2 FOR UPDATE", userID, itemID)
+	results := tx.SendBatch(ctx, batch)
+	defer results.Close()
+	if _, err := results.Exec(); err != nil {
+		_ = results.Close()
 		return UserData{}, fmt.Errorf("initialize user item data: %w", err)
 	}
-	data, err := scanUserData(tx.QueryRow(ctx, "SELECT "+userDataColumns+" FROM user_item_data WHERE user_id = $1 AND item_id = $2 FOR UPDATE", userID, itemID))
+	data, err := scanUserData(results.QueryRow())
+	closeErr := results.Close()
 	if err != nil {
 		return UserData{}, fmt.Errorf("lock user item data: %w", err)
+	}
+	if closeErr != nil {
+		return UserData{}, fmt.Errorf("complete user item data lock: %w", closeErr)
 	}
 	return data, nil
 }

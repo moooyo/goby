@@ -101,9 +101,12 @@ func checkSubjectStateWrite(ctx context.Context, tx pgx.Tx, subject Subject, req
 	}
 	var actorPolicy identity.ManagedPolicy
 	if actor.Kind == "emby" {
-		actorPolicy, err = identity.ParseRuntimePolicy(account.policy)
-		if err != nil {
-			return libraryAccess{}, ErrForbidden
+		actorPolicy = access.policy
+		if actor.User.ID != subject.UserID {
+			actorPolicy, err = identity.ParseRuntimePolicy(account.policy)
+			if err != nil {
+				return libraryAccess{}, ErrForbidden
+			}
 		}
 		var loginState struct{ LockedOutDate *int64 }
 		if json.Unmarshal(account.policy, &loginState) != nil || loginState.LockedOutDate != nil && *loginState.LockedOutDate != 0 {

@@ -148,6 +148,7 @@ type hlsPriorityProfileCounts struct {
 	requests, active                                   atomic.Int64
 	entered                                            chan struct{}
 	enteredOnce                                        sync.Once
+	stopDiagnosticGate                                 atomic.Pointer[hlsStopDiagnosticGateEvidence]
 	phaseTiming                                        atomic.Pointer[hlsPhaseTimingCase]
 }
 
@@ -168,7 +169,7 @@ type hlsPriorityProfileWarmGate struct {
 }
 
 func (trace *hlsPriorityProfileTracer) TraceQueryStart(ctx context.Context, connection *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
-	recordHLSProfileSQL(ctx, data.SQL)
+	recordHLSProfileSQL(ctx, data.SQL, "query_start")
 	ctx = hlsPhaseTimingQueryStart(ctx, connection, data.SQL)
 	if observer := trace.pgObserver.Load(); observer != nil {
 		ctx = observer.queryStart(ctx, connection, data.SQL)
@@ -176,7 +177,7 @@ func (trace *hlsPriorityProfileTracer) TraceQueryStart(ctx context.Context, conn
 	return ctx
 }
 
-func recordHLSProfileSQL(ctx context.Context, sql string) {
+func recordHLSProfileSQL(ctx context.Context, sql, callback string) {
 	counts, _ := ctx.Value(hlsPriorityProfileContextKey{}).(*hlsPriorityProfileCounts)
 	if counts == nil {
 		return
@@ -192,7 +193,10 @@ func recordHLSProfileSQL(ctx context.Context, sql string) {
 		if counts.entered != nil {
 			// Observe natural database work without holding a lock or delaying
 			// a request to manufacture contention with the stop report.
-			counts.enteredOnce.Do(func() { close(counts.entered) })
+			counts.enteredOnce.Do(func() {
+				hlsStopDiagnosticMarkGate(counts, callback)
+				close(counts.entered)
+			})
 		}
 	}
 	if strings.Contains(statement, "from play_sessions") && strings.Contains(statement, "clock_timestamp()") &&
@@ -227,7 +231,7 @@ func (trace *hlsPriorityProfileTracer) TraceBatchStart(ctx context.Context, conn
 }
 
 func (*hlsPriorityProfileTracer) TraceBatchQuery(ctx context.Context, _ *pgx.Conn, data pgx.TraceBatchQueryData) {
-	recordHLSProfileSQL(ctx, data.SQL)
+	recordHLSProfileSQL(ctx, data.SQL, "batch_result_completion")
 	hlsPhaseTimingBatchQuery(ctx, data.SQL, data.Err != nil)
 }
 
@@ -325,13 +329,17 @@ func hlsPriorityProfileRequest(ctx context.Context, client *http.Client, method,
 		request.Header.Set("Content-Type", "application/json")
 	}
 	started := time.Now()
+	hlsStopDiagnosticClientStart(ctx, phase, started)
 	response, err := client.Do(request)
 	if err != nil {
-		return hlsPriorityProfileResponse{duration: time.Since(started), err: err}
+		elapsed := time.Since(started)
+		hlsStopDiagnosticClientEnd(ctx, phase, started.Add(elapsed))
+		return hlsPriorityProfileResponse{duration: elapsed, err: err}
 	}
 	data, readErr := io.ReadAll(io.LimitReader(response.Body, 17<<20))
 	closeErr := response.Body.Close()
 	elapsed := time.Since(started)
+	hlsStopDiagnosticClientEnd(ctx, phase, started.Add(elapsed))
 	if readErr == nil {
 		readErr = closeErr
 	}
