@@ -142,10 +142,14 @@ func deviceLegacyTableSnapshot(t *testing.T, ctx context.Context, pool *pgxpool.
 
 func assertDeviceLegacyTablesPreserved(t *testing.T, ctx context.Context, pool *pgxpool.Pool, tables []deviceLegacyTable) {
 	t.Helper()
-	var expandedArtworkOptions, introAutomation, previewAutomation bool
+	var expandedArtworkOptions, introAutomation, previewAutomation, backgroundAutomation, waveformAutomation, creditsAutomation, subtitleTimelineAutomation bool
 	if err := pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version=49),
 		EXISTS(SELECT 1 FROM schema_migrations WHERE version=51),
-		EXISTS(SELECT 1 FROM schema_migrations WHERE version=52)`).Scan(&expandedArtworkOptions, &introAutomation, &previewAutomation); err != nil {
+		EXISTS(SELECT 1 FROM schema_migrations WHERE version=52),
+		EXISTS(SELECT 1 FROM schema_migrations WHERE version=57),
+		EXISTS(SELECT 1 FROM schema_migrations WHERE version=58),
+		EXISTS(SELECT 1 FROM schema_migrations WHERE version=59),
+		EXISTS(SELECT 1 FROM schema_migrations WHERE version=60)`).Scan(&expandedArtworkOptions, &introAutomation, &previewAutomation, &backgroundAutomation, &waveformAutomation, &creditsAutomation, &subtitleTimelineAutomation); err != nil {
 		t.Fatal("read the selected library-option migration boundary")
 	}
 	for _, table := range tables {
@@ -165,7 +169,7 @@ func assertDeviceLegacyTablesPreserved(t *testing.T, ctx context.Context, pool *
 			for _, addition := range []struct {
 				applied bool
 				name    string
-			}{{introAutomation, "IntroAnalysisRequested"}, {previewAutomation, "PreviewGenerationRequested"}} {
+			}{{introAutomation, "IntroAnalysisRequested"}, {previewAutomation, "PreviewGenerationRequested"}, {backgroundAutomation, "BackgroundPreviewGenerationRequested"}, {waveformAutomation, "AudioWaveformGenerationRequested"}, {creditsAutomation, "CreditsAnalysisRequested"}, {subtitleTimelineAutomation, "SubtitleTimelineGenerationRequested"}} {
 				if !addition.applied {
 					continue
 				}

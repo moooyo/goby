@@ -16,6 +16,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/moooyo/goby/internal/introskipper"
 	"github.com/moooyo/goby/internal/library"
 )
 
@@ -48,7 +49,10 @@ func validateAnalysisStateProfile(profile library.AnalysisProfile, optionsRaw []
 }
 
 func validAnalysisStateExecutionVersion(raw []byte, schemaVersion int64) bool {
-	var wire struct{ Version int }
+	var wire struct {
+		Version         int
+		DetectorVersion string
+	}
 	if len(raw) == 0 || len(raw) > 131072 || json.Unmarshal(raw, &wire) != nil {
 		return false
 	}
@@ -56,11 +60,37 @@ func validAnalysisStateExecutionVersion(raw []byte, schemaVersion int64) bool {
 	if schemaVersion >= 54 {
 		maximum = 6
 	}
-	return wire.Version >= 1 && wire.Version <= maximum
+	return wire.Version >= 1 && wire.Version <= maximum &&
+		(schemaVersion >= 59 || wire.DetectorVersion != introskipper.CreditsVersion)
 }
 
 func validAnalysisStateResultVersion(version string, schemaVersion int64) bool {
+	if version == library.AnalysisCreditsResultVersion || version == introskipper.CreditsVersion {
+		return schemaVersion >= 59
+	}
 	return schemaVersion >= 54 || version != "intro-skipper-v1"
+}
+
+func validAnalysisStateAdmission(taskKey string, profile, execution []byte, revision, epoch int64, fingerprint string, version int64) bool {
+	if taskKey != library.TaskIntroAnalysisKey && taskKey != library.TaskPreviewGenerationKey && taskKey != library.TaskCreditsAnalysisKey ||
+		taskKey == library.TaskCreditsAnalysisKey && version < 59 ||
+		!validAnalysisStateExecutionVersion(execution, version) ||
+		library.ValidateStoredAnalysisAdmission(profile, execution, revision, epoch, fingerprint) != nil {
+		return false
+	}
+	var wire struct{ Version int }
+	if json.Unmarshal(execution, &wire) != nil {
+		return false
+	}
+	if wire.Version < library.AnalysisExecutionProfileVersion {
+		// Earlier envelopes are validated by their frozen codec above; they
+		// cannot authorize a task introduced only with the credits detector.
+		return taskKey != library.TaskCreditsAnalysisKey
+	}
+	// The strict stored codec already proved the complete v6 wire shape. The
+	// task-specific validator prevents reinterpreting that shape as a new mode.
+	var current library.AnalysisExecutionProfile
+	return json.Unmarshal(execution, &current) == nil && library.ValidateAnalysisExecutionForTask(taskKey, current) == nil
 }
 
 func validAnalysisStateFeatureVersion(payload []byte, schemaVersion int64) bool {
@@ -137,7 +167,7 @@ func validAnalysisStateActor(actor analysisStateActor, analysis bool) bool {
 	return false
 }
 
-func validateAnalysisTaskState(ctx context.Context, tx pgx.Tx) error {
+func validateAnalysisTaskState(ctx context.Context, tx pgx.Tx, version int64) error {
 	return analysisStateRows(ctx, tx, `SELECT task_key,analysis_input,analysis_config_fingerprint,source,actor_kind,
 		actor_user_id,actor_session_id,actor_application_key_id,actor_client_session_id,actor_peer_ip FROM task_runs ORDER BY id`, func(rows pgx.Rows) error {
 		var key, fingerprint string
@@ -146,7 +176,10 @@ func validateAnalysisTaskState(ctx context.Context, tx pgx.Tx) error {
 		if err := rows.Scan(&key, &raw, &fingerprint, &actor.source, &actor.kind, &actor.user, &actor.session, &actor.application, &actor.client, &actor.peer); err != nil {
 			return classifyResourceStateError(ctx, err)
 		}
-		analysis := key == library.TaskIntroAnalysisKey || key == library.TaskPreviewGenerationKey
+		if key == library.TaskCreditsAnalysisKey && version < 59 || key == library.TaskSubtitleTimelineGenerationKey && version < 60 {
+			return ErrSchema
+		}
+		analysis := key == library.TaskIntroAnalysisKey || key == library.TaskPreviewGenerationKey || key == library.TaskCreditsAnalysisKey
 		if !validAnalysisStateActor(actor, analysis) {
 			return ErrSchema
 		}
@@ -164,14 +197,15 @@ func validateAnalysisTaskState(ctx context.Context, tx pgx.Tx) error {
 }
 
 func validateAnalysisAdmissionState(ctx context.Context, tx pgx.Tx, version int64) error {
-	if err := analysisStateRows(ctx, tx, `SELECT profile,execution,configuration_revision,publication_epoch,fingerprint FROM analysis_run_profiles ORDER BY run_id`, func(rows pgx.Rows) error {
+	if err := analysisStateRows(ctx, tx, `SELECT profile.profile,profile.execution,profile.configuration_revision,profile.publication_epoch,profile.fingerprint,
+		COALESCE(run.task_key,'') FROM analysis_run_profiles profile LEFT JOIN task_runs run ON run.id=profile.run_id ORDER BY profile.run_id`, func(rows pgx.Rows) error {
 		var profile, execution []byte
 		var revision, epoch int64
-		var fingerprint string
-		if err := rows.Scan(&profile, &execution, &revision, &epoch, &fingerprint); err != nil {
+		var fingerprint, taskKey string
+		if err := rows.Scan(&profile, &execution, &revision, &epoch, &fingerprint, &taskKey); err != nil {
 			return classifyResourceStateError(ctx, err)
 		}
-		if !validAnalysisStateExecutionVersion(execution, version) || library.ValidateStoredAnalysisAdmission(profile, execution, revision, epoch, fingerprint) != nil {
+		if !validAnalysisStateAdmission(taskKey, profile, execution, revision, epoch, fingerprint, version) {
 			return ErrSchema
 		}
 		return nil

@@ -140,6 +140,22 @@ The same semantic boundary runs after a trusted finalizer and during locked
 recovery inspection. Any failure rolls back the entire target transaction.
 Historical schema 26 catalog and Theme predicates remain unchanged.
 
+Schema 61 adds external bitmap subtitle inventory without changing historical
+text subtitle rows. The archive retains public stream indexes, inactive index
+reservations, source-local stream numbers, language flags, and exact SUP or
+IDX/SUB component snapshots. Restored components must have the complete known
+JSON shape, bounded canonical paths and hashes, and a root in the item's
+library. All text, owned-text, and bitmap subtitle identities share one index
+namespace, including inactive history. A changed current probe or a move to
+another root in the same library does not rewrite the retained snapshot;
+ordinary read and generation paths revalidate current source authority.
+
+The database archive contains no external subtitle bytes or generated GSTL
+files. Recovery never opens, regenerates, modifies, or deletes source-adjacent
+files. Their source paths and hashes are evidence, not execution authority.
+Restoring schema 60 creates an empty bitmap inventory and preserves existing
+timeline requests, policies, and retired text indexes without scheduling work.
+
 Schema baselines under `catalogs/` are release artifacts generated using
 `ExportCatalog` on a fresh database built from the compiled migrations. They
 must be reviewed, verified on PostgreSQL 17, and committed. The first supported

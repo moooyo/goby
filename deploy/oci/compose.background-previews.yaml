@@ -1,0 +1,13 @@
+# Optional media-write extension for persistent background clips, audio waveforms,
+# and bitmap subtitle timelines. It does not enable automatic generation.
+# Apply after compose.yaml (and compose.amd.yaml). The default remains read-only.
+# The container root filesystem and all other mounts retain their base settings.
+services:
+  goby:
+    volumes:
+      - type: bind
+        source: ${GOBY_MEDIA_DIR:?Set the approved writable media directory}
+        target: /media
+        read_only: false
+        bind:
+          create_host_path: false

@@ -61,6 +61,7 @@ func runDolbyVisionRPUProbe(ctx context.Context, executable string, file *os.Fil
 		metadata.RPUVerified, metadata.ResidualDisabled, metadata.RPUFrameCount = false, false, 0
 		metadata.RPUProfile, metadata.RPUResidualMixed = 0, false
 		metadata.RPUValidationReason = dolbyVisionRPUUnsupported
+		metadata.InBandParameterSets = false
 		stream.DolbyVision = &metadata
 		if stream.Codec != "hevc" || !metadata.RPUPresent || !metadata.BLPresent ||
 			(metadata.Profile != 5 && metadata.Profile != 7 && metadata.Profile != 8) ||
@@ -114,10 +115,15 @@ func runDolbyVisionRPUProbe(ctx context.Context, executable string, file *os.Fil
 				evidence = dolbyVisionRPUEvidence{reason: dolbyVisionRPUTimeout}
 			case validationErr != nil:
 				evidence = dolbyVisionRPUEvidence{reason: dolbyVisionRPUScanFailed}
-			case len(validation.stderr) != 0:
+			case !dolbyVisionRPUValidationStderrAllowed(validation.stderr):
 				evidence = dolbyVisionRPUEvidence{reason: dolbyVisionRPUDecoderError}
 			case len(validation.stdout) != 0:
 				evidence = dolbyVisionRPUEvidence{reason: dolbyVisionRPUInvalidScan}
+			default:
+				// The sole accepted nonempty diagnostic identifies an empty
+				// hvcC parameter-set array. Capture it only after both complete
+				// scans succeed; failed or older evidence must not retain it.
+				metadata.InBandParameterSets = len(validation.stderr) != 0
 			}
 		}
 		metadata.RPUVerified, metadata.ResidualDisabled = evidence.verified, evidence.residualDisabled

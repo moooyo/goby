@@ -186,7 +186,8 @@ func TestAdminMediaAnalysisDTOsUseClosedSafeShapesAndEmptyArrays(t *testing.T) {
 	if err := json.Unmarshal(encoded, &object); err != nil {
 		t.Fatal(err)
 	}
-	if len(object) != 5 || object["Cache"] != nil || !reflect.DeepEqual(object["Reasons"], []any{}) {
+	if len(object) != 9 || object["Cache"] != nil || !reflect.DeepEqual(object["Reasons"], []any{}) || !reflect.DeepEqual(object["CreditsReasons"], []any{}) ||
+		object["SubtitleTimelineAvailable"] != false || !reflect.DeepEqual(object["SubtitleTimelineReasons"], []any{}) {
 		t.Fatal("runtime safe empty projection changed")
 	}
 }

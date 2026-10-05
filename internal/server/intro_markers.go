@@ -133,6 +133,11 @@ func itemChaptersDTO(item library.Item) []map[string]any {
 			map[string]any{"StartPositionTicks": item.Intro.StartTicks, "Name": "Intro Start", "MarkerType": "IntroStart"},
 			map[string]any{"StartPositionTicks": item.Intro.EndTicks, "Name": "Intro End", "MarkerType": "IntroEnd"})
 	}
+	if item.Credits != nil {
+		chapters = append(chapters, map[string]any{"StartPositionTicks": item.Credits.StartTicks, "Name": "Credits Start", "MarkerType": "CreditsStart"})
+	} else if len(item.DetectedCredits) > 0 {
+		chapters = append(chapters, map[string]any{"StartPositionTicks": item.DetectedCredits[0].StartTicks, "Name": "Credits Start", "MarkerType": "CreditsStart"})
+	}
 	sort.SliceStable(chapters, func(i, j int) bool {
 		return chapters[i]["StartPositionTicks"].(int64) < chapters[j]["StartPositionTicks"].(int64)
 	})

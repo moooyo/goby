@@ -213,7 +213,7 @@ func readIndexedMediaSource(ctx context.Context, tx pgx.Tx, access libraryAccess
 	item, err := scanItem(tx.QueryRow(ctx, "SELECT "+access.itemColumnsSQL()+`,
 		i.relative_path, i.file_identity, i.file_size, i.modified_at,
 		r.id, r.library_id, r.path, r.allowed_path, r.relative_path, r.binding_revision,
-		CASE WHEN i.type='Episode' THEN `+introSourceRevisionSQL+` ELSE '' END
+		CASE WHEN i.type IN ('Movie','Episode') THEN `+introSourceRevisionSQL+` ELSE '' END
 		FROM items i JOIN library_roots r ON r.id = i.root_id AND r.library_id = i.library_id
 		WHERE i.id = $1 AND NOT i.is_folder AND i.media IS NOT NULL
 		AND i.type IN ('Movie', 'Episode', 'Video', 'Audio')

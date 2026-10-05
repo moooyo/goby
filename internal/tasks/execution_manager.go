@@ -86,7 +86,7 @@ func (m *Manager) reconcileExecution(ctx context.Context, run Run, child Child, 
 		return false, nil
 	}
 	group := ""
-	if isAnalysisTask(run.TaskKey) {
+	if isMediaAnalysisExecution(run.TaskKey) {
 		group = analysisConcurrencyGroup
 		for _, execution := range m.executions {
 			if execution.group == group {

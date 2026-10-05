@@ -3,7 +3,11 @@ export interface LibraryOptions {
   EnableLocalImages: boolean;
   EnableEmbeddedArtwork?: boolean;
   EnableIntroDetection?: boolean;
+  EnableCreditsDetection?: boolean;
   EnablePreviewGeneration?: boolean;
+  EnableBackgroundPreviewGeneration?: boolean;
+  EnableAudioWaveformGeneration?: boolean;
+  EnableSubtitleTimelineGeneration?: boolean;
 }
 
 export function validLibraryOptions(value: unknown): value is LibraryOptions {
@@ -12,7 +16,11 @@ export function validLibraryOptions(value: unknown): value is LibraryOptions {
     && 'EnableLocalImages' in value && typeof value.EnableLocalImages === 'boolean'
     && (!('EnableEmbeddedArtwork' in value) || typeof value.EnableEmbeddedArtwork === 'boolean')
     && (!('EnableIntroDetection' in value) || typeof value.EnableIntroDetection === 'boolean')
-    && (!('EnablePreviewGeneration' in value) || typeof value.EnablePreviewGeneration === 'boolean');
+    && (!('EnableCreditsDetection' in value) || typeof value.EnableCreditsDetection === 'boolean')
+    && (!('EnablePreviewGeneration' in value) || typeof value.EnablePreviewGeneration === 'boolean')
+    && (!('EnableBackgroundPreviewGeneration' in value) || typeof value.EnableBackgroundPreviewGeneration === 'boolean')
+    && (!('EnableAudioWaveformGeneration' in value) || typeof value.EnableAudioWaveformGeneration === 'boolean')
+    && (!('EnableSubtitleTimelineGeneration' in value) || typeof value.EnableSubtitleTimelineGeneration === 'boolean');
 }
 
 export function completeLibraryOptions(value: LibraryOptions): Required<LibraryOptions> {
@@ -21,6 +29,10 @@ export function completeLibraryOptions(value: LibraryOptions): Required<LibraryO
     EnableLocalImages: value.EnableLocalImages,
     EnableEmbeddedArtwork: value.EnableEmbeddedArtwork ?? true,
     EnableIntroDetection: value.EnableIntroDetection ?? false,
+    EnableCreditsDetection: value.EnableCreditsDetection ?? false,
     EnablePreviewGeneration: value.EnablePreviewGeneration ?? false,
+    EnableBackgroundPreviewGeneration: value.EnableBackgroundPreviewGeneration ?? false,
+    EnableAudioWaveformGeneration: value.EnableAudioWaveformGeneration ?? false,
+    EnableSubtitleTimelineGeneration: value.EnableSubtitleTimelineGeneration ?? false,
   };
 }

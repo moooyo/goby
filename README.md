@@ -1,15 +1,18 @@
 # Goby
 
 Goby is a Linux media server with an Emby-compatible API, implemented in Go with
-PostgreSQL and FFmpeg. Its React + Material UI dashboard is for administration;
-playback uses supported third-party clients. The project license has not yet
-been selected.
+PostgreSQL and FFmpeg. Its React + Material UI dashboard is for administration.
+Goby now also has a [standalone React + Vite player](web/player/README.md),
+alongside supported third-party playback clients. The player builds and deploys
+separately from the Go executable. The project license has not yet been selected.
 
-Automatic seek-preview generation is complete within its selected scope.
-The expanded intro assessment is complete, but broader intro recognition has
-not passed: short intros and differing audio/video versions still need improvement.
-Earlier compatibility, resilience and Docker deliveries retain their recorded
-acceptance boundaries. Start with
+The October 5 release packages the standalone player, embedded
+administrator dashboard, persistent media analysis and expanded Dolby Vision
+background generation at schema 61. Its software, AMD and player archives passed
+integrated container, GPU, persistence, schema-upgrade and rollback checks.
+See the [release record](docs/development/player-release-20261005.md) for exact
+identities and acceptance status. Earlier compatibility, recognition and Docker
+receipts retain their original boundaries. Start with
 [current status](docs/development/current-status.md) and the
 [current execution plan](docs/planning/current-execution-plan.md). Older dated
 records preserve their original results and failures; they are not a cumulative
@@ -27,7 +30,8 @@ support boundary.
 | --- | --- |
 | Library and accounts | Persistent media identities and user state, bounded scans, local NFO metadata, artwork, library permissions, account/device/session management, playlists and collections, music discovery, Search/Hints and NextUp. See the [implemented API surface](docs/api/implemented.md). |
 | Playback | Authenticated direct and Range delivery, progressive and HLS remux/transcode, selected H.264/HEVC/AV1 outputs, TS/fMP4/packed-audio HLS, text and bitmap subtitle processing, and source-proven nonzero copy seeking. [Media contracts](docs/development/advanced-media.md) define the supported combinations. |
-| Media analysis | Enable **Automatic intro detection** in a TV library and **Automatic seek previews** in a Movies, TV shows or Mixed media library. Both run in the background; Tasks exposes progress, failures and stopping. Qualified intros are available for playback without manual review; no match leaves playback unchanged. Turning off preview generation retains existing valid previews. See the [current result](docs/development/bif-intro-expansion-20260930.md), [media-analysis contract](docs/api/media-analysis.md) and [seek previews](docs/api/seek-previews.md). |
+| Goby player | Independent React + Vite consumer application based on the October 4 design handoff, with a separate nginx image and optional Compose integration. See the [player guide](web/player/README.md) and [backend capability assessment](web/player/BACKEND-CAPABILITIES.md). |
+| Media analysis | Opt-in intro/credits detection, BIF seek previews, permanent source-side background clips, per-track waveforms and embedded/external bitmap subtitle timelines. Tasks exposes progress, failures and stopping. Existing sidecars survive disabling generation; explicit Force regeneration is required to replace them. See the [media-analysis contract](docs/api/media-analysis.md), [background previews](docs/api/background-previews.md), [audio waveforms](docs/api/audio-waveforms.md), [subtitle timelines](docs/api/subtitle-timelines.md) and [credits markers](docs/api/credits-markers.md). |
 | Administration | Users, libraries, metadata editing, activity/logs, scheduled tasks, managed CPU/AMD selection and encoding settings, notifications, and backup/recovery. [Managed execution settings](docs/api/managed-execution-settings.md) distinguish changes for new work from listener settings that require restart. |
 | Recovery | Goby encrypted backups, restore planning, activation/rollback and an offline CLI available inside the image, plus accepted migration, process/database restart, selected storage-fault and isolated guest-recovery scenarios. See [backup and recovery](docs/development/backup-recovery.md) and the [functional closeout](docs/development/phase3-functional-closeout-20260929.md). |
 
@@ -38,32 +42,39 @@ every GPU or codec tuple. See the [AMD media contract](docs/development/amd-vide
 
 ## Run Goby
 
+For player development, use the [standalone player guide](web/player/README.md).
+For its independent image archive and Compose deployment, use the
+[player release guide](deploy/oci/README.player.md). The optional
+[`compose.player.yaml`](deploy/oci/compose.player.yaml) adds its own nginx service
+to the backend stack. `goby-docker.py prepare --with-player` configures both
+services; `--writable-media` permits source-side generation writes when the
+host directory grants the backend access. Generation remains opt-in.
+
 Start with the [Docker quick start](deploy/oci/QUICKSTART.md). The operations
 toolkit provides `goby-docker.py prepare`, `check`, `start`, `status`, `logs`
 and `stop` for the existing Linux amd64 software and AMD image profiles.
-[current-release.json](deploy/oci/current-release.json) binds their accepted
-image IDs, archives and companions. Both profiles include the embedded
+[current-release.json](deploy/oci/current-release.json) binds accepted
+image IDs, archives and companions for release `2026-10-05-player-media`, including
+the optional independent player. Both backend profiles include the embedded
 administrator dashboard and use an external PostgreSQL 17 server.
 
-The current archives are under
-`D:/Code/goby/.artifacts/bif-intro-20260930/software` and `amd`, with
-`goby-docker-operations.zip` in their parent directory. Both image profiles carry
-application source `33445db2e2e64b6871116332c44605261a1bf2d4` and schema 52.
-This source integrates the Material 3 administrator dashboard. Both final Docker
-profiles passed actual administrator UI and retained-BIF checks; owned containers,
-networks and database clients are absent, PostgreSQL is stopped, and unrelated
-services are unchanged. The initial `0014bef` artifacts remain historical inputs.
-The [BIF automation and intro assessment result](docs/development/bif-intro-expansion-20260930.md)
-and [manifest](docs/development/bif-intro-expansion-results-20260930.json)
-bind current evidence and artifacts. Git integration is recorded separately.
-The earlier [operations record](docs/development/docker-operations-20260930.md)
-retains the helper's 14-test and software operations evidence at its original scope.
+The October 5 archives are under
+`C:/Users/moooyo/.codex/worktrees/165c/goby/.artifacts/player-release-20261005/delivery/`
+in `software`, `amd` and `player`, alongside `goby-docker-operations.zip`.
+They bind application source
+`7aaaeed44526848737270089ab0227d2d410f864` and schema 61. The
+[release record](docs/development/player-release-20261005.md) records source,
+image, media-tool and archive identities separately from runtime acceptance.
+The September 30 schema-52 [BIF result](docs/development/bif-intro-expansion-20260930.md)
+and [manifest](docs/development/bif-intro-expansion-results-20260930.json), and the
+earlier [operations record](docs/development/docker-operations-20260930.md),
+remain historical evidence for their own sources and artifacts.
 
-Open library settings to enable the desired automatic features. The new
-`EnablePreviewGeneration` option defaults to false, including for existing
+Open library settings to enable the desired automatic features. For BIF seek
+previews, `EnablePreviewGeneration` defaults to false, including for existing
 libraries after upgrade. Enabling it, completing a scan or changing the preview
 profile requests background work; the default task schedule also runs daily.
-There is no separate select/build/Force step in the administrator workflow.
+There is no separate select/build/Force step in the normal BIF workflow.
 Existing valid previews survive disabling the option and container recreation.
 The default preview interval remains 10 seconds and the playback protocol is unchanged.
 
@@ -127,8 +138,12 @@ closeout. Offline synchronization, general recommendations and game/book media
 remain unselected. These boundaries do not reopen completed functional or OCI
 journeys.
 
+The October 4, 2026 user decision selects Goby's own consumer web player and
+supersedes its earlier exclusion. Design features without corresponding backend
+capabilities are listed in the [player assessment](web/player/BACKEND-CAPABILITIES.md).
+
 Live TV/EPG/DVR/tuners, DLNA, external channels, synchronized group playback,
-a consumer web player, Emby Connect/cloud identity, Emby package installation and
+Emby's proprietary web application/WebAppService, Emby Connect/cloud identity, Emby package installation and
 proprietary binary-plugin compatibility are explicitly outside the selected
 product scope. See the [implementation scope](docs/api/implementation-scope.md)
 for the distinction between implemented, deferred and excluded capabilities.

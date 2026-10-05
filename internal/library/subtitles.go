@@ -70,6 +70,8 @@ func attachSubtitles(ctx context.Context, tx pgx.Tx, items []Item) error {
 	positions := make(map[string][]int, len(items))
 	for index := range items {
 		items[index].Subtitles = []Subtitle{}
+		items[index].BitmapSubtitles = []BitmapSubtitle{}
+		items[index].bitmapSubtitleFacts = []storedBitmapSubtitle{}
 		if items[index].IsFolder || items[index].Media == nil {
 			continue
 		}
@@ -111,11 +113,12 @@ func attachSubtitles(ctx context.Context, tx pgx.Tx, items []Item) error {
 	if err := attachOwnedSubtitles(ctx, tx, items, ids, positions); err != nil {
 		return err
 	}
+	if err := attachBitmapSubtitles(ctx, tx, items, ids, positions); err != nil {
+		return err
+	}
 	for index := range items {
 		sort.Slice(items[index].Subtitles, func(a, b int) bool { return items[index].Subtitles[a].Index < items[index].Subtitles[b].Index })
-		if len(items[index].Subtitles) > maxActiveSubtitles {
-			items[index].Subtitles = items[index].Subtitles[:maxActiveSubtitles]
-		}
+		trimSubtitleProjection(&items[index])
 	}
 	return nil
 }

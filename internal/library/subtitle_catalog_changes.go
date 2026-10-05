@@ -32,7 +32,15 @@ func readSubtitleCatalogProjection(ctx context.Context, tx pgx.Tx, itemID string
 			FROM item_owned_subtitles s JOIN items i ON i.id=s.item_id AND i.root_id=s.root_id
 			JOIN library_roots r ON r.id=i.root_id AND r.library_id=i.library_id
 			WHERE i.id=$1 AND NOT i.is_folder AND i.media IS NOT NULL AND s.active
-			AND s.stream_index>$2 AND s.source_revision=`+ownedSubtitleSourceRevisionSQL+` AND `+directItemSQL("i")+`) combined
+			AND s.stream_index>$2 AND s.source_revision=`+ownedSubtitleSourceRevisionSQL+` AND `+directItemSQL("i")+`
+			UNION ALL
+			SELECT s.stream_index,s.codec,s.language,s.title,s.is_default,s.is_forced,s.is_hearing_impaired,
+				'',reverse(split_part(reverse(s.relative_path),'/',1)),s.source_hash,
+				(SELECT COALESCE(sum((component->>'Size')::bigint),0)::bigint FROM jsonb_array_elements(s.components) component)
+			FROM item_bitmap_subtitles s JOIN items i ON i.id=s.item_id AND i.root_id=s.root_id
+			JOIN library_roots r ON r.id=i.root_id AND r.library_id=i.library_id
+			WHERE i.id=$1 AND NOT i.is_folder AND i.media IS NOT NULL AND s.active
+			AND s.stream_index>$2 AND `+directItemSQL("i")+`) combined
 			ORDER BY combined.stream_index LIMIT $3) track`, itemID, highestEmbedded, maxActiveSubtitles).Scan(&projection)
 	if err != nil {
 		return "", fmt.Errorf("read subtitle catalog notification projection: %w", err)

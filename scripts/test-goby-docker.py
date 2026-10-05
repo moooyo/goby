@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 from urllib.parse import parse_qs, urlsplit
@@ -174,6 +175,164 @@ class PortBindingTests(unittest.TestCase):
             with self.subTest(ports=ports), self.assertRaises(HELPER.OperationError) as error:
                 HELPER.published_loopback_port({"Ports": ports}, 38962)
             self.assertEqual(error.exception.code, "container_port_mismatch")
+
+
+class PlayerOperationsTests(unittest.TestCase):
+    setUp = OperationsTests.setUp
+    assert_code = OperationsTests.assert_code
+
+    def catalog(self, with_player=True):
+        contents = {"compose.yaml": b"services: {}\n", "goby.env.example": b"GOBY_SERVER_NAME=Goby\n",
+                    "compose.background-previews.yaml": b"services: {goby: {}}\n",
+                    "compose.player.yaml": b"services: {player: {}}\n"}
+        backend_archive = b"recorded backend image archive"
+        player_archive = b"recorded player image archive"
+        catalog = {"kind": "goby-docker-current-release", "version": 1,
+                   "application": {"sourceRevision": "b" * 40, "sha256": "c" * 64},
+                   "profiles": {"software": {"imageId": "sha256:" + "d" * 64,
+                                "archive": {"name": "backend.tar", "bytes": len(backend_archive),
+                                            "sha256": hashlib.sha256(backend_archive).hexdigest()},
+                                "companions": list(contents),
+                                "companionHashes": {name: hashlib.sha256(data).hexdigest() for name, data in contents.items()}}}}
+        if with_player:
+            catalog["player"] = {"imageId": "sha256:" + "e" * 64,
+                                 "archive": {"name": "player.tar", "bytes": len(player_archive),
+                                             "sha256": hashlib.sha256(player_archive).hexdigest()}}
+        for name, data in {**contents, "backend.tar": backend_archive, "player.tar": player_archive}.items():
+            (self.release / name).write_bytes(data)
+        (self.release / "current-release.json").write_text(json.dumps(catalog), encoding="utf-8")
+        return catalog, contents
+
+    def prepare_arguments(self, *extra):
+        database = self.root / "database.url"
+        database.write_text("postgres://goby:private@database.example/goby\n", encoding="utf-8")
+        database.chmod(0o600)
+        return HELPER.parser().parse_args(["prepare", "--release-dir", str(self.release),
+                                         "--directory", str(self.root / "installation"),
+                                         "--media-dir", str(self.media), "--database-url-file", str(database),
+                                         "--public-url", "http://localhost:8080", *extra])
+
+    def test_player_is_optional_for_existing_release_catalogs(self):
+        catalog, contents = self.catalog(with_player=False)
+        self.assertEqual(HELPER.release_profile(self.release, "software")[0], catalog)
+        self.assert_code("release_player_missing", HELPER.release_player, catalog, contents)
+        self.assertEqual(HELPER.selected_services({}), ["goby"])
+        self.assertFalse(HELPER.writable_media({}))
+        self.assertTrue(HELPER.writable_media({"writable_subtitles": True}))
+
+    def test_player_identity_archive_and_companion_are_required_together(self):
+        catalog, contents = self.catalog()
+        self.assertEqual(HELPER.release_player(catalog, contents), catalog["player"])
+        del contents["compose.player.yaml"]
+        self.assert_code("player_companion_missing", HELPER.release_player, catalog, contents)
+        catalog["player"]["archive"]["name"] = "../outside.tar"
+        self.assert_code("release_player_archive_invalid", HELPER.release_player, catalog, contents)
+
+    def test_prepare_records_player_and_writable_media_without_changing_media_ownership(self):
+        catalog, _ = self.catalog()
+        args = self.prepare_arguments("--with-player", "--player-host-port", "8081", "--writable-media")
+        with mock.patch.object(HELPER.os, "geteuid", return_value=0), \
+                mock.patch.object(HELPER.os, "chown") as chown, \
+                mock.patch.object(HELPER, "inspect_image", return_value={"Id": "present"}) as inspect, \
+                mock.patch.object(HELPER, "command"), mock.patch.object(HELPER, "emit"):
+            HELPER.prepare(args)
+        directory, metadata = HELPER.installation(self.root / "installation")
+        self.assertEqual(metadata["compose_files"], ["compose.yaml", "compose.background-previews.yaml", "compose.player.yaml"])
+        self.assertEqual(HELPER.selected_services(metadata), ["goby", "player"])
+        self.assertTrue(HELPER.writable_media(metadata))
+        self.assertEqual(HELPER.configured_image(directory, "player"), catalog["player"]["imageId"])
+        self.assertEqual(HELPER.configured_port(directory, "player"), 8081)
+        self.assertEqual(HELPER.configured_value(directory, "GOBY_PLAYER_API_UPSTREAM"), "http://goby:8096")
+        self.assertEqual({call.args[0] for call in chown.call_args_list},
+                         {directory / "state", directory / "cache", directory / "logs"})
+        self.assertIn(mock.call(catalog["player"]["imageId"], "101:101"), inspect.call_args_list)
+
+    def test_prepare_rejects_mismatched_player_archive_before_creating_installation(self):
+        self.catalog()
+        (self.release / "player.tar").write_bytes(b"wrong player release")
+        args = self.prepare_arguments("--with-player")
+        with mock.patch.object(HELPER.os, "geteuid", return_value=0), \
+                mock.patch.object(HELPER, "inspect_image", return_value={"Id": "present"}), \
+                mock.patch.object(HELPER, "command"):
+            self.assert_code("archive_hash_mismatch", HELPER.prepare, args)
+        self.assertFalse((self.root / "installation").exists())
+
+    def test_prepare_rejects_unselected_or_conflicting_player_ports(self):
+        self.catalog()
+        with mock.patch.object(HELPER.os, "geteuid", return_value=0):
+            self.assert_code("player_option_without_service", HELPER.prepare,
+                             self.prepare_arguments("--player-host-port", "8081"))
+            self.assert_code("player_host_port_invalid", HELPER.prepare,
+                             self.prepare_arguments("--with-player", "--player-host-port", "8096"))
+
+    def test_player_loopback_mapping_must_match_the_player_container(self):
+        correct = {"Ports": {"8080/tcp": [{"HostIp": "127.0.0.1", "HostPort": "8081"}]}}
+        self.assertEqual(HELPER.published_loopback_port(correct, 8081, "player"), 8081)
+        self.assert_code("container_port_mismatch", HELPER.published_loopback_port, correct, 8096, "player")
+        self.assert_code("container_port_mismatch", HELPER.published_loopback_port, correct, 8081)
+
+    def test_selected_player_lifecycle_and_logs_include_both_services(self):
+        metadata = {"player": {"image_id": "sha256:" + "e" * 64}}
+        environment = self.root / "goby.env"
+        environment.write_text("GOBY_SETUP_TOKEN=private-token\n", encoding="utf-8")
+        environment.chmod(0o600)
+        completed = subprocess.CompletedProcess([], 0, b"goby | private-token\nplayer | healthy\n", b"")
+        for action, expected in (("start", ["up", "--detach", "--no-build", "--pull", "never", "goby", "player"]),
+                                 ("stop", ["stop", "player", "goby"]),
+                                 ("logs", ["logs", "--no-color", "--tail", "100", "goby", "player"])):
+            with self.subTest(action=action), \
+                    mock.patch.object(HELPER, "installation", return_value=(self.root, metadata)), \
+                    mock.patch.object(HELPER, "check_installation"), \
+                    mock.patch.object(HELPER, "status_installation", return_value={"status": "ready"}), \
+                    mock.patch.object(HELPER, "compose", return_value=completed) as compose, \
+                    mock.patch.object(HELPER, "emit"), mock.patch("builtins.print") as output:
+                args = HELPER.parser().parse_args([action, "--directory", str(self.root)])
+                self.assertEqual(HELPER.operate(args), 0)
+                self.assertEqual(compose.call_args.args[2], expected)
+                if action == "logs":
+                    self.assertNotIn("private-token", output.call_args.args[0])
+                    self.assertIn("player | healthy", output.call_args.args[0])
+
+    def test_status_requires_both_selected_services_ready(self):
+        metadata = {"player": {"image_id": "sha256:" + "e" * 64}}
+        for backend, player, expected in (("ready", "ready", "ready"), ("ready", "not_ready", "not_ready"),
+                                          ("stopped", "stopped", "stopped"), ("stopped", "not_ready", "not_ready"),
+                                          ("not_created", "not_created", "not_created")):
+            with self.subTest(backend=backend, player=player), mock.patch.object(HELPER, "service_status",
+                    side_effect=[{"status": backend}, {"status": player}]):
+                result = HELPER.status_installation(self.root, metadata)
+            self.assertEqual(result["status"], expected)
+            self.assertEqual(result["services"]["goby"]["status"], backend)
+            self.assertEqual(result["services"]["player"]["status"], player)
+
+    def test_player_health_alone_cannot_pass_api_proxy_readiness(self):
+        def check(bodies):
+            connections = []
+            for body in bodies:
+                connection = mock.Mock()
+                connection.getresponse.return_value.status = 200
+                connection.getresponse.return_value.read.return_value = body
+                connections.append(connection)
+            with mock.patch.object(HELPER.http.client, "HTTPConnection", side_effect=connections):
+                return HELPER.player_readiness(8081, 8096), connections
+        result, connections = check([b"ok\n", b'{"Id":"expected"}', b'{"Id":"expected"}'])
+        self.assertEqual(result, ("ready", None))
+        self.assertTrue(all(connection.close.called for connection in connections))
+        for proxied in (b'<html>fallback page</html>', b'{"Id":"another-backend"}', b'{"ServerName":"Goby"}'):
+            result, _ = check([b"ok\n", b'{"Id":"expected"}', proxied])
+            self.assertEqual(result, ("not_ready", "player_proxy_not_ready"))
+
+    def test_media_write_failure_is_explained_without_permission_mutation(self):
+        metadata = {"profile": "software", "project_name": "goby-" + "a" * 16, "writable_media": True}
+        failed = subprocess.CompletedProcess([], 1, b"MEDIA_NOT_WRITABLE\n", b"")
+        with mock.patch.object(HELPER, "configured_image", return_value="sha256:" + "b" * 64), \
+                mock.patch.object(HELPER, "inspect_image", return_value={}), \
+                mock.patch.object(HELPER, "compose", return_value=subprocess.CompletedProcess([], 0, b"", b"")), \
+                mock.patch.object(HELPER, "container_check", return_value=failed) as checked, \
+                mock.patch.object(HELPER.os, "chown") as chown:
+            self.assert_code("media_not_writable", HELPER.check_installation, self.root, metadata)
+        self.assertEqual(checked.call_args.args[-1], ["writable", "software"])
+        chown.assert_not_called()
 
 
 if __name__ == "__main__":

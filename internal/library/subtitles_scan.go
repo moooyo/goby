@@ -44,7 +44,10 @@ func (snapshot subtitleScanSnapshot) matches(source storedSubtitle) bool {
 // outside the owned catalog transaction, with bounded descriptors and input.
 // Only a complete stable directory listing can retire absent file identities.
 func (state *scanState) scanSubtitles(itemID, relative string, probe *media.Info) error {
-	return state.retrySidecarScan(func() error { return state.scanSubtitlesAttempt(itemID, relative, probe) })
+	if err := state.retrySidecarScan(func() error { return state.scanSubtitlesAttempt(itemID, relative, probe) }); err != nil {
+		return err
+	}
+	return state.retrySidecarScan(func() error { return state.scanBitmapSubtitlesAttempt(itemID, relative, probe) })
 }
 
 func (state *scanState) scanSubtitlesAttempt(itemID, relative string, probe *media.Info) (resultErr error) {
@@ -277,7 +280,8 @@ func (state *scanState) readEmptySubtitleScanLocked(ctx context.Context, itemID,
 	var mediaJSON []byte
 	var active bool
 	err := state.store.ownership.conn.QueryRow(readCtx, `SELECT i.file_identity, i.file_size, i.modified_at, i.media,
-		EXISTS(SELECT 1 FROM item_subtitles s WHERE s.item_id = i.id AND s.active)
+		(EXISTS(SELECT 1 FROM item_subtitles s WHERE s.item_id = i.id AND s.active)
+		 OR EXISTS(SELECT 1 FROM item_bitmap_subtitles s WHERE s.item_id = i.id AND s.active))
 		FROM items i JOIN library_roots r ON r.id = i.root_id AND r.library_id = i.library_id
 		WHERE i.id = $1 AND i.library_id = $2 AND i.root_id = $3 AND i.relative_path = $4
 		AND NOT i.is_folder AND i.media IS NOT NULL`,

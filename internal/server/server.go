@@ -69,6 +69,9 @@ type Server struct {
 	mediaDiagnostics              *mediaDiagnosticRuntime
 	mediaOperations               *mediaOperationsRuntime
 	mediaAnalysis                 *mediaAnalysisRuntime
+	backgroundPreviews            *backgroundPreviewRuntime
+	audioWaveforms                *audioWaveformRuntime
+	subtitleTimelines             *subtitleTimelineRuntime
 	notificationStore             *notifications.Store
 	notificationRuntime           *notifications.Runtime
 	notificationOptions           notifications.RuntimeOptions
@@ -149,6 +152,21 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 		return nil, err
 	}
 	app.mediaAnalysis, err = newMediaAnalysisRuntime(ctx, app)
+	if err != nil {
+		_ = app.Close(context.Background())
+		return nil, err
+	}
+	app.backgroundPreviews, err = newBackgroundPreviewRuntime(ctx, app)
+	if err != nil {
+		_ = app.Close(context.Background())
+		return nil, err
+	}
+	app.audioWaveforms, err = newAudioWaveformRuntime(ctx, app)
+	if err != nil {
+		_ = app.Close(context.Background())
+		return nil, err
+	}
+	app.subtitleTimelines, err = newSubtitleTimelineRuntime(ctx, app)
 	if err != nil {
 		_ = app.Close(context.Background())
 		return nil, err
@@ -300,6 +318,11 @@ func (s *Server) Handler() http.Handler {
 	s.registerApplicationKeyRoutes(mux)
 	s.registerAdminMetadataRoutes(mux)
 	s.registerIntroMarkerRoutes(mux)
+	s.registerCreditsMarkerRoutes(mux)
+	s.registerBackgroundPreviewRoutes(mux)
+	s.registerAudioWaveformRoutes(mux)
+	s.registerSubtitleTimelineRoutes(mux)
+	s.registerViewingStatisticsRoutes(mux)
 	s.registerAnalysisPreviewRoutes(mux, s.mediaAnalysis)
 	s.registerLibraryRoutes(mux)
 	s.registerSelectedManagementRoutes(mux)

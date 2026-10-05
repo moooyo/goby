@@ -47,11 +47,7 @@ func videoProcessingPlanForRange(source media.Stream, outputRange string) (trans
 	}
 	if source.DolbyVision != nil || source.VideoRangeKnown && strings.EqualFold(source.VideoRange, "DOVI") {
 		dv := source.DolbyVision
-		if dv == nil || !strings.EqualFold(source.Codec, "hevc") || dv.Profile != 5 && dv.Profile != 7 && dv.Profile != 8 || !dv.RPUPresent || !dv.BLPresent ||
-			!dv.RPUVerified || dv.RPUProfile != dv.Profile || dv.RPUResidualMixed || dv.RPUFrameCount <= 0 ||
-			dv.Profile == 7 && dv.ResidualDisabled || dv.Profile != 7 && (!dv.ResidualDisabled || dv.ELPresent) ||
-			dv.Profile == 5 && dv.CompatibilityID != 0 || dv.Profile == 7 && dv.CompatibilityID != 6 && dv.CompatibilityID != 1 || dv.Profile == 8 && dv.CompatibilityID != 1 && dv.CompatibilityID != 2 && dv.CompatibilityID != 4 ||
-			media.EffectiveVideoBitDepth(source) != 10 {
+		if !media.DolbyVisionConversionSupported(source) {
 			return transcode.VideoFilters{}, conversionReason("conversion_dolby_vision_unsupported", "VideoRange", "Dolby Vision conversion requires verified RPU metadata on every frame of HEVC profile 5, 7, or 8; the strict renderer accepts profile 7 zero-residual MEL and rejects FEL reconstruction.")
 		}
 		filters.Backend, filters.ToneMap, filters.DVProfile, filters.SourceBitDepth = "vulkan", "dolbyvision", dv.Profile, 10

@@ -58,7 +58,7 @@ func assertHistoricalRecoveryFacts(t *testing.T, ctx context.Context, source, ta
 			if historicalArchiveRows(t, ctx, target, table.Name, expected.SchemaVersion) != migrated {
 				t.Error("migration changed historical library rows beyond the declared embedded-artwork default")
 			}
-		} else if table.Name == "task_system_events" && expected.SchemaVersion < 52 && actual.SchemaVersion >= 51 {
+		} else if table.Name == "task_system_events" && expected.SchemaVersion < 60 && actual.SchemaVersion >= 51 {
 			// Only the known migration suffix appends neutral event rows. Preserve
 			// every original field and timestamp, and reject any other addition.
 			added := []string{}
@@ -67,6 +67,18 @@ func assertHistoricalRecoveryFacts(t *testing.T, ctx context.Context, source, ta
 			}
 			if expected.SchemaVersion < 52 && actual.SchemaVersion >= 52 {
 				added = append(added, "PreviewGenerationRequested")
+			}
+			if expected.SchemaVersion < 57 && actual.SchemaVersion >= 57 {
+				added = append(added, "BackgroundPreviewGenerationRequested")
+			}
+			if expected.SchemaVersion < 58 && actual.SchemaVersion >= 58 {
+				added = append(added, "AudioWaveformGenerationRequested")
+			}
+			if expected.SchemaVersion < 59 && actual.SchemaVersion >= 59 {
+				added = append(added, "CreditsAnalysisRequested")
+			}
+			if expected.SchemaVersion < 60 && actual.SchemaVersion >= 60 {
+				added = append(added, "SubtitleTimelineGenerationRequested")
 			}
 			before := historicalArchiveRows(t, ctx, source, table.Name, expected.SchemaVersion)
 			after := historicalArchiveRows(t, ctx, target, table.Name, expected.SchemaVersion)

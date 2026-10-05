@@ -11,19 +11,27 @@ import (
 // LibraryOptions contains scanner and automatic-analysis policy. Importer
 // changes retain source facts; intro detection and preview generation are opt-in.
 type LibraryOptions struct {
-	EnableLocalMetadata     bool
-	EnableLocalImages       bool
-	EnableEmbeddedArtwork   bool
-	EnableIntroDetection    bool
-	EnablePreviewGeneration bool
+	EnableLocalMetadata               bool
+	EnableLocalImages                 bool
+	EnableEmbeddedArtwork             bool
+	EnableIntroDetection              bool
+	EnablePreviewGeneration           bool
+	EnableBackgroundPreviewGeneration bool
+	EnableAudioWaveformGeneration     bool
+	EnableCreditsDetection            bool
+	EnableSubtitleTimelineGeneration  bool
 }
 
 type LibraryOptionsUpdate struct {
-	EnableLocalMetadata     *bool
-	EnableLocalImages       *bool
-	EnableEmbeddedArtwork   *bool
-	EnableIntroDetection    *bool
-	EnablePreviewGeneration *bool
+	EnableLocalMetadata               *bool
+	EnableLocalImages                 *bool
+	EnableEmbeddedArtwork             *bool
+	EnableIntroDetection              *bool
+	EnablePreviewGeneration           *bool
+	EnableBackgroundPreviewGeneration *bool
+	EnableAudioWaveformGeneration     *bool
+	EnableCreditsDetection            *bool
+	EnableSubtitleTimelineGeneration  *bool
 }
 
 // UnmarshalJSON preserves omission while rejecting null, duplicate aliases and
@@ -37,7 +45,11 @@ func (value *LibraryOptionsUpdate) UnmarshalJSON(data []byte) error {
 	*value = LibraryOptionsUpdate{}
 	fields := map[string]**bool{"enablelocalmetadata": &value.EnableLocalMetadata,
 		"enablelocalimages": &value.EnableLocalImages, "enableembeddedartwork": &value.EnableEmbeddedArtwork,
-		"enableintrodetection": &value.EnableIntroDetection, "enablepreviewgeneration": &value.EnablePreviewGeneration}
+		"enableintrodetection": &value.EnableIntroDetection, "enablepreviewgeneration": &value.EnablePreviewGeneration,
+		"enablebackgroundpreviewgeneration": &value.EnableBackgroundPreviewGeneration,
+		"enableaudiowaveformgeneration":     &value.EnableAudioWaveformGeneration,
+		"enablesubtitletimelinegeneration":  &value.EnableSubtitleTimelineGeneration,
+		"enablecreditsdetection":            &value.EnableCreditsDetection}
 	seen := make(map[string]bool, len(fields))
 	for decoder.More() {
 		name, err := decoder.Token()
@@ -74,6 +86,18 @@ func validateLibraryOptions(collectionType string, options LibraryOptions) error
 	if options.EnablePreviewGeneration && collectionType != "movies" && collectionType != "tvshows" && collectionType != "mixed" {
 		return fmt.Errorf("%w: preview generation is supported only for movie, TV and mixed video libraries", ErrInvalidInput)
 	}
+	if options.EnableBackgroundPreviewGeneration && collectionType != "movies" && collectionType != "tvshows" && collectionType != "mixed" {
+		return fmt.Errorf("%w: background preview generation is supported only for movie, TV and mixed video libraries", ErrInvalidInput)
+	}
+	if options.EnableAudioWaveformGeneration && collectionType != "movies" && collectionType != "tvshows" && collectionType != "mixed" {
+		return fmt.Errorf("%w: audio waveform generation is supported only for movie, TV and mixed video libraries", ErrInvalidInput)
+	}
+	if options.EnableCreditsDetection && collectionType != "movies" && collectionType != "tvshows" && collectionType != "mixed" {
+		return fmt.Errorf("%w: credits detection is supported only for movie, TV and mixed video libraries", ErrInvalidInput)
+	}
+	if options.EnableSubtitleTimelineGeneration && collectionType != "movies" && collectionType != "tvshows" && collectionType != "mixed" {
+		return fmt.Errorf("%w: subtitle timeline generation is supported only for movie, TV and mixed video libraries", ErrInvalidInput)
+	}
 	return nil
 }
 
@@ -102,6 +126,18 @@ func applyLibraryOptions(previous LibraryOptions, update *LibraryOptionsUpdate) 
 		}
 		if update.EnablePreviewGeneration != nil {
 			previous.EnablePreviewGeneration = *update.EnablePreviewGeneration
+		}
+		if update.EnableBackgroundPreviewGeneration != nil {
+			previous.EnableBackgroundPreviewGeneration = *update.EnableBackgroundPreviewGeneration
+		}
+		if update.EnableAudioWaveformGeneration != nil {
+			previous.EnableAudioWaveformGeneration = *update.EnableAudioWaveformGeneration
+		}
+		if update.EnableCreditsDetection != nil {
+			previous.EnableCreditsDetection = *update.EnableCreditsDetection
+		}
+		if update.EnableSubtitleTimelineGeneration != nil {
+			previous.EnableSubtitleTimelineGeneration = *update.EnableSubtitleTimelineGeneration
 		}
 	}
 	return previous

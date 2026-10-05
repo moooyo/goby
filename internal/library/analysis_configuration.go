@@ -181,6 +181,9 @@ func (s *Store) UpdateAnalysisConfiguration(ctx context.Context, actor identity.
 			if _, err := tx.Exec(`UPDATE analysis_detections SET auto_published=false WHERE auto_published`); err != nil {
 				return err
 			}
+			if _, err := tx.Exec(`UPDATE analysis_credits_detections SET auto_published=false WHERE auto_published`); err != nil {
+				return err
+			}
 			if _, err := tx.Exec(`DELETE FROM analysis_previews`); err != nil {
 				return err
 			}
@@ -210,18 +213,20 @@ func (s *Store) UpdateAnalysisConfiguration(ctx context.Context, actor identity.
 }
 
 func requestAnalysisProfileRebuild(tx OwnedTx) error {
-	var intros, previews bool
+	var intros, previews, credits bool
 	if err := tx.QueryRow(`SELECT
 		EXISTS(SELECT 1 FROM libraries WHERE collection_type='tvshows'
 			AND COALESCE((options->>'EnableIntroDetection')::boolean,false)),
 		EXISTS(SELECT 1 FROM libraries WHERE collection_type IN ('movies','tvshows','mixed')
-			AND COALESCE((options->>'EnablePreviewGeneration')::boolean,false))`).Scan(&intros, &previews); err != nil {
+			AND COALESCE((options->>'EnablePreviewGeneration')::boolean,false)),
+		EXISTS(SELECT 1 FROM libraries WHERE collection_type IN ('movies','tvshows','mixed')
+			AND COALESCE((options->>'EnableCreditsDetection')::boolean,false))`).Scan(&intros, &previews, &credits); err != nil {
 		return err
 	}
 	for _, request := range []struct {
 		enabled bool
 		event   systemevents.Event
-	}{{intros, systemevents.IntroAnalysisRequested}, {previews, systemevents.PreviewGenerationRequested}} {
+	}{{intros, systemevents.IntroAnalysisRequested}, {previews, systemevents.PreviewGenerationRequested}, {credits, systemevents.CreditsAnalysisRequested}} {
 		if request.enabled {
 			if err := systemevents.Record(tx.Exec, request.event); err != nil {
 				return err

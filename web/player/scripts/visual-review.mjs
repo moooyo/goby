@@ -1,0 +1,68 @@
+import { chromium } from '@playwright/test';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+
+const base = process.env.GOBY_PLAYER_REVIEW_URL ?? 'http://127.0.0.1:4184';
+const output = resolve(import.meta.dirname, '../../../.artifacts/player-acceptance/visual-review');
+await mkdir(output, { recursive: true });
+const browser = await chromium.launch();
+const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN', timezoneId: 'Asia/Shanghai', reducedMotion: 'reduce' });
+const page = await context.newPage();
+const errors = [];
+page.on('pageerror', error => errors.push(error.message));
+await page.goto(base);
+await page.getByLabel('用户名', { exact: true }).fill('reviewer');
+await page.getByLabel('密码', { exact: true }).fill('goby-player-test');
+await page.getByRole('button', { name: '登录', exact: true }).click();
+await page.locator('.feature-info h1').waitFor();
+
+async function capture(name) {
+  await page.evaluate(() => document.fonts.ready);
+  await page.waitForTimeout(1600);
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: resolve(output, `${name}.png`), fullPage: true });
+}
+
+await capture('home-desktop');
+await page.keyboard.press('PageDown');
+await capture('resume-desktop');
+console.log('After PageDown:', await page.locator('.deck-panel[data-active="true"]').getAttribute('aria-label'));
+await page.goto(`${base}/#/detail/deep`);
+await page.locator('.detail-overview-info h1').waitFor();
+await capture('detail-desktop');
+await page.getByRole('navigation', { name: '页面分页' }).getByRole('button', { name: '剧集', exact: true }).click();
+await capture('episodes-desktop');
+console.log('After rail click:', await page.locator('.deck-panel[data-active="true"]').getAttribute('aria-label'));
+await page.getByRole('navigation', { name: '页面分页' }).getByRole('button', { name: '演职员', exact: true }).click();
+await capture('cast-desktop');
+await page.getByRole('navigation', { name: '页面分页' }).getByRole('button', { name: '媒体信息', exact: true }).click();
+await capture('media-desktop');
+await page.goto(`${base}/#/movies`);
+await page.locator('.poster-card').first().waitFor();
+await capture('movies-desktop');
+await page.goto(`${base}/#/settings`);
+await page.locator('.settings-profile').waitFor();
+await capture('settings-desktop');
+await page.setViewportSize({ width: 393, height: 852 });
+await page.goto(`${base}/#/home`);
+await page.locator('.stage-deck').waitFor();
+await page.waitForTimeout(1100);
+await page.keyboard.press('Home');
+await page.locator('.feature-info h1').waitFor();
+await capture('home-mobile');
+await page.goto(`${base}/#/detail/deep`);
+await page.locator('.stage-deck').waitFor();
+await page.waitForTimeout(1100);
+await page.keyboard.press('Home');
+await page.locator('.detail-overview-info h1').waitFor();
+await capture('detail-mobile');
+await page.setViewportSize({ width: 1440, height: 900 });
+await page.goto(`${base}/reference/`);
+await page.getByRole('button', { name: '详情', exact: true }).first().waitFor({ timeout: 30_000 });
+await capture('reference-home-desktop');
+await page.getByRole('button', { name: '详情', exact: true }).first().click();
+await capture('reference-detail-desktop');
+await writeFile(resolve(output, 'browser-errors.json'), JSON.stringify(errors, null, 2));
+await browser.close();
+console.log(`Visual review artifacts: ${output}`);

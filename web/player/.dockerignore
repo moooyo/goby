@@ -1,0 +1,16 @@
+node_modules
+dist
+notices
+.git
+.env
+.env.*
+!.env.example
+playwright-report
+test-results
+*.tsbuildinfo
+*.log
+tests
+scripts
+README.md
+Dockerfile
+.dockerignore

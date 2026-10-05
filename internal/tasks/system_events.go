@@ -37,7 +37,7 @@ func (s *Store) DispatchSystemEvents(ctx context.Context, limit int) (bool, erro
 		changed, err := s.dispatchSystemEvent(ctx, excluded...)
 		var blocked *analysisAdmissionDeferred
 		if errors.As(err, &blocked) {
-			if slices.Contains(excluded, blocked.TaskID) || len(excluded) >= 2 {
+			if slices.Contains(excluded, blocked.TaskID) || len(excluded) >= len(mediaAnalysisExecutionKeys()) {
 				return processed, ErrInconsistent
 			}
 			excluded = append(excluded, blocked.TaskID)

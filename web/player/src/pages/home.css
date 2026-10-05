@@ -1,0 +1,60 @@
+.home-featured .feature-eyebrow { gap: 12px; margin-bottom: 18px; }
+.home-featured .feature-info { width: 680px; text-shadow: 0 1px 16px rgba(0,0,0,.5); }
+.home-featured .accent-pill { letter-spacing: .04em; }
+.home-featured .feature-info h1 { letter-spacing: .01em; text-wrap: balance; }
+.home-featured .home-featured-meta { gap: 8px 12px; }
+.home-meta-bit { display: inline-flex; align-items: center; gap: 12px; }
+.home-meta-separator { color: rgba(243,242,240,.35); }
+.home-featured-meta .rating { gap: 5px; margin-left: 4px; }
+.home-featured-badges { display: inline-flex; flex-wrap: wrap; gap: 6px; margin-left: 4px; }
+.home-featured-badges .spec-badge { padding: 1px 7px; }
+.home-featured .feature-overview { margin-top: 18px; max-width: 620px; }
+.home-featured .feature-actions .glass-button:not(.circle) { padding: 0 26px 0 20px; }
+.home-featured .feature-actions svg { width: 22px; height: 22px; }
+.home-featured .hero-thumbnails { bottom: calc(clamp(72px,12vh,128px) + 4px); }
+.home-featured .hero-thumbnails button { overflow: hidden; box-shadow: 0 10px 26px rgba(0,0,0,.45); }
+.home-featured .hero-progress-static { animation: none; transform: none; }
+.hero-dots { display: none; }
+.home-strip-page { --home-rail-bottom: clamp(10px,2.2vh,24px); --home-rail-height: 80px; }
+.home-strip-page:has(.stage-rail.is-expanded) { --home-rail-height: calc(var(--rail-width) * 9 / 16 + 109px); }
+.home-strip-page .strip-info.home-strip-info,
+.home-strip-page:has(.stage-rail.is-expanded) .strip-info.home-strip-info { bottom: calc(var(--home-rail-bottom) + var(--home-rail-height) + clamp(18px,3.4vh,36px)); max-width: calc(780px - var(--gutter) * 2); right: var(--gutter); animation: none; text-shadow: 0 1px 14px rgba(0,0,0,.55); }
+.home-strip-info .strip-eyebrow { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.home-strip-page .home-strip-info h1 { line-height: 1.12; margin: 8px 0 0; color: rgba(243,242,240,.94); text-wrap: balance; }
+.home-strip-page .home-strip-info .media-meta { display: block; margin-top: 8px; }
+.home-strip-page .home-strip-info p { max-width: 540px; margin-top: 12px; font-size: 14px; line-height: 1.75; text-wrap: pretty; }
+.home-strip-page .strip-info.home-strip-info.home-resume-empty[data-stage-info] { bottom: var(--home-rail-bottom); }
+.home-strip-page .home-resume-empty h1 { margin-bottom: 12px; }
+.home-strip-info-content { opacity: 1; transform: none; animation: home-strip-info-enter .3s ease; transition: opacity .3s ease, transform .45s cubic-bezier(.2,.8,.2,1); }
+.home-strip-info-content.home-strip-info-out { animation: none; opacity: 0; transform: translateY(10px); }
+
+@media (max-width:1099px) {
+  .home-featured .hero-thumbnails { display: none; }
+  .hero-dots { display: flex; gap: 6px; margin-top: 24px; height: 4px; }
+  .hero-dots button { position: relative; width: 8px; height: 4px; padding: 0; border: 0; border-radius: 2px; background: var(--ink); opacity: .35; transition: width .4s, opacity .4s; }
+  .hero-dots button::before { content: ''; position: absolute; inset: -20px -3px; }
+  .hero-dots button.active { width: 28px; opacity: 1; }
+}
+
+@media (pointer:coarse) {
+  .home-strip-page { --home-rail-height: calc(var(--rail-width) * 9 / 16 + 109px); }
+}
+
+@media (max-width:719px) {
+  .home-featured .feature-info { bottom: calc(104px + env(safe-area-inset-bottom)); }
+  .home-featured .feature-info h1 { font-size: clamp(40px,min(6.4vw,10vh),112px); }
+  .home-featured .feature-info .media-meta { font-size: clamp(14px,1.1vw,17px); gap: 8px 12px; }
+  .home-featured .feature-actions { margin-top: 28px; }
+  .home-featured .feature-actions .glass-button { height: 56px; min-height: 56px; font-size: 18px; }
+  .home-featured .feature-actions .circle { width: 56px; }
+  .home-strip-page { --home-rail-bottom: calc(96px + env(safe-area-inset-bottom)); --home-rail-height: calc(var(--rail-width) * 9 / 16 + 109px); }
+}
+
+@keyframes home-strip-info-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-strip-info-content { animation: none; transition: none; }
+}

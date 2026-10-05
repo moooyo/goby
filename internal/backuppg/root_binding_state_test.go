@@ -120,11 +120,11 @@ func TestValidateResourceStateAddsRootBindingsOnlyAtSchema28(t *testing.T) {
 	for _, version := range []int64{23, 24, 25, 26, 27, 28} {
 		t.Run(fmt.Sprintf("schema_%d", version), func(t *testing.T) {
 			rows := &rootBindingResourceTestRows{}
-			tx := &rootBindingResourceTestTx{rows: rows, rowResults: []themeStateTestRow{{valid: true}, {valid: true}}}
+			tx := &rootBindingResourceTestTx{rows: rows, rowResults: []themeStateTestRow{{valid: true}, {valid: true}, {valid: true}}}
 			if err := validateResourceState(context.Background(), tx, version); err != nil {
 				t.Fatal(err)
 			}
-			wantRows, wantBindings := 0, 0
+			wantRows, wantBindings := 1, 0 // The future task key uses schema 19 tables.
 			if version >= 26 {
 				wantRows++
 			}

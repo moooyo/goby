@@ -258,6 +258,7 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	s.resolvePlaybackAnalysisIntro(ctx, librarySubject(principal, principal.User.ID), &source)
+	s.resolveItemAnalysisCredits(ctx, librarySubject(principal, principal.User.ID), &source.Item, source.SourceID)
 	dto := originalSourceDTO(source.Item)
 	token, _, _ := parseEmbyCredentials(r)
 	addSubtitleDeliveryCredentials(dto, source.Item.ID, token, formats)
@@ -376,6 +377,7 @@ func originalSourceDTO(item library.Item) map[string]any {
 	// The same source-bound markers reach both item-detail and PlaybackInfo
 	// consumers. The client owns any skip; media delivery retains its timeline.
 	dto["Chapters"] = itemChaptersDTO(item)
+	dto["GobyCreditsIntervals"] = itemCreditsIntervalsDTO(item)
 	return dto
 }
 

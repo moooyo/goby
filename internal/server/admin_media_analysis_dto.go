@@ -11,11 +11,15 @@ import (
 // Runtime projections contain availability and bounded aggregate accounting.
 // They never expose cache roots, tool paths, cache keys or process identities.
 type adminMediaAnalysisRuntimeStatus struct {
-	Configured       bool
-	IntroAvailable   bool
-	PreviewAvailable bool
-	Reasons          []string
-	Cache            *adminMediaAnalysisCacheStatus
+	Configured                bool
+	IntroAvailable            bool
+	CreditsAvailable          bool
+	CreditsReasons            []string
+	SubtitleTimelineAvailable bool
+	SubtitleTimelineReasons   []string
+	PreviewAvailable          bool
+	Reasons                   []string
+	Cache                     *adminMediaAnalysisCacheStatus
 }
 
 type adminMediaAnalysisCacheStatus struct {
@@ -93,6 +97,8 @@ func adminMediaAnalysisItemDTO(value library.AnalysisItem) adminMediaAnalysisIte
 
 func adminMediaAnalysisRuntimeDTO(value adminMediaAnalysisRuntimeStatus) adminMediaAnalysisRuntimeStatus {
 	value.Reasons = append([]string{}, value.Reasons...)
+	value.CreditsReasons = append([]string{}, value.CreditsReasons...)
+	value.SubtitleTimelineReasons = append([]string{}, value.SubtitleTimelineReasons...)
 	if value.Cache != nil {
 		cache := *value.Cache
 		value.Cache = &cache

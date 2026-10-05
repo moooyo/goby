@@ -10,6 +10,7 @@ import (
 )
 
 func TestDolbyVisionRPUProbeRequiresCleanExtractionAndSyntaxValidation(t *testing.T) {
+	const structuralWarning = "[hevc_mp4toannexb @ 0x7f5abc123000] No parameter sets in the extradata\n"
 	for _, test := range []struct {
 		name             string
 		extractionStderr string
@@ -18,10 +19,25 @@ func TestDolbyVisionRPUProbeRequiresCleanExtractionAndSyntaxValidation(t *testin
 		validationExit   int
 		requireResidual  bool
 		mixedResidual    bool
+		invalidCRC       bool
+		previousInBand   bool
 		wantReason       string
 		wantVerified     bool
+		wantInBand       bool
 	}{
 		{name: "complete clean scans", wantVerified: true},
+		{name: "in-band parameters during syntax validation", validationStderr: structuralWarning, wantVerified: true, wantInBand: true},
+		{name: "repeated structural warning during validation", validationStderr: structuralWarning + structuralWarning, wantVerified: true, wantInBand: true},
+		{name: "rescan clears previous in-band evidence", previousInBand: true, wantVerified: true},
+		{name: "failed validation clears previous in-band evidence", previousInBand: true, validationExit: 1, wantReason: dolbyVisionRPUScanFailed},
+		{name: "bad CRC clears previous in-band evidence", previousInBand: true, invalidCRC: true, wantReason: dolbyVisionRPUInvalidScan},
+		{name: "structural warning forbidden during extraction", extractionStderr: structuralWarning, wantReason: dolbyVisionRPUDecoderError},
+		{name: "structural warning cannot hide native RPU warning", validationStderr: structuralWarning + "[dovi_rpu @ 0x1234] RPU CRC mismatch\n", wantReason: dolbyVisionRPUDecoderError},
+		{name: "native RPU warning before structural warning", validationStderr: "[dovi_rpu @ 0x1234] RPU CRC mismatch\n" + structuralWarning, wantReason: dolbyVisionRPUDecoderError},
+		{name: "structural warning cannot hide failed validation", validationStderr: structuralWarning, validationExit: 1, wantReason: dolbyVisionRPUScanFailed},
+		{name: "structural warning cannot hide unexpected stdout", validationStderr: structuralWarning, validationStdout: "invalid output", wantReason: dolbyVisionRPUInvalidScan},
+		{name: "structural warning cannot bypass CRC evidence", validationStderr: structuralWarning, invalidCRC: true, wantReason: dolbyVisionRPUInvalidScan},
+		{name: "similar message from wrong component", validationStderr: "[dovi_rpu @ 0x1234] No parameter sets in the extradata\n", wantReason: dolbyVisionRPUDecoderError},
 		{name: "verified profile 7 residual path", requireResidual: true, wantReason: dolbyVisionRPUResidualEnabled, wantVerified: true},
 		{name: "mixed residual profiles remain explicit", mixedResidual: true, wantReason: dolbyVisionRPUProfileMixed, wantVerified: true},
 		{name: "extraction error with successful exit", extractionStderr: "invalid packet", wantReason: dolbyVisionRPUDecoderError},
@@ -33,6 +49,9 @@ func TestDolbyVisionRPUProbeRequiresCleanExtractionAndSyntaxValidation(t *testin
 		t.Run(test.name, func(t *testing.T) {
 			directory := t.TempDir()
 			fixture := append(dolbyVisionAccessUnitFixture(!test.requireResidual), dolbyVisionAccessUnitFixture(!test.requireResidual && !test.mixedResidual)...)
+			if test.invalidCRC {
+				fixture[len(fixture)-2] ^= 0x40
+			}
 			profile := 8
 			if test.requireResidual {
 				profile = 7
@@ -55,7 +74,7 @@ func TestDolbyVisionRPUProbeRequiresCleanExtractionAndSyntaxValidation(t *testin
 			defer input.Close()
 			info := Info{Container: "hevc", Streams: []Stream{{
 				Index: 7, Codec: "hevc", CodecType: "video", VideoRange: "DOVI", VideoRangeKnown: true,
-				DolbyVision: &DolbyVisionMetadata{Profile: profile, Level: 6, RPUPresent: true, ELPresent: test.requireResidual, BLPresent: true, CompatibilityID: 6, MetadataCompression: "none"},
+				DolbyVision: &DolbyVisionMetadata{Profile: profile, Level: 6, RPUPresent: true, ELPresent: test.requireResidual, BLPresent: true, CompatibilityID: 6, MetadataCompression: "none", InBandParameterSets: test.previousInBand},
 			}}}
 			probed, err := runDolbyVisionRPUProbe(context.Background(), executable, input, int64(len(fixture)), info)
 			if err != nil {
@@ -68,11 +87,14 @@ func TestDolbyVisionRPUProbeRequiresCleanExtractionAndSyntaxValidation(t *testin
 				wantProfile = 0
 			}
 			if got.RPUVerified != test.wantVerified || got.ResidualDisabled != wantDisabled || got.RPUValidationReason != test.wantReason ||
-				got.RPUProfile != wantProfile || got.RPUResidualMixed != test.mixedResidual {
+				got.RPUProfile != wantProfile || got.RPUResidualMixed != test.mixedResidual || got.InBandParameterSets != test.wantInBand {
 				t.Fatalf("incorrect combined RPU evidence: %+v", got)
 			}
 			if test.wantVerified && got.RPUFrameCount != 2 || !test.wantVerified && got.RPUFrameCount != 0 {
 				t.Fatalf("partial scan retained a frame count: %+v", got)
+			}
+			if info.Streams[0].DolbyVision.InBandParameterSets != test.previousInBand {
+				t.Fatal("rescan changed the caller's previous parameter-set evidence")
 			}
 		})
 	}

@@ -8,6 +8,8 @@ import { analysisBytes, analysisIntroStatus, analysisTime } from './mediaAnalysi
 import type { AnalysisItem, AnalysisItems } from './mediaAnalysis';
 import { mediaAnalysisApi } from './mediaAnalysisApi';
 import { mediaPanelSx, MediaSearchField, mediaSelectSx } from './MediaPagePrimitives';
+import { CreditsEditorDialog } from './CreditsEditorDialog';
+import type { CreditsEditorActivity } from './credits';
 
 function statusLabel(status: string) { const value = status.replaceAll('_', ' '); return value.charAt(0).toUpperCase() + value.slice(1); }
 function statusTone(status: string): 'success' | 'warning' | 'error' | 'info' | 'default' {
@@ -93,12 +95,13 @@ function AnalysisItemDialog({ id, onClose }: { id: string; onClose: () => void }
   </Dialog>;
 }
 
-export function MediaAnalysisResults({ libraries, disabled, refresh }: {
-  libraries: Library[]; disabled: boolean; refresh: number;
+export function MediaAnalysisResults({ libraries, disabled, refresh, currentUserId, onTasks, onCreditsActivityChange }: {
+  libraries: Library[]; disabled: boolean; refresh: number; currentUserId: string; onTasks: () => void; onCreditsActivityChange: (value: CreditsEditorActivity) => void;
 }) {
   const [libraryId, setLibraryId] = useState(''); const [search, setSearch] = useState(''); const [query, setQuery] = useState(''); const [page, setPage] = useState(0);
   const [data, setData] = useState<AnalysisItems>(); const [error, setError] = useState<unknown>(); const [loading, setLoading] = useState(true); const [revision, setRevision] = useState(0);
   const [detail, setDetail] = useState<string>();
+  const [creditsItem, setCreditsItem] = useState<AnalysisItem>();
   useEffect(() => {
     const controller = new AbortController(); setLoading(true); setError(undefined); setData(undefined);
     void mediaAnalysisApi.items(libraryId, query, page * 25, { signal: controller.signal }).then((value) => {
@@ -124,10 +127,10 @@ export function MediaAnalysisResults({ libraries, disabled, refresh }: {
     {data && data.Items.length > 0 && <>
       <TableContainer sx={{ borderRadius: 0, display: { xs: 'none', md: 'block' } }}>
         <Table aria-label="Media analysis items" sx={{ '& td, & th': { px: 2.5 } }}>
-          <TableHead><TableRow><TableCell sx={{ width: '46%' }}>Item</TableCell><TableCell sx={{ width: '30%' }}>Intro analysis</TableCell><TableCell>Seek previews</TableCell></TableRow></TableHead>
+          <TableHead><TableRow><TableCell sx={{ width: '36%' }}>Item</TableCell><TableCell sx={{ width: '26%' }}>Intro analysis</TableCell><TableCell>Seek previews</TableCell><TableCell>片尾标记</TableCell></TableRow></TableHead>
           <TableBody>{data.Items.map((item) => <TableRow key={item.Id} hover>
             <TableCell component="th" scope="row"><Button disabled={disabled} onClick={() => setDetail(item.Id)} aria-label={`View analysis for ${item.Name}`} sx={{ color: 'text.primary', display: 'block', minHeight: 0, minWidth: 0, p: 0, borderRadius: 0.5, textAlign: 'left', overflowWrap: 'anywhere', fontSize: 13, fontWeight: 600 }}>{item.Name || 'Untitled media'}</Button><Typography component="div" variant="caption" color="text.secondary" sx={{ mt: 0.25 }}>{libraries.find((library) => library.Id === item.LibraryId)?.Name ?? 'Unknown library'} · {item.Type}</Typography></TableCell>
-            <TableCell><IntroStatus item={item} /></TableCell><TableCell><PreviewStatus previews={item.Previews} /></TableCell>
+            <TableCell><IntroStatus item={item} /></TableCell><TableCell><PreviewStatus previews={item.Previews} /></TableCell><TableCell>{['Movie', 'Episode'].includes(item.Type) && <Button disabled={disabled} onClick={() => setCreditsItem(item)} aria-label={`查看「${item.Name}」的片尾标记`}>查看与识别</Button>}</TableCell>
           </TableRow>)}</TableBody>
         </Table>
       </TableContainer>
@@ -140,10 +143,12 @@ export function MediaAnalysisResults({ libraries, disabled, refresh }: {
             <Stack spacing={0.75}><Typography variant="caption" color="text.secondary">Intro analysis</Typography><IntroStatus item={item} /></Stack>
             <Stack spacing={0.75} sx={{ alignItems: 'flex-start' }}><Typography variant="caption" color="text.secondary">Seek previews</Typography><PreviewStatus previews={item.Previews} /></Stack>
           </Box>
+          {['Movie', 'Episode'].includes(item.Type) && <Button disabled={disabled} onClick={() => setCreditsItem(item)} aria-label={`查看「${item.Name}」的片尾标记`} sx={{ mt: 1 }}>片尾标记与识别</Button>}
         </Box>)}
       </Box>
     </>}
     {data && <TablePagination component="div" count={data.TotalRecordCount} page={page} rowsPerPage={25} rowsPerPageOptions={[25]} disabled={disabled || loading} onPageChange={(_, value) => setPage(value)} sx={{ borderTop: '1px solid', borderColor: 'divider' }} />}
     {detail && <AnalysisItemDialog id={detail} onClose={() => setDetail(undefined)} />}
+    {creditsItem && <CreditsEditorDialog key={creditsItem.Id} itemId={creditsItem.Id} itemName={creditsItem.Name} currentUserId={currentUserId} onTasks={onTasks} onActivityChange={onCreditsActivityChange} onClose={() => { setCreditsItem(undefined); onCreditsActivityChange({ dirty: false, busy: false, pending: false }); }} />}
   </Paper>;
 }

@@ -52,26 +52,31 @@ func runAnalysisStream(ctx context.Context, executable string, input *os.File, a
 // actual child before returning. Context cancellation is never a reaping claim.
 func runAnalysisProcess(ctx context.Context, executable string, input *os.File, stdin io.Reader, args []string, timeout time.Duration, stdoutLimit int64,
 	stderr analysisStderrSink, parse func(io.Reader) error, executables ...*os.File) error {
+	return runAnalysisProcessProfile(ctx, executable, input, stdin, args, timeout, stdoutLimit, stderr, parse, false, executables...)
+}
+
+func runAnalysisProcessProfile(ctx context.Context, executable string, input *os.File, stdin io.Reader, args []string, timeout time.Duration, stdoutLimit int64,
+	stderr analysisStderrSink, parse func(io.Reader) error, gpu bool, executables ...*os.File) error {
 	if ctx == nil || runtime.GOOS != "linux" || executable == "" || stderr == nil || parse == nil || stdoutLimit < 1 || stdoutLimit > 8<<30 || timeout <= 0 || timeout > 2*time.Hour {
 		return ErrAnalysisUnavailable
 	}
 	if input != nil {
 		err := RunSourceReadPhase(ctx, func(work context.Context) error {
-			return runAnalysisProcessJoined(work, executable, input, stdin, args, timeout, stdoutLimit, stderr, parse, executables...)
+			return runAnalysisProcessJoined(work, executable, input, stdin, args, timeout, stdoutLimit, stderr, parse, gpu, executables...)
 		})
 		if err != nil {
 			stderr.Close(err)
 		}
 		return err
 	}
-	return runAnalysisProcessJoined(ctx, executable, input, stdin, args, timeout, stdoutLimit, stderr, parse, executables...)
+	return runAnalysisProcessJoined(ctx, executable, input, stdin, args, timeout, stdoutLimit, stderr, parse, gpu, executables...)
 }
 
 // The source phase includes the synchronous stdout parser, the stderr reader,
 // every actual child join and final pipe cleanup. Tool and stdin-only helpers
 // enter this runner directly because they do not read an original media root.
 func runAnalysisProcessJoined(ctx context.Context, executable string, input *os.File, stdin io.Reader, args []string, timeout time.Duration, stdoutLimit int64,
-	stderr analysisStderrSink, parse func(io.Reader) error, executables ...*os.File) (resultErr error) {
+	stderr analysisStderrSink, parse func(io.Reader) error, gpu bool, executables ...*os.File) (resultErr error) {
 	processContext, cancel := context.WithTimeout(WithBackgroundProcess(ctx), timeout)
 	defer cancel()
 	if err := processContext.Err(); err != nil {
@@ -83,7 +88,7 @@ func runAnalysisProcessJoined(ctx context.Context, executable string, input *os.
 		stderr.Close(err)
 		return fmt.Errorf("%w: process limiter", ErrAnalysisUnavailable)
 	}
-	arguments := append([]string{"--as=2147483648:2147483648", "--nofile=64:64", "--fsize=0:0", "--", executable}, args...)
+	arguments := append(backgroundClipProcessLimits(gpu, executable), args...)
 	command := exec.CommandContext(processContext, limiter, arguments...)
 	if input != nil {
 		command.ExtraFiles = []*os.File{input}
@@ -94,6 +99,9 @@ func runAnalysisProcessJoined(ctx context.Context, executable string, input *os.
 	}
 	command.ExtraFiles = append(command.ExtraFiles, executables...)
 	command.Env = mediaProbeEnvironment()
+	if gpu {
+		command.Env = backgroundClipGPUEnvironment()
+	}
 	command.Stdin = stdin
 	command.WaitDelay = time.Second
 	stdout, err := command.StdoutPipe()

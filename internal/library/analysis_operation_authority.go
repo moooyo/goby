@@ -37,13 +37,13 @@ func (s *Store) BeginAnalysisOperation(ctx context.Context, childID string, fenc
 // recomputing every physical file and probe fact from the current catalog.
 // Values use a bound JSON parameter; the generated placeholder is an argument
 // index, never caller-supplied SQL. Unknown roots cannot inherit an approval.
-func analysisOperationSourceColumns(bindings string, parameters ...any) (string, []any) {
+func analysisOperationSourceColumns(taskKey, bindings string, parameters ...any) (string, []any) {
 	if bindings == "" {
-		return analysisSourceColumns, parameters
+		return analysisSourceColumnsForTask(taskKey), parameters
 	}
 	placeholder := "$" + strconv.Itoa(len(parameters)+1)
 	revision := `('intro-source-v1-' || md5(jsonb_build_array(i.root_id,
 		i.relative_path,i.file_identity,i.file_size,extract(epoch FROM i.modified_at),i.media,
 		COALESCE((` + placeholder + `::jsonb->>i.root_id)::bigint,0))::text))`
-	return analysisSourceColumnsPrefix + revision + analysisSourceColumnsSuffix, append(parameters, bindings)
+	return analysisSourceColumnsPrefix + revision + analysisSourceColumnsSuffixForTask(taskKey), append(parameters, bindings)
 }

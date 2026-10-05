@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -136,6 +137,26 @@ func itemMediaStreamsDTO(item library.Item) []map[string]any {
 			stream["DisplayLanguage"] = language
 		}
 		streams = append(streams, stream)
+	}
+	for _, source := range item.BitmapSubtitles {
+		language := externalSubtitleDisplayLanguage(source.Language)
+		metadata := library.Subtitle{Codec: source.Codec, Language: source.Language, Title: source.Title,
+			IsForced: source.IsForced, IsHearingImpaired: source.IsHearingImpaired}
+		stream := map[string]any{
+			"Index": source.Index, "Type": "Subtitle", "Codec": source.Codec,
+			"Language": source.Language, "Title": source.Title, "DisplayTitle": externalSubtitleDisplayTitle(metadata, language),
+			"IsDefault": source.IsDefault, "IsForced": source.IsForced, "IsHearingImpaired": source.IsHearingImpaired,
+			"IsExternal": true, "IsTextSubtitleStream": false, "SupportsExternalStream": false,
+			"GobySubtitleTimelineOnly": true,
+		}
+		if language != "" {
+			stream["DisplayLanguage"] = language
+		}
+		streams = append(streams, stream)
+	}
+	if len(item.BitmapSubtitles) > 0 {
+		// Sidecar families share one stable public stream-index namespace.
+		sort.SliceStable(streams, func(i, j int) bool { return streams[i]["Index"].(int) < streams[j]["Index"].(int) })
 	}
 	return streams
 }

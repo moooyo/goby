@@ -27,8 +27,9 @@ const (
 )
 
 var (
-	ErrBitmapSubtitle = errors.New("bitmap subtitle decoding unavailable")
-	ErrSubtitleOCR    = errors.New("subtitle OCR unavailable")
+	ErrBitmapSubtitle            = errors.New("bitmap subtitle decoding unavailable")
+	ErrSubtitleOCR               = errors.New("subtitle OCR unavailable")
+	errBitmapSubtitleUnsupported = errors.New("unsupported bitmap subtitle feature")
 )
 
 // BitmapSubtitleConfig identifies an operator-configured ffprobe binary. Hashes

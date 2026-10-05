@@ -3,6 +3,8 @@ package transcode
 import (
 	"strconv"
 	"strings"
+
+	"github.com/moooyo/goby/internal/media"
 )
 
 func videoSoftwareFormat(p Plan) string {
@@ -99,13 +101,14 @@ func videoCanvasFilter(p Plan, decode string) string {
 	if f.ToneMap != "" {
 		options += libplaceboOutputColor(p)
 		if f.ToneMap == "dolbyvision" {
-			// The pinned FFmpeg patch rejects missing RPU/FEL data and safely
-			// normalizes only a verified zero-residual MEL metadata copy.
-			options += ":apply_dolbyvision=1:strict_dolbyvision=1:strict_dolbyvision_profile=" + strconv.Itoa(f.DVProfile)
+			// Plan validation establishes these closed options. Use the same
+			// strict renderer contract as finite background generation.
+			options, _ = media.StrictDolbyVisionFilter(media.DolbyVisionRenderOptions{Profile: f.DVProfile,
+				OutputBitDepth: VideoOutputBitDepth(p), HDR10: f.OutputRange == "hdr10", Deinterlace: f.Deinterlace != ""})
 		} else {
 			options += ":apply_dolbyvision=0"
+			options += ":tonemapping=bt.2390:peak_detect=0"
 		}
-		options += ":tonemapping=bt.2390:peak_detect=0"
 	}
 	filters = append(filters, options, "format="+videoSoftwareFormat(p))
 	if f.ToneMap != "" {

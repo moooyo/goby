@@ -31,6 +31,24 @@ test('processing edits keep exact values and retain automatic publication', () =
   assert.equal(parseAnalysisDraft(draft).profile?.MaxSourceBytes, 4096);
 });
 
+test('credits capability fields preserve older overviews and reject malformed explicit capability data', () => {
+  const configuration = { Revision: '1', Profile: profile, Defaults: profile, UpdatedAt: stamp };
+  const runtime = { Configured: true, IntroAvailable: true, PreviewAvailable: true, Reasons: [], Cache: null };
+  assert.equal(validAnalysisOverview({ Configuration: configuration, Runtime: runtime }), true);
+  assert.equal(validAnalysisOverview({ Configuration: configuration, Runtime: { ...runtime, CreditsAvailable: false, CreditsReasons: ['missing_tool'] } }), true);
+  assert.equal(validAnalysisOverview({ Configuration: configuration, Runtime: { ...runtime, CreditsAvailable: 'true' } }), false);
+  assert.equal(validAnalysisOverview({ Configuration: configuration, Runtime: { ...runtime, CreditsAvailable: true, CreditsReasons: null } }), false);
+});
+
+test('subtitle timeline capabilities accept older overviews and reject malformed explicit values', () => {
+  const configuration = { Revision: '1', Profile: profile, Defaults: profile, UpdatedAt: stamp };
+  const runtime = { Configured: true, IntroAvailable: true, PreviewAvailable: true, Reasons: [], Cache: null };
+  assert.equal(validAnalysisOverview({ Configuration: configuration, Runtime: runtime }), true);
+  assert.equal(validAnalysisOverview({ Configuration: configuration, Runtime: { ...runtime, SubtitleTimelineAvailable: false, SubtitleTimelineReasons: ['missing_tool'] } }), true);
+  assert.equal(validAnalysisOverview({ Configuration: configuration, Runtime: { ...runtime, SubtitleTimelineAvailable: 'true' } }), false);
+  assert.equal(validAnalysisOverview({ Configuration: configuration, Runtime: { ...runtime, SubtitleTimelineAvailable: true, SubtitleTimelineReasons: null } }), false);
+});
+
 test('processing bounds reject empty, fractional, exponential and out-of-range edits atomically', () => {
   for (const [key, values] of Object.entries({ PreviewIntervalSeconds: ['', '0', '1', '121', '2e1', '10.0'], PreviewQuality: ['39', '96'], MaxSourceBytes: ['0', String(2 ** 40 + 1)], MaxItemRuntimeSeconds: ['0', '7201'], FeatureCacheMaxBytes: [String(2 ** 20 - 1), String(512 * 2 ** 20 + 1)] })) {
     for (const value of values) {

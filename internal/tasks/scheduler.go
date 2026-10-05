@@ -60,7 +60,7 @@ func (s *Store) InitializeSchedules(ctx context.Context, startupAt time.Time) er
 		return fmt.Errorf("list startup task rules: %w", err)
 	}
 	type startupRule struct{ id, key, taskID, kind string }
-	rules := make([]startupRule, 0, 2*MaxTriggers)
+	rules := make([]startupRule, 0, len(s.executorKeys())*MaxTriggers)
 	for rows.Next() {
 		var rule startupRule
 		if err := rows.Scan(&rule.id, &rule.key, &rule.taskID, &rule.kind); err != nil {
@@ -75,7 +75,7 @@ func (s *Store) InitializeSchedules(ctx context.Context, startupAt time.Time) er
 		return fmt.Errorf("read startup task rules: %w", err)
 	}
 	deferred := []AnalysisDeferral{}
-	blockedTasks := make(map[string]bool, 2)
+	blockedTasks := make(map[string]bool, len(analysisTaskKeys()))
 	for _, rule := range rules {
 		if rule.kind == string(ScheduleStartup) && blockedTasks[rule.taskID] {
 			deferred, err = addAnalysisDeferral(deferred, AnalysisDeferral{TaskID: rule.taskID, TaskKey: rule.key, TriggerID: rule.id, Source: "startup"})
@@ -166,7 +166,7 @@ func (s *Store) DispatchDue(ctx context.Context, limit int) (bool, error) {
 		changed, err := s.dispatchOneSchedule(ctx, excluded...)
 		var blocked *analysisAdmissionDeferred
 		if errors.As(err, &blocked) {
-			if slices.Contains(excluded, blocked.TaskID) || len(excluded) >= 2 {
+			if slices.Contains(excluded, blocked.TaskID) || len(excluded) >= len(analysisTaskKeys()) {
 				return processed, ErrInconsistent
 			}
 			excluded = append(excluded, blocked.TaskID)
@@ -418,6 +418,11 @@ func (s *Store) admitScheduledOccurrence(tx library.OwnedTx, definition Definiti
 		return fmt.Errorf("read overlapping scheduled run: %w", err)
 	}
 	disposition := "overlap"
+	if runID != "" && (definition.Key == library.TaskBackgroundPreviewGenerationKey || definition.Key == library.TaskAudioWaveformGenerationKey || definition.Key == library.TaskSubtitleTimelineGenerationKey) && source == "system_event" {
+		// Keep the event unconsumed until a fresh child snapshot can include
+		// late requests, including a library absent from the active run.
+		return &analysisAdmissionDeferred{AnalysisDeferral: AnalysisDeferral{TaskID: definition.ID, TaskKey: definition.Key, TriggerID: trigger.ID, Source: source}}
+	}
 	if runID != "" && isAnalysisTask(definition.Key) {
 		active, err := readRun(tx, runID, false)
 		if err != nil {

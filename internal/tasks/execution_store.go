@@ -18,7 +18,7 @@ func (s *Store) nextAnalysisRun(ctx context.Context, previousRun string) (string
 		WHERE r.task_key=ANY($1::text[]) AND r.state IN ('pending','running')
 		AND EXISTS(SELECT 1 FROM task_run_children c WHERE c.run_id=r.id AND c.state='waiting')
 		ORDER BY (r.id=$2),r.created_at,r.id LIMIT 1`,
-		[]string{library.TaskIntroAnalysisKey, library.TaskPreviewGenerationKey}, previousRun).Scan(&id)
+		mediaAnalysisExecutionKeys(), previousRun).Scan(&id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", nil
 	}
@@ -26,6 +26,33 @@ func (s *Store) nextAnalysisRun(ctx context.Context, previousRun string) (string
 }
 
 func (s *Store) snapshotChildren(tx library.OwnedTx, runID, key string) (int64, error) {
+	if key == library.TaskSubtitleTimelineGenerationKey {
+		tag, err := tx.Exec(`INSERT INTO task_run_children(id,run_id,library_id,library_name,ordinal)
+			SELECT md5($1||':'||l.id),$1,l.id,l.name,(row_number() OVER (ORDER BY l.id)-1)::integer FROM libraries l
+			WHERE l.collection_type IN ('movies','tvshows','mixed') AND
+			(l.options->'EnableSubtitleTimelineGeneration'='true'::jsonb OR EXISTS(
+			 SELECT 1 FROM subtitle_timeline_queue q JOIN items i ON i.id=q.item_id
+			 WHERE i.library_id=l.id AND q.requested_revision>q.completed_revision AND q.manual))`, runID)
+		return tag.RowsAffected(), err
+	}
+	if key == library.TaskAudioWaveformGenerationKey {
+		tag, err := tx.Exec(`INSERT INTO task_run_children(id,run_id,library_id,library_name,ordinal)
+			SELECT md5($1||':'||l.id),$1,l.id,l.name,(row_number() OVER (ORDER BY l.id)-1)::integer FROM libraries l
+			WHERE l.collection_type IN ('movies','tvshows','mixed') AND
+			(l.options->'EnableAudioWaveformGeneration'='true'::jsonb OR EXISTS(
+			 SELECT 1 FROM audio_waveform_queue q JOIN items i ON i.id=q.item_id
+			 WHERE i.library_id=l.id AND q.requested_revision>q.completed_revision AND q.manual))`, runID)
+		return tag.RowsAffected(), err
+	}
+	if key == library.TaskBackgroundPreviewGenerationKey {
+		tag, err := tx.Exec(`INSERT INTO task_run_children(id,run_id,library_id,library_name,ordinal)
+			SELECT md5($1||':'||l.id),$1,l.id,l.name,(row_number() OVER (ORDER BY l.id)-1)::integer FROM libraries l
+			WHERE l.collection_type IN ('movies','tvshows','mixed') AND
+			(l.options->'EnableBackgroundPreviewGeneration'='true'::jsonb OR EXISTS(
+			 SELECT 1 FROM background_preview_queue q JOIN items i ON i.id=q.item_id
+			 WHERE i.library_id=l.id AND q.requested_revision>q.completed_revision AND q.manual))`, runID)
+		return tag.RowsAffected(), err
+	}
 	entry, generic := s.executors.lookup(key)
 	if generic && entry.Global {
 		_, err := tx.Exec(`INSERT INTO task_run_children (id,run_id,library_id,library_name,ordinal)
@@ -68,11 +95,11 @@ func (s *Store) claimExecution(ctx context.Context, runID, childID, token string
 		if _, exists := s.executors.lookup(run.TaskKey); !exists {
 			return ErrUnavailable
 		}
-		if isAnalysisTask(run.TaskKey) {
+		if isMediaAnalysisExecution(run.TaskKey) {
 			var busy bool
 			if err := tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM task_run_children c JOIN task_runs r ON r.id=c.run_id
 				WHERE r.task_key=ANY($1::text[]) AND c.state IN ('queued','running') AND c.executor_token IS NOT NULL)`,
-				[]string{library.TaskIntroAnalysisKey, library.TaskPreviewGenerationKey}).Scan(&busy); err != nil {
+				mediaAnalysisExecutionKeys()).Scan(&busy); err != nil {
 				return err
 			}
 			if busy {

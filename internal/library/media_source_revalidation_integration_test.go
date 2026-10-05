@@ -20,6 +20,7 @@ import (
 func TestMediaRevalidationPreservesDeliveryFactsAndCompleteOpenContract(t *testing.T) {
 	fixture, _, _ := subtitleTestCatalog(t)
 	ownedSubtitleTestInsert(t, fixture, []byte(subtitleTestSRT))
+	writeBitmapCatalogFiles(t, fixture)
 	libraryIntegrationFile(t, fixture.allowedRoot, "movies/Nested/Feature.nfo",
 		`<movie><title>Projected delivery fixture</title><plot>Catalog overview</plot><genre>Drama</genre><tag>Allowed</tag><studio>Example</studio><actor><name>Fixture Person</name><role>Lead</role></actor></movie>`)
 	libraryIntegrationScan(t, fixture.ctx, fixture.store, fixture.library.ID, "Completed")
@@ -29,7 +30,8 @@ func TestMediaRevalidationPreservesDeliveryFactsAndCompleteOpenContract(t *testi
 		t.Fatal(err)
 	}
 	_ = full.Close()
-	if complete.Item.Name == "" || complete.Item.Metadata == nil || len(complete.Item.Entities.Genres) == 0 || len(complete.Item.Entities.People) == 0 || len(complete.Item.Subtitles) != 2 {
+	if complete.Item.Name == "" || complete.Item.Metadata == nil || len(complete.Item.Entities.Genres) == 0 || len(complete.Item.Entities.People) == 0 || len(complete.Item.Subtitles) != 2 ||
+		len(complete.Item.BitmapSubtitles) != 3 || len(complete.Item.bitmapSubtitleFacts) != 3 {
 		t.Fatalf("complete opening lost catalog projections: %+v", complete.Item)
 	}
 	for _, includeSubtitles := range []bool{false, true} {
@@ -54,6 +56,13 @@ func TestMediaRevalidationPreservesDeliveryFactsAndCompleteOpenContract(t *testi
 		}
 		if includeSubtitles && !reflect.DeepEqual(current.Item.Subtitles, complete.Item.Subtitles) || !includeSubtitles && len(current.Item.Subtitles) != 0 {
 			t.Fatal("optional current subtitle metadata did not preserve the complete source contract")
+		}
+		if includeSubtitles {
+			if !reflect.DeepEqual(current.Item.BitmapSubtitles, complete.Item.BitmapSubtitles) || !reflect.DeepEqual(current.Item.bitmapSubtitleFacts, complete.Item.bitmapSubtitleFacts) {
+				t.Fatal("optional bitmap subtitle projection did not preserve the complete indexed component facts")
+			}
+		} else if len(current.Item.BitmapSubtitles) != 0 || len(current.Item.bitmapSubtitleFacts) != 0 {
+			t.Fatal("subtitle-free delivery revalidation loaded unused bitmap component facts")
 		}
 	}
 	// Removing a bound sidecar is observable on the next revalidation. Owned
@@ -106,7 +115,8 @@ func TestMediaRevalidationExecutesNarrowSQLAndOnlyRequestedSubtitleReads(t *test
 		t.Fatal(err)
 	}
 	_ = file.Close()
-	if trace.entities.Load() != 1 || trace.subtitles.Load() != 2 {
+	const captionQueries = int64(3)
+	if trace.entities.Load() != 1 || trace.subtitles.Load() != captionQueries {
 		t.Fatalf("the complete API lost entity or caption projection queries: entities=%d subtitles=%d", trace.entities.Load(), trace.subtitles.Load())
 	}
 	fullQueries := trace.queries.Load()
@@ -120,17 +130,19 @@ func TestMediaRevalidationExecutesNarrowSQLAndOnlyRequestedSubtitleReads(t *test
 		if trace.sources.Load() != 1 || trace.entities.Load() != 0 {
 			t.Fatal("revalidation executed the full catalog entity projection")
 		}
-		for _, fragment := range []string{"jsonb_agg", "catalog_entities", "item_metadata_state", "album_ancestors", "tv_parent", "tv_series", "item_intro_state"} {
+		for _, fragment := range []string{"jsonb_agg", "catalog_entities", "item_metadata_state", "album_ancestors", "tv_parent", "tv_series", "item_intro_state", "item_subtitles", "item_owned_subtitles", "item_bitmap_subtitles"} {
 			if strings.Contains(trace.statement, fragment) {
 				t.Fatalf("revalidation executed unused catalog projection %q", fragment)
 			}
 		}
-		wantSubtitles, wantQueries := int64(0), fullQueries-2
+		// Each independent caption namespace is loaded only on request. The
+		// narrow path must omit all three queries, including bitmap components.
+		wantSubtitles, wantQueries := int64(0), fullQueries-captionQueries
 		if includeSubtitles {
-			wantSubtitles, wantQueries = 2, fullQueries
+			wantSubtitles, wantQueries = captionQueries, fullQueries
 		}
 		if trace.subtitles.Load() != wantSubtitles || trace.queries.Load() != wantQueries {
-			t.Fatalf("revalidation read unnecessary caption queries: include=%t queries=%d subtitles=%d", includeSubtitles, trace.queries.Load(), trace.subtitles.Load())
+			t.Fatalf("revalidation read unnecessary caption queries: include=%t queries=%d want=%d subtitles=%d want=%d", includeSubtitles, trace.queries.Load(), wantQueries, trace.subtitles.Load(), wantSubtitles)
 		}
 	}
 }

@@ -361,6 +361,7 @@ func (s *Server) embyItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.resolveItemAnalysisIntro(r.Context(), subject, &item, "")
+	s.resolveItemAnalysisCredits(r.Context(), subject, &item, "")
 	dto := s.itemDTOForRequest(r, item, queryValues(r.URL.Query()["Fields"]), true)
 	if item.Type == "CollectionFolder" {
 		lib, err := s.library.GetLibrary(r.Context(), item.LibraryID)
@@ -625,6 +626,7 @@ func (s *Server) itemDTO(item library.Item, fields []string, detail bool) map[st
 		}
 		if detail || hasField(fields, "Chapters") {
 			dto["Chapters"] = itemChaptersDTO(item)
+			dto["GobyCreditsIntervals"] = itemCreditsIntervalsDTO(item)
 		}
 	}
 	applyExtraItemDTO(dto, item, fields, detail)

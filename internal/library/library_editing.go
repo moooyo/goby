@@ -369,6 +369,32 @@ func (s *Store) updateLibraryAttempt(ctx context.Context, administrator *catalog
 				return LibraryEditing{}, err
 			}
 		}
+		if !EffectiveLibraryOptions(previous.Library).EnableBackgroundPreviewGeneration && options.EnableBackgroundPreviewGeneration {
+			if err := systemevents.Record((catalogActivityTx{tx: tx}).Exec, systemevents.BackgroundPreviewGenerationRequested); err != nil {
+				return LibraryEditing{}, err
+			}
+		}
+		if !EffectiveLibraryOptions(previous.Library).EnableAudioWaveformGeneration && options.EnableAudioWaveformGeneration {
+			if err := systemevents.Record((catalogActivityTx{tx: tx}).Exec, systemevents.AudioWaveformGenerationRequested); err != nil {
+				return LibraryEditing{}, err
+			}
+		}
+		if !EffectiveLibraryOptions(previous.Library).EnableSubtitleTimelineGeneration && options.EnableSubtitleTimelineGeneration {
+			if err := systemevents.Record((catalogActivityTx{tx: tx}).Exec, systemevents.SubtitleTimelineGenerationRequested); err != nil {
+				return LibraryEditing{}, err
+			}
+		}
+		if EffectiveLibraryOptions(previous.Library).EnableCreditsDetection != options.EnableCreditsDetection {
+			if _, err := tx.Exec(protected, `UPDATE analysis_credits_detections SET auto_published=false
+				WHERE auto_published AND item_id IN (SELECT id FROM items WHERE library_id=$1)`, id); err != nil {
+				return LibraryEditing{}, err
+			}
+			if options.EnableCreditsDetection {
+				if err := systemevents.Record((catalogActivityTx{tx: tx}).Exec, systemevents.CreditsAnalysisRequested); err != nil {
+					return LibraryEditing{}, err
+				}
+			}
+		}
 		// Disabling generation preserves already published previews and caches.
 		if name != previous.Library.Name {
 			if _, err := tx.Exec(protected, `UPDATE items SET name=$2, sort_name=$3, updated_at=now() WHERE id=$1 AND library_id=$1`, id, name, strings.ToLower(name)); err != nil {

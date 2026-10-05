@@ -15,6 +15,10 @@ import (
 // the cohort or adding independent detection thresholds. It returns no partial
 // result on invalid input, cancellation, or resource exhaustion.
 func Analyze(ctx context.Context, cohort Cohort, options Options) (Result, error) {
+	return analyze(ctx, cohort, options, false)
+}
+
+func analyze(ctx context.Context, cohort Cohort, options Options, credits bool) (Result, error) {
 	if ctx == nil {
 		return Result{}, fmt.Errorf("%w: context is required", ErrInvalidInput)
 	}
@@ -31,9 +35,15 @@ func Analyze(ctx context.Context, cohort Cohort, options Options) (Result, error
 	byID := make(map[string]Episode, len(cohort.Episodes))
 	for i, e := range cohort.Episodes {
 		input[i] = episode{ID: e.EpisodeKey, Fingerprint: e.Fingerprint}
+		if credits {
+			duration := float64(e.DurationTicks) / float64(TicksPerSecond)
+			input[i].DurationSeconds = &duration
+			input[i].CreditsFingerprintStart = CreditsFingerprintStartSeconds(e.DurationTicks)
+		}
 		byID[e.EpisodeKey] = e
 	}
 	a := newAnalyzer(options)
+	a.credits = credits
 	candidates, _, err := a.findCandidates(ctx, input)
 	if err != nil {
 		return Result{}, err
@@ -59,6 +69,9 @@ func Analyze(ctx context.Context, cohort Cohort, options Options) (Result, error
 		selected[candidate.ID] = Candidate{Interval: interval, UpstreamCommit: UpstreamCommit, Support: []Support{left, right}}
 	}
 	result := Result{Version: Version, CohortKey: cohort.Key, Options: options, Episodes: make([]EpisodeResult, len(cohort.Episodes))}
+	if credits {
+		result.Version = CreditsVersion
+	}
 	for i, e := range cohort.Episodes {
 		out := EpisodeResult{
 			EpisodeKey: e.EpisodeKey, SourceKey: e.SourceKey, ContentIdentity: e.ContentIdentity,
@@ -68,7 +81,11 @@ func Analyze(ctx context.Context, cohort Cohort, options Options) (Result, error
 		if candidate, found := selected[e.EpisodeKey]; found {
 			out.Status, out.Reasons, out.Candidate = Qualified, nil, &candidate
 		}
-		if err := ValidateEpisodeResult(out, e, cohort, options); err != nil {
+		validate := ValidateEpisodeResult
+		if credits {
+			validate = ValidateCreditsEpisodeResult
+		}
+		if err := validate(out, e, cohort, options); err != nil {
 			return Result{}, err
 		}
 		result.Episodes[i] = out

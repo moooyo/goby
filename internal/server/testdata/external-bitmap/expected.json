@@ -1,0 +1,74 @@
+{
+  "Version": 1,
+  "DurationTicks": 200000000,
+  "Description": "Authored SUP and MPEG-2 VobSub fixtures. Expected display intervals are independently declared from authored control clocks; no video or OCR result is included.",
+  "Files": [
+    {
+      "Name": "captions.sup",
+      "SHA256": "3c935b900d86ad8699eb5e05e21b641a4576858ca7f7250d176a4df791d1de7b",
+      "Bytes": 13161
+    },
+    {
+      "Name": "captions.idx",
+      "SHA256": "3b10b10bcd282307739e83936cfd9a5ec3a7d8e10c738389482b19b9ed67d0de",
+      "Bytes": 507
+    },
+    {
+      "Name": "captions.sub",
+      "SHA256": "9857533484723d23f85b22c230c1fe368ad0d8cbd030a134337a4cf60aa7ca49",
+      "Bytes": 2984
+    }
+  ],
+  "Sources": [
+    {
+      "Format": "sup",
+      "Input": "captions.sup",
+      "Tracks": [
+        {
+          "SourceStreamIndex": 0,
+          "Codec": "hdmv_pgs_subtitle",
+          "Language": "",
+          "Intervals": [
+            {
+              "StartTicks": 10240000,
+              "EndTicks": 56320000
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Format": "vobsub",
+      "Input": "captions.idx",
+      "Companion": "captions.sub",
+      "Tracks": [
+        {
+          "SourceStreamIndex": 0,
+          "Codec": "dvd_subtitle",
+          "Language": "en",
+          "Intervals": [
+            {
+              "StartTicks": 30000000,
+              "EndTicks": 60720000
+            },
+            {
+              "StartTicks": 100000000,
+              "EndTicks": 130720000
+            }
+          ]
+        },
+        {
+          "SourceStreamIndex": 1,
+          "Codec": "dvd_subtitle",
+          "Language": "zh",
+          "Intervals": [
+            {
+              "StartTicks": 10000000,
+              "EndTicks": 40720000
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

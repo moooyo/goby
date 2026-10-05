@@ -19,15 +19,23 @@ func analysisAutomation(key string) analysisAutomationPolicy {
 	switch key {
 	case library.TaskIntroAnalysisKey:
 		return analysisAutomationPolicy{systemevents.IntroAnalysisRequested, "EnableIntroDetection", []string{"tvshows"}}
+	case library.TaskCreditsAnalysisKey:
+		return analysisAutomationPolicy{systemevents.CreditsAnalysisRequested, "EnableCreditsDetection", []string{"movies", "tvshows", "mixed"}}
 	case library.TaskPreviewGenerationKey:
 		return analysisAutomationPolicy{systemevents.PreviewGenerationRequested, "EnablePreviewGeneration", []string{"movies", "tvshows", "mixed"}}
+	case library.TaskBackgroundPreviewGenerationKey:
+		return analysisAutomationPolicy{systemevents.BackgroundPreviewGenerationRequested, "EnableBackgroundPreviewGeneration", []string{"movies", "tvshows", "mixed"}}
+	case library.TaskAudioWaveformGenerationKey:
+		return analysisAutomationPolicy{systemevents.AudioWaveformGenerationRequested, "EnableAudioWaveformGeneration", []string{"movies", "tvshows", "mixed"}}
+	case library.TaskSubtitleTimelineGenerationKey:
+		return analysisAutomationPolicy{systemevents.SubtitleTimelineGenerationRequested, "EnableSubtitleTimelineGeneration", []string{"movies", "tvshows", "mixed"}}
 	default:
 		return analysisAutomationPolicy{}
 	}
 }
 
 func (s *Store) installAnalysisSchedules(tx library.OwnedTx) error {
-	for _, key := range []string{library.TaskIntroAnalysisKey, library.TaskPreviewGenerationKey} {
+	for _, key := range mediaAnalysisExecutionKeys() {
 		if err := s.installAnalysisSchedule(tx, key); err != nil {
 			return err
 		}
