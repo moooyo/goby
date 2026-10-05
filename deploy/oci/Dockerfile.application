@@ -1,9 +1,27 @@
-ARG BASE=goby-online-base:software
+# Replace application payloads while retaining an explicitly pinned runtime.
+# The builder checks the private alias before and after the build.
+ARG BASE
 FROM ${BASE}
 USER 0:0
-COPY --chown=10001:10001 --chmod=0555 goby /usr/local/bin/goby
+ARG BASE_IMAGE_ID
 ARG REVISION
 ARG APPLICATION_SHA256
-LABEL org.opencontainers.image.revision=${REVISION} io.goby.application.sha256=${APPLICATION_SHA256} io.goby.online-provider-source=${REVISION}
+ARG INSTALL_ANALYSIS_FFMPEG=0
+COPY --chown=0:0 --chmod=0555 goby /usr/local/bin/goby
+COPY --chown=0:0 --chmod=0444 manifest.json /usr/share/goby/build-manifest.json
+COPY --chown=0:0 --chmod=0444 oci-artifact-binding.json /usr/share/goby/oci-artifact-binding.json
+COPY --chown=0:0 --chmod=0444 application-source.json /usr/share/goby/application-source.json
+COPY --chown=0:0 --chmod=0444 expected-runtime-executables.sha256 /usr/share/goby/application-expected-executables.sha256
+COPY --chown=0:0 --chmod=0444 configure-application.sh Dockerfile.application /usr/share/goby/recipe/application/
+# Removed notices must not survive from an older application layer. The base
+# image still retains its media toolchain evidence and operating-system notices.
+RUN rm -rf /usr/share/doc/goby
+COPY --chown=0:0 application-notices/ /usr/share/doc/goby/
+RUN /bin/sh /usr/share/goby/recipe/application/configure-application.sh "$INSTALL_ANALYSIS_FFMPEG"
+LABEL org.opencontainers.image.revision=${REVISION} \
+      io.goby.application.sha256=${APPLICATION_SHA256} \
+      io.goby.application.base-image-id=${BASE_IMAGE_ID} \
+      io.goby.application.layer-source=${REVISION}
 USER 10001:10001
-RUN test -x /usr/local/bin/goby && test ! -w /usr/local/bin/goby
+RUN test -x /usr/local/bin/goby && test ! -w /usr/local/bin/goby \
+    && test -r /usr/share/goby/media-analysis.json

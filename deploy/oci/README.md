@@ -130,6 +130,87 @@ The existing media directory must be readable and traversable by UID/GID 10001.
 The container mounts it read-only. Keep state, cache and logs separate from media;
 do not recursively change ownership of an existing media collection.
 
+Source builds that include [generated background previews](../../docs/api/background-previews.md),
+[per-track audio waveforms](../../docs/api/audio-waveforms.md), or
+[bitmap subtitle timelines](../../docs/api/subtitle-timelines.md)
+can opt into the separate
+[`compose.background-previews.yaml`](compose.background-previews.yaml) extension.
+It changes only the existing `/media` bind to writable, using the same
+`GOBY_MEDIA_DIR`; `compose.yaml` remains read-only by default. The container's
+root filesystem remains read-only. Apply the extension after the base and any
+AMD overlay, and retain it in subsequent Compose operations:
+
+```powershell
+docker compose --env-file deployment.env -f compose.yaml -f compose.background-previews.yaml up -d
+```
+
+Generated MP4s and their manifest live beside each original source under
+`backdrops/goby/<source-filename-sha256>/`; waveform files use the independent
+`backdrops/goby-waveforms/<source-filename-sha256>/` namespace, and subtitle
+timelines use `backdrops/goby-subtitle-timelines/<source-filename-sha256>/`.
+The key hashes the exact source basename, including its extension. The same
+overlay enables writing all three namespaces. Approved source directories must
+allow UID/GID `10001:10001` to create these trees. Their private directories use mode `0700`
+and files use `0600`; their shared `backdrops` parent uses `0755` when created
+by Goby. Arrange targeted host
+permissions or ACLs without recursively changing the collection's ownership.
+Enabling the library option alone cannot make a read-only or unwritable mount
+writable. None of the generation options is enabled automatically by the overlay.
+
+These sidecars are persistent media assets: ordinary scans, profile/source
+changes, disabling generation, and cache maintenance do not delete or replace
+them. Only explicit Force regeneration can replace an existing artifact; a
+failed or canceled attempt preserves its previous publication. Include the
+sidecars when copying or backing up the media collection. Database/state
+backups are not a backup of these files. Schema-57 backup/restore preserves the
+profile, manual starts, queue, and request receipts without clearing or
+overwriting source-side MP4/manifest/ownership files; restored execution checks
+current authorization again.
+
+Schema 58 adds waveform queue/request receipts to database backup/restore,
+without including or modifying source-side waveform files. Waveforms retain
+their files after source changes but stop serving an obsolete source timeline;
+this differs from background clips, whose older publication remains playable.
+An explicit Force regeneration replaces waveform data for the current source.
+Enable `LibraryOptions.EnableAudioWaveformGeneration` independently from the
+background-video option, or explicitly queue an item through its administrator
+controls. Both options default to false.
+
+Schema 60 adds subtitle timeline queue/request receipts and the independent
+`LibraryOptions.EnableSubtitleTimelineGeneration` option, also defaulting to
+false. Embedded PGS/DVD extraction uses the pinned FFprobe 9.0.1 and the bitmap
+decoder on Linux without OCR, Tesseract, or a GPU. Manual item generation does
+not require enabling automatic generation. The administrator task key is
+`media.subtitle_timeline_generation`; runtime availability and item failures
+are visible in the administrator media-analysis UI. External SUP and IDX+SUB
+timelines are not implemented.
+
+The source-side namespace contains `.owner.json`, `manifest.json`, and a GSTL
+generation file. Ordinary requests reuse retained files, including stale ones;
+stale intervals are not served against a changed source clock. Explicit Force
+publishes a replacement only after every admitted track succeeds. The player
+omits subtitle labels and lanes without valid nonempty data. Schema-60 database
+backup/restore does not include, rebuild, or delete these files, so media backups
+must include this namespace too. See the
+[subtitle timeline contract](../../docs/api/subtitle-timelines.md) for bounds,
+source checks, and recovery semantics.
+
+The isolated subtitle timeline Docker journey passed all seven phases on
+`test-env`, including a real directory permission failure, retained files,
+stale-source hiding, and explicit replacement. Desktop/mobile and administrator
+views passed against the same deployment. The
+[acceptance record](../../web/player/ACCEPTANCE.md) keeps the initial missing
+state and first successful generation separate from the complete final run,
+which reused the already published artifact before testing new Force operations.
+
+The isolated `test-env` Docker acceptance passed all 12 background-preview
+phases, including permission failure, cancellation, restart reuse, and explicit
+replacement. Actual FFmpeg 9.0.1 SDR/HDR10/HLG and configured 1080p checks and
+PostgreSQL 17 recovery passed within the
+[recorded scope](../../web/player/ACCEPTANCE.md). This source-build feature does
+not change the image/archive identities in the historical release catalog or
+claim a production deployment.
+
 Create `deployment.env` beside `compose.yaml`, filling in the actual image ID and
 paths. This file supplies Compose variables; the separate `goby.env` supplies
 application secrets and settings.
@@ -212,6 +293,17 @@ profile. GPU devices, Vulkan/libplacebo Dolby Vision processing, other container
 runtimes and arm64 are outside this delivery's acceptance scope.
 
 ## Update and rollback
+
+Current source builds include [automatic credits analysis](../../docs/api/credits-markers.md)
+for movie, TV, and mixed libraries through `EnableCreditsDetection`, defaulting
+to false, and the `media.credits_analysis` task. Its separate step-5 images
+passed the seven-phase Docker detector journey and focused regressions. The
+historical release/archive identities above are unchanged. It reuses the
+selected Intro Skipper project, retains manual/source marker authority, and
+withdraws invalid automatic publication after source/support/policy changes.
+Enabling analysis does not grant source-media write permission. Accuracy is
+bounded by the recorded corpus; see the observed early audio boundaries in
+[ACCEPTANCE.md](../../web/player/ACCEPTANCE.md).
 
 1. Verify and load the next archive before changing the running installation.
    Retain the previous archive, its immutable image ID, and deployment config.

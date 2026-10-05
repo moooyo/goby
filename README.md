@@ -1,9 +1,10 @@
 # Goby
 
 Goby is a Linux media server with an Emby-compatible API, implemented in Go with
-PostgreSQL and FFmpeg. Its React + Material UI dashboard is for administration;
-playback uses supported third-party clients. The project license has not yet
-been selected.
+PostgreSQL and FFmpeg. Its React + Material UI dashboard is for administration.
+Goby now also has a [standalone React + Vite player](web/player/README.md),
+alongside supported third-party playback clients. The player builds and deploys
+separately from the Go executable. The project license has not yet been selected.
 
 Automatic seek-preview generation is complete within its selected scope.
 The expanded intro assessment is complete, but broader intro recognition has
@@ -27,6 +28,7 @@ support boundary.
 | --- | --- |
 | Library and accounts | Persistent media identities and user state, bounded scans, local NFO metadata, artwork, library permissions, account/device/session management, playlists and collections, music discovery, Search/Hints and NextUp. See the [implemented API surface](docs/api/implemented.md). |
 | Playback | Authenticated direct and Range delivery, progressive and HLS remux/transcode, selected H.264/HEVC/AV1 outputs, TS/fMP4/packed-audio HLS, text and bitmap subtitle processing, and source-proven nonzero copy seeking. [Media contracts](docs/development/advanced-media.md) define the supported combinations. |
+| Goby player | Independent React + Vite consumer application based on the October 4 design handoff, with a separate nginx image and optional Compose integration. See the [player guide](web/player/README.md) and [backend capability assessment](web/player/BACKEND-CAPABILITIES.md). |
 | Media analysis | Enable **Automatic intro detection** in a TV library and **Automatic seek previews** in a Movies, TV shows or Mixed media library. Both run in the background; Tasks exposes progress, failures and stopping. Qualified intros are available for playback without manual review; no match leaves playback unchanged. Turning off preview generation retains existing valid previews. See the [current result](docs/development/bif-intro-expansion-20260930.md), [media-analysis contract](docs/api/media-analysis.md) and [seek previews](docs/api/seek-previews.md). |
 | Administration | Users, libraries, metadata editing, activity/logs, scheduled tasks, managed CPU/AMD selection and encoding settings, notifications, and backup/recovery. [Managed execution settings](docs/api/managed-execution-settings.md) distinguish changes for new work from listener settings that require restart. |
 | Recovery | Goby encrypted backups, restore planning, activation/rollback and an offline CLI available inside the image, plus accepted migration, process/database restart, selected storage-fault and isolated guest-recovery scenarios. See [backup and recovery](docs/development/backup-recovery.md) and the [functional closeout](docs/development/phase3-functional-closeout-20260929.md). |
@@ -37,6 +39,12 @@ retain their separate boundaries; an AMD result does not establish support for
 every GPU or codec tuple. See the [AMD media contract](docs/development/amd-video-processing.md).
 
 ## Run Goby
+
+For player development, build and deployment, use the
+[standalone player guide](web/player/README.md). The optional
+[`compose.player.yaml`](deploy/oci/compose.player.yaml) adds its own nginx service
+to the existing backend stack. The accepted archive identities below remain
+the historical backend/admin deliveries; they do not include the new player.
 
 Start with the [Docker quick start](deploy/oci/QUICKSTART.md). The operations
 toolkit provides `goby-docker.py prepare`, `check`, `start`, `status`, `logs`
@@ -127,8 +135,12 @@ closeout. Offline synchronization, general recommendations and game/book media
 remain unselected. These boundaries do not reopen completed functional or OCI
 journeys.
 
+The October 4, 2026 user decision selects Goby's own consumer web player and
+supersedes its earlier exclusion. Design features without corresponding backend
+capabilities are listed in the [player assessment](web/player/BACKEND-CAPABILITIES.md).
+
 Live TV/EPG/DVR/tuners, DLNA, external channels, synchronized group playback,
-a consumer web player, Emby Connect/cloud identity, Emby package installation and
+Emby's proprietary web application/WebAppService, Emby Connect/cloud identity, Emby package installation and
 proprietary binary-plugin compatibility are explicitly outside the selected
 product scope. See the [implementation scope](docs/api/implementation-scope.md)
 for the distinction between implemented, deferred and excluded capabilities.

@@ -1,6 +1,6 @@
 # Emby API implementation scope
 
-Status: **current scope and historical contract inventory, updated September 30,
+Status: **current scope and historical contract inventory, updated October 5,
 2026**. The selected compatibility, media-analysis, revised functional-recovery,
 and Linux amd64 software/AMD OCI deliveries are complete within their recorded
 boundaries. See the [implemented surface](implemented.md),
@@ -31,10 +31,27 @@ do not apply to those accepted scopes. Registry publication, production
 deployment and additional Docker image profiles remain separate.
 
 The objective is an independent Linux media backend that existing
-Emby-compatible clients can connect to. This includes browsing and playback
-APIs even though Goby's own React/MUI website is exclusively an administrator
-dashboard. Goby's project license remains undecided; completed internal
-deliveries do not establish complete public-distribution licensing.
+Emby-compatible clients can connect to. The October 4, 2026 user decision also
+selects Goby's own consumer player, superseding the previous blanket exclusion.
+The [React + Vite player](../../web/player/README.md) builds and deploys
+independently and consumes existing browsing and playback APIs. It is not
+embedded in the Go executable; the React/MUI administrator dashboard retains
+its current packaging. Emby's proprietary web application and WebAppService
+remain excluded. The [backend capability assessment](../../web/player/BACKEND-CAPABILITIES.md)
+records design features without corresponding backend behavior. Goby's project
+license remains undecided; completed internal deliveries do not establish
+complete public-distribution licensing.
+
+The selected player follow-up includes the Goby-specific
+[bitmap subtitle timeline API](subtitle-timelines.md). It extracts real display
+intervals from embedded PGS/DVD tracks into permanent source-side material,
+using a default-off library option and the existing task system. Consumer reads
+never generate data, and the player omits labels and lanes without valid current
+intervals. External SUP and IDX+SUB files remain outside this implementation.
+This extension does not imply an original Emby route or change the existing
+subtitle playback/burn-in contract. Focused verification and integrated
+acceptance have separate scopes in the
+[player record](../../web/player/ACCEPTANCE.md).
 
 The full upstream inventory is [535 operations](catalog.md), with [local request/response models](models.md). That count describes the fixed SDK export, not the complete behavior of every Emby release. The newer baseline is **SDK 4.9.5.0 Release**; see [source provenance](../sources/README.md).
 
@@ -63,7 +80,7 @@ The target is a shared Emby-compatible backend that general-purpose clients can 
 
 Official documentation and pinned SDK exports are the starting contract. Reference-server exchanges establish observed behavior, and real-client tests establish that complete workflows work. Claims remain bounded by the verified features, media profiles, and versions; implementing an API family alone does not prove every client can play.
 
-Common protocol flows guide implementation now; a user-provided client shortlist is not a prerequisite. Testing specific clients measures and improves coverage of the shared backend rather than defining a separately customized backend for each client. Goby's React/MUI dashboard remains administrator-only and contains no playback page; third-party clients provide the playback interface.
+Common protocol flows guide implementation now; a user-provided client shortlist is not a prerequisite. Testing specific clients measures and improves coverage of the shared backend rather than defining a separately customized backend for each client. Goby's React/MUI dashboard remains administrator-only. The separate Goby player and supported third-party clients provide playback interfaces over the existing compatibility APIs; selecting the player does not claim additional backend media profiles.
 
 ## Delivery definitions
 
@@ -176,7 +193,8 @@ These behaviors do not appear as a complete set of operations in Swagger. They m
 | Automatic episode-intro analysis and BIF previews | Delivered in [Phase 2](../development/media-analysis-resilience-phase2-20260921.md); source-bound tasks, review/override, actual skip and named preview-consumer evidence retain the recorded corpus and client limits. Movie/isolated-episode content detection is not inferred |
 | Theme media | Local theme-resource scanning, ownership, authorized ThemeMedia reads and delivery are implemented; the [theme record](../development/verification-m3e-theme.md) retains its source-specific acceptance. General recommendation or arbitrary-client behavior is not implied |
 | General recommendations and game/book media | Deferred; not implied by local Similar/InstantMix, theme media or episode-intro analysis |
-| WebAppService and consumer web player | Excluded: Goby provides only its own administrator dashboard |
+| Goby consumer web player | Selected by the October 4, 2026 user decision: standalone React + Vite application, independent build/deployment, optional Docker Compose integration; see the [player guide](../../web/player/README.md) |
+| Emby WebAppService and proprietary consumer web application | Excluded; the Goby player does not implement or distribute Emby's web application |
 | ConnectService and Emby cloud registration | Excluded: use Goby local accounts and configured server URLs |
 | PackageService / Emby package installation | Excluded: Goby's official application delivery is a Docker image; this does not implement Emby package distribution or binary-plugin installation |
 
