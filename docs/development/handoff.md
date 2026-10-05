@@ -1,3 +1,63 @@
+# Store-lifetime scan cache accepted with latency limits, 2026-10-06
+
+The selected scan-hotspot batch is only successful digest-to-Info reuse across
+scans within one Store. Candidate `b100a315367d0108aa2f58447cfd71cfeea0b4f9` is on
+`codex/scan-hotspots-20261006`, based on main
+`2269711fcdeb2b76c76367b144536d99615d8af8` (runtime d9cc). Exact scope is three
+production files and two new tests; DELETE/subtitle and physical-proof/process
+fence changes are unselected. Root and independent safety static review passed;
+all nine Go products qualified (profile 1, race 2, timing 6).
+
+Warm job paired median improves 23.7097%, with process allocation down 87.0733%;
+changed/removal jobs improve 16.6035/24.3125% in all three pairs and allocation
+falls about 87%. Force job median is 2.0888% lower and allocation 39.9127% lower.
+Major limits remain: pair 3 cold +58.23%/+2009.288ms, warm +46.56%/+539.184ms and
+force +5.28%/+163.406ms are slower. Cold job median is nearly unchanged (-0.3240%)
+and terminal median rises 0.0602%; no cold gain or stable latency is established.
+No slower sample is dismissed as noise or assigned a proved host cause.
+
+Baseline whole-profile decoding accounts for 45.81% sampled alloc_space and
+16.53% sampled Go CPU. Fixture encoding is separate; these whole-test shares
+include setup/checks/teardown and cannot be assigned to warm-job wall time or
+predict a candidate speedup. The same original five-phase diverse driver is
+retained. Both focused race products passed: artwork 19 top/32 sub and library 11
+top/3 sub, all 30 required and zero skips. Six fresh BC/CB/BC TRACE0 timings
+yielded thirty qualified phases; the profile and old task samples are not pooled.
+
+The cache keeps successful digest keys/value Info only, with the existing 512-entry
+bound and a short metadata mutex. Full reads/hashes, cancellation, joined slots,
+source proofs and media probes remain. Each timing process starts a fresh Store;
+the 288 initial digests plus one replacement fit under 512 entries and are not
+an eviction workload. No new global cache,
+Close hook, profiler for candidate, SQL count matrix or extra timing sample is
+automatically selected.
+
+Future allocation candidates are root-topology/mountinfo parsing (291.43 pprof MB)
+and process identity reads (240.44 pprof MB): whole-profile, possibly nested,
+not summed or evidence of wall-time hot spots or removable physical/proc fences;
+neither is changed here.
+
+Detail: `docs/development/scan-hotspots-20261006.md`; evidence:
+`.artifacts/scan-hotspots-20261006`. Candidate commit is separately bound to the
+unchanged five-file source freeze. Timing detail hashes are report 9d019fb2 and
+JSON e34e9004. C3 warm allocation/GC remains low despite slower wall time; empty
+pool wait is zero but excludes owner mutex. B3 edit/removal also slow in that
+period; no SQL/host-wait data establishes cause. No SQL-count equality is claimed.
+
+Actual closure is qualified_and_closed, SHA256
+`99e432b5186f81bd942a4f9ce1869508f2fb883204cfa21c70c4ba5da7a544b7`;
+final-export SHA256 `b56ffb4730ca1cecf8a517c70c243e945d61e9f93e73ec1a0fd99aeb9d22b825`.
+Only owned scratch/empty fixture and three locally verified RAM profile copies
+were removed; source backings/raw/derived/shared caches remain. Workers exited,
+PG/Goby and reserve 403374 unchanged; final available 620,027,904 bytes. Two Python
+missing-file preparation errors had no Go/observations and remain separately.
+Original workspace fresh WIP and all preceding source/evidence are retained,
+including overlapping scan.go. Publication receipt records final main identity;
+historical bytes must not overwrite legitimate newer edits. Further timing
+diagnosis is a separate selection, not an automatically started batch.
+
+---
+
 # Stop and cumulative comparison completed with mixed results, 2026-10-06
 
 The user's selected order is Stop diagnosis/fix, then cumulative current-main
