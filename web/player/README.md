@@ -150,7 +150,12 @@ A successful frontend build alone does not establish backend media compatibility
 
 ## Independent Docker image
 
-From the repository root:
+For release archives, use the [player release guide](../../deploy/oci/README.player.md)
+and `scripts/build-player-oci.py`. It binds the source revision, digest-pinned
+Node/nginx inputs, exported image, asset readback and notices. The
+[October 5 release record](../../docs/development/player-release-20261005.md)
+binds the software, AMD and player images and tracks integrated acceptance.
+An explicit development build from the repository root is also available:
 
 ```powershell
 docker build -t goby-player:local web/player
@@ -180,21 +185,25 @@ database or playable-media readiness.
 Keep the environment and persistent paths from the existing
 [Docker operator guide](../../deploy/oci/README.md). The optional
 [`compose.player.yaml`](../../deploy/oci/compose.player.yaml) adds a `player`
-service on the same Compose network as `goby` and leaves the existing software
-and AMD definitions unchanged. Run from a source checkout, because its build
-context is `web/player`:
+service on the same Compose network as `goby`. The release overlay is image-only:
+it does not build or pull. Load the verified archive first and set its immutable
+image ID. The operations helper's `prepare --with-player` generates these
+settings, including a default host port of `8080`; direct Compose use requires
+an explicit port:
 
 ```powershell
 $env:GOBY_PLAYER_HOST_PORT = '8080'
-docker compose --env-file /path/to/compose.env -f deploy/oci/compose.yaml -f deploy/oci/compose.player.yaml build player
+$env:GOBY_PLAYER_IMAGE = 'sha256:7140ce5c531a302b0aca595ee47ce98c52cd08ed73d5a00e5a27972d1ad94192'
 docker compose --env-file /path/to/compose.env -f deploy/oci/compose.yaml -f deploy/oci/compose.player.yaml up -d
 ```
 
 Replace `/path/to/compose.env` with the existing private Compose environment
-file. For AMD, insert `-f deploy/oci/compose.amd.yaml` before the player extension
-in both commands. Open `http://127.0.0.1:8080`; the administrator dashboard is
-available at `/admin/` on the same origin. `GOBY_PLAYER_IMAGE` changes the player
-image name. `GOBY_PLAYER_API_UPSTREAM` overrides its runtime backend origin.
+file. Select the image ID from the accepted catalog for the intended deployment;
+the example above names the October 5 archive, whose runtime status is recorded
+separately. For AMD, insert `-f deploy/oci/compose.amd.yaml` before the player
+extension. Open `http://127.0.0.1:8080`; the administrator dashboard is available
+at `/admin/` on the same origin. `GOBY_PLAYER_API_UPSTREAM` overrides its runtime
+backend origin.
 
 Set `GOBY_PUBLIC_URL` in the backend's private application environment file to
 the actual external player origin, including any nondefault port. Administrator
@@ -239,13 +248,15 @@ task behavior.
 The new listener binds to host loopback by default. A production HTTPS edge
 proxy can forward this origin, including streaming and WebSocket traffic; its
 trusted forwarding configuration, TLS and externally advertised URLs must be
-configured together with Goby. This scaffold does not modify the existing
-archive catalog, operations helper, backend image or supported release receipts.
+configured together with Goby. The October 5 packaging increment adds a player
+archive and operations-helper integration. Release `2026-10-05-player-media`
+passed its frozen-image software and AMD journeys; the identities and results
+are recorded in the [release record](../../docs/development/player-release-20261005.md).
 The isolated real-backend Docker playback run passed six phases, and the
 subsequent capability run passed eight phases, as recorded in
 [ACCEPTANCE.md](ACCEPTANCE.md). The later persistent-background run passed
 12 phases, including automatic/manual generation, reuse, retained files after
 profile/source changes, failed/canceled regeneration, and explicit replacement.
-These establish the selected deployment/media and capability paths, while an
-immutable player release/archive and production rollout
-remain separate work. The existing backend archive catalog is unchanged.
+These establish the selected deployment/media and capability paths at their
+original sources. They do not replace frozen-image release acceptance or imply
+a public production rollout.

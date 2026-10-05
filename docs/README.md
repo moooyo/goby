@@ -2,13 +2,25 @@
 
 ## Current status
 
+The [October 5 player and media-analysis release](development/player-release-20261005.md)
+packages application source `7aaaeed44526848737270089ab0227d2d410f864`, schema 61,
+as separate software, AMD and player image archives. The administrator UI stays
+embedded; the consumer player stays independently built and deployed.
+Release `2026-10-05-player-media` passed the ten-phase software upgrade/rollback
+journey, twelve-phase AMD task/GPU/player journey, produced-clip color checks
+and owned-resource closure. The release record keeps those exact-image results
+separate from the earlier feature tests below. Start with the [quick start](../deploy/oci/QUICKSTART.md),
+[player archive guide](../deploy/oci/README.player.md) and
+[release catalog](../deploy/oci/current-release.json) for installation.
+
 The October 4, 2026 user decision selects Goby's own consumer player and
 supersedes its previous exclusion. The [standalone React + Vite player](../web/player/README.md)
 builds and deploys separately from the Go executable and embedded administrator
 dashboard. Its optional Compose service uses the existing backend APIs. The
 [backend capability assessment](../web/player/BACKEND-CAPABILITIES.md) identifies
 handoff features without server support. Existing backend release receipts
-below retain their original scope and do not include the player image.
+below retain their original scope; the October 5 release is the first combined
+release record to bind a separate player archive.
 
 The subsequent [persistent background-preview increment](api/background-previews.md)
 passed its 12-phase real Docker acceptance, focused browser/task/media checks,
@@ -63,7 +75,7 @@ remain outside that timeline contract. Exact scope and retained failures are
 recorded in the
 [player acceptance record](../web/player/ACCEPTANCE.md).
 
-The latest [BIF automation and intro assessment increment](development/bif-intro-expansion-20260930.md)
+The historical September 30 [BIF automation and intro assessment increment](development/bif-intro-expansion-20260930.md)
 uses the dashboard-integrated application source
 `33445db2e2e64b6871116332c44605261a1bf2d4`, schema 52.
 BIF automation is complete within its scope. The expanded intro assessment is
@@ -81,7 +93,7 @@ historical fixture-dependent UI skip. The actual Docker generation, scan reuse,
 10-to-20-second profile rebuild, disable and recreation journey passed.
 Those pre-merge results retain their source scope. The
 [result manifest](development/bif-intro-expansion-results-20260930.json) separately
-binds the final dashboard integration and both current Docker profiles' actual
+binds the final dashboard integration and both then-current Docker profiles' actual
 administrator UI and retained-BIF checks. Final closure passed: no owned
 containers, networks or database clients remain, private PostgreSQL is stopped,
 and unrelated services are unchanged. This is not a new full-product or GPU claim.
@@ -122,6 +134,7 @@ Start with these sources of current status and delivery policy:
 
 | Document | Read it for |
 | --- | --- |
+| [October 5 player release](development/player-release-20261005.md) | Frozen application, schema, three image archives, analysis-tool binding and integrated acceptance status |
 | [Current status](development/current-status.md) | Completed implementation and acceptance, supported profiles, and deployment boundaries |
 | [Development handoff](development/handoff.md) | Latest delivery, retained artifacts, closed resources, and continuation context |
 | [Current execution plan](planning/current-execution-plan.md) | Completed selected scopes and the distinction between current work and historical plans |
@@ -132,7 +145,8 @@ Start with these sources of current status and delivery policy:
 Use the [Docker quick start](../deploy/oci/QUICKSTART.md) as the recommended
 installation entry. `goby-docker.py` exposes `prepare`, `check`, `start`, `status`,
 `logs` and `stop`; [current-release.json](../deploy/oci/current-release.json)
-binds both current profile archives and immutable image IDs. Software
+binds both backend profile archives and the optional player archive to immutable
+image IDs. Software
 and AMD are profiles of one Docker image delivery form. Image acceptance is
 specific to its recorded platform, tools and hardware; an archive or cross-build
 alone does not establish another platform's support.
@@ -140,9 +154,10 @@ alone does not establish another platform's support.
 | Document | Read it for |
 | --- | --- |
 | [Docker quick start](../deploy/oci/QUICKSTART.md) | Prepare an installation and use the installed helper for checking, starting, diagnosing and stopping it |
-| [Current Docker release catalog](../deploy/oci/current-release.json) | Accepted software/AMD image IDs, archive identities and companion hashes |
+| [Current Docker release catalog](../deploy/oci/current-release.json) | Accepted software/AMD/player image IDs, archive identities and companion hashes |
 | [Software OCI operator guide](../deploy/oci/README.md) | Import the Linux amd64 image archive, configure external PostgreSQL, start Compose, and perform update/rollback |
 | [AMD OCI operator guide](../deploy/oci/README.amd.md) | Import the AMD image and apply the GPU Compose and seccomp companions for the accepted hardware profile |
+| [Standalone player archive guide](../deploy/oci/README.player.md) | Build, verify and load the independent nginx player archive with pinned source and image inputs |
 | [Standalone Goby player](../web/player/README.md) | Develop and build the React + Vite player and add its independent nginx service with the optional Compose extension |
 | [Transcoding configuration](development/transcoding-configuration.md) | Media tools, hardware selection, runtime limits and cache configuration |
 | [Application-key operations](development/application-keys.md) | Persistent master-key ownership and restoring a database with its matching master key |

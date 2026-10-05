@@ -1,5 +1,10 @@
 # Standalone player release
 
+This guide is also shipped in the small operations toolkit. Loading and
+deployment use its companion files and the separately supplied player archive.
+The source-build script and any repository-relative development links require
+the matching source checkout; the toolkit contains no image archives.
+
 The React/Vite player is a separate nginx image. It is never embedded in the
 Go binary or in the administrator bundle. The backend, AMD media toolchain,
 and player can be pinned to separate immutable image identities in the same
@@ -67,8 +72,10 @@ helper can prepare the backend and player together using `--with-player` and
 `--player-release-dir` when their archives are in separate directories.
 
 Apply `compose.player.yaml` after the backend Compose file and any AMD/media
-write overlays. `GOBY_PLAYER_API_UPSTREAM` defaults to `http://goby:8096`, and
-`GOBY_PLAYER_HOST_PORT` defaults to loopback port `8080`. The player proxies
+write overlays. `GOBY_PLAYER_API_UPSTREAM` defaults to `http://goby:8096`.
+The overlay requires an explicit `GOBY_PLAYER_HOST_PORT`; the deployment
+helper's `prepare` command defaults that value to `8080`. The host binding is
+loopback-only. The player proxies
 `/emby`, `/embywebsocket`, and `/admin` to the backend. Its health endpoint is
 `/healthz`. The release overlay never rebuilds or pulls an image during start.
 

@@ -269,6 +269,20 @@ try {
   const auth = await json(consumer, 'POST', '/emby/Users/AuthenticateByName', { Username: config.username, Pw: config.password });
   token = auth.AccessToken; userId = auth.User.Id;
   await login();
+  await phase('administrator policy admits Vulkan tone mapping for the owned GPU deployment', async () => {
+    const before = await admin('GET', '/admin/v1/settings');
+    const wasEnabled = before.Runtime?.Effective?.VulkanToneMapping;
+    assert.equal(typeof wasEnabled, 'boolean', 'Read the actual effective tone-mapping policy.');
+    const after = wasEnabled ? before : await admin('PUT', '/admin/v1/settings', {
+      Revision: before.Revision, Overrides: before.Overrides, ServerNameMode: before.ServerNameMode,
+      Encoding: before.Encoding, Runtime: { VulkanToneMapping: true },
+    });
+    assert.equal(after.Runtime.Effective.VulkanToneMapping, true);
+    for (const field of ['Overrides', 'ServerNameMode', 'Encoding', 'Management', 'Sorting']) assert.deepEqual(after[field], before[field], `The policy update changed unrelated ${field}.`);
+    for (const field of ['Network', 'Hardware', 'Threads', 'H264', 'HEVC', 'SoftwareToneMapping']) assert.deepEqual(after.Runtime.Overrides[field], before.Runtime.Overrides[field], `The policy update changed unrelated Runtime.${field}.`);
+    return { enabledBefore: wasEnabled, enabledAfter: true, changed: !wasEnabled,
+      sourceBefore: before.Runtime.Sources.VulkanToneMapping, sourceAfter: after.Runtime.Sources.VulkanToneMapping };
+  });
   let libraries = (await admin('GET', '/admin/v1/libraries')).Items;
   library = libraries.find(value => value.Paths.includes(evidence.host.libraryPath));
   if (!library) library = (await admin('POST', '/admin/v1/libraries', { Name: 'Release Dolby profiles', CollectionType: 'movies', Paths: [evidence.host.libraryPath], Scan: false })).Library;

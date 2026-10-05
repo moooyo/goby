@@ -1,6 +1,40 @@
 # Current execution plan
 
-## Upstream reuse evaluation: direct Intro Skipper adoption not accepted
+## Completed selected work: integrated Docker delivery and release closeout
+
+The user selected completion of the October 5 deployment and release work after
+accepting the player and P5/P8.4/P8.2 implementation. The
+[release record](../development/player-release-20261005.md) binds source
+`7aaaeed44526848737270089ab0227d2d410f864`, schema 61, and the built software,
+AMD and independent-player archives. The administrator UI remains embedded.
+
+Release `2026-10-05-player-media` completes that selected increment:
+
+1. Ten software phases passed schema 52-to-61 upgrade and user-state retention,
+   source-side publication and player proxying, restart persistence and a
+   backup-based return to schema 52 and the old image.
+2. Twelve AMD phases passed administrator task submission, observed GPU
+   generation, 25-second player playback, reuse, failed/canceled regeneration
+   and restart preservation. Produced-clip color readback also passed.
+3. Immutable images, archives, source and tools are bound to the release catalog,
+   operations toolkit and deployment/upgrade guides. Owned application,
+   database, private Docker/SSH and helper resources are closed; retained
+   fixtures, backups and infrastructure preparation are explicitly recorded.
+
+Verification ran on `test-env`; the previously authorized AMD worker supplied
+the real GPU checks. The user's accepted local preview was not replaced. Do not reuse
+unrelated retained service data. No registry publication, P7 FEL implementation,
+external bitmap playback/burn-in, new provider work or public deployment is
+part of this increment.
+
+## Historical plans and evaluation checkpoints
+
+The sections below preserve earlier conclusions and proposed work under their
+original source and evidence boundaries. They are not the current execution
+queue. The later player release does not retrospectively accept earlier
+recognition-quality failures or authorize replaying consumed experiments.
+
+## Previous upstream reuse evaluation: direct Intro Skipper adoption not accepted
 
 The user selected evaluation and potential direct use of an upstream detector
 to avoid maintaining a custom detection implementation. The
@@ -110,9 +144,9 @@ accuracy. Broader short/variant recognition remains open. Further recognition
 work should improve descriptor or scene-alignment robustness and use new frozen
 evaluation material. The current Docker release catalog is unchanged.
 
-## BIF automation complete; intro recognition extension remains open
+## Historical BIF automation and intro recognition assessment
 
-The [current result](../development/bif-intro-expansion-20260930.md) and
+The [September 30 result](../development/bif-intro-expansion-20260930.md) and
 [manifest](../development/bif-intro-expansion-results-20260930.json) separate
 completed BIF automation from completed accuracy assessment and unaccepted
 recognition extension. The dashboard-integrated application source is
@@ -150,7 +184,7 @@ affected behavior. Do not mark the extension accepted merely because evaluation
 completed, or rerun unchanged controller/capacity matrices as a substitute for
 that work.
 
-Current software and AMD archives are under
+The checkpoint's software and AMD archives are under
 `D:/Code/goby/.artifacts/bif-intro-20260930/software` and `amd`; their parent
 contains `goby-docker-operations.zip`. Use the
 [current catalog](../../deploy/oci/current-release.json) and
