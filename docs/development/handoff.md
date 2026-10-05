@@ -1,5 +1,69 @@
 # Goby handoff - October 5, 2026
 
+Latest selected source is [scan transaction trimming](scan-transaction-trimming-20261005.md),
+final code 450c3364d2db86ec260e8483926a546e17dde2fa after 341caee and baseline
+8017567. The cumulative exact twelve paths contain six production and six tests;
+four original performance drivers are unchanged. Main publication maps the frozen
+v3 archive to these commits separately from runtime receipts whose candidate
+commit remains null.
+
+The four requested categories were evaluated. Keep atomic primary publication,
+but omit identical item tuple rewrites and reuse locked sort provenance to skip
+an unchanged UPDATE command. Keep atomic real-image replacement, but delete only
+missing indexes, conditionally upsert changed stored fields and omit an unchanged
+after snapshot. Physical folders now reuse raw all-root image absence to avoid
+empty image transactions. Existing 64-item/500-ms progress batching and database
+stop/terminal checks are retained. No new lock, worker, schema, durability setting
+or cross-media batch was introduced. Identical successful ForceProbe still repairs
+associations, increments Updated and notifies; unchanged item timestamps/collage
+member revisions now stay stable.
+
+Final v3 paired job medians improve in 14/21 groups. Flat-episode force C/B is
+0.9527091835 (block 2 slower by 60.110 ms); directory force is 0.9443837306 with
+all three pairs faster. Directory cached/incremental reductions are 17.25%-32.65%,
+all pairs faster. Seven adverse medians are retained: movie cold 1.0011805264,
+cached_2 1.0021886090, incremental 1.0277818470, cached-after 1.0028183610 and
+force 1.0165776058; flat-episode cached_1 1.0088022568 and incremental 1.0107412021.
+No final group is slower in all three pairs, but none of its adverse samples is
+dismissed. The baseline is current 8017567, not historical 3585; the original
+force regression is not declared universally fixed. Terminal polling is separate.
+
+TRACE1 force direct item rows fall 160/192/48 to zero with unchanged probes and
+scan accepted writes. Movie/flat-episode force COMMIT counts remain 171/221;
+directory 83 to 71 removes twelve empty image commits. Force SQL falls
+4723 to 4563, 6010 to 5800 and 1822 to 1666. Real-image difference acceptance is
+functional/row-version evidence; the descriptor workload is not an image-heavy
+throughput measurement, and row suppression is not proof of zero WAL.
+
+Validation history is explicit: initial v1 race had one obsolete fault-injection
+fixture fail, with 105 top-level/134 subtests and all 40 required passing. Its
+AFTER UPDATE hook no longer fired for identical facts. A test-only v2 change
+makes the second file actually differ before the scan, retaining all original
+rollback/counter/notification assertions. Repaired-case race passed 1/2;
+v2 full Library passed 1335/2806/all 41 required with 11 declared skips, including
+the 10688-item/10000-leaf capacity case and Store.Close. Final v3 only moves pure
+replacement-count preparation after the empty-image return; its related race
+passed 17/15/all 17 with no skips. Full Library was not repeated on v3.
+
+The first v2 timing batch (18/21 lower medians, including adverse movie cold and
+two cached-after groups) stays independently frozen. Moving count preparation
+does not prove the cause of its regressions. Each of v2 and v3 has two TRACE1
+count and six TRACE0 B-C/C-B/B-C runs, 42/126 phase records. They are not pooled.
+Total history is twenty product processes: nineteen qualified and one retained
+v1 failure, not twenty all-pass runs. No further profiling or timing chase is
+selected. Every candidate's raw evidence and negative samples are retained.
+
+Owned temporary resources are closed. v2's 61 sealed files and 16 retained-v1
+records, plus v3's 50 sealed files, match local exports. Sources, archives, shared
+caches and old roots remain; PostgreSQL/Goby identities and reserve 403374 are
+unchanged. Final available persistent space is 4,945,543,168 bytes. v3 closure hash
+is 56d23ccbd0f83dcec63ea5bf3a5a05f929b921c078229451caf788351c3096cf.
+Publication preserves all original 199 WIP byte states/56 historical hashes;
+only scan.go overlaps this code delivery. The publication receipt supplies exact
+main/origin readback. The complete previous body follows unchanged.
+
+## Previous October 5 force-regression diagnosis delivery at 8017567
+
 Latest selected work is the [two force-regression diagnosis](scan-force-regression-20261005.md).
 Production stays d993454fef258301d3ff967c083fa2b2173be802; this delivery contains
 only diagnosis/handoff documents and a log-timezone correction. The original
