@@ -153,8 +153,10 @@ A successful frontend build alone does not establish backend media compatibility
 For release archives, use the [player release guide](../../deploy/oci/README.player.md)
 and `scripts/build-player-oci.py`. It binds the source revision, digest-pinned
 Node/nginx inputs, exported image, asset readback and notices. The
-[October 5 release record](../../docs/development/player-release-20261005.md)
-binds the software, AMD and player images and tracks integrated acceptance.
+[October 6 refresh record](../../docs/development/main-image-refresh-20261006.md)
+binds the new merged-main backend images and the unchanged October 5 player
+archive. The [original release record](../../docs/development/player-release-20261005.md)
+retains its player build and integrated acceptance evidence.
 An explicit development build from the repository root is also available:
 
 ```powershell
@@ -252,6 +254,8 @@ configured together with Goby. The October 5 packaging increment adds a player
 archive and operations-helper integration. Release `2026-10-05-player-media`
 passed its frozen-image software and AMD journeys; the identities and results
 are recorded in the [release record](../../docs/development/player-release-20261005.md).
+The [October 6 backend refresh](../../docs/development/main-image-refresh-20261006.md)
+reuses that player image and archive unchanged, with its original source identity.
 The isolated real-backend Docker playback run passed six phases, and the
 subsequent capability run passed eight phases, as recorded in
 [ACCEPTANCE.md](ACCEPTANCE.md). The later persistent-background run passed

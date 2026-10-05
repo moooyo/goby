@@ -1,6 +1,26 @@
 # Current execution plan
 
-## Completed selected work: integrated Docker delivery and release closeout
+## Completed selected work: refresh Docker backends to merged main
+
+Release `2026-10-06-main-images` completes the selected refresh. The software
+and AMD backend archives use merged source
+`2ba10e3613cac9da0a2e2c8ae7317bba229fdd56` at schema 61 and reuse the unchanged
+player image/archive from `7aaaeed44526848737270089ab0227d2d410f864`.
+Eleven targeted software phases, nine AMD phases, actual published-clip color
+readback and owned-resource closure passed. The catalog and operations
+companions bind those new backend images and the reused player separately.
+The [refresh record](../development/main-image-refresh-20261006.md)
+keeps build identities, runtime evidence and resource closure distinct.
+
+The software checks ran on `test-env`; the previously authorized AMD worker
+provided actual GPU evidence. No user media library, existing preview service,
+public registry, production installation or new feature is selected by this
+refresh. The October 5 upgrade/rollback and complete feature results below
+retain their original image identities and were not replayed as a new full-suite
+claim. The 270 main-integration source regressions remain the earlier source
+verification receipt; they are not a repeated test count for this image refresh.
+
+## Previous completed work: integrated Docker delivery and release closeout
 
 The user selected completion of the October 5 deployment and release work after
 accepting the player and P5/P8.4/P8.2 implementation. The

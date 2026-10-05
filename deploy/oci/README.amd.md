@@ -11,16 +11,20 @@ and the actual render node. The operations helper supports `prepare`, `check`,
 [current-release.json](current-release.json) for the current AMD archive and
 immutable image ID. Software and AMD remain profiles of the same Docker delivery.
 
-The current October 5 AMD image is
-`sha256:6c94ffc9fd2936d075c0362025a6dde560a94fd810eceeb93248e10c8c0edf5c`,
-at application source `7aaaeed44526848737270089ab0227d2d410f864`, schema 61.
+The current October 6 AMD image is
+`sha256:f09d0b42a418b0d839faac3998a5e393abaeb30d6b056e6f5b67fa6c110fff28`,
+at application source `2ba10e3613cac9da0a2e2c8ae7317bba229fdd56`, schema 61.
 Its archive directory is
-`C:/Users/moooyo/.codex/worktrees/165c/goby/.artifacts/player-release-20261005/delivery/amd`.
-The [release record](../../docs/development/player-release-20261005.md) binds the
+`C:/Users/moooyo/.codex/worktrees/165c/goby/.artifacts/main-image-refresh-20261006/delivery/amd`.
+The [refresh record](../../docs/development/main-image-refresh-20261006.md) binds the
 software, AMD and separate player images, frozen source, media tools and
-acceptance status. Release `2026-10-05-player-media` passed its integrated
-container/GPU, player, persistence, color-readback and owned-resource checks.
-The software profile separately passed schema-upgrade and backup-based rollback.
+targeted acceptance status for `2026-10-06-main-images`. The player archive is
+reused unchanged from source `7aaaeed44526848737270089ab0227d2d410f864`.
+Nine targeted AMD phases, published-clip color readback and owned-resource
+closure passed for the refreshed image.
+The [October 5 release](../../docs/development/player-release-20261005.md) retains
+its integrated container/GPU, player, persistence and color-readback results,
+plus the separate software schema-upgrade and backup-based rollback journey.
 
 This image includes the embedded administrator dashboard and the new permanent
 background, waveform and bitmap-timeline analysis. The optional
@@ -31,8 +35,8 @@ UID/GID `10001:10001` access to the approved media directories.
 
 The strict Dolby Vision background path covers Profile 5, Profile 8.1,
 Profile 8.4, Profile 8.2 and complete Profile 7 MEL, subject to the recorded
-source, RPU and GPU/toolchain checks. P5/P8.4/P8.2 passed both their separate
-native AMD checks and the new container task/publication/player journey.
+source, RPU and GPU/toolchain checks. P5/P8.4/P8.2 passed their separate native
+AMD checks and the October 5 container task/publication/player journey.
 Profile 7 FEL reconstruction remains deferred. The output is a silent H.264
 BT.709 SDR background, not Dolby Vision passthrough or Dolby Vision encoding.
 
@@ -133,7 +137,7 @@ the analysis executable does not replace its strict Dolby Vision path.
 ## Historical media image inputs and build boundary
 
 This section preserves the September 29 build inputs. Consult the current
-release catalog and October 5 release status above for the installation target.
+release catalog and October 6 refresh status above for the installation target.
 
 The exact base image ID is
 `sha256:ff9beeb782aea48dbb19630712b67824c6ef775c5886b7bac9ef856fb5c5dcab`.

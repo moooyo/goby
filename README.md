@@ -6,12 +6,15 @@ Goby now also has a [standalone React + Vite player](web/player/README.md),
 alongside supported third-party playback clients. The player builds and deploys
 separately from the Go executable. The project license has not yet been selected.
 
-The October 5 release packages the standalone player, embedded
-administrator dashboard, persistent media analysis and expanded Dolby Vision
-background generation at schema 61. Its software, AMD and player archives passed
-integrated container, GPU, persistence, schema-upgrade and rollback checks.
-See the [release record](docs/development/player-release-20261005.md) for exact
-identities and acceptance status. Earlier compatibility, recognition and Docker
+The October 6 image refresh packages the merged `main` backend at source
+`2ba10e3613cac9da0a2e2c8ae7317bba229fdd56`, schema 61, and reuses the unchanged
+standalone player archive from October 5. It includes the merged scan and task
+authorization behavior. See the [refresh record](docs/development/main-image-refresh-20261006.md)
+for its exact images, eleven software phases, nine AMD phases, published-clip
+color checks and resource closure. All selected checks passed. The
+[October 5 release](docs/development/player-release-20261005.md) retains its
+integrated container, GPU, persistence, schema-upgrade and rollback results at
+the original image identities. Earlier compatibility, recognition and Docker
 receipts retain their original boundaries. Start with
 [current status](docs/development/current-status.md) and the
 [current execution plan](docs/planning/current-execution-plan.md). Older dated
@@ -54,16 +57,17 @@ Start with the [Docker quick start](deploy/oci/QUICKSTART.md). The operations
 toolkit provides `goby-docker.py prepare`, `check`, `start`, `status`, `logs`
 and `stop` for the existing Linux amd64 software and AMD image profiles.
 [current-release.json](deploy/oci/current-release.json) binds accepted
-image IDs, archives and companions for release `2026-10-05-player-media`, including
+image IDs, archives and companions for release `2026-10-06-main-images`, including
 the optional independent player. Both backend profiles include the embedded
 administrator dashboard and use an external PostgreSQL 17 server.
 
-The October 5 archives are under
-`C:/Users/moooyo/.codex/worktrees/165c/goby/.artifacts/player-release-20261005/delivery/`
+The October 6 archives are under
+`C:/Users/moooyo/.codex/worktrees/165c/goby/.artifacts/main-image-refresh-20261006/delivery/`
 in `software`, `amd` and `player`, alongside `goby-docker-operations.zip`.
-They bind application source
-`7aaaeed44526848737270089ab0227d2d410f864` and schema 61. The
-[release record](docs/development/player-release-20261005.md) records source,
+Both backend profiles bind source
+`2ba10e3613cac9da0a2e2c8ae7317bba229fdd56` and schema 61. The reused player
+retains source `7aaaeed44526848737270089ab0227d2d410f864`. The
+[refresh record](docs/development/main-image-refresh-20261006.md) records source,
 image, media-tool and archive identities separately from runtime acceptance.
 The September 30 schema-52 [BIF result](docs/development/bif-intro-expansion-20260930.md)
 and [manifest](docs/development/bif-intro-expansion-results-20260930.json), and the

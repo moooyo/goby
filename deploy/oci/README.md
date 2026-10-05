@@ -11,15 +11,17 @@ operations helper provides `prepare`, `check`, `start`, `status`, `logs` and
 `stop`. `prepare --with-player` selects the independent nginx player;
 `--writable-media` adds source-side generation access. The
 [release catalog](current-release.json) binds accepted image/archive identities.
-Release `2026-10-05-player-media` has completed archive, integrated container/GPU,
-player, persistence, schema-upgrade and backup-based rollback acceptance.
+Release `2026-10-06-main-images` refreshes both backend profiles to the merged
+`main` source and reuses the unchanged October 5 player image. Its targeted
+software and AMD acceptance, published-clip color checks and resource closure
+passed separately from the original upgrade/rollback journey.
 
 The current software image is
-`sha256:f61d774ca909094d917b3c4e9a806397718fafc20e9fe6e73800335dc6e42d2c`,
-at application source `7aaaeed44526848737270089ab0227d2d410f864`, schema 61.
+`sha256:318a7d1294d6cdc036c0f2ee41e5165e6a643048144885980299a8c9c76646d0`,
+at application source `2ba10e3613cac9da0a2e2c8ae7317bba229fdd56`, schema 61.
 Its archive directory is
-`C:/Users/moooyo/.codex/worktrees/165c/goby/.artifacts/player-release-20261005/delivery/software`.
-The [October 5 release record](../../docs/development/player-release-20261005.md)
+`C:/Users/moooyo/.codex/worktrees/165c/goby/.artifacts/main-image-refresh-20261006/delivery/software`.
+The [October 6 refresh record](../../docs/development/main-image-refresh-20261006.md)
 binds the backend, [AMD profile](README.amd.md), [player image](README.player.md),
 toolchain and acceptance status. The operations toolkit accompanies these
 archives and does not include another image copy. The administrator dashboard
@@ -29,8 +31,9 @@ The September 30 schema-52
 [BIF automation result](../../docs/development/bif-intro-expansion-20260930.md),
 [manifest](../../docs/development/bif-intro-expansion-results-20260930.json), and
 earlier [operations result](../../docs/development/docker-operations-20260930.md)
-retain their original image, test and resource-closure evidence. The October 5
-runtime results are recorded separately. Further TMDB/OpenSubtitles work
+retain their original image, test and resource-closure evidence. The
+[October 5 release](../../docs/development/player-release-20261005.md) retains
+its original integrated runtime results. Further TMDB/OpenSubtitles work
 and new scraper research remain deferred; their credentials are not required
 by this installation path.
 
@@ -63,14 +66,14 @@ below retain their September 29 source and recovery evidence.
 
 ## Build the application archive
 
-The October 5 release uses `scripts/build-oci-application.py` to layer a frozen
+The current release uses `scripts/build-oci-application.py` to layer a frozen
 application onto an immutable accepted software or AMD media image. Supply the
 release directory, exact `--revision`, matching `--source-archive` and
 `--source-receipt`, immutable `--base-image`, `--profile`, fresh `--output-dir`
 and local `--image` label. The source receipt must bind a `git archive` of that
 revision; an arbitrary working-tree archive is rejected. The builder reads back
 the resulting executable, tool hashes and analysis configuration without
-starting the application. See the [release record](../../docs/development/player-release-20261005.md)
+starting the application. See the [refresh record](../../docs/development/main-image-refresh-20261006.md)
 for the frozen inputs.
 
 Both profiles keep the primary media FFmpeg/ffprobe and native fingerprint
@@ -89,7 +92,7 @@ The Go release continues to embed only the administrator assets.
 
 The following original recipe constructs the software media-tool baseline.
 It is retained for reproducibility; the application-layer builder above is the
-October 5 release path.
+current release path.
 
 Run from a clean source checkout on the Linux build host. Use the project's Go
 toolchain, Node 22.12 or newer, npm, Python 3, Docker and Buildx. Repository

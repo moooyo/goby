@@ -1,6 +1,26 @@
 # Current implementation and delivery status
 
-## Current accepted release: player and persistent media analysis
+## Current accepted release: merged main backend images
+
+Release `2026-10-06-main-images` packages backend source
+`2ba10e3613cac9da0a2e2c8ae7317bba229fdd56` in new software and AMD images at
+schema 61, including the merged scan and task authorization behavior. The
+standalone player image and archive are reused byte-for-byte from source
+`7aaaeed44526848737270089ab0227d2d410f864`. The
+[refresh record](main-image-refresh-20261006.md) records the frozen identities
+and passing targeted acceptance: eleven software phases, nine AMD phases,
+actual published-clip color readback and owned-resource closure. Existing
+state, catalogs, user data and retained sidecars were preserved. The reused
+player kept its container identity through acceptance until final shutdown.
+Those results describe the new backend images and are not added to the
+October 5 matrix or the earlier 270 main-integration source regressions.
+
+The [release catalog](../../deploy/oci/current-release.json) is the installation
+entry. This increment does not add P7 FEL, external bitmap subtitle playback,
+new GPU platforms or a public deployment. The original combined release and
+its broader upgrade/rollback journey remain separately recorded below.
+
+## Previous accepted release: player and persistent media analysis
 
 The [October 5 release](player-release-20261005.md) binds application
 source `7aaaeed44526848737270089ab0227d2d410f864`, schema 61, and three independent
@@ -36,7 +56,7 @@ No registry publication or public production deployment is included.
 The dated entries below preserve the conclusions, source revisions and release
 state at each earlier checkpoint. Their references to a current catalog,
 unreleased source or proposed next work are historical and do not override the
-October 5 release scope above. Recognition-quality results retain their limits;
+current release scope above. Recognition-quality results retain their limits;
 packaging later source does not convert an earlier missed match into acceptance.
 
 ## Previous external evaluation: native Intro Skipper

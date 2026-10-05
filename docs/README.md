@@ -2,14 +2,18 @@
 
 ## Current status
 
-The [October 5 player and media-analysis release](development/player-release-20261005.md)
-packages application source `7aaaeed44526848737270089ab0227d2d410f864`, schema 61,
-as separate software, AMD and player image archives. The administrator UI stays
-embedded; the consumer player stays independently built and deployed.
-Release `2026-10-05-player-media` passed the ten-phase software upgrade/rollback
-journey, twelve-phase AMD task/GPU/player journey, produced-clip color checks
-and owned-resource closure. The release record keeps those exact-image results
-separate from the earlier feature tests below. Start with the [quick start](../deploy/oci/QUICKSTART.md),
+The [October 6 image refresh](development/main-image-refresh-20261006.md)
+packages merged `main` source `2ba10e3613cac9da0a2e2c8ae7317bba229fdd56` in the
+software and AMD backends at schema 61. Release `2026-10-06-main-images` reuses
+the unchanged player archive from source `7aaaeed44526848737270089ab0227d2d410f864`.
+The administrator UI stays embedded; the consumer player stays independently
+built and deployed. Eleven software phases, nine AMD phases, published-clip
+color checks and owned-resource closure passed. This targeted acceptance is
+separate from the
+[October 5 release](development/player-release-20261005.md), which retains the
+ten-phase software upgrade/rollback journey, twelve-phase AMD task/GPU/player
+journey, produced-clip color checks and owned-resource closure at its original
+image identities. Start with the [quick start](../deploy/oci/QUICKSTART.md),
 [player archive guide](../deploy/oci/README.player.md) and
 [release catalog](../deploy/oci/current-release.json) for installation.
 
@@ -134,7 +138,8 @@ Start with these sources of current status and delivery policy:
 
 | Document | Read it for |
 | --- | --- |
-| [October 5 player release](development/player-release-20261005.md) | Frozen application, schema, three image archives, analysis-tool binding and integrated acceptance status |
+| [October 6 image refresh](development/main-image-refresh-20261006.md) | Current merged backend images, reused player, immutable archive identities and targeted acceptance status |
+| [October 5 player release](development/player-release-20261005.md) | Original combined delivery, analysis-tool binding and integrated upgrade/rollback/GPU acceptance |
 | [Current status](development/current-status.md) | Completed implementation and acceptance, supported profiles, and deployment boundaries |
 | [Development handoff](development/handoff.md) | Latest delivery, retained artifacts, closed resources, and continuation context |
 | [Current execution plan](planning/current-execution-plan.md) | Completed selected scopes and the distinction between current work and historical plans |
