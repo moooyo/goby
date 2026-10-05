@@ -267,6 +267,26 @@ func (s *Store) createLibraryWithCaptureAttempt(ctx context.Context, administrat
 			return Library{}, err
 		}
 	}
+	if options.EnableBackgroundPreviewGeneration {
+		if err := systemevents.Record((catalogActivityTx{tx: tx}).Exec, systemevents.BackgroundPreviewGenerationRequested); err != nil {
+			return Library{}, err
+		}
+	}
+	if options.EnableAudioWaveformGeneration {
+		if err := systemevents.Record((catalogActivityTx{tx: tx}).Exec, systemevents.AudioWaveformGenerationRequested); err != nil {
+			return Library{}, err
+		}
+	}
+	if options.EnableCreditsDetection {
+		if err := systemevents.Record((catalogActivityTx{tx: tx}).Exec, systemevents.CreditsAnalysisRequested); err != nil {
+			return Library{}, err
+		}
+	}
+	if options.EnableSubtitleTimelineGeneration {
+		if err := systemevents.Record((catalogActivityTx{tx: tx}).Exec, systemevents.SubtitleTimelineGenerationRequested); err != nil {
+			return Library{}, err
+		}
+	}
 	finalObservationCtx, cancelFinalObservation := context.WithTimeout(protected, storageObservationTimeout)
 	defer cancelFinalObservation()
 	for _, registration := range roots {

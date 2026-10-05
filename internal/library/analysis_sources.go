@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/identity"
@@ -38,6 +39,21 @@ const analysisSourceColumnsSuffix = `,` + analysisHierarchyRevisionSQL + `,i.typ
  COALESCE(manual.revision,0)::text,COALESCE(decision.revision,0)::text,COALESCE(preview.revision,0)::text`
 
 const analysisSourceColumns = analysisSourceColumnsPrefix + introSourceRevisionSQL + analysisSourceColumnsSuffix
+
+// The existing immutable manual_revision column belongs to the marker kind
+// selected by task_key. This preserves the V6 wire and historical intro rows.
+func analysisSourceColumnsForTask(taskKey string) string {
+	return analysisSourceColumnsPrefix + introSourceRevisionSQL + analysisSourceColumnsSuffixForTask(taskKey)
+}
+
+func analysisSourceColumnsSuffixForTask(taskKey string) string {
+	if taskKey != TaskCreditsAnalysisKey {
+		return analysisSourceColumnsSuffix
+	}
+	return strings.Replace(analysisSourceColumnsSuffix,
+		`COALESCE(manual.revision,0)::text,COALESCE(decision.revision,0)::text,COALESCE(preview.revision,0)::text`,
+		`COALESCE((SELECT credits.revision FROM item_credits_state credits WHERE credits.item_id=i.id),0)::text,'0'::text,'0'::text`, 1)
+}
 
 func scanAnalysisSource(row rowScanner) (AnalysisSource, error) {
 	var value AnalysisSource
@@ -98,7 +114,7 @@ func readAnalysisWork(tx OwnedTx, childID string) (AnalysisWork, error) {
 		return AnalysisWork{}, analysisReadError(err)
 	}
 	work.Profile, work.Execution, err = decodeCurrentAnalysisAdmission(profileRaw, executionRaw, revision, work.PublicationEpoch, work.ConfigurationFingerprint)
-	if err != nil {
+	if err != nil || ValidateAnalysisExecutionForTask(work.TaskKey, work.Execution) != nil {
 		return AnalysisWork{}, ErrUnavailable
 	}
 	work.ConfigurationRevision = strconv.FormatInt(revision, 10)
@@ -161,7 +177,7 @@ func validateCurrentAnalysisWork(tx OwnedTx, work AnalysisWork, bindings string)
 	if err != nil {
 		return err
 	}
-	columns, parameters := analysisOperationSourceColumns(bindings, ids)
+	columns, parameters := analysisOperationSourceColumns(work.TaskKey, bindings, ids)
 	rows, err = tx.Query(`SELECT `+columns+` FROM items i `+analysisSourceJoins+` WHERE i.id=ANY($1::text[]) AND `+analysisPhysicalSQL, parameters...)
 	if err != nil {
 		return err
@@ -188,10 +204,13 @@ func validateCurrentAnalysisWork(tx OwnedTx, work AnalysisWork, bindings string)
 		if source.Target && ((work.TaskKey == TaskIntroAnalysisKey && (source.ManualRevision != now.ManualRevision || source.DecisionRevision != now.DecisionRevision)) || (work.TaskKey == TaskPreviewGenerationKey && source.PreviewRevision != now.PreviewRevision)) {
 			return ErrAnalysisConflict
 		}
+		if source.Target && work.TaskKey == TaskCreditsAnalysisKey && source.ManualRevision != now.ManualRevision {
+			return ErrAnalysisConflict
+		}
 	}
 	population := []AnalysisSource{work.Sources[0]}
-	if work.TaskKey == TaskIntroAnalysisKey && work.Sources[0].EpisodeKey != "" {
-		columns, parameters := analysisOperationSourceColumns(bindings, work.LibraryID, work.Sources[0].SeasonID)
+	if (work.TaskKey == TaskIntroAnalysisKey || work.TaskKey == TaskCreditsAnalysisKey) && work.Sources[0].EpisodeKey != "" {
+		columns, parameters := analysisOperationSourceColumns(work.TaskKey, bindings, work.LibraryID, work.Sources[0].SeasonID)
 		rows, err := tx.Query(`SELECT `+columns+` FROM items i `+analysisSourceJoins+` WHERE i.library_id=$1 AND i.parent_id=$2 AND `+analysisPhysicalSQL+` ORDER BY i.id LIMIT 100001`, parameters...)
 		if err != nil {
 			return err
@@ -327,7 +346,7 @@ func (s *Store) readAdmittedAnalysisSource(ctx context.Context, childID string, 
 		return indexedMediaSource{}, err
 	}
 	defer rollback(tx)
-	columns, parameters := analysisOperationSourceColumns(bindings, expected.ItemID)
+	columns, parameters := analysisOperationSourceColumns("", bindings, expected.ItemID)
 	current, err := scanAnalysisSource(tx.QueryRow(ctx, `SELECT `+columns+` FROM items i `+analysisSourceJoins+` WHERE i.id=$1 AND `+analysisPhysicalSQL, parameters...))
 	if err != nil {
 		return indexedMediaSource{}, err

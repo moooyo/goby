@@ -6,7 +6,7 @@
 //
 // Mechanically translated from IntroSkipper 12.0.4.0, commit
 // 6e0cb179007ac4c16cd9f358e9a617e791e9bf06. This package supports
-// only Introduction raw candidates and already-admitted fingerprint queues.
+// Introduction and Credits raw candidates from admitted fingerprint queues.
 
 package introskipper
 
@@ -27,10 +27,11 @@ type configuration = Options
 func defaultConfiguration() configuration { return DefaultOptions() }
 
 type episode struct {
-	ID              string   `json:"id"`
-	Fingerprint     []uint32 `json:"fingerprint"`
-	DurationSeconds *float64 `json:"durationSeconds,omitempty"`
-	FingerprintEnd  *float64 `json:"fingerprintEnd,omitempty"`
+	ID                      string   `json:"id"`
+	Fingerprint             []uint32 `json:"fingerprint"`
+	DurationSeconds         *float64 `json:"durationSeconds,omitempty"`
+	FingerprintEnd          *float64 `json:"fingerprintEnd,omitempty"`
+	CreditsFingerprintStart float64  `json:"creditsFingerprintStart,omitempty"`
 }
 
 type timeRange struct {
@@ -62,13 +63,14 @@ type orderedIndex struct {
 }
 
 type analyzer struct {
-	config configuration
-	cache  map[string]orderedIndex
-	pairs  map[string]selectedPair
-	ctx    context.Context
-	work   int64
-	limit  int64
-	err    error
+	config  configuration
+	credits bool
+	cache   map[string]orderedIndex
+	pairs   map[string]selectedPair
+	ctx     context.Context
+	work    int64
+	limit   int64
+	err     error
 }
 
 type selectedPair struct{ lhs, rhs segment }
@@ -137,24 +139,37 @@ func (a *analyzer) findCandidates(ctx context.Context, episodes []episode) ([]se
 				trace = append(trace, pairTrace{lhs, rhs, false, "rhs-exceeds-maximum-duration"})
 				continue
 			}
+			// Credits fingerprints use a tail-relative clock. The upstream adds
+			// each source's own start only after the relative RHS duration check.
+			if a.credits {
+				lhs.Start += episodes[current].CreditsFingerprintStart
+				lhs.End += episodes[current].CreditsFingerprintStart
+				rhs.Start += episodes[remaining].CreditsFingerprintStart
+				rhs.End += episodes[remaining].CreditsFingerprintStart
+			}
 			trace = append(trace, pairTrace{lhs, rhs, true, "first-valid-pair"})
 			pair := selectedPair{lhs, rhs}
 			save(lhs, pair)
 			save(rhs, pair)
-			// Introduction stops after its first valid remaining episode.
+			// Introduction and Credits stop after their first valid remaining episode.
 			break
 		}
 	}
 	return candidates, trace, nil
 }
 
-// Introduction's replacement rule uses post-snap duration, with strict greater
+// Both modes' replacement rule uses post-snap duration, with strict greater
 // comparison so an equal-duration later pair cannot replace the saved segment.
 func isBetterCandidate(candidate, saved segment) bool {
 	return candidate.duration() > saved.duration()
 }
 
-func (a *analyzer) getMaximumSegmentDuration(_ episode) int {
+func (a *analyzer) getMaximumSegmentDuration(e episode) int {
+	if a.credits {
+		// Preserve the native floating-point subtraction and truncation order.
+		// This is the native guard against a full-window shared match.
+		return int(*e.DurationSeconds - e.CreditsFingerprintStart - 1)
+	}
 	return a.config.MaximumIntroDuration
 }
 

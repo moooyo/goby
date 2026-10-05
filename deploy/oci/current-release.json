@@ -1,51 +1,89 @@
 {
   "kind": "goby-docker-current-release",
   "version": 1,
-  "release": "2026-09-30-bif-intro-dashboard",
+  "release": "2026-10-06-main-images",
   "application": {
-    "sourceRevision": "33445db2e2e64b6871116332c44605261a1bf2d4",
-    "sha256": "8b92bc462004fe1dc98609092209d6d57882c53278411fd24468fba51a9f117d"
+    "sourceRevision": "2ba10e3613cac9da0a2e2c8ae7317bba229fdd56",
+    "sha256": "268624c978509ef6297abc75100f9afa578e3d1ec60348bdd328a812775cd337",
+    "databaseSchema": 61
   },
   "profiles": {
     "software": {
-      "imageId": "sha256:45dc7d9ff3eefbe79f6c8205ce2fda332777d1c1f2ecc22ef491fe7ab51bf89d",
+      "imageId": "sha256:318a7d1294d6cdc036c0f2ee41e5165e6a643048144885980299a8c9c76646d0",
       "archive": {
+        "bytes": 976653312,
         "name": "goby-linux-amd64-image.tar",
-        "bytes": 499547136,
-        "sha256": "6739a08edb2f233ebf3b82ed86066fc086eb22bdcbdea1f4131b3d1e665aa350"
+        "sha256": "eeeaf9aa3294ac5d604c14c98b005a5ac4d1f379bc355075f99ba6d495367ce5"
       },
       "companions": [
         "compose.yaml",
         "compose.subtitles.yaml",
-        "goby.env.example"
+        "compose.background-previews.yaml",
+        "compose.player.yaml",
+        "goby.env.example",
+        "QUICKSTART.md",
+        "README.md",
+        "README.amd.md",
+        "README.player.md",
+        "README.providers.md"
       ],
       "companionHashes": {
         "compose.yaml": "5a959475b24c1f7069440adaee3ad6cec886a7b6790206861d92f978133a3965",
         "compose.subtitles.yaml": "dccc18e2e20ee0fb18d46daec575375b80ef30b3f3d1a07dbccb633204381a0a",
-        "goby.env.example": "35b4707b9f0af1e10e3f136df643cff07f1d1861377008c39e3d68082c48b14b"
+        "compose.background-previews.yaml": "4888f410d81c4ed6364eae34889316f378f418579cba14ce3b985928a55a1954",
+        "compose.player.yaml": "dd2b686833547ed7fc410e220d8f7ed2e7d5435782ebf32b0d5b94bd7cbbfe98",
+        "goby.env.example": "35b4707b9f0af1e10e3f136df643cff07f1d1861377008c39e3d68082c48b14b",
+        "QUICKSTART.md": "81a32e161a63263a71f2c5e8e4092f72a37280a82c54f39616cdf3c120d4f86d",
+        "README.md": "8b74adc3c4b4f6a57675706b0e9a497598cca6fdcb4a9405f4f03478172ae0cc",
+        "README.amd.md": "97ff0ce9787e60cc57b07a21533cf25e89630149c5e4b9aef790e883273a1099",
+        "README.player.md": "a13170b62f53ec875eadd1942fec1fc0b990a3c1d321e4600bc50710e106ba78",
+        "README.providers.md": "8defcc7e60948a55b4e0a98d8935f2e8987c99273953a769c83c6f739c567dcc"
       }
     },
     "amd": {
-      "imageId": "sha256:d25873c96b1259da69c82b38c4939f7d37a3986b4238850be7e4b8def8707ce0",
+      "imageId": "sha256:f09d0b42a418b0d839faac3998a5e393abaeb30d6b056e6f5b67fa6c110fff28",
       "archive": {
+        "bytes": 1402021888,
         "name": "goby-linux-amd64-amd-image.tar",
-        "bytes": 1052017664,
-        "sha256": "9a1e02339519da2ee0713dc54d741c7e0fe3d865c2017fd4af011811e8406363"
+        "sha256": "368fa102ee7b3e29de194c03989866aa7c6bd7f775ccaf105e2b6843a885b24b"
       },
       "companions": [
         "compose.yaml",
         "compose.subtitles.yaml",
+        "compose.background-previews.yaml",
+        "compose.player.yaml",
         "goby.env.example",
+        "QUICKSTART.md",
+        "README.md",
+        "README.amd.md",
+        "README.player.md",
+        "README.providers.md",
         "compose.amd.yaml",
         "seccomp.amd.json"
       ],
       "companionHashes": {
         "compose.yaml": "5a959475b24c1f7069440adaee3ad6cec886a7b6790206861d92f978133a3965",
         "compose.subtitles.yaml": "dccc18e2e20ee0fb18d46daec575375b80ef30b3f3d1a07dbccb633204381a0a",
+        "compose.background-previews.yaml": "4888f410d81c4ed6364eae34889316f378f418579cba14ce3b985928a55a1954",
+        "compose.player.yaml": "dd2b686833547ed7fc410e220d8f7ed2e7d5435782ebf32b0d5b94bd7cbbfe98",
         "goby.env.example": "35b4707b9f0af1e10e3f136df643cff07f1d1861377008c39e3d68082c48b14b",
+        "QUICKSTART.md": "81a32e161a63263a71f2c5e8e4092f72a37280a82c54f39616cdf3c120d4f86d",
+        "README.md": "8b74adc3c4b4f6a57675706b0e9a497598cca6fdcb4a9405f4f03478172ae0cc",
+        "README.amd.md": "97ff0ce9787e60cc57b07a21533cf25e89630149c5e4b9aef790e883273a1099",
+        "README.player.md": "a13170b62f53ec875eadd1942fec1fc0b990a3c1d321e4600bc50710e106ba78",
+        "README.providers.md": "8defcc7e60948a55b4e0a98d8935f2e8987c99273953a769c83c6f739c567dcc",
         "compose.amd.yaml": "a5dad695b2b5f722a20f588759d546fecc3270d86955e003e65a11818a97118e",
         "seccomp.amd.json": "22b86c7effb4cf7189145eb12c241f0bb28f732b50270123c751d31f0766b7f0"
       }
     }
+  },
+  "player": {
+    "imageId": "sha256:7140ce5c531a302b0aca595ee47ce98c52cd08ed73d5a00e5a27972d1ad94192",
+    "archive": {
+      "bytes": 68103168,
+      "name": "goby-player-linux-amd64-image.tar",
+      "sha256": "1952fa675beaf9a44e34dc410a2a3df7f43c7d87a83da05434faffaa543dfae3"
+    },
+    "sourceRevision": "7aaaeed44526848737270089ab0227d2d410f864"
   }
 }

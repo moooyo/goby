@@ -450,6 +450,15 @@ func persistTotals(tx library.OwnedTx, runID string, state RunState, code, messa
 		return Run{}, err
 	}
 	if updated.RowsAffected() > 0 && !state.Active() {
+		if err := settleBackgroundPreviewQueue(tx, run); err != nil {
+			return Run{}, err
+		}
+		if err := settleAudioWaveformQueue(tx, run); err != nil {
+			return Run{}, err
+		}
+		if err := settleSubtitleTimelineQueue(tx, run); err != nil {
+			return Run{}, err
+		}
 		var revision int64
 		if run.TriggerRevision != nil {
 			revision = *run.TriggerRevision
@@ -476,11 +485,11 @@ func (s *Store) RecoverRuns(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		var requestIntro, requestPreview bool
-		if err := tx.QueryRow(`SELECT COALESCE(bool_or(task_key=$2),false),COALESCE(bool_or(task_key=$3),false)
+		var requestIntro, requestPreview, requestCredits bool
+		if err := tx.QueryRow(`SELECT COALESCE(bool_or(task_key=$2),false),COALESCE(bool_or(task_key=$3),false),COALESCE(bool_or(task_key=$4),false)
 			FROM task_runs WHERE id=ANY($1::text[])
 			AND source IN ('schedule','startup','system_event') AND actor_kind='system'
-			AND stop_reason IN ('','shutdown')`, ids, library.TaskIntroAnalysisKey, library.TaskPreviewGenerationKey).Scan(&requestIntro, &requestPreview); err != nil {
+			AND stop_reason IN ('','shutdown')`, ids, library.TaskIntroAnalysisKey, library.TaskPreviewGenerationKey, library.TaskCreditsAnalysisKey).Scan(&requestIntro, &requestPreview, &requestCredits); err != nil {
 			return fmt.Errorf("inspect abandoned automatic analysis work: %w", err)
 		}
 		for _, id := range ids {
@@ -518,7 +527,14 @@ func (s *Store) RecoverRuns(ctx context.Context) error {
 			}
 		}
 		if requestPreview {
-			return systemevents.Record(tx.Exec, systemevents.PreviewGenerationRequested)
+			if err := systemevents.Record(tx.Exec, systemevents.PreviewGenerationRequested); err != nil {
+				return err
+			}
+		}
+		if requestCredits {
+			if err := systemevents.Record(tx.Exec, systemevents.CreditsAnalysisRequested); err != nil {
+				return err
+			}
 		}
 		return nil
 	})

@@ -33,7 +33,19 @@ func validateResourceState(ctx context.Context, tx pgx.Tx, version int64) error 
 	if err := validateCompatibilityLongTailState(ctx, tx, version); err != nil {
 		return err
 	}
-	return validateAnalysisState(ctx, tx, version)
+	if err := validateAnalysisState(ctx, tx, version); err != nil {
+		return err
+	}
+	if err := validateBackgroundPreviewState(ctx, tx, version); err != nil {
+		return err
+	}
+	if err := validateAudioWaveformState(ctx, tx, version); err != nil {
+		return err
+	}
+	if err := validateSubtitleTimelineState(ctx, tx, version); err != nil {
+		return err
+	}
+	return validateBitmapSubtitleState(ctx, tx, version)
 }
 
 func validateThemeState(ctx context.Context, tx pgx.Tx, version int64) error {

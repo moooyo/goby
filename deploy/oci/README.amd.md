@@ -1,37 +1,58 @@
 # Linux amd64 AMD OCI extension
 
+This guide is also shipped in the small operations toolkit. Core deployment
+steps use its companion files. Repository-relative API, research and historical
+evidence links refer to the matching source checkout and are not bundled in the
+toolkit; the software/AMD/player image archives are distributed separately.
+
 Start with the [Docker quick start](QUICKSTART.md), selecting `--profile amd`
 and the actual render node. The operations helper supports `prepare`, `check`,
 `start`, `status`, `logs` and `stop`; use
 [current-release.json](current-release.json) for the current AMD archive and
 immutable image ID. Software and AMD remain profiles of the same Docker delivery.
 
-The small operations toolkit is
-`D:/Code/goby/.artifacts/bif-intro-20260930/goby-docker-operations.zip`;
-the current AMD image archive is in
-`D:/Code/goby/.artifacts/bif-intro-20260930/amd`. Both profiles use
-application source `33445db2e2e64b6871116332c44605261a1bf2d4` and schema 52.
-The current AMD image is
-`sha256:d25873c96b1259da69c82b38c4939f7d37a3986b4238850be7e4b8def8707ce0`.
-This source integrates the Material 3 dashboard. Both final profiles passed actual
-administrator UI and BIF-preservation checks; owned containers, networks and
-database clients are absent, PostgreSQL is stopped and unrelated services are
-unchanged. This does not relabel earlier GPU tests as a new full GPU campaign.
-The initial `0014bef` images retain their historical scope.
-The [BIF automation and intro assessment result](../../docs/development/bif-intro-expansion-20260930.md)
-and [manifest](../../docs/development/bif-intro-expansion-results-20260930.json)
-bind the updated application evidence. Git integration is recorded separately.
-The prior helper, provider and AMD device/tool receipts retain their original
-scopes; this application update does not establish another GPU profile.
-Provider credentials are not required; further TMDB/OpenSubtitles work and
-scraper research are deferred.
+The current October 6 AMD image is
+`sha256:f09d0b42a418b0d839faac3998a5e393abaeb30d6b056e6f5b67fa6c110fff28`,
+at application source `2ba10e3613cac9da0a2e2c8ae7317bba229fdd56`, schema 61.
+Its archive directory is
+`C:/Users/moooyo/.codex/worktrees/165c/goby/.artifacts/main-image-refresh-20261006/delivery/amd`.
+The [refresh record](../../docs/development/main-image-refresh-20261006.md) binds the
+software, AMD and separate player images, frozen source, media tools and
+targeted acceptance status for `2026-10-06-main-images`. The player archive is
+reused unchanged from source `7aaaeed44526848737270089ab0227d2d410f864`.
+Nine targeted AMD phases, published-clip color readback and owned-resource
+closure passed for the refreshed image.
+The [October 5 release](../../docs/development/player-release-20261005.md) retains
+its integrated container/GPU, player, persistence and color-readback results,
+plus the separate software schema-upgrade and backup-based rollback journey.
+
+This image includes the embedded administrator dashboard and the new permanent
+background, waveform and bitmap-timeline analysis. The optional
+[player service](README.player.md) remains a separate nginx image. Use
+`prepare --with-player --writable-media` when this deployment should serve the
+player and generate source-side assets; host permissions must also grant
+UID/GID `10001:10001` access to the approved media directories.
+
+The strict Dolby Vision background path covers Profile 5, Profile 8.1,
+Profile 8.4, Profile 8.2 and complete Profile 7 MEL, subject to the recorded
+source, RPU and GPU/toolchain checks. P5/P8.4/P8.2 passed their separate native
+AMD checks and the October 5 container task/publication/player journey.
+Profile 7 FEL reconstruction remains deferred. The output is a silent H.264
+BT.709 SDR background, not Dolby Vision passthrough or Dolby Vision encoding.
+
+The September 30 schema-52 [BIF result](../../docs/development/bif-intro-expansion-20260930.md)
+and [manifest](../../docs/development/bif-intro-expansion-results-20260930.json),
+and the prior helper, provider and AMD device/tool receipts retain their original
+scope. They do not establish a new GPU/driver profile. Provider credentials are
+not required; further TMDB/OpenSubtitles work and scraper research are deferred.
 
 Enable **Automatic intro detection** in a TV library's settings. Enabled
 libraries are analyzed in the background and qualified matches are used without
 review or manual correction. An unmatched episode plays unchanged. Existing
 libraries default to off after upgrade; Tasks shows progress, failures and stop
-controls. The detector still requires at least three independent episodes and
-examines the first 600 seconds.
+controls. The selected Intro Skipper engine uses the configured analysis
+percentage, length limit and matcher options in `Profile.IntroSkipper`; see the
+[media-analysis contract](../../docs/api/media-analysis.md).
 
 For **Automatic seek previews**, enable the separate library option in Movies,
 TV shows or Mixed media. It defaults to off after upgrade. Background work is
@@ -40,10 +61,11 @@ daily/event default schedule. Tasks retains progress and errors; disabling
 generation keeps existing valid previews. Manual build/Force controls are no
 longer the normal workflow, and the default 10-second interval is unchanged.
 
-The expanded intro assessment is complete, but recognition extension is not
+The historical September 30 intro assessment is complete, but its recognition extension is not
 accepted: all 12 reviewed positive cases were missed, and three NASA short-ident
 negative cases produced no false positives. Detector v3 and thresholds were not
-changed. Short intros and differing audio/video versions still need improvement.
+changed in that assessment. It is not a test of the current Intro Skipper engine.
+Short intros and differing audio/video versions remain bounded by their recorded evidence.
 Neither this assessment nor BIF automation broadens the prior GPU or The Big
 Picture recognition scope.
 
@@ -95,10 +117,27 @@ SHA-256 `4c5bb25118a3d73aa04273647b28a57512f232cfe9c418c01ec66307a7a5332a`.
 Its historical local directory is `D:/Code/goby/.artifacts/oci-amd-20260929`.
 Both `README.md` and `README.amd.md` are included in the companion files.
 
-## Image inputs and build boundary
+## Current application and analysis inputs
 
-This section preserves the September 29 build inputs. The current release
-catalog above identifies the later accepted application layer for installation.
+The new application layer is built with `scripts/build-oci-application.py`
+against the immutable September 30 AMD image, retaining its primary FFmpeg,
+ffprobe, libplacebo and driver inputs. The source archive and source receipt
+bind the exact application revision. The builder verifies the final executable
+and every selected tool by readback; a build alone does not accept GPU runtime.
+
+The separate analysis executable is `/usr/bin/ffmpeg`, Debian package
+`7:7.1.5-0+deb13u1` from snapshot `20260915T000000Z`, SHA-256
+`e8a8d46f5225f3062cec7c07fb145d58ae73c603cb740dcd5bad34bfb54e455a`.
+The native fingerprint helper SHA-256 is
+`ddaf899d0bbaa98533907910453fb19e0dc573fdb618711de7855b956c27888c`.
+`media-analysis.json` selects these exact tools for fingerprint extraction.
+The primary AMD FFmpeg remains responsible for playback and GPU processing;
+the analysis executable does not replace its strict Dolby Vision path.
+
+## Historical media image inputs and build boundary
+
+This section preserves the September 29 build inputs. Consult the current
+release catalog and October 6 refresh status above for the installation target.
 
 The exact base image ID is
 `sha256:ff9beeb782aea48dbb19630712b67824c6ef775c5886b7bac9ef856fb5c5dcab`.

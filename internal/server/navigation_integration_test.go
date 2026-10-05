@@ -54,6 +54,18 @@ func TestHTTPNavigationContractsUseCurrentLibraryScope(t *testing.T) {
 	if total != 1 || len(selected) != 1 || selected[0]["Id"] != ids[1] {
 		t.Fatal("HTTP filters were accepted without being applied before count and paging")
 	}
+	if _, err := f.pool.Exec(f.ctx, `UPDATE items SET media='{"Streams":[{"CodecType":"video","Width":3800,"Height":1600,"ColorTransfer":"smpte2084"}]}' WHERE id=$1`, ids[0]); err != nil {
+		t.Fatal(err)
+	}
+	videoQuery := "/emby/Items?Recursive=true&Is4K=true&ExtendedVideoTypes=Hdr10,HyperLogGamma&Limit=1"
+	selected, total = responseItems(t, playbackTextRequest(t, p, http.MethodGet, videoQuery, "", p.headers, nil))
+	if total != 1 || len(selected) != 1 || selected[0]["Id"] != ids[0] {
+		t.Fatal("HTTP video filters did not apply probed dimensions and color facts")
+	}
+	selected, total = responseItems(t, playbackTextRequest(t, p, http.MethodGet, videoQuery+"&StartIndex=1", "", p.headers, nil))
+	if total != 1 || len(selected) != 0 {
+		t.Fatal("HTTP video filter count depended on pagination")
+	}
 	for _, path := range []string{"/emby/Items/Counts?Years=2025", "/emby/Items/Counts?IsFavorite=true&IsFavorite=false", "/emby/Items/" + ids[0] + "/Ancestors?Recursive=true", "/emby/Videos/" + ids[0] + "/AdditionalParts?StartIndex=1", "/emby/Items?SortBy=InventedRank", "/emby/Items?Years=0", "/emby/Shows/NextUp?Years=2025", "/emby/Shows/NextUp?SortBy=Name"} {
 		expectStatus(t, playbackTextRequest(t, p, http.MethodGet, path, "", p.headers, nil), http.StatusBadRequest)
 	}

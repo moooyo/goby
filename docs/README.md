@@ -2,7 +2,84 @@
 
 ## Current status
 
-The latest [BIF automation and intro assessment increment](development/bif-intro-expansion-20260930.md)
+The [October 6 image refresh](development/main-image-refresh-20261006.md)
+packages merged `main` source `2ba10e3613cac9da0a2e2c8ae7317bba229fdd56` in the
+software and AMD backends at schema 61. Release `2026-10-06-main-images` reuses
+the unchanged player archive from source `7aaaeed44526848737270089ab0227d2d410f864`.
+The administrator UI stays embedded; the consumer player stays independently
+built and deployed. Eleven software phases, nine AMD phases, published-clip
+color checks and owned-resource closure passed. This targeted acceptance is
+separate from the
+[October 5 release](development/player-release-20261005.md), which retains the
+ten-phase software upgrade/rollback journey, twelve-phase AMD task/GPU/player
+journey, produced-clip color checks and owned-resource closure at its original
+image identities. Start with the [quick start](../deploy/oci/QUICKSTART.md),
+[player archive guide](../deploy/oci/README.player.md) and
+[release catalog](../deploy/oci/current-release.json) for installation.
+
+The October 4, 2026 user decision selects Goby's own consumer player and
+supersedes its previous exclusion. The [standalone React + Vite player](../web/player/README.md)
+builds and deploys separately from the Go executable and embedded administrator
+dashboard. Its optional Compose service uses the existing backend APIs. The
+[backend capability assessment](../web/player/BACKEND-CAPABILITIES.md) identifies
+handoff features without server support. Existing backend release receipts
+below retain their original scope; the October 5 release is the first combined
+release record to bind a separate player archive.
+
+The subsequent [persistent background-preview increment](api/background-previews.md)
+passed its 12-phase real Docker acceptance, focused browser/task/media checks,
+and PostgreSQL 17 recovery on `test-env`. Generated clips remain beside their
+source until explicit regeneration. The [player acceptance record](../web/player/ACCEPTANCE.md)
+keeps these results separate from the earlier player and backend receipts.
+Mixed name search with separate year/video-quality filters and existing
+4K/HDR/HLG/Dolby Vision filtering are the accepted scope. Unified cross-field
+free-text search and exact HDR10+ classification are not pending requirements.
+The subsequent approved increment implements estimated content hours, source-side
+per-track waveforms, and bounded Profile 8.1/complete Profile 7 MEL background
+generation. Waveform/HTTP/browser/recovery checks and the authorized CT104 DV
+checks have separate receipts; the live waveform journey passed all eight phases
+and is recorded in the player acceptance document. Exact elapsed-time analytics remains optional.
+The October 5 DV extension implements Profile 5, Profile 8.4, and Profile 8.2
+through the same strict path. All 21 required native AMD media cases passed,
+alongside the remote focused suite and Go backend build. Profile 8.2 coverage
+uses original analytic material; Profile 7 FEL reconstruction remains deferred.
+This receipt does not establish a new Docker deployment. The
+[DV implementation record](development/dolby-vision-background-research.md)
+separates the new corpus, implementation fixes, and results from the October 4
+acceptance.
+Automatic movie/TV credits detection now has its own completed seven-phase
+real Docker acceptance and focused checks. It reuses the previously selected
+Intro Skipper project, defaults off per library, and publishes source-bound
+intervals without replacing manual/source authority. The observed audio
+boundaries were about 3.496 seconds early; accepted integration is not universal
+or exact-second recognition. See [credits markers](api/credits-markers.md) and
+the [player acceptance record](../web/player/ACCEPTANCE.md).
+
+The renewed handoff audit identified further frontend omissions already
+supportable by existing Goby APIs. The restored interactions and presentation
+passed the player build, 101 distinct automated checks, staged visual comparison,
+and read-only real-service walkthrough. This work covers
+hover/seek previews, independent filters, subtitle/media details, stage behavior,
+recent-Series grouping, existing-preview audio, and external-player choices;
+it is not a new backend implementation or a general external-app compatibility
+claim. See the [restoration record](../web/player/ACCEPTANCE.md).
+
+The selected [bitmap subtitle timeline increment](api/subtitle-timelines.md)
+adds source-aligned display intervals for embedded PGS/DVD tracks. Generation
+defaults off and stores permanent files beside the media source. Consumer rows
+appear only for valid nonempty data, with labels and lanes omitted together;
+diagnostics remain in the administrator/task UI. Focused media, task, HTTP,
+browser, and schema-60 recovery checks passed on `test-env`, followed by all seven integrated
+Docker phases and desktop/mobile visual acceptance. The initial missing-state
+and first-generation evidence remains separate from the final run with an
+existing artifact. The later schema-61 extension adds source-bound external SUP
+and multilingual IDX+SUB timeline generation and passed its separate remote
+regression and Docker acceptance. External bitmap playback delivery and burn-in
+remain outside that timeline contract. Exact scope and retained failures are
+recorded in the
+[player acceptance record](../web/player/ACCEPTANCE.md).
+
+The historical September 30 [BIF automation and intro assessment increment](development/bif-intro-expansion-20260930.md)
 uses the dashboard-integrated application source
 `33445db2e2e64b6871116332c44605261a1bf2d4`, schema 52.
 BIF automation is complete within its scope. The expanded intro assessment is
@@ -20,7 +97,7 @@ historical fixture-dependent UI skip. The actual Docker generation, scan reuse,
 10-to-20-second profile rebuild, disable and recreation journey passed.
 Those pre-merge results retain their source scope. The
 [result manifest](development/bif-intro-expansion-results-20260930.json) separately
-binds the final dashboard integration and both current Docker profiles' actual
+binds the final dashboard integration and both then-current Docker profiles' actual
 administrator UI and retained-BIF checks. Final closure passed: no owned
 containers, networks or database clients remain, private PostgreSQL is stopped,
 and unrelated services are unchanged. This is not a new full-product or GPU claim.
@@ -61,6 +138,8 @@ Start with these sources of current status and delivery policy:
 
 | Document | Read it for |
 | --- | --- |
+| [October 6 image refresh](development/main-image-refresh-20261006.md) | Current merged backend images, reused player, immutable archive identities and targeted acceptance status |
+| [October 5 player release](development/player-release-20261005.md) | Original combined delivery, analysis-tool binding and integrated upgrade/rollback/GPU acceptance |
 | [Current status](development/current-status.md) | Completed implementation and acceptance, supported profiles, and deployment boundaries |
 | [Development handoff](development/handoff.md) | Latest delivery, retained artifacts, closed resources, and continuation context |
 | [Current execution plan](planning/current-execution-plan.md) | Completed selected scopes and the distinction between current work and historical plans |
@@ -71,7 +150,8 @@ Start with these sources of current status and delivery policy:
 Use the [Docker quick start](../deploy/oci/QUICKSTART.md) as the recommended
 installation entry. `goby-docker.py` exposes `prepare`, `check`, `start`, `status`,
 `logs` and `stop`; [current-release.json](../deploy/oci/current-release.json)
-binds both current profile archives and immutable image IDs. Software
+binds both backend profile archives and the optional player archive to immutable
+image IDs. Software
 and AMD are profiles of one Docker image delivery form. Image acceptance is
 specific to its recorded platform, tools and hardware; an archive or cross-build
 alone does not establish another platform's support.
@@ -79,9 +159,11 @@ alone does not establish another platform's support.
 | Document | Read it for |
 | --- | --- |
 | [Docker quick start](../deploy/oci/QUICKSTART.md) | Prepare an installation and use the installed helper for checking, starting, diagnosing and stopping it |
-| [Current Docker release catalog](../deploy/oci/current-release.json) | Accepted software/AMD image IDs, archive identities and companion hashes |
+| [Current Docker release catalog](../deploy/oci/current-release.json) | Accepted software/AMD/player image IDs, archive identities and companion hashes |
 | [Software OCI operator guide](../deploy/oci/README.md) | Import the Linux amd64 image archive, configure external PostgreSQL, start Compose, and perform update/rollback |
 | [AMD OCI operator guide](../deploy/oci/README.amd.md) | Import the AMD image and apply the GPU Compose and seccomp companions for the accepted hardware profile |
+| [Standalone player archive guide](../deploy/oci/README.player.md) | Build, verify and load the independent nginx player archive with pinned source and image inputs |
+| [Standalone Goby player](../web/player/README.md) | Develop and build the React + Vite player and add its independent nginx service with the optional Compose extension |
 | [Transcoding configuration](development/transcoding-configuration.md) | Media tools, hardware selection, runtime limits and cache configuration |
 | [Application-key operations](development/application-keys.md) | Persistent master-key ownership and restoring a database with its matching master key |
 | [Native backup and recovery](development/backup-recovery.md) | Encrypted archives, durable operations, offline recovery and generation switching |
@@ -92,7 +174,8 @@ alone does not establish another platform's support.
 The OCI deliveries include an embedded React/MUI administrator dashboard,
 FFmpeg/ffprobe and PostgreSQL client tools. The PostgreSQL server, media,
 application secrets and reverse proxy are external. The administrator dashboard
-is not a consumer playback application. The Docker-only policy does not change
+remains for administration; Goby's separate player provides the consumer UI.
+The Docker-only policy does not change
 how the external PostgreSQL server or reverse proxy may be deployed. Executables,
 recovery commands and native helpers included in the image are components of
 that image, not additional delivery forms. Consult the selected Docker guide
@@ -114,6 +197,8 @@ The accepted client/profile boundaries remain explicit in the delivery records.
 | --- | --- |
 | Implemented surface and scope | [Implemented APIs](api/implemented.md), [implementation scope](api/implementation-scope.md) |
 | Architecture | [Linux Go/React architecture](architecture/linux-go-react.md) |
+| Goby consumer player | [Player build and deployment](../web/player/README.md), [backend capability assessment](../web/player/BACKEND-CAPABILITIES.md), [acceptance](../web/player/ACCEPTANCE.md), [search hints](api/search-hints.md), [video filters](api/video-catalog-filters.md), [credits markers](api/credits-markers.md), [persistent background previews](api/background-previews.md), [audio waveforms](api/audio-waveforms.md), [bitmap subtitle timelines](api/subtitle-timelines.md), [estimated viewing statistics](api/viewing-statistics.md) |
+| Player research and implementation follow-up | [Dolby Vision background generation](development/dolby-vision-background-research.md), [per-track audio waveforms](development/audio-waveform-research.md); original source/documentation research retained separately from later approved implementation and runtime evidence |
 | Library scans and item management | [Administrator scans](api/admin-scans.md), [metadata API](api/admin-metadata.md), [local metadata](development/local-metadata.md), [local artwork](development/local-artwork.md) |
 | Accounts, sessions and devices | [Users](api/admin-users.md), [login sessions](api/admin-sessions.md), [application keys](api/application-keys.md), [devices](api/devices.md) |
 | Tasks and settings | [Task API](api/tasks.md), [execution and scheduling](development/tasks.md), [native settings](api/settings.md), [configuration compatibility](api/configuration.md) |
@@ -214,8 +299,8 @@ older accepted deliveries:
   recommendation or media-category work, as bounded by the
   [selected compatibility plan](planning/selected-compatibility-plan-20260920.md).
 
-Live TV/EPG/DVR/tuners, DLNA, external channels, group playback, a consumer Web
-player and Emby cloud services remain explicitly excluded from the selected
+Live TV/EPG/DVR/tuners, DLNA, external channels, group playback, Emby's proprietary
+web application/WebAppService and Emby cloud services remain explicitly excluded from the selected
 scope. They are not unfinished implementation obligations for these deliveries.
 Standalone binaries, systemd packages, DEB/RPM packages, Windows installers and
 other native packages are also outside the delivery policy. They are not a

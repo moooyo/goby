@@ -66,11 +66,46 @@ func ValidateAnalysisExecutionProfile(value AnalysisExecutionProfile) error {
 		return ErrInvalidInput
 	}
 	if value.IntroProfile != "" {
-		if value.FingerprintSHA256 != value.FFmpegSHA256 || value.FFprobeSHA256 != "" || !analysisOpaque(value.IntroProfile, 512) || value.DetectorVersion != introskipper.Version || value.DetectorOptions != (introdetect.Options{}) || introskipper.ValidateOptions(value.IntroSkipperOptions) != nil || value.VisualIntervalTicks != 0 || value.PreviewProfile != "" || len(value.PreviewWidths) != 0 {
+		if value.DetectorVersion == introskipper.CreditsVersion {
+			// Credits combine the main visual tools and the independently pinned
+			// Chromaprint-capable FFmpeg. Their identities need not be equal.
+			if !analysisSHA(value.FingerprintSHA256) || !analysisSHA(value.FFprobeSHA256) || !analysisOpaque(value.IntroProfile, 512) || value.DetectorOptions != (introdetect.Options{}) || introskipper.ValidateOptions(value.IntroSkipperOptions) != nil || value.VisualIntervalTicks != 0 || value.PreviewProfile != "" || len(value.PreviewWidths) != 0 {
+				return ErrInvalidInput
+			}
+		} else if value.FingerprintSHA256 != value.FFmpegSHA256 || value.FFprobeSHA256 != "" || !analysisOpaque(value.IntroProfile, 512) || value.DetectorVersion != introskipper.Version || value.DetectorOptions != (introdetect.Options{}) || introskipper.ValidateOptions(value.IntroSkipperOptions) != nil || value.VisualIntervalTicks != 0 || value.PreviewProfile != "" || len(value.PreviewWidths) != 0 {
 			return ErrInvalidInput
 		}
 	} else if !analysisSHA(value.FFprobeSHA256) || value.FingerprintSHA256 != "" || value.DetectorVersion != "" || value.DetectorOptions != (introdetect.Options{}) || value.IntroSkipperOptions != (introskipper.Options{}) || value.VisualIntervalTicks != 0 || value.PreviewProfile != media.PreviewAnalysisProfile || !reflect.DeepEqual(value.PreviewWidths, []int{240, 320, 400}) {
 		return ErrInvalidInput
+	}
+	return nil
+}
+
+// Version 6 retains its exact JSON shape. The task key seals the detector mode
+// so an intro profile cannot be admitted or replayed as credits, or vice versa.
+func ValidateAnalysisExecutionForTask(taskKey string, value AnalysisExecutionProfile) error {
+	if taskKey != TaskIntroAnalysisKey && taskKey != TaskCreditsAnalysisKey && taskKey != TaskPreviewGenerationKey {
+		return ErrInvalidInput
+	}
+	if err := ValidateAnalysisExecutionProfile(value); err != nil {
+		return err
+	}
+	if !value.Available {
+		return nil
+	}
+	switch taskKey {
+	case TaskIntroAnalysisKey:
+		if value.IntroProfile == "" || value.DetectorVersion != introskipper.Version {
+			return ErrInvalidInput
+		}
+	case TaskCreditsAnalysisKey:
+		if value.IntroProfile == "" || value.DetectorVersion != introskipper.CreditsVersion {
+			return ErrInvalidInput
+		}
+	case TaskPreviewGenerationKey:
+		if value.IntroProfile != "" {
+			return ErrInvalidInput
+		}
 	}
 	return nil
 }
@@ -276,18 +311,15 @@ func decodeCurrentAnalysisAdmission(profileRaw, executionRaw []byte, revision, e
 // PrepareAnalysis performs only SQL and pure computation. Both returned closures
 // must run inside the same task admission transaction that called this method.
 func PrepareAnalysis(tx OwnedTx, taskKey string, selection AnalysisSelection, execution AnalysisExecutionProfile) (AnalysisAdmissionBinding, error) {
-	if tx == nil || taskKey != TaskIntroAnalysisKey && taskKey != TaskPreviewGenerationKey {
+	if tx == nil || taskKey != TaskIntroAnalysisKey && taskKey != TaskCreditsAnalysisKey && taskKey != TaskPreviewGenerationKey {
 		return AnalysisAdmissionBinding{}, ErrInvalidInput
 	}
 	selection, err := NormalizeAnalysisSelection(selection)
 	if err != nil {
 		return AnalysisAdmissionBinding{}, err
 	}
-	if err := ValidateAnalysisExecutionProfile(execution); err != nil {
+	if err := ValidateAnalysisExecutionForTask(taskKey, execution); err != nil {
 		return AnalysisAdmissionBinding{}, err
-	}
-	if execution.Available && ((taskKey == TaskIntroAnalysisKey) != (execution.IntroProfile != "")) {
-		return AnalysisAdmissionBinding{}, ErrInvalidInput
 	}
 	configuration, err := scanAnalysisConfiguration(tx.QueryRow(`SELECT ` + analysisConfigurationColumns + ` FROM analysis_settings WHERE id=1 FOR SHARE`))
 	if err != nil {
@@ -295,9 +327,9 @@ func PrepareAnalysis(tx OwnedTx, taskKey string, selection AnalysisSelection, ex
 	}
 	// Admission binds the persisted options under the same configuration lock;
 	// tool discovery may have captured defaults before this transaction began.
-	if execution.Available && taskKey == TaskIntroAnalysisKey {
+	if execution.Available && (taskKey == TaskIntroAnalysisKey || taskKey == TaskCreditsAnalysisKey) {
 		execution.IntroSkipperOptions = configuration.Profile.IntroSkipper
-		if err := ValidateAnalysisExecutionProfile(execution); err != nil {
+		if err := ValidateAnalysisExecutionForTask(taskKey, execution); err != nil {
 			return AnalysisAdmissionBinding{}, err
 		}
 	}
@@ -361,7 +393,7 @@ func snapshotAnalysisChildren(tx OwnedTx, runID, taskKey string, selection Analy
 		return 0, err
 	}
 	// One bounded population read also includes support episodes for a leaf request.
-	rows, err := tx.Query(`SELECT `+analysisSourceColumns+` FROM items i `+analysisSourceJoins+`
+	rows, err := tx.Query(`SELECT `+analysisSourceColumnsForTask(taskKey)+` FROM items i `+analysisSourceJoins+`
   JOIN libraries l ON l.id=i.library_id WHERE `+analysisPhysicalSQL+`
   AND l.collection_type IN ('movies','tvshows','mixed') AND (cardinality($1::text[])=0 OR i.library_id=ANY($1))
   ORDER BY i.library_id,COALESCE(p.parent_id,''),COALESCE(i.parent_id,''),i.index_number NULLS LAST,i.id LIMIT 100001`, selection.LibraryIDs)
@@ -398,6 +430,12 @@ func snapshotAnalysisChildren(tx OwnedTx, runID, taskKey string, selection Analy
 	order := []string{}
 	for _, source := range sources {
 		_, explicit := selected[source.ItemID]
+		if taskKey == TaskCreditsAnalysisKey && source.ItemType != "Movie" && source.ItemType != "Episode" {
+			if explicit {
+				return 0, ErrInvalidInput
+			}
+			continue
+		}
 		source.Target = len(selected) == 0 || explicit
 		if explicit {
 			selected[source.ItemID] = true
@@ -431,7 +469,7 @@ func snapshotAnalysisChildren(tx OwnedTx, runID, taskKey string, selection Analy
 		}
 		for first := 0; first < len(targets); {
 			last := first + 1
-			if taskKey == TaskIntroAnalysisKey {
+			if taskKey == TaskIntroAnalysisKey || taskKey == TaskCreditsAnalysisKey && population[targets[first]].EpisodeKey != "" {
 				for last < len(targets) && last-first < 16 && targets[last]-targets[first] < 16 {
 					last++
 				}

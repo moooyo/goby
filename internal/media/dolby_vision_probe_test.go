@@ -92,17 +92,17 @@ func TestDolbyVisionRPUProbePreservesCancellation(t *testing.T) {
 }
 
 func TestDolbyVisionRPUProbeUnsupportedConfigurationRemainsUnverified(t *testing.T) {
-	metadata := &DolbyVisionMetadata{Profile: 4, RPUPresent: true, BLPresent: true, RPUVerified: true, RPUProfile: 7, RPUResidualMixed: true, ResidualDisabled: true, RPUFrameCount: 10}
+	metadata := &DolbyVisionMetadata{Profile: 4, RPUPresent: true, BLPresent: true, RPUVerified: true, RPUProfile: 7, RPUResidualMixed: true, ResidualDisabled: true, RPUFrameCount: 10, InBandParameterSets: true}
 	info := Info{Container: "matroska,webm", Streams: []Stream{{Index: 0, CodecType: "video", Codec: "hevc", DolbyVision: metadata}}}
 	probed, err := runDolbyVisionRPUProbe(context.Background(), "/missing/ffmpeg", nil, 0, info)
 	if err != nil {
 		t.Fatal(err)
 	}
 	got := probed.Streams[0].DolbyVision
-	if got == nil || got.RPUVerified || got.ResidualDisabled || got.RPUFrameCount != 0 || got.RPUProfile != 0 || got.RPUResidualMixed || got.RPUValidationReason != dolbyVisionRPUUnsupported {
+	if got == nil || got.RPUVerified || got.ResidualDisabled || got.RPUFrameCount != 0 || got.RPUProfile != 0 || got.RPUResidualMixed || got.InBandParameterSets || got.RPUValidationReason != dolbyVisionRPUUnsupported {
 		t.Fatalf("unsupported configuration retained verified evidence: %+v", got)
 	}
-	if !metadata.RPUVerified || !metadata.ResidualDisabled || metadata.RPUFrameCount != 10 || metadata.RPUProfile != 7 || !metadata.RPUResidualMixed {
+	if !metadata.RPUVerified || !metadata.ResidualDisabled || metadata.RPUFrameCount != 10 || metadata.RPUProfile != 7 || !metadata.RPUResidualMixed || !metadata.InBandParameterSets {
 		t.Fatal("RPU scan mutated the caller's existing evidence")
 	}
 }

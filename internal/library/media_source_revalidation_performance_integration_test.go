@@ -34,7 +34,8 @@ func (trace *mediaRevalidationPerformanceTrace) TraceQueryStart(ctx context.Cont
 			trace.entities.Add(1)
 		}
 	}
-	if strings.Contains(data.SQL, " FROM item_subtitles ") || strings.Contains(data.SQL, " FROM item_owned_subtitles ") {
+	if strings.Contains(data.SQL, " FROM item_subtitles ") || strings.Contains(data.SQL, " FROM item_owned_subtitles ") ||
+		strings.Contains(data.SQL, " FROM item_bitmap_subtitles ") {
 		trace.subtitles.Add(1)
 	}
 	return ctx

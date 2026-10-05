@@ -1,16 +1,26 @@
-# Linux architecture: Go backend and React administrator dashboard
+# Linux architecture: Go backend, administrator dashboard and standalone player
 
-Status: **target architecture with an implemented modular service foundation**. Requirements were updated on 2026-09-09 to use PostgreSQL. The [current status](../development/current-status.md) distinguishes implementation, verification, and deployment. Proposed layout, embedded frontend packaging, and platform expansion below remain target decisions where the implementation differs; a described feature is not a claim of runtime compatibility. The external contract baseline is described in [source provenance](../sources/README.md).
+Status: **target architecture with an implemented modular service foundation**, updated October 4, 2026 for the standalone player. Requirements were updated on 2026-09-09 to use PostgreSQL. The [current status](../development/current-status.md) distinguishes implementation, verification, and deployment. Proposed layout and platform expansion below remain target decisions where the implementation differs; a described feature is not a claim of runtime compatibility. The external contract baseline is described in [source provenance](../sources/README.md).
 
 ## Architecture decision
 
 Start with one Go application service, a separate PostgreSQL database service, bounded background workers, and external FFmpeg/ffprobe processes. Serve the built React administrator dashboard from the Go binary. PostgreSQL may run on the same Linux host or on a separately configured database host; it is a required service rather than an embedded component of the Go executable. Media mounts and disposable transcode/image caches remain owned by the application host.
+
+Serve Goby's consumer player from a separate static HTTP service. The React +
+Vite application in `web/player` has its own dependency lock, build output and
+nginx image. It uses the existing `/emby` browsing and playback APIs through a
+same-origin proxy. Its assets are not embedded in the Go executable. The
+October 4 scope decision selects this application without selecting Emby's
+proprietary WebAppService. See the [player guide](../../web/player/README.md).
 
 Keep Emby DTOs at the HTTP boundary. Model Goby's media, users, sessions, and jobs independently so upstream API changes do not dictate database structure. Both API surfaces call the same authorization rules and application services.
 
 ```mermaid
 flowchart LR
     Client[Third-party media clients] --> Compat[Emby API adapter]
+    Viewer[Player browser] --> Player[Standalone React and Vite player]
+    Player --> Proxy[Player nginx proxy]
+    Proxy --> Compat
     Browser[Administrator browser] --> Admin[React and MUI dashboard]
     Admin --> Native[Goby admin API]
     Compat --> App[Go application services]
@@ -28,6 +38,7 @@ flowchart LR
 
 | Surface | Purpose | Authentication |
 | --- | --- | --- |
+| Player origin `/` | Standalone Goby player; hash navigation and independent static assets | Shell is public; library and playback data require Emby user authentication |
 | `/emby/...` | Emby-compatible REST operations | Emby user tokens / authorized API keys; explicit bootstrap exceptions |
 | WebSocket route | Emby event and session protocol | Emby token and session/device checks; path and handshake need target-version fixtures |
 | UDP discovery, optional | Documented local server discovery | Minimal public identity response; LAN configuration only |
@@ -58,7 +69,9 @@ internal/events/
 internal/storage/postgres/
 internal/platform/linux/
 web/admin/
+web/player/
 deploy/linux/
+deploy/oci/
 docs/
 ```
 
@@ -128,6 +141,30 @@ Use a shared API client, query caching for server state, and schema-driven forms
 
 For browser authentication, issue an opaque server-side session cookie with `HttpOnly`, `Secure` under HTTPS, and an appropriate `SameSite` policy. Protect mutations with CSRF validation and origin checks. Recheck administrator authorization server-side for every operation. Keep client-compatible user tokens separate from browser session handling; both map to the same authorization service. Do not persist full-access API keys in browser local storage.
 
+## Standalone consumer player
+
+`web/player` uses React, TypeScript and Vite with the dedicated player handoff's
+visual system. It does not inherit the administrator dashboard's MUI component
+or packaging requirement. Hash navigation keeps consumer routes independent
+of Go routing. Vite proxies `/emby` and `/admin` during development; production
+nginx serves the compiled assets and forwards those API and administrator paths
+on the same origin. The optional Compose extension adds this static service to
+the existing `goby` network without changing backend image selection.
+
+Use ordinary Emby user authentication, item queries, playback negotiation,
+authorized media URLs and session reports. Authentication and playback remain
+subject to the same server-side user/library policies as third-party clients.
+Never treat a handoff's example catalog, statistics or personalized messaging as
+backend data. Unsupported server capabilities must be identified explicitly;
+see the [backend capability assessment](../../web/player/BACKEND-CAPABILITIES.md).
+
+The nginx proxy preserves range headers, streaming responses and WebSocket
+upgrades, avoids API/media caching and redacts query strings from access logs.
+The backend origin is supplied at container startup, while frontend assets are
+immutable build output. Building the player does not rebuild the Go binary or
+administrator dashboard. Frontend design acceptance and a successful build
+remain distinct from backend codec support and Docker deployment acceptance.
+
 ## Goby-owned API proposal
 
 These routes are design proposals, **not Emby APIs**. Standard administration such as library and user operations can be exposed through this facade while sharing the existing services and audit rules.
@@ -152,7 +189,16 @@ Use a separately versioned OpenAPI 3 contract for these routes with explicit err
 
 ## Linux packaging and operations
 
-Target delivery includes Linux amd64 and arm64 artifacts and an embedded administrator frontend. The current deployment uses amd64 and a separate immutable frontend asset directory; arm64, OCI packaging, and embedding remain unverified release work. All builds, tests, and runtime checks run through `ssh test-env` unless the current task explicitly authorizes local verification. Package a documented PostgreSQL service connection and either a version-pinned system FFmpeg dependency or a reproducible container image containing an audited FFmpeg build. Do not claim a single static binary includes the database server or media codecs.
+The official delivery is a Docker image running on Docker Engine, with accepted
+Linux amd64 software and AMD profiles and an embedded administrator dashboard.
+The independently built consumer player has a separate nginx Dockerfile and
+optional Compose service; its addition does not change earlier archive
+identities or imply new runtime acceptance. Linux arm64 remains a separately
+selected future Docker profile. See the [Docker delivery policy](../planning/docker-delivery-policy.md).
+All builds, tests, and runtime checks run through `ssh test-env` unless the
+current task explicitly authorizes local verification. Package a documented
+PostgreSQL service connection and an audited FFmpeg build in the backend image.
+The database server remains external.
 
 | Concern | Proposed default |
 | --- | --- |
@@ -167,7 +213,11 @@ Target delivery includes Linux amd64 and arm64 artifacts and an embedded adminis
 | Discovery | Optional UDP 7359 when LAN auto-discovery is desired |
 | Transports | REST, large/range responses, HLS, and WebSocket forwarded consistently |
 
-Provide systemd and OCI/container deployment guides. Harden filesystem access, capabilities, and process resources; accommodate only configured writable roots and permitted GPU devices. Container networking must explicitly account for discovery broadcasts. Do not enable arbitrary host networking as a universal requirement.
+Provide Docker deployment guides; historical systemd documentation does not
+define a supported installation form. Harden filesystem access, capabilities,
+and process resources; accommodate only configured writable roots and permitted
+GPU devices. Container networking must explicitly account for discovery
+broadcasts. Do not enable arbitrary host networking as a universal requirement.
 
 Back up the PostgreSQL database using `pg_dump --format=custom` with a client version compatible with the server. Include schema/tool versions, configuration, necessary metadata, and the backup manifest; identify excluded caches and media, and protect secret-bearing archives. `pg_dump` provides a consistent database snapshot, but application-owned files still need a documented coordination strategy. For restore, enter maintenance mode, preserve the current database, restore into a separate database with `pg_restore`, inspect migration/identity compatibility, and activate the restored database only after checks pass. Define ownership and privilege handling explicitly, for example with `--no-owner --no-acl` when restoring as Goby's deployment role. Rehearse backup and restore on Linux before claiming support. [PostgreSQL SQL dump and restore](https://www.postgresql.org/docs/current/backup-dump.html), [pg_restore documentation](https://www.postgresql.org/docs/current/app-pgrestore.html).
 

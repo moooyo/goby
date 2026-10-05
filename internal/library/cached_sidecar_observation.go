@@ -99,7 +99,8 @@ func (state *scanState) observeCachedSidecarAbsenceWithReader(ctx context.Contex
 		}
 	}
 	candidates, overflow := subtitles.candidates(relative)
-	if overflow || len(candidates) != 0 {
+	bitmap := subtitles.bitmap.selection(relative)
+	if overflow || len(candidates) != 0 || bitmap.overflow || len(bitmap.present) != 0 {
 		return cachedSidecarObservation{}, nil
 	}
 	if imagesEnabled {

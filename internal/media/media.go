@@ -110,6 +110,9 @@ type DolbyVisionMetadata struct {
 	RPUFrameCount    int64
 	// Verified RPUs can still report residual or profile inconsistency here.
 	RPUValidationReason string
+	// A complete RPU scan found no hvcC parameter sets. Background generation
+	// must decode from the beginning to retain in-band VPS/SPS/PPS before trim.
+	InBandParameterSets bool `json:",omitempty"`
 }
 
 // AudioTiming describes a fully scanned, continuous audio presentation. Sample

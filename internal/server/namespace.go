@@ -162,7 +162,7 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 		if len(parts) == 2 {
 			literal(1, "Counts", "Prefixes")
 		}
-		literal(2, "PlaybackInfo", "Ancestors", "UserData", "Images", "ThumbnailSet", "Refresh", "File", "Download", "Similar", "InstantMix", "ThemeMedia", "AddToPlaylistInfo", "Delete", "DeleteInfo", "RemoteSearch", "Subtitles")
+		literal(2, "PlaybackInfo", "Ancestors", "UserData", "Images", "ThumbnailSet", "Refresh", "File", "Download", "Similar", "InstantMix", "ThemeMedia", "AddToPlaylistInfo", "Delete", "DeleteInfo", "RemoteSearch", "Subtitles", "SubtitleTimelines")
 		literal(3, "Subtitles", "Attachments")
 		literal(4, "Delete")
 		literal(5, "Stream")

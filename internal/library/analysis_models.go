@@ -9,6 +9,7 @@ import (
 
 const (
 	TaskIntroAnalysisKey     = "media.intro_analysis"
+	TaskCreditsAnalysisKey   = "media.credits_analysis"
 	TaskPreviewGenerationKey = "media.preview_generation"
 	AnalysisProfileVersion   = 1
 	// Execution wire evolution is independent of managed configuration and CAS.

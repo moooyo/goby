@@ -121,7 +121,7 @@ func TestValidateResourceStateIncludesSelectedPhase2AfterRootBindings(t *testing
 			t.Run(fmt.Sprintf("schema_%d/valid_%t", version, valid), func(t *testing.T) {
 				tx := &rootBindingResourceTestTx{
 					rows:       &rootBindingResourceTestRows{},
-					rowResults: []themeStateTestRow{{valid: true}, {valid: true}, {valid: valid}},
+					rowResults: []themeStateTestRow{{valid: true}, {valid: true}, {valid: version < 44 || valid}, {valid: true}},
 				}
 				var want error
 				wantRows := 2
@@ -130,6 +130,9 @@ func TestValidateResourceStateIncludesSelectedPhase2AfterRootBindings(t *testing
 					if !valid {
 						want = ErrSchema
 					}
+				}
+				if want == nil {
+					wantRows++ // The final future-task check runs only after success.
 				}
 				if err := validateResourceState(context.Background(), tx, version); !errors.Is(err, want) {
 					t.Fatalf("combined media processing gate returned %v, want %v", err, want)

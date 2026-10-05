@@ -15,6 +15,10 @@ import { ErrorNotice } from './components';
 import { MetadataEditorDialog } from './MetadataEditorDialog';
 import { EpisodeRosterDialog } from './EpisodeRosterDialog';
 import { OnlineSourcesDialog } from './OnlineSourcesDialog';
+import { CreditsEditorDialog } from './CreditsEditorDialog';
+import { BackgroundPreviewEditorDialog } from './BackgroundPreviewEditorDialog';
+import { AudioWaveformDialog } from './AudioWaveformDialog';
+import { SubtitleTimelineDialog } from './SubtitleTimelineDialog';
 import type { UserNavigationGuardChange } from './userDraftNavigation';
 import { MediaSearchField, mediaPanelSx, mediaSelectSx } from './MediaPagePrimitives';
 
@@ -67,7 +71,7 @@ function ItemsLoading() {
   return <Stack spacing={1} sx={{ px: { xs: 2.5, sm: 3 }, py: 2 }} role="status" aria-label="Loading library items"><Skeleton height={62} /><Skeleton height={62} /><Skeleton height={62} /><Skeleton height={62} /></Stack>;
 }
 
-function ItemsList({ items, onEdit, onSources, onRoster }: { items: MetadataItemSummary[]; onEdit: (itemId: string) => void; onSources: (itemId: string) => void; onRoster: (item: MetadataItemSummary) => void }) {
+function ItemsList({ items, onEdit, onSources, onRoster, onCredits, onBackgroundPreview, onAudioWaveform, onSubtitleTimeline }: { items: MetadataItemSummary[]; onEdit: (itemId: string) => void; onSources: (itemId: string) => void; onRoster: (item: MetadataItemSummary) => void; onCredits: (item: MetadataItemSummary) => void; onBackgroundPreview: (item: MetadataItemSummary) => void; onAudioWaveform: (item: MetadataItemSummary) => void; onSubtitleTimeline: (item: MetadataItemSummary) => void }) {
   const [menu, setMenu] = useState<{ anchor: HTMLElement; item: MetadataItemSummary }>();
   return (
     <>
@@ -83,6 +87,10 @@ function ItemsList({ items, onEdit, onSources, onRoster }: { items: MetadataItem
             <Button size="small" variant="outlined" startIcon={<EditOutlined />} onClick={() => onEdit(item.Id)} aria-label={`Edit metadata for ${item.Name}`} sx={{ mt: 2 }}>Edit metadata</Button>
             <Button size="small" onClick={() => onSources(item.Id)} aria-label={`Online sources for ${item.Name}`} sx={{ mt: 2, ml: 1 }}>Online sources</Button>
             {item.Type === 'Series' && <Button size="small" onClick={() => onRoster(item)} aria-label={`Episode roster for ${item.Name}`} sx={{ mt: 2, ml: 1 }}>Episode roster</Button>}
+            {!item.IsFolder && (item.Type === 'Movie' || item.Type === 'Episode') && <Button size="small" onClick={() => onCredits(item)} aria-label={`编辑「${item.Name}」的片尾标记`} sx={{ mt: 2, ml: 1 }}>片尾标记</Button>}
+            {!item.IsFolder && (item.Type === 'Movie' || item.Type === 'Episode') && <Button size="small" onClick={() => onBackgroundPreview(item)} aria-label={`管理「${item.Name}」的背景短片`} sx={{ mt: 2, ml: 1 }}>背景短片</Button>}
+            {!item.IsFolder && (item.Type === 'Movie' || item.Type === 'Episode') && <Button size="small" onClick={() => onAudioWaveform(item)} aria-label={`管理「${item.Name}」的音轨波形`} sx={{ mt: 2, ml: 1 }}>音轨波形</Button>}
+            {!item.IsFolder && (item.Type === 'Movie' || item.Type === 'Episode') && <Button size="small" onClick={() => onSubtitleTimeline(item)} aria-label={`管理「${item.Name}」的字幕时间轴`} sx={{ mt: 2, ml: 1 }}>字幕时间轴</Button>}
           </Box>
         ))}
       </Box>
@@ -102,7 +110,7 @@ function ItemsList({ items, onEdit, onSources, onRoster }: { items: MetadataItem
           </TableBody>
         </Table>
       </TableContainer>
-      <Menu anchorEl={menu?.anchor} open={Boolean(menu)} onClose={() => setMenu(undefined)}><MenuItem onClick={() => { if (menu) onSources(menu.item.Id); setMenu(undefined); }}>Online sources</MenuItem>{menu?.item.Type === 'Series' && <MenuItem onClick={() => { onRoster(menu.item); setMenu(undefined); }}>Episode roster</MenuItem>}</Menu>
+      <Menu anchorEl={menu?.anchor} open={Boolean(menu)} onClose={() => setMenu(undefined)}><MenuItem onClick={() => { if (menu) onSources(menu.item.Id); setMenu(undefined); }}>Online sources</MenuItem>{menu?.item.Type === 'Series' && <MenuItem onClick={() => { onRoster(menu.item); setMenu(undefined); }}>Episode roster</MenuItem>}{menu && !menu.item.IsFolder && (menu.item.Type === 'Movie' || menu.item.Type === 'Episode') && <MenuItem onClick={() => { onCredits(menu.item); setMenu(undefined); }}>片尾标记</MenuItem>}{menu && !menu.item.IsFolder && (menu.item.Type === 'Movie' || menu.item.Type === 'Episode') && <MenuItem onClick={() => { onBackgroundPreview(menu.item); setMenu(undefined); }}>背景短片</MenuItem>}{menu && !menu.item.IsFolder && (menu.item.Type === 'Movie' || menu.item.Type === 'Episode') && <MenuItem onClick={() => { onAudioWaveform(menu.item); setMenu(undefined); }}>音轨波形</MenuItem>}{menu && !menu.item.IsFolder && (menu.item.Type === 'Movie' || menu.item.Type === 'Episode') && <MenuItem onClick={() => { onSubtitleTimeline(menu.item); setMenu(undefined); }}>字幕时间轴</MenuItem>}</Menu>
     </>
   );
 }
@@ -137,11 +145,13 @@ function ItemFilters({ searchTitle, types, loading, canClear, onSearchTitleChang
 
 interface MetadataItemsPageProps {
   libraryId: string;
+  currentUserId: string;
   onLibraries: () => void;
+  onTasks?: () => void;
   onNavigationGuardChange: UserNavigationGuardChange;
 }
 
-function LibraryItemsView({ libraryId, onLibraries, onNavigationGuardChange }: MetadataItemsPageProps) {
+function LibraryItemsView({ libraryId, currentUserId, onLibraries, onTasks, onNavigationGuardChange }: MetadataItemsPageProps) {
   const [searchTitle, setSearchTitle] = useState('');
   const [query, setQuery] = useState({ searchTerm: '', types: [] as ItemType[], page: 0, pageSize: 50 });
   const [loaded, setLoaded] = useState<{ queryKey: string; result: MetadataItemsResponse }>();
@@ -151,6 +161,10 @@ function LibraryItemsView({ libraryId, onLibraries, onNavigationGuardChange }: M
   const [editingItemId, setEditingItemId] = useState<string>();
   const [sourcesItemId, setSourcesItemId] = useState<string>();
   const [rosterItem, setRosterItem] = useState<MetadataItemSummary>();
+  const [creditsItem, setCreditsItem] = useState<MetadataItemSummary>();
+  const [backgroundPreviewItem, setBackgroundPreviewItem] = useState<MetadataItemSummary>();
+  const [audioWaveformItem, setAudioWaveformItem] = useState<MetadataItemSummary>();
+  const [subtitleTimelineItem, setSubtitleTimelineItem] = useState<MetadataItemSummary>();
   const queryKey = JSON.stringify([libraryId, query.searchTerm, query.types, query.page, query.pageSize]);
   const data = loaded?.queryKey === queryKey ? loaded.result : undefined;
   const failed = failure?.queryKey === queryKey;
@@ -222,7 +236,7 @@ function LibraryItemsView({ libraryId, onLibraries, onNavigationGuardChange }: M
             <Button onClick={filtered ? clearFilters : onLibraries} startIcon={filtered ? <FilterAltOffOutlined /> : <ArrowBackRounded />}>{filtered ? 'Clear filters' : 'Back to libraries'}</Button>
           </Stack>
         )}
-        {data && data.Items.length > 0 && <ItemsList items={data.Items} onEdit={setEditingItemId} onSources={setSourcesItemId} onRoster={setRosterItem} />}
+        {data && data.Items.length > 0 && <ItemsList items={data.Items} onEdit={setEditingItemId} onSources={setSourcesItemId} onRoster={setRosterItem} onCredits={setCreditsItem} onBackgroundPreview={setBackgroundPreviewItem} onAudioWaveform={setAudioWaveformItem} onSubtitleTimeline={setSubtitleTimelineItem} />}
         {!data && !loading && failed && <Typography variant="body2" color="text.secondary" sx={{ px: { xs: 2.5, sm: 3 }, pb: 3 }}>The item list could not be loaded. Retry the request to see this library.</Typography>}
         {data && (
           <TablePagination
@@ -246,6 +260,10 @@ function LibraryItemsView({ libraryId, onLibraries, onNavigationGuardChange }: M
       {editingItemId && <MetadataEditorDialog key={editingItemId} itemId={editingItemId} onClose={() => { setEditingItemId(undefined); refresh(); }} onSaved={refresh} onNavigationGuardChange={onNavigationGuardChange} />}
       {sourcesItemId && <OnlineSourcesDialog key={sourcesItemId} itemId={sourcesItemId} onClose={() => { setSourcesItemId(undefined); refresh(); }} onSaved={refresh} onNavigationGuardChange={onNavigationGuardChange} />}
       {rosterItem && <EpisodeRosterDialog key={rosterItem.Id} seriesId={rosterItem.Id} seriesName={rosterItem.Name} onClose={() => setRosterItem(undefined)} onNavigationGuardChange={onNavigationGuardChange} />}
+      {creditsItem && <CreditsEditorDialog key={creditsItem.Id} itemId={creditsItem.Id} itemName={creditsItem.Name} currentUserId={currentUserId} onTasks={onTasks} onClose={() => setCreditsItem(undefined)} onNavigationGuardChange={onNavigationGuardChange} />}
+      {backgroundPreviewItem && <BackgroundPreviewEditorDialog key={backgroundPreviewItem.Id} itemId={backgroundPreviewItem.Id} itemName={backgroundPreviewItem.Name} currentUserId={currentUserId} onClose={() => setBackgroundPreviewItem(undefined)} onTasks={onTasks} onNavigationGuardChange={onNavigationGuardChange} />}
+      {audioWaveformItem && <AudioWaveformDialog key={audioWaveformItem.Id} itemId={audioWaveformItem.Id} itemName={audioWaveformItem.Name} currentUserId={currentUserId} onClose={() => setAudioWaveformItem(undefined)} onTasks={onTasks} onNavigationGuardChange={onNavigationGuardChange} />}
+      {subtitleTimelineItem && <SubtitleTimelineDialog key={subtitleTimelineItem.Id} itemId={subtitleTimelineItem.Id} itemName={subtitleTimelineItem.Name} currentUserId={currentUserId} onClose={() => setSubtitleTimelineItem(undefined)} onTasks={onTasks} onNavigationGuardChange={onNavigationGuardChange} />}
     </Box>
   );
 }

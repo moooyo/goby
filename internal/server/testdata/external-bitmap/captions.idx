@@ -1,0 +1,13 @@
+# VobSub index file, v7 (do not modify this line!)
+size: 320x192
+palette: 000000, ffffff, 000000, 808080, 000000, 000000, 000000, 000000, 000000, 000000, 000000, 000000, 000000, 000000, 000000, 000000
+alpha: 100%
+forced subs: OFF
+custom colors: OFF, tridx: 1000, colors: 000000,ffffff,ffffff,ffffff
+id: en, index: 3
+delay: +00:00:02:000
+timestamp: 00:00:01:000, filepos: 000000000
+timestamp: 00:00:08:000, filepos: 0000007d2
+id: zh, index: 7
+delay: -00:00:01:000
+timestamp: 00:00:02:000, filepos: 0000003fc

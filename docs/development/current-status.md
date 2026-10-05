@@ -1,6 +1,65 @@
 # Current implementation and delivery status
 
-## Latest external evaluation: native Intro Skipper
+## Current accepted release: merged main backend images
+
+Release `2026-10-06-main-images` packages backend source
+`2ba10e3613cac9da0a2e2c8ae7317bba229fdd56` in new software and AMD images at
+schema 61, including the merged scan and task authorization behavior. The
+standalone player image and archive are reused byte-for-byte from source
+`7aaaeed44526848737270089ab0227d2d410f864`. The
+[refresh record](main-image-refresh-20261006.md) records the frozen identities
+and passing targeted acceptance: eleven software phases, nine AMD phases,
+actual published-clip color readback and owned-resource closure. Existing
+state, catalogs, user data and retained sidecars were preserved. The reused
+player kept its container identity through acceptance until final shutdown.
+Those results describe the new backend images and are not added to the
+October 5 matrix or the earlier 270 main-integration source regressions.
+
+The [release catalog](../../deploy/oci/current-release.json) is the installation
+entry. This increment does not add P7 FEL, external bitmap subtitle playback,
+new GPU platforms or a public deployment. The original combined release and
+its broader upgrade/rollback journey remain separately recorded below.
+
+## Previous accepted release: player and persistent media analysis
+
+The [October 5 release](player-release-20261005.md) binds application
+source `7aaaeed44526848737270089ab0227d2d410f864`, schema 61, and three independent
+Linux amd64 archives: software backend, AMD backend and nginx player. The Go
+binary retains the embedded administrator dashboard. The React/Vite consumer
+player remains a separate build and service.
+
+The selected implementation includes the restored design and scrolling behavior,
+permanent source-side background clips, per-track waveforms, credits detection,
+embedded PGS/DVD and external SUP/IDX+SUB timelines, and strict Dolby Vision
+background generation for P5, P8.1, P8.4, P8.2 and complete P7 MEL. Their existing
+feature receipts remain in the [player acceptance record](../../web/player/ACCEPTANCE.md)
+and [DV record](dolby-vision-background-research.md). P8.2 uses original analytic
+test material; P7 FEL and external bitmap playback/burn-in remain outside the
+selected implementation.
+
+All three image archives are built and exported with immutable receipts.
+Release `2026-10-05-player-media` passed ten software phases, including schema
+52-to-61 upgrade, user-state preservation, source-side generation, player proxy,
+restart and backup-based return to the old image. Twelve AMD phases passed
+administrator-UI generation, actual GPU execution, natural player playback,
+reuse, failure/cancellation and restart preservation for P5/P8.4/P8.2. Readback
+of the actual published clips passed the selected color comparisons. Owned
+containers, helper processes, private Docker/SSH infrastructure and PostgreSQL
+are stopped; source/sidecar identity checks and resource closure passed. Use the
+[release record](player-release-20261005.md) and
+[release catalog](../../deploy/oci/current-release.json) for exact artifact and
+acceptance boundaries rather than combining older test counts.
+No registry publication or public production deployment is included.
+
+## Historical implementation and evaluation checkpoints
+
+The dated entries below preserve the conclusions, source revisions and release
+state at each earlier checkpoint. Their references to a current catalog,
+unreleased source or proposed next work are historical and do not override the
+current release scope above. Recognition-quality results retain their limits;
+packaging later source does not convert an earlier missed match into acceptance.
+
+## Previous external evaluation: native Intro Skipper
 
 The [native Intro Skipper evaluation](intro-skipper-native-evaluation-20261001.md)
 ran official Jellyfin 12.0, Intro Skipper 12.0.4.0 and Jellyfin FFmpeg on the
@@ -17,7 +76,7 @@ and result evidence is retained. Upstream reuse without a detector fork remains
 the preferred direction; this finding does not accept further custom matcher
 development or a new release.
 
-## Latest source increment: complete-target scoring and new source evidence
+## Previous source increment: complete-target scoring and new source evidence
 
 The [seventh intro-quality increment](intro-quality-round7-20261001.md) adds a
 separate scoring mode for frozen research reports and source-only labels. It
@@ -109,15 +168,15 @@ support-pool follow-up is reported separately and is not unseen accuracy evidenc
 Broader recognition remains open. The accepted Docker catalog below is unchanged;
 this source increment does not claim replacement images or deployment.
 
-## Current Docker delivery
+## Previous Docker delivery: September 30, 2026
 
-The current [BIF automation and intro assessment increment](bif-intro-expansion-20260930.md)
+The September 30 [BIF automation and intro assessment increment](bif-intro-expansion-20260930.md)
 uses the dashboard-integrated application source
 `33445db2e2e64b6871116332c44605261a1bf2d4`, schema 52.
 **BIF automation is complete within its selected scope. The expanded accuracy
 assessment is complete; broader intro recognition is not accepted.**
 
-| Current Docker profile | Immutable image ID |
+| Historical Docker profile | Immutable image ID |
 | --- | --- |
 | Software | `sha256:45dc7d9ff3eefbe79f6c8205ce2fda332777d1c1f2ecc22ef491fe7ab51bf89d` |
 | AMD | `sha256:d25873c96b1259da69c82b38c4939f7d37a3986b4238850be7e4b8def8707ce0` |
@@ -153,7 +212,7 @@ remains valid within its original scope and cannot be extrapolated to these case
 improvement.** Evaluation completion is not recognition-extension acceptance.
 
 The [result manifest](bif-intro-expansion-results-20260930.json) binds source,
-artifacts, evidence and closure. Current archives are under
+artifacts, evidence and closure. Its archives are under
 `D:/Code/goby/.artifacts/bif-intro-20260930/software` and `amd`; their parent
 contains `goby-docker-operations.zip`. Use the
 [current release catalog](../../deploy/oci/current-release.json) and

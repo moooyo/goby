@@ -15,7 +15,7 @@
     "IntroSkipper/Manager/QueueManager.cs",
     "LICENSE"
   ],
-  "scope": "Introduction raw-candidate matching after caller admission and raw fingerprint extraction",
+  "scope": "Introduction and episode Credits raw-candidate matching after caller admission and raw fingerprint extraction",
   "automaticBoundaryAdjustmentIncluded": false,
   "intrinsicFiveSecondStartSnapIncluded": true,
   "upstreamDefaultsPreserved": true,

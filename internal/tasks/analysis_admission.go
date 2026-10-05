@@ -36,7 +36,21 @@ type AnalysisAdmissionBinding struct {
 }
 
 func isAnalysisTask(key string) bool {
-	return key == library.TaskIntroAnalysisKey || key == library.TaskPreviewGenerationKey
+	return key == library.TaskIntroAnalysisKey || key == library.TaskPreviewGenerationKey || key == library.TaskCreditsAnalysisKey
+}
+
+func analysisTaskKeys() []string {
+	return []string{library.TaskIntroAnalysisKey, library.TaskPreviewGenerationKey, library.TaskCreditsAnalysisKey}
+}
+
+// Source-side artifact generation shares the expensive media worker slot but
+// keeps persistent queues independent of analysis cache/profile invalidation.
+func isMediaAnalysisExecution(key string) bool {
+	return isAnalysisTask(key) || key == library.TaskBackgroundPreviewGenerationKey || key == library.TaskAudioWaveformGenerationKey || key == library.TaskSubtitleTimelineGenerationKey
+}
+
+func mediaAnalysisExecutionKeys() []string {
+	return []string{library.TaskIntroAnalysisKey, library.TaskPreviewGenerationKey, library.TaskCreditsAnalysisKey, library.TaskBackgroundPreviewGenerationKey, library.TaskAudioWaveformGenerationKey, library.TaskSubtitleTimelineGenerationKey}
 }
 
 func cloneAnalysisSelection(input *library.AnalysisSelection) *library.AnalysisSelection {

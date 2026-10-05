@@ -204,7 +204,7 @@ def command(arguments, timeout=30, check=True, cwd=None):
     return result
 
 
-def inspect_image(image_id):
+def inspect_image(image_id, user="10001:10001"):
     result = command(["docker", "image", "inspect", "--format",
                       '{{json .}}', image_id], check=False)
     if result.returncode:
@@ -215,8 +215,8 @@ def inspect_image(image_id):
         raise OperationError("image_inspection_invalid", "Docker returned an invalid image inspection.") from None
     need(value.get("Id") == image_id and value.get("Os") == "linux"
          and value.get("Architecture") == "amd64"
-         and value.get("Config", {}).get("User") == "10001:10001",
-         "image_profile_mismatch", "The image must match the recorded Linux amd64 identity and UID/GID 10001.")
+         and value.get("Config", {}).get("User") == user,
+         "image_profile_mismatch", "The image must match the recorded Linux amd64 identity and service UID/GID.")
     return value
 
 
@@ -265,6 +265,35 @@ def release_profile(release, profile):
     return catalog, selected, companion_data
 
 
+def release_player(catalog, companions):
+    player = catalog.get("player")
+    need(isinstance(player, dict) and IMAGE_ID.fullmatch(player.get("imageId", "")),
+         "release_player_missing", "The selected release does not identify an independently built player image.")
+    archive = player.get("archive", {})
+    need(isinstance(archive, dict) and FILE_NAME.fullmatch(archive.get("name", ""))
+         and type(archive.get("bytes")) is int and archive["bytes"] > 0
+         and DIGEST.fullmatch(archive.get("sha256", "")),
+         "release_player_archive_invalid", "The player catalog requires an archive filename, size and SHA-256.")
+    need("compose.player.yaml" in companions, "player_companion_missing",
+         "The selected profile lacks its matching compose.player.yaml companion.")
+    return player
+
+
+def load_release_image(release, profile, user="10001:10001"):
+    archive = release / profile["archive"]["name"]
+    need(archive.is_file() and not archive.is_symlink(), "archive_missing",
+         "A selected image archive is missing from its release directory.")
+    size, digest = file_hash(archive)
+    need(size == profile["archive"]["bytes"] and digest == profile["archive"]["sha256"],
+         "archive_hash_mismatch", "An image archive does not match the current release size and SHA-256.")
+    image_id = profile["imageId"]
+    if inspect_image(image_id, user) is None:
+        command(["docker", "image", "load", "--input", str(archive)], timeout=600)
+        need(inspect_image(image_id, user) is not None, "image_missing_after_load",
+             "The archive did not provide its recorded image ID.")
+    return image_id
+
+
 def amd_device(value):
     need(value is not None, "amd_render_node_required", "The AMD profile requires --render-node for a real AMD render device.")
     node = path_text(value)
@@ -295,6 +324,11 @@ def prepare(args):
     need(release.is_dir() and media.is_dir(), "directory_invalid", "Release and media inputs must be existing directories.")
     destination = new_directory(args.directory, media, release)
     need(1 <= args.host_port <= 65535, "host_port_invalid", "The host port must be between 1 and 65535.")
+    need(args.with_player or (args.player_host_port is None and args.player_release_dir is None),
+         "player_option_without_service", "Select --with-player before specifying player options.")
+    player_port = args.player_host_port if args.player_host_port is not None else 8080
+    need(not args.with_player or (1 <= player_port <= 65535 and player_port != args.host_port),
+         "player_host_port_invalid", "The player port must be between 1 and 65535 and differ from the backend port.")
     origin, secure_cookie = public_url(args.public_url)
     ca = read_file(path_text(args.database_ca_file), maximum=256 * 1024) if args.database_ca_file else None
     if ca is not None:
@@ -305,19 +339,22 @@ def prepare(args):
     catalog, profile, companions = release_profile(release, args.profile)
     need(not args.writable_subtitles or "compose.subtitles.yaml" in companions,
          "subtitle_companion_missing", "Writable subtitles require the matching compose.subtitles.yaml companion.")
+    need(not args.writable_media or "compose.background-previews.yaml" in companions,
+         "media_write_companion_missing", "Writable media requires the matching compose.background-previews.yaml companion.")
+    player = release_player(catalog, companions) if args.with_player else None
+    player_release = (path_text(args.player_release_dir).resolve(strict=True)
+                      if args.player_release_dir else release)
+    need(player_release.is_dir(), "directory_invalid", "The player release directory must exist.")
+    need(not args.with_player or (not destination.is_relative_to(player_release)
+         and not player_release.is_relative_to(destination)), "installation_path_overlap",
+         "The installation and player release directories must not overlap.")
     render = amd_device(args.render_node) if args.profile == "amd" else None
     need(args.profile == "amd" or args.render_node is None, "render_node_profile_mismatch",
          "Select the AMD profile when specifying a render node.")
-    archive = release / profile["archive"]["name"]
-    need(archive.is_file() and not archive.is_symlink(), "archive_missing", "The selected image archive is missing from --release-dir.")
-    size, digest = file_hash(archive)
-    need(size == profile["archive"]["bytes"] and digest == profile["archive"]["sha256"],
-         "archive_hash_mismatch", "The image archive does not match the current release size and SHA-256.")
     command(["docker", "info", "--format", "{{.OSType}}"])
-    image_id = profile["imageId"]
-    if inspect_image(image_id) is None:
-        command(["docker", "image", "load", "--input", str(archive)], timeout=600)
-        need(inspect_image(image_id) is not None, "image_missing_after_load", "The archive did not provide its recorded image ID.")
+    image_id = load_release_image(release, profile)
+    if player:
+        load_release_image(player_release, player, "101:101")
     try:
         app_env = raw_environment(companions["goby.env.example"].decode("utf-8"))
     except UnicodeError:
@@ -339,6 +376,12 @@ def prepare(args):
         compose_files.append("compose.amd.yaml")
     if args.writable_subtitles:
         compose_files.append("compose.subtitles.yaml")
+    if args.writable_media:
+        compose_files.append("compose.background-previews.yaml")
+    if player:
+        deployment.update(GOBY_PLAYER_IMAGE=player["imageId"], GOBY_PLAYER_HOST_PORT=str(player_port),
+                          GOBY_PLAYER_API_UPSTREAM="http://goby:8096")
+        compose_files.append("compose.player.yaml")
     if ca is not None:
         compose_files.append("compose.install.yaml")
     # The destination is created only after all input and image checks succeed.
@@ -368,10 +411,15 @@ def prepare(args):
     metadata = {"kind": "goby-docker-installation", "version": 1, "directory": str(destination),
                 "profile": args.profile, "project_name": project, "compose_files": compose_files,
                 "image_id": image_id, "host_port": args.host_port, "public_url": origin,
-                "application": catalog["application"], "writable_subtitles": args.writable_subtitles}
+                "application": catalog["application"], "writable_subtitles": args.writable_subtitles,
+                "writable_media": args.writable_media or args.writable_subtitles}
+    if player:
+        metadata["player"] = {"image_id": player["imageId"], "host_port": player_port}
     write_new(destination / "installation.json", json.dumps(metadata, indent=2) + "\n")
     emit({"status": "prepared", "directory": str(destination), "profile": args.profile,
-          "imageId": image_id, "setupTokenFile": str(destination / "setup-token.txt"),
+          "imageId": image_id, "services": selected_services(metadata),
+          "playerImageId": player["imageId"] if player else None,
+          "setupTokenFile": str(destination / "setup-token.txt"),
           "message": "Run check, then start. Read the setup token privately from the indicated file."})
 
 
@@ -385,16 +433,31 @@ def installation(value):
          and IMAGE_ID.fullmatch(metadata.get("image_id", ""))
          and type(metadata.get("host_port")) is int and 1 <= metadata["host_port"] <= 65535,
          "installation_invalid", "This directory lacks a valid Goby Docker installation record.")
-    allowed = {"compose.yaml", "compose.amd.yaml", "compose.subtitles.yaml", "compose.install.yaml"}
+    allowed = {"compose.yaml", "compose.amd.yaml", "compose.subtitles.yaml", "compose.install.yaml",
+               "compose.background-previews.yaml", "compose.player.yaml"}
     files = metadata.get("compose_files")
     need(isinstance(files, list) and files and files[0] == "compose.yaml"
          and all(name in allowed for name in files) and len(files) == len(set(files)),
          "installation_invalid", "The installation Compose file list is invalid.")
+    player = metadata.get("player")
+    need((player is not None) == ("compose.player.yaml" in files)
+         and (player is None or (isinstance(player, dict) and IMAGE_ID.fullmatch(player.get("image_id", ""))
+              and type(player.get("host_port")) is int and 1 <= player["host_port"] <= 65535
+              and player["host_port"] != metadata["host_port"])),
+         "installation_invalid", "The optional player record and Compose selection must agree.")
     for name in files:
         read_file(directory / name)
     read_file(directory / "deployment.env", private=True)
     read_file(directory / "goby.env", private=True)
     return directory, metadata
+
+
+def selected_services(metadata):
+    return ["goby", "player"] if metadata.get("player") is not None else ["goby"]
+
+
+def writable_media(metadata):
+    return metadata.get("writable_media", metadata.get("writable_subtitles", False)) is True
 
 
 def compose(directory, metadata, arguments, **kwargs):
@@ -405,29 +468,31 @@ def compose(directory, metadata, arguments, **kwargs):
     return command(invocation + arguments, cwd=directory, **kwargs)
 
 
-def configured_image(directory):
+def configured_value(directory, key):
     environment = raw_environment(read_file(directory / "deployment.env", private=True).decode("utf-8"))
-    value = environment.get("GOBY_OCI_IMAGE", "")
+    value = environment.get(key, "")
     if len(value) > 1 and value[0] == value[-1] and value[0] in ("'", '"'):
         value = value[1:-1]
-    need(IMAGE_ID.fullmatch(value), "configured_image_invalid",
-         "GOBY_OCI_IMAGE must contain an explicit immutable image ID from the selected release receipt.")
     return value
 
 
-def configured_port(directory):
-    environment = raw_environment(read_file(directory / "deployment.env", private=True).decode("utf-8"))
-    value = environment.get("GOBY_HOST_PORT", "")
-    if len(value) > 1 and value[0] == value[-1] and value[0] in ("'", '"'):
-        value = value[1:-1]
+def configured_image(directory, service="goby"):
+    value = configured_value(directory, "GOBY_PLAYER_IMAGE" if service == "player" else "GOBY_OCI_IMAGE")
+    need(IMAGE_ID.fullmatch(value), "configured_image_invalid",
+         "Each selected service image must contain an explicit immutable image ID from the selected release receipt.")
+    return value
+
+
+def configured_port(directory, service="goby"):
+    value = configured_value(directory, "GOBY_PLAYER_HOST_PORT" if service == "player" else "GOBY_HOST_PORT")
     need(value.isascii() and value.isdecimal() and 1 <= int(value) <= 65535,
-         "configured_port_invalid", "GOBY_HOST_PORT must be an explicit port between 1 and 65535.")
+         "configured_port_invalid", "Each selected service must have an explicit port between 1 and 65535.")
     return int(value)
 
 
-def published_loopback_port(details, expected):
+def published_loopback_port(details, expected, service="goby"):
     ports = details.get("Ports")
-    bindings = ports.get("8096/tcp") if isinstance(ports, dict) else None
+    bindings = ports.get("8080/tcp" if service == "player" else "8096/tcp") if isinstance(ports, dict) else None
     need(isinstance(bindings, list) and len(bindings) == 1 and isinstance(bindings[0], dict)
          and bindings[0].get("HostIp") == "127.0.0.1" and bindings[0].get("HostPort") == str(expected),
          "container_port_mismatch", "The container's loopback port differs from deployment.env. Check the selected installation and recreate it before diagnosing readiness.")
@@ -456,38 +521,90 @@ if test -n "$sample"; then
 else
   echo MEDIA_DIRECTORY_READABLE_NO_SAMPLE
 fi
+if test "$2" = writable; then
+  directory=/media
+  if test -n "$sample"; then directory="$(dirname "$sample")"; fi
+  probe="$directory/.goby-docker-check-$1"
+  (set -C; printf check > "$probe") 2>/dev/null || { echo MEDIA_NOT_WRITABLE; exit 1; }
+  trap 'rm -f -- "$probe"' EXIT HUP INT TERM
+  test "$(cat "$probe")" = check || { echo MEDIA_NOT_WRITABLE; exit 1; }
+  rm -f -- "$probe" || { echo MEDIA_NOT_WRITABLE; exit 1; }
+  trap - EXIT HUP INT TERM
+  echo MEDIA_SAMPLE_PARENT_WRITABLE
+fi
+if test "$3" = amd; then
+  test -n "$GOBY_HW_DEVICE" && test -c "$GOBY_HW_DEVICE" && test -r "$GOBY_HW_DEVICE" && test -w "$GOBY_HW_DEVICE" || { echo AMD_DEVICE_NOT_ACCESSIBLE; exit 1; }
+  echo AMD_DEVICE_ACCESSIBLE
+fi
 echo CHECK_PASSED
 '''
 
 
-def check_installation(directory, metadata):
-    need(inspect_image(configured_image(directory)) is not None, "configured_image_missing",
-         "Load the configured image archive before checking or starting this installation.")
-    result = compose(directory, metadata, ["config", "--quiet"], check=False)
-    need(result.returncode == 0, "compose_configuration_invalid",
-         "Compose configuration is invalid. Check installation files and Compose support for env_file.format: raw.")
-    name = metadata["project_name"] + "-check-" + secrets.token_hex(5)
+PLAYER_CHECK_SCRIPT = r'''test "$(id -u):$(id -g)" = "101:101" || { echo PLAYER_IDENTITY_MISMATCH; exit 1; }
+test -r /usr/share/nginx/html/index.html && test -r /etc/nginx/templates/nginx.conf.template || { echo PLAYER_ASSETS_MISSING; exit 1; }
+probe="/tmp/.goby-player-check-$1"
+(set -C; printf check > "$probe") 2>/dev/null || { echo PLAYER_TMP_NOT_WRITABLE; exit 1; }
+trap 'rm -f -- "$probe"' EXIT HUP INT TERM
+test "$(cat "$probe")" = check || { echo PLAYER_TMP_NOT_WRITABLE; exit 1; }
+rm -f -- "$probe" || { echo PLAYER_TMP_NOT_WRITABLE; exit 1; }
+trap - EXIT HUP INT TERM
+echo PLAYER_CHECK_PASSED
+'''
+
+
+def container_check(directory, metadata, service, script, extra):
+    name = metadata["project_name"] + "-check-" + service + "-" + secrets.token_hex(5)
     try:
         result = compose(directory, metadata, ["run", "--rm", "--no-deps", "--pull", "never", "--name", name,
-                         "--entrypoint", "sh", "goby", "-eu", "-c", CHECK_SCRIPT, "goby-check", secrets.token_hex(8)],
+                         "--entrypoint", "sh", service, "-eu", "-c", script, "goby-check", secrets.token_hex(8), *extra],
                          timeout=45, check=False)
     finally:
         # This unique one-shot container belongs only to this invocation.
         command(["docker", "container", "rm", "--force", name], timeout=15, check=False)
+    return result
+
+
+def check_installation(directory, metadata):
+    for service in selected_services(metadata):
+        need(inspect_image(configured_image(directory, service), "101:101" if service == "player" else "10001:10001") is not None,
+             "configured_image_missing", "Load each configured image archive before checking or starting this installation.")
+    if metadata.get("player"):
+        need(configured_port(directory) != configured_port(directory, "player"), "player_host_port_invalid",
+             "The player and backend host ports must differ.")
+        need(configured_value(directory, "GOBY_PLAYER_API_UPSTREAM") in ("", "http://goby:8096"),
+             "player_upstream_invalid", "The managed player must proxy this installation's goby service at http://goby:8096.")
+    if metadata["profile"] == "amd":
+        render, group = amd_device(configured_value(directory, "GOBY_AMD_RENDER_NODE"))
+        need(group == configured_value(directory, "GOBY_AMD_RENDER_GID"), "amd_render_group_changed",
+             "The selected render device group changed. Update GOBY_AMD_RENDER_GID before checking or starting.")
+    result = compose(directory, metadata, ["config", "--quiet"], check=False)
+    need(result.returncode == 0, "compose_configuration_invalid",
+         "Compose configuration is invalid. Check installation files and Compose support for env_file.format: raw.")
+    result = container_check(directory, metadata, "goby", CHECK_SCRIPT,
+                             ["writable" if writable_media(metadata) else "readonly", metadata["profile"]])
     lines = result.stdout.decode("utf-8", errors="replace").splitlines()
     labels = {"IDENTITY_MISMATCH": ("container_identity_mismatch", "The check must run as UID/GID 10001."),
               "STATE_NOT_WRITABLE": ("state_not_writable", "UID 10001 cannot write the installation state directory."),
               "CACHE_NOT_WRITABLE": ("cache_not_writable", "UID 10001 cannot write the installation cache directory."),
               "LOGS_NOT_WRITABLE": ("logs_not_writable", "UID 10001 cannot write the installation log directory."),
-              "MEDIA_NOT_READABLE": ("media_not_readable", "UID 10001 cannot traverse or read the sampled media. Adjust host access without changing the container user.")}
+              "MEDIA_NOT_READABLE": ("media_not_readable", "UID 10001 cannot traverse or read the sampled media. Adjust host access without changing the container user."),
+              "MEDIA_NOT_WRITABLE": ("media_not_writable", "UID 10001 cannot create a sidecar probe in the sampled source directory. Grant targeted host access; the helper never changes media ownership."),
+              "AMD_DEVICE_NOT_ACCESSIBLE": ("amd_device_not_accessible", "UID 10001 cannot read and write the selected AMD render device. Check its device mapping and supplemental group.")}
     for label, (code, message) in labels.items():
         if label in lines:
             raise OperationError(code, message)
     need(result.returncode == 0 and "CHECK_PASSED" in lines, "container_check_failed",
          "The temporary identity and mount check failed. Check Docker device/mount access and installation files.")
+    if metadata.get("player"):
+        player_result = container_check(directory, metadata, "player", PLAYER_CHECK_SCRIPT, [])
+        player_lines = player_result.stdout.decode("utf-8", errors="replace").splitlines()
+        need(player_result.returncode == 0 and "PLAYER_CHECK_PASSED" in player_lines, "player_check_failed",
+             "The player UID, bundled assets or temporary storage check failed.")
     return {"status": "checked", "databaseAuthenticationChecked": False,
+            "services": selected_services(metadata), "amdDeviceAccessChecked": "AMD_DEVICE_ACCESSIBLE" in lines,
             "mediaSampleRead": "MEDIA_SAMPLE_READABLE" in lines,
-            "message": "Compose, UID 10001 and mounted storage checks passed. Database authentication is checked when Goby starts."}
+            "mediaWriteSampleChecked": "MEDIA_SAMPLE_PARENT_WRITABLE" in lines,
+            "message": "Selected images, service identities and sampled mount checks passed. Generation remains opt-in. Database authentication and player proxy readiness are checked at startup."}
 
 
 def readiness(port):
@@ -510,6 +627,35 @@ def readiness(port):
         return "unreachable", None
     finally:
         connection.close()
+
+
+def player_readiness(port, backend_port):
+    # The player health route alone cannot establish its API proxy readiness.
+    def response(endpoint, path):
+        connection = http.client.HTTPConnection("127.0.0.1", endpoint, timeout=3)
+        try:
+            connection.request("GET", path, headers={"Connection": "close"})
+            answer = connection.getresponse()
+            body = answer.read(16385)
+            if answer.status != 200 or len(body) > 16384:
+                return None
+            return body
+        except (OSError, http.client.HTTPException):
+            return None
+        finally:
+            connection.close()
+    if response(port, "/healthz") != b"ok\n":
+        return "unreachable", None
+    try:
+        backend = json.loads(response(backend_port, "/emby/System/Info/Public") or b"null")
+        proxied = json.loads(response(port, "/emby/System/Info/Public") or b"null")
+    except (ValueError, UnicodeError):
+        return "not_ready", "player_proxy_not_ready"
+    if (isinstance(backend, dict) and isinstance(proxied, dict)
+            and isinstance(backend.get("Id"), str) and backend["Id"]
+            and backend["Id"] == proxied.get("Id")):
+        return "ready", None
+    return "not_ready", "player_proxy_not_ready"
 
 
 def classify_status(state, observed=None, error_code=None):
@@ -565,11 +711,11 @@ def terminal_diagnostic(raw):
     return None
 
 
-def status_installation(directory, metadata):
-    result = compose(directory, metadata, ["ps", "--all", "--quiet", "goby"])
+def service_status(directory, metadata, service):
+    result = compose(directory, metadata, ["ps", "--all", "--quiet", service])
     ids = result.stdout.decode("ascii", errors="replace").split()
     need(len(ids) <= 1 and all(re.fullmatch(r"[0-9a-f]{12,64}", item) for item in ids),
-         "container_inventory_invalid", "Expected at most one Goby container for this installation.")
+         "container_inventory_invalid", "Expected at most one container per selected service.")
     if not ids:
         return classify_status({})
     result = command(["docker", "container", "inspect", "--format",
@@ -580,16 +726,25 @@ def status_installation(directory, metadata):
         raise OperationError("container_inventory_invalid", "Docker returned an invalid container state.") from None
     need(isinstance(details, dict) and isinstance(details.get("State"), dict),
          "container_inventory_invalid", "Docker returned an invalid container state.")
-    need(details.get("Image") == configured_image(directory), "container_image_mismatch",
+    need(details.get("Image") == configured_image(directory, service), "container_image_mismatch",
          "The existing container uses a different image from deployment.env. Start after completing the selected update or rollback steps.")
     state = details.get("State", {})
     if state.get("Status") == "running":
-        port = published_loopback_port(details, configured_port(directory))
-        observation, code = readiness(port)
+        port = published_loopback_port(details, configured_port(directory, service), service)
+        if service == "player":
+            observation, code = player_readiness(port, configured_port(directory))
+        else:
+            observation, code = readiness(port)
     else:
         observation, code = None, None
     answer = classify_status(state, observation, code)
-    if answer["status"] == "exited" and not state.get("OOMKilled", False):
+    if service == "player":
+        if code == "player_proxy_not_ready":
+            answer.update(status="not_ready", safeErrorCode=code,
+                          message="The player is serving HTTP but its API proxy is not reaching this installation's backend.")
+        elif answer["status"] == "ready":
+            answer["message"] = "The player and its backend API proxy are ready."
+    if service == "goby" and answer["status"] == "exited" and not state.get("OOMKilled", False):
         started = state.get("StartedAt")
         if isinstance(started, str) and re.fullmatch(r"[0-9TZ:.+-]{10,64}", started):
             logs = command(["docker", "logs", "--since", started, "--tail", "80", ids[0]], timeout=10, check=False)
@@ -598,6 +753,21 @@ def status_installation(directory, metadata):
                 if diagnostic is not None:
                     answer["safeErrorCode"], answer["message"] = diagnostic
     answer["containerId"] = ids[0][:12]
+    return answer
+
+
+def status_installation(directory, metadata):
+    backend = service_status(directory, metadata, "goby")
+    if metadata.get("player") is None:
+        return backend
+    player = service_status(directory, metadata, "player")
+    answer = dict(backend if backend["status"] != "ready" else player)
+    answer["services"] = {"goby": backend, "player": player}
+    if backend["status"] == "ready" and player["status"] == "ready":
+        answer["message"] = "Goby, the independent player and its backend API proxy are ready."
+    elif backend["status"] in ("stopped", "not_created") and player["status"] != backend["status"]:
+        answer.update(status="not_ready", safeErrorCode="service_state_mismatch",
+                      message="The selected services have different states. Inspect both service records.")
     return answer
 
 
@@ -636,7 +806,7 @@ def operate(args):
     elif args.action == "start":
         need(1 <= args.wait_timeout <= 600, "wait_timeout_invalid", "The readiness wait must be between 1 and 600 seconds.")
         check_installation(directory, metadata)
-        compose(directory, metadata, ["up", "--detach", "--no-build", "--pull", "never", "goby"], timeout=180)
+        compose(directory, metadata, ["up", "--detach", "--no-build", "--pull", "never", *selected_services(metadata)], timeout=180)
         deadline = time.monotonic() + args.wait_timeout
         while True:
             answer = status_installation(directory, metadata)
@@ -649,7 +819,7 @@ def operate(args):
                 return 1
             time.sleep(min(1, max(0, deadline - time.monotonic())))
     elif args.action == "stop":
-        compose(directory, metadata, ["stop", "goby"], timeout=150)
+        compose(directory, metadata, ["stop", *reversed(selected_services(metadata))], timeout=180)
         emit({"status": "stopped", "message": "The installation was stopped; containers and persistent data are retained."})
     elif args.action == "logs":
         need(1 <= args.lines <= 500, "log_limit_invalid", "Request between 1 and 500 log lines.")
@@ -657,7 +827,7 @@ def operate(args):
         token_path = directory / "setup-token.txt"
         if token_path.exists():
             environment["GOBY_INITIAL_SETUP_TOKEN"] = read_file(token_path, private=True).decode("utf-8").strip()
-        result = compose(directory, metadata, ["logs", "--no-color", "--no-log-prefix", "--tail", str(args.lines), "goby"])
+        result = compose(directory, metadata, ["logs", "--no-color", "--tail", str(args.lines), *selected_services(metadata)])
         output = redact((result.stdout + result.stderr).decode("utf-8", errors="replace"), secret_values(environment))
         if len(output) > 128 * 1024:
             output = "[Earlier output omitted by the helper's size limit]\n" + output[-128 * 1024:]
@@ -679,6 +849,11 @@ def parser():
     setup.add_argument("--database-ca-file")
     setup.add_argument("--recovery-database-url-file")
     setup.add_argument("--writable-subtitles", action="store_true")
+    setup.add_argument("--writable-media", action="store_true",
+                       help="Allow persistent media sidecars; does not enable automatic generation")
+    setup.add_argument("--with-player", action="store_true", help="Install the independently packaged player")
+    setup.add_argument("--player-host-port", type=int, help="Player loopback port (default: 8080 when selected)")
+    setup.add_argument("--player-release-dir", help="Separate directory containing the recorded player image archive")
     setup.add_argument("--render-node")
     for name in ("check", "start", "status", "stop", "logs"):
         item = actions.add_parser(name)

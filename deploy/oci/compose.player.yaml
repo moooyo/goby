@@ -1,0 +1,40 @@
+# Optional independently built player. Apply after compose.yaml (and compose.amd.yaml).
+services:
+  player:
+    image: ${GOBY_PLAYER_IMAGE:?Set the verified local player image reference}
+    pull_policy: never
+    platform: linux/amd64
+    user: "101:101"
+    init: true
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    stop_signal: SIGQUIT
+    stop_grace_period: 30s
+    restart: "no"
+    cpus: ${GOBY_PLAYER_CPU_LIMIT:-1.0}
+    mem_limit: ${GOBY_PLAYER_MEMORY_LIMIT:-256m}
+    memswap_limit: ${GOBY_PLAYER_MEMORY_LIMIT:-256m}
+    pids_limit: ${GOBY_PLAYER_PID_LIMIT:-64}
+    depends_on:
+      goby:
+        condition: service_started
+    environment:
+      GOBY_API_UPSTREAM: ${GOBY_PLAYER_API_UPSTREAM:-http://goby:8096}
+    ports:
+      - "127.0.0.1:${GOBY_PLAYER_HOST_PORT:?Set an explicitly reserved player host port}:8080/tcp"
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=67108864,mode=1777
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: local
+      options:
+        max-size: "10m"
+        max-file: "3"
