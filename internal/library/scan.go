@@ -115,9 +115,9 @@ func (s *Store) scanLibrary(task *scanTask) (message string, resultErr error) {
 		claimed: make(map[string]string), issues: make(map[string]int)}
 	musicParents := make(map[string]bool)
 	completeRoots := make(map[string]bool)
-	// Root walks and image publication have one serial owner. Share one bounded
-	// metadata cache across this scan, while concurrent probe workers only probe.
-	imageInspection := &artwork.InspectionCache{}
+	// Reuse validated content metadata across this Store's scans. Each inspection
+	// still fully reads and hashes its current source before the shared lookup.
+	imageInspection := &s.imageInspection
 	for _, root := range roots {
 		if err := task.ctx.Err(); err != nil {
 			return "Scan cancelled", err

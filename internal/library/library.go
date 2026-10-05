@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/moooyo/goby/internal/artwork"
 	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/metadata"
 )
@@ -159,6 +160,7 @@ type Store struct {
 	ownership           *scanOwnership
 	scanEvidence        *scanEvidenceManager
 	prober              Prober
+	imageInspection     artwork.InspectionCache
 	roots               []approvedRoot
 	ctx                 context.Context
 	cancel              context.CancelFunc
