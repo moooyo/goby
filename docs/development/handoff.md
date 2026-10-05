@@ -1,5 +1,48 @@
 # Goby handoff - October 5, 2026
 
+Latest work is [remaining scan regression diagnosis](scan-regression-diagnosis-20261005.md),
+base d4cf2b5 and unchanged production F42cb91f. Five fixed processes passed:
+reference A/F TRACE0, then diagnostic A/I/F TRACE1 with SQL_TIMING=0, totaling
+105 phases/4,015 probes and nine complete captures. Instrumentation is artifact-
+only; this diagnosis changes no product source and is not new formal acceptance.
+
+Current n=1 movie incremental F/A job +732.474 ms has COMMIT +700.575249 ms
+(95.65 percent); directory incremental +260.837/+259.874769 ms (99.63 percent),
+and directory force_probe F/I +547.054/+535.631865 ms (97.91 percent). SQL counts
+were not increased; one empty image transaction is omitted. Pure progress commits
+remain 160/160 for movies and 48/48 for both directory targets. Movies progress
+COMMIT difference is +657.913715 ms; force also has primary-content commits,
+so not all COMMIT time is progress. Independent anchored/job-cut runtime traces
+confirm COMMIT socket waiting, exclude idle unrelated Store workers, and show
+zero transition mismatches. No new client lock-contention evidence was found.
+
+Earlier formal movie +15.5-24.7 ms and directory-force +28-44 ms regressions remain;
+new n=1 gaps do not replace them. SQL spans and runtime states are clipped to the
+persisted job interval, excluding pre-admission/post-FinishedAt tails; overlapping
+SQL/trace times are not added. The 250 ms terminal observer cadence is separate.
+Reference F cold scans remained faster but ordinal-9 onward was a slow suffix;
+diagnostic A's first six phases recovered later, while diagnostic F slowed from
+ordinal 12 after eleven broadly normal phases. These shapes prove no host/source
+cause; all five runs' 105 phase rows remain in the external SQL analysis.
+Ping bypasses the SQL tracer; PG WAL/fsync/host cause is unmeasured, and absent
+matching PG log events do not prove absent waits. Running is not exact CPU.
+A possible next repair is batched/time-throttled progress plus final flush, keeping
+cancel/token/owner/terminal/retirement safety; none is implemented by this report.
+
+All 252 final evidence files/five binaries match exports, and 27 original profiles
+are local. Owned RAM profiles/empty scratch/fixture tmp are closed with no live
+references; persistent sources/archive/raw/derived and shared caches remain.
+PG/Goby and reserve 403,374 are unchanged. One unrelated player container changed
+after preflight while five others matched; the owner recorded it without action.
+This is not a blanket unchanged-Docker claim or proof of the wait's host cause.
+Closure receipt SHA-256 is
+c00678e5dff83a005257ca9153c738a0f6863c1b19f83b54c681d59d4abe140a.
+Final SQL and trace records are frozen and linked by hash in the report. Only report/
+handoff are published; original 199 byte states/56 hashes remain preserved.
+The complete prior historical body follows unchanged.
+
+## Previous October 5 test-environment capacity governance delivery at d4cf2b5
+
 Latest maintenance is [test-environment capacity governance](test-env-capacity-governance-20261005.md),
 with the [persistent cache policy](test-env-capacity-policy.md) referenced from
 [root agent instructions](../../AGENTS.md). Five confirmed inactive private Go
