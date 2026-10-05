@@ -1,6 +1,9 @@
 # Goby player implementation and acceptance
 
 Initial record: October 4, 2026. Automatic-credits follow-up: October 5, 2026.
+External-bitmap playback source follow-up: October 6, 2026; feature-source
+runtime acceptance and later main-integration evidence are recorded separately
+in the final section below.
 Design baseline:
 `D:/Code/design_handoff_goby_player/Goby-Player-A-v3.dc.html` and its v3 handoff.
 Initial backend source baseline: `b30e78c8924380cd404588890f20dd0949394dde`.
@@ -929,11 +932,15 @@ The remaining capability boundaries have the following status:
 3. Exact elapsed viewing analytics. The handoff-style estimated content-hours
    statistic is now implemented alongside watched movie/episode counts. Exact
    elapsed time is an optional upgrade, not a design-reproduction requirement.
-4. External bitmap playback delivery and advanced bitmap features. The schema-60
+4. Advanced external bitmap features and new playback acceptance. The schema-60
    increment implements embedded PGS/DVD cue lanes; schema 61 adds source-bound
-   SUP and multilingual IDX/SUB timeline generation. External bitmap delivery,
-   burn-in, paired deletion and unsupported IDX presentation directives remain
-   outside that timeline contract.
+   SUP and multilingual IDX/SUB timeline generation. The October 6 source
+   follow-up adds encoded external-bitmap playback independently of those
+   timelines. Its nine feature-source backend/player phases passed, as recorded
+   in the final section below; it is not yet in the accepted Docker catalog.
+   Original bitmap-file download,
+   paired deletion and unsupported IDX presentation directives remain outside
+   the selected playback contract.
 
 Per-track measured waveforms are implemented; their verification is tracked in
 the schema-58 increment above rather than listed as an absent API.
@@ -1010,3 +1017,73 @@ updating for the new table and explicit recovery target; three initial player
 test expectations incorrectly treated Default subtitle mode as Smart mode.
 The final runs corrected those issues without weakening source or authorization
 guards. Retried/overlapping cases must not be added to the counts above.
+
+## External SUP and multilingual IDX/SUB encoded playback — October 6, 2026
+
+The current source increment connects indexed external bitmap subtitles to the
+existing encoded-subtitle path. It does not change schema 61, require timeline
+generation, or modify the production player UI. Item and PlaybackInfo stream
+metadata use `DeliveryMethod: Encode` and stop setting
+`GobySubtitleTimelineOnly` for these tracks. The existing player can select a
+track, switch between language tracks and choose Off through normal playback
+negotiation. The selected path requires video transcoding and never invents a
+WebVTT URL, text stream or original-bitmap download endpoint.
+
+The stable public stream index, catalog tag, source identity and private demux
+ordinal remain bound. A multilingual IDX/SUB pair is authorized and checked
+as two components; its language identifier is not used as the demux ordinal.
+The runner receives synchronous borrowed descriptors and creates bounded,
+fixed-name private job files before starting FFmpeg. It normalizes the validated
+IDX syntax, preserves source clocks, and maps the bitmap canvas onto the primary
+video before output scaling. Original SUP/IDX/SUB files remain read-only and
+are never rewritten or deleted. Timeline generation stays independent and
+default-off. Unsupported IDX presentation features fail explicitly.
+
+Focused verification on `test-env` passed 14 library cases/27 subtests, 33 media
+cases/61 subtests, 20 transcode cases/47 subtests, seven server cases/24 subtests,
+and two cancellation-race cases/two subtests. One pre-existing opt-in media
+availability fixture was skipped. Type checking and all 55 player cases passed
+(four new selection cases and 51 existing timeline cases, no skips). Three
+embedded-bitmap HDR/seek regression cases passed using the existing accepted
+software image's media tools after the host FFmpeg was found to lack `zscale`.
+No production guard was changed to bypass that dependency.
+
+The real backend and unchanged independent player passed all nine phases in
+`live-1791231754984-73515dc3`. The feature source is
+`2bc39dbea06b0d0abe3ea1c903f7032ead91ea2f`; the candidate image is
+`sha256:276ce680bee830905561db8d2b21820ddbca47c46760a47f5de49fa3c0be202c`.
+The run verified SUP display/clear events during continuous playback, the two
+IDX language tracks' disjoint timing windows, Off and switching, player seeks,
+actual MP4 subtitle offsets and nonzero starts. Each original SUP, IDX or SUB
+component was separately changed: a previously working negotiated URL then
+returned `503 / video_unavailable` without media bytes while the backend stayed
+ready. Restoring, rescanning and renegotiating restored the expected pixels.
+Timeline availability remained false, no generation task was queued and no
+source-side timeline directory appeared. Media helpers retired after playback.
+
+The independent authored glyph/time specification checked 27 browser native
+frames and 12 decoded API frames. Its pixel thresholds were fixed before
+candidate-output observation and were not relaxed after failures. The existing
+Smart/Chinese subtitle preference remained intact: generation defaults off,
+but newly playable matching tracks still follow the user's subtitle policy.
+The first live attempt incorrectly assumed Subtitle Off; the second encountered
+an ambiguous Play-button locator. The harness then explicitly selected Off and
+used the actual bottom-bar button. Original failed runs are retained.
+
+After feature acceptance, main advanced to
+`d4678637097ce78235d883d5b1b62fa4ff516d4c`. Merge
+`d7276ee8528817bd94ba42bd90c47092e84a64f6` preserves all 25 feature Go files
+and adds the 23-file main delta. Targeted identity/library/server integration
+race checks passed 25 top-level cases and 57 subtests, with no failures or
+skips. The dedicated database was stopped again and the new compiler scratch
+was reclaimed after worker exit. The nine-phase candidate run is not relabeled
+as a run of this merge or counted a second time. Existing uncommitted work in
+the primary checkout is outside this clean-source verification boundary.
+
+The [implementation record](../../docs/development/external-bitmap-playback-20261006.md)
+tracks the source contract, final verification and retained failures. The
+accepted `2026-10-06-main-images` catalog still identifies backend source
+`2ba10e3613cac9da0a2e2c8ae7317bba229fdd56` and the unchanged player from
+`7aaaeed44526848737270089ab0227d2d410f864`; it has not been replaced by this
+source increment. The original schema-60/schema-61 timeline paragraphs above
+retain their historical capability and image boundaries.

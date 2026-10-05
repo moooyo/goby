@@ -30,15 +30,45 @@ nonregular files, ambiguous companion names, and path-bearing IDX directives
 are rejected. Generation borrows explicitly authorized file descriptors and
 never asks a decoder to discover another file by pathname.
 
-External bitmap records describe timeline availability, not a newly supported
-playback delivery method. Item/source `MediaStreams` project them with
+The October 6 playback source increment adds burn-in for indexed SUP and
+IDX/SUB tracks independently of timeline generation. Item/source `MediaStreams`
+project these tracks with
 `IsExternal:true`, `IsTextSubtitleStream:false`, `SupportsExternalStream:false`,
-and `GobySubtitleTimelineOnly:true`, without a delivery URL or private component
-paths. The Goby player draws valid timelines but excludes these tracks from
-automatic, remembered and manual playback selection. Existing embedded bitmap
-and external text playback remain unchanged. External bitmap burn-in, original
-file delivery and paired-file deletion are separate capabilities; the existing
-single-file text subtitle removal endpoint cannot delete an IDX or its SUB.
+and `DeliveryMethod:"Encode"`, without `GobySubtitleTimelineOnly`, a browser
+text-track URL or private component paths. The existing player can select the
+track through playback negotiation, subject to video-transcoding permissions
+and the supported source/encoder path. Subtitle Off or a different selection
+renegotiates playback. Existing embedded bitmap and external text behavior is
+unchanged. The original schema-61 timeline increment exposed timeline-only
+tracks; its historical receipts retain that narrower scope.
+
+Burn-in uses the stable public stream index plus the indexed tag and private
+demux ordinal. An IDX language identifier is not a stream ordinal. The server
+borrows the authorized SUP descriptor or both IDX/SUB descriptors, checks the
+source, catalog, permissions and component hashes around the read, and rejects
+a changed or revoked source. The runner materializes a bounded private job
+snapshot named `subtitle.sup` or `subtitle.idx` plus `subtitle.sub`; FFmpeg is
+not given a library pathname or permission to discover another companion.
+The verified IDX presentation is normalized into FFmpeg-compatible syntax
+without changing the source file. The subtitle canvas maps to the selected
+primary-video canvas before both layers are scaled to the output dimensions.
+Source subtitle clocks, initial empty intervals, language selection and offsets
+remain separate from the requested playback seek.
+
+Playback requires no GSTL artifact, source-side write permission, generation
+option or database migration. Timeline generation remains default-off and
+keeps its existing source-side persistence contract. Private playback assets
+belong to the transcode job and are retired with that job; they are not new
+permanent sidecars. Original bitmap-file download and paired-file deletion
+remain outside this increment. The existing single-file text subtitle removal
+endpoint cannot delete an IDX or its SUB. Standard PGS/VobSub is the selected
+scope; unsupported IDX presentation directives are rejected explicitly.
+
+The [playback implementation record](../development/external-bitmap-playback-20261006.md)
+records focused source checks and nine passed real backend/player phases for
+the feature-source candidate. Later main-integration verification has its own
+source boundary in that record. This increment has not replaced the current
+accepted Docker release.
 
 ## Player visibility
 

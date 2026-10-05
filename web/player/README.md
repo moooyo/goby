@@ -67,11 +67,19 @@ it does not use OCR or a GPU. The media-information view shows a subtitle's labe
 and lane only after valid nonempty text/bitmap intervals load. Missing, failed,
 unsupported, stale, and empty results have no status row; subtitle selection
 and playback are independent. Diagnostics belong in the administrator/task UI.
-External bitmap records are marked `GobySubtitleTimelineOnly`: their valid
-coverage is visible in media information, while their as-yet unsupported
-playback delivery is excluded from track selection. Text and embedded bitmap
-playback retain their existing behavior.
-Focused checks and the seven-phase real Docker journey passed on `test-env`,
+The October 6 backend source increment advertises indexed SUP and multilingual
+IDX/SUB tracks with `DeliveryMethod: Encode`, so the existing player can select
+them for server burn-in, switch tracks or turn subtitles off. No production
+player UI change is required. Playback needs allowed video transcoding, but no
+generated timeline, writable source mount or generation setting. It exposes no
+browser text-track or original-bitmap download URL. Text and embedded bitmap
+behavior is unchanged. Nine real backend/player phases passed for the
+feature-source candidate; the
+[playback record](../../docs/development/external-bitmap-playback-20261006.md)
+records that source and the later main-integration boundary separately.
+The current accepted Docker catalog still contains the previous backend source.
+
+The earlier embedded-timeline checks and seven-phase Docker journey passed on `test-env`,
 including desktop/mobile rendering, missing/stale row hiding, reuse, explicit
 replacement, and preservation after a real directory permission failure.
 The [acceptance record](ACCEPTANCE.md) separates the initial missing-state

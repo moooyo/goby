@@ -16,6 +16,12 @@ and remaining feature boundaries. Persistent generated background clips passed
 a subsequent 12-phase real Docker run, with focused FFmpeg, task, browser, and
 PostgreSQL recovery verification recorded separately.
 
+The October 6 external-bitmap playback source increment adds encoded SUP and
+IDX/SUB selection through the existing player. Nine real backend/player phases
+passed for the feature-source candidate, recorded with the later integration
+boundary in its [implementation record](../../docs/development/external-bitmap-playback-20261006.md);
+the accepted Docker catalog still packages backend source `2ba10e3613cac9da0a2e2c8ae7317bba229fdd56`.
+
 ## Supported contracts used by the player
 
 | Area | Contract and implementation evidence |
@@ -34,7 +40,7 @@ PostgreSQL recovery verification recorded separately.
 | Original-file streaming | `/emby/Videos/{id}/stream?Static=true` and the negotiated `/videos/{id}/original.{container}` aliases serve the authorized original bytes, ranges, and source MIME type. Browser playback declares MP4/H.264/AAC capabilities and conditionally WebM. Arbitrary MKV files are not declared browser compatible. See [stream routes](../../internal/server/streams.go), [video handler](../../internal/server/video_http.go), and [MIME types](../../internal/media/source.go). |
 | Playback negotiation | `POST /Items/{id}/PlaybackInfo` accepts the actual device profile, source, stream indexes, bitrate, source-clock start, and direct/transcode flags. The UI consumes the returned source and URL; unsupported media or policy failures remain errors. See [request schema](../../internal/playback/models.go) and [negotiation](../../internal/server/playback_info.go). |
 | Quality conversion | The player requests 1080p at 20 Mbps, 720p at 8 Mbps, or 480p at 3 Mbps using profile output dimensions and total streaming bitrate. Lower-quality selection disables original delivery. Encoding still depends on configured encoder capacity and current user permissions; labels are requested maximums, not promises of an exact output bitrate. See [conversion profiles](../../internal/playback/video_profiles.go). |
-| Audio and subtitles | Stream indexes identify real tracks. Direct media uses negotiated external WebVTT; HLS advertises WebVTT manifest renditions, and bitmap PGS/DVD subtitle selection can use the existing burn-in path when the server permits it. The player does not attach a second external track over HLS subtitle renditions. See [subtitle DTOs](../../internal/server/subtitles_dto.go), [HLS subtitle selection](../../internal/playback/hls_subtitles.go), and [subtitle clocks](../../internal/subtitle/hls.go). |
+| Audio and subtitles | Stream indexes identify real tracks. Direct media uses negotiated external WebVTT; HLS advertises WebVTT manifest renditions. Embedded PGS/DVD and indexed external SUP/IDX+SUB tracks can use the encoded burn-in path when the server permits video transcoding. External bitmap tracks advertise `DeliveryMethod: Encode`, not a browser text-track URL; current source acceptance is recorded separately. The player does not attach a second external track over HLS subtitle renditions. See [subtitle DTOs](../../internal/server/subtitles_dto.go), [HLS subtitle selection](../../internal/playback/hls_subtitles.go), and [bitmap playback](../../docs/development/external-bitmap-playback-20261006.md). |
 | Progress and cleanup | Started, Progress, and Stopped events use the negotiated `PlaySessionId`, `MediaSourceId`, actual source position, and selected stream indexes. Stopped is terminal. `/Videos/ActiveEncodings` provides explicit resource cleanup. See [reports](../../internal/server/playstate.go) and [stop routes](../../internal/server/hls_http.go). |
 | Intro skip | Detail and playback sources include `Chapters` with `IntroStart` and `IntroEnd` when source-bound intro analysis or manual markers exist. The browser performs the seek. See [intro projection](../../internal/server/intro_markers.go). |
 | Credits cue and automatic analysis | Opt-in movie/TV credits analysis reuses the previously chosen Intro Skipper project and has passed a separate seven-phase real Docker run. Multi-interval data uses GobyCreditsIntervals; standard chapters retain the first CreditsStart without adding a CreditsEnd enum. Manual/source points take precedence. Source/support/profile changes and disabled policy prevent invalid automatic publication. See [credits markers](../../docs/api/credits-markers.md). |
@@ -42,7 +48,7 @@ PostgreSQL recovery verification recorded separately.
 | Viewing counts and recent history | Played item counts can be requested with `IsPlayed=true` and `Limit=0`, separately for movies and episodes. `SortBy=DatePlayed` and real `LastPlayedDate` support recent viewing. Library-wide counts are separate and are not presented as watched counts. See [sort fields](../../internal/library/item_sort.go) and [count queries](../../internal/server/items.go). |
 | Estimated content hours | `/Users/{UserId}/ViewingStatistics` sums each visible watched Movie/Episode runtime once and bounded progress for unfinished items. The player displays the rounded estimate; this is the handoff's content-duration concept, not elapsed viewing analytics. See [viewing statistics](../../docs/api/viewing-statistics.md). |
 | Per-track audio waveforms | `/Items/{Id}/AudioWaveforms` describes existing source-aligned peak/RMS envelopes and its stream-index route serves bounded binary data. The player renders actual waveform lanes with missing-data gaps. Opt-in tasks store permanent sidecars separately from background MP4s; reads do not generate data and stale source axes are not served. See [audio waveforms](../../docs/api/audio-waveforms.md). |
-| Bitmap subtitle timelines | `/Items/{Id}/SubtitleTimelines` and its stream-index route return existing source-aligned display intervals for embedded PGS/DVD, external SUP, and each language track in an external IDX/SUB pair. Default-off tasks persist source-side GSTL files without OCR or GPU processing. Only valid nonempty data creates a label and lane. External bitmap records carry `GobySubtitleTimelineOnly` and do not advertise unavailable playback delivery. See [subtitle timelines](../../docs/api/subtitle-timelines.md). |
+| Bitmap subtitle timelines | `/Items/{Id}/SubtitleTimelines` and its stream-index route return existing source-aligned display intervals for embedded PGS/DVD, external SUP, and each language track in an external IDX/SUB pair. Default-off tasks persist source-side GSTL files without OCR or GPU processing. Only valid nonempty data creates a label and lane. The separate encoded playback path does not require a timeline artifact or enable generation. See [subtitle timelines](../../docs/api/subtitle-timelines.md). |
 
 ## Frontend omissions found in the renewed handoff audit
 
@@ -133,16 +139,19 @@ pending task; the implemented independent modes remain the accepted behavior.
    [catalog counts](../../internal/server/navigation.go). Exact analytics has
    not been selected for implementation.
 
-4. **External bitmap playback and advanced bitmap features.** The selected
-   [timeline increment](../../docs/api/subtitle-timelines.md) now includes
-   source-bound external SUP and multilingual IDX/SUB display intervals.
-   External bitmap delivery/burn-in and paired-file management remain separate
-   from this timeline capability. `GobySubtitleTimelineOnly` prevents these
-   tracks from entering playback selection. Unsupported IDX presentation
-   directives still fail explicitly. Generation and current, nonempty material
-   are required before a timeline lane appears; missing data creates no status
-   row. The earlier seven-phase embedded-only Docker receipt remains separate
-   from the schema-61 external increment in [ACCEPTANCE.md](ACCEPTANCE.md).
+4. **Advanced external bitmap features and delivery boundaries.** Current source
+   adds encoded SUP and multilingual IDX/SUB playback to the existing
+   [timeline capability](../../docs/api/subtitle-timelines.md). Nine actual
+   backend/player phases passed for its feature-source candidate; it is not
+   yet part of the accepted Docker catalog. Original bitmap downloads,
+   paired-file deletion and unsupported
+   IDX presentation directives remain outside that playback contract. The
+   encoded path validates both files, component hashes and the selected demux
+   ordinal, uses only private job assets, and leaves source files read-only.
+   Playback does not require timeline generation. Only a valid, nonempty
+   timeline artifact creates a media-information lane; missing data creates no
+   status row. Earlier embedded/schema-61 timeline receipts remain separate
+   from the October 6 playback increment in [ACCEPTANCE.md](ACCEPTANCE.md).
 
 Generated background clips remain audio-free by the user's established output
 specification. The new preview-sound action uses only audio already present in
