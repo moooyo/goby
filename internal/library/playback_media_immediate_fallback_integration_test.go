@@ -21,18 +21,23 @@ import (
 type mediaSourceImmediateFallbackTraceKey struct{}
 
 type mediaSourceImmediateFallbackSQLTracer struct {
-	statements atomic.Int32
-	commits    atomic.Int32
+	statements  atomic.Int32
+	completions atomic.Int32
 }
 
-func (trace *mediaSourceImmediateFallbackSQLTracer) TraceQueryStart(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
+func (trace *mediaSourceImmediateFallbackSQLTracer) TraceQueryStart(ctx context.Context, connection *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
 	trace.statements.Add(1)
-	return context.WithValue(ctx, mediaSourceImmediateFallbackTraceKey{}, strings.EqualFold(strings.TrimSpace(data.SQL), "commit"))
+	command := strings.ToLower(strings.TrimSpace(data.SQL))
+	owned, _ := ctx.Value(mediaSourceAuthorizationOwnedKey{}).(bool)
+	if !owned || connection.PgConn().TxStatus() != 'T' || (command != "commit" && command != "rollback") {
+		command = ""
+	}
+	return context.WithValue(ctx, mediaSourceImmediateFallbackTraceKey{}, command)
 }
 
 func (trace *mediaSourceImmediateFallbackSQLTracer) TraceQueryEnd(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryEndData) {
-	if commit, _ := ctx.Value(mediaSourceImmediateFallbackTraceKey{}).(bool); commit && data.Err == nil {
-		trace.commits.Add(1)
+	if command, _ := ctx.Value(mediaSourceImmediateFallbackTraceKey{}).(string); command != "" && data.Err == nil && strings.EqualFold(data.CommandTag.String(), command) {
+		trace.completions.Add(1)
 	}
 }
 
@@ -125,8 +130,8 @@ func TestPlaybackMediaInitialFallbackImmediateRetainsCommittedFactsAndOneAUTH(t 
 			if err != nil {
 				t.Fatal(err)
 			}
-			if trace.commits.Load() != 1 {
-				t.Fatal("the initial real AUTH did not complete exactly one COMMIT")
+			if trace.completions.Load() != 1 {
+				t.Fatal("the initial real AUTH did not complete exactly one successful transaction completion")
 			}
 			mediaSourceImmediateFallbackTestLocks(t, fixture, worker, principal, play)
 			savedSnapshot, savedCurrent := snapshot, current
@@ -145,8 +150,8 @@ func TestPlaybackMediaInitialFallbackImmediateRetainsCommittedFactsAndOneAUTH(t 
 				!reflect.DeepEqual(snapshot, savedSnapshot) || !reflect.DeepEqual(current, savedCurrent) {
 				t.Fatalf("a real miss followed by immediate fallback discarded AUTH1: refresh=%t misses=%d error=%v", refresh, misses.Load(), err)
 			}
-			if trace.statements.Load() != statements || trace.commits.Load() != 1 {
-				t.Fatal("the first IO fallback performed SQL or repeated the committed AUTH")
+			if trace.statements.Load() != statements || trace.completions.Load() != 1 {
+				t.Fatal("the first IO fallback performed SQL or repeated the completed AUTH")
 			}
 			ioRelease := measureMediaSourceIOOwner(release)
 			var warm *warmMediaSourceRoot
@@ -175,7 +180,7 @@ func TestPlaybackMediaInitialFallbackImmediateRetainsCommittedFactsAndOneAUTH(t 
 			mediaSourceWarmPipelineTestCounts(t, root, 3, 1)
 			current.Source = snapshot.mediaFile
 			if current.Play.ID != play.ID || current.Principal.SessionID != principal.SessionID || current.Source.Item.ID != fixture.item.ID {
-				t.Fatal("immediate fallback did not retain the canonical committed snapshot")
+				t.Fatal("immediate fallback did not retain the canonical completed snapshot")
 			}
 			// A real independent mutation verifies that delivery policy runs
 			// after the AUTH SHARE locks were released, with actual IO charged.
@@ -203,8 +208,8 @@ func TestPlaybackMediaInitialFallbackImmediateRetainsCommittedFactsAndOneAUTH(t 
 			contents, err := io.ReadAll(file)
 			_ = file.Close()
 			file = nil
-			if err != nil || string(contents) != fixture.contents || trace.commits.Load() != 1 {
-				t.Fatalf("one-AUTH fallback did not deliver its real source: commits=%d error=%v", trace.commits.Load(), err)
+			if err != nil || string(contents) != fixture.contents || trace.completions.Load() != 1 {
+				t.Fatalf("one-AUTH fallback did not deliver its real source: completions=%d error=%v", trace.completions.Load(), err)
 			}
 			handoffRelease()
 			finish()
@@ -309,8 +314,8 @@ func TestPlaybackMediaInitialFallbackQueuedReadyRequiresFreshAUTH(t *testing.T) 
 						t.Fatal("rejected queued authority reached filesystem opening")
 					}
 				} else {
-					if err != nil || current.Play.ID != play.ID || trace.commits.Load() != 2 {
-						t.Fatalf("queued grant did not complete AUTH2: commits=%d error=%v", trace.commits.Load(), err)
+					if err != nil || current.Play.ID != play.ID || trace.completions.Load() != 2 {
+						t.Fatalf("queued grant did not complete AUTH2: completions=%d error=%v", trace.completions.Load(), err)
 					}
 					ioRelease, granted, acquireErr := mediaSourceAdmission.tryAcquireRoot(ctx, false, root, domain)
 					if acquireErr != nil || !granted || ioRelease == nil {
@@ -431,7 +436,7 @@ func TestPlaybackMediaInitialFallbackCancellationRetainsActualOwner(t *testing.T
 		"authorizations": 1, "try_misses": 1, "queued_grants": 0,
 		"first_fallback_actual_queued_grants": 0, "first_fallback_immediate_grants": 0,
 	})
-	if trace.commits.Load() != 1 || fixture.store.MediaSourceAdmissionProfile()["file_open_ns"] != before["file_open_ns"] {
+	if trace.completions.Load() != 1 || fixture.store.MediaSourceAdmissionProfile()["file_open_ns"] != before["file_open_ns"] {
 		t.Fatal("canceled initial fallback performed another AUTH or opened storage")
 	}
 }

@@ -336,7 +336,14 @@ func IsLocalPeer(peerIP string) bool {
 
 func loginPolicyAllows(raw json.RawMessage, deviceID string, now time.Time) bool {
 	policy, err := ParseRuntimePolicy(raw)
-	if err != nil || !policy.AllowsDevice(deviceID) || !policy.AllowsAccessAt(now) {
+	if err != nil {
+		return false
+	}
+	return parsedLoginPolicyAllows(policy, raw, deviceID, now)
+}
+
+func parsedLoginPolicyAllows(policy ManagedPolicy, raw json.RawMessage, deviceID string, now time.Time) bool {
+	if !policy.AllowsDevice(deviceID) || !policy.AllowsAccessAt(now) {
 		return false
 	}
 	var fields map[string]json.RawMessage

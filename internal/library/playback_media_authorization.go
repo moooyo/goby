@@ -32,7 +32,7 @@ func (s *Store) AuthorizePlaybackMediaFor(ctx context.Context, principal identit
 }
 
 // AuthorizePlaybackMediaForChecked also applies an optional delivery-specific
-// policy check after committing authority and before opening the source. The
+// policy check after completing authority and before opening the source. The
 // callback never runs while database locks or a database connection are held.
 func (s *Store) AuthorizePlaybackMediaForChecked(ctx context.Context, principal identity.Principal, playID, itemID, sourceID string, includeSubtitles bool, check func(PlaybackMediaAuthorization) error) (*os.File, PlaybackMediaAuthorization, error) {
 	owner := playbackMediaOwner(principal)
@@ -66,7 +66,12 @@ func (s *Store) readPlaybackMediaAuthorizationPrepared(ctx context.Context, prin
 		return indexedMediaSource{}, PlaybackMediaAuthorization{}, err
 	}
 	defer release()
-	tx, err := s.pool.Begin(ctx)
+	connection, err := s.pool.Acquire(ctx)
+	if err != nil {
+		return indexedMediaSource{}, PlaybackMediaAuthorization{}, fmt.Errorf("%w: acquire playback media authorization: %w", ErrUnavailable, err)
+	}
+	defer connection.Release()
+	tx, err := connection.Begin(ctx)
 	if err != nil {
 		return indexedMediaSource{}, PlaybackMediaAuthorization{}, fmt.Errorf("%w: begin playback media authorization: %w", ErrUnavailable, err)
 	}
@@ -89,7 +94,7 @@ func (s *Store) readPlaybackMediaAuthorizationPrepared(ctx context.Context, prin
 	if snapshot.mediaFile.Item.Media.DurationTicks < 0 {
 		return indexedMediaSource{}, PlaybackMediaAuthorization{}, ErrNotFound
 	}
-	play, observedAt, binding, bindingErr, err := readPlaybackMediaPlayAndBindingBatch(ctx, tx, owner, playID, itemID, expectedBinding != nil)
+	play, observedAt, isolation, binding, bindingErr, err := readPlaybackMediaPlayAndBindingBatch(ctx, tx, owner, playID, itemID, expectedBinding != nil)
 	if err != nil {
 		return indexedMediaSource{}, PlaybackMediaAuthorization{}, err
 	}
@@ -113,15 +118,29 @@ func (s *Store) readPlaybackMediaAuthorizationPrepared(ctx context.Context, prin
 	}
 	// The admission hook is strictly memory-only and never enqueues. All
 	// authority SHARE locks and the final database-clock check still apply at
-	// the grant. Commit completes before policy callbacks or filesystem work.
+	// the grant. The transaction ends before policy callbacks or filesystem work.
 	if admission != nil {
 		if err := admission(snapshot); err != nil {
 			return indexedMediaSource{}, PlaybackMediaAuthorization{}, err
 		}
 	}
-	if err := tx.Commit(ctx); err != nil {
+	// This transaction only reads and locks rows. READ COMMITTED has no
+	// commit-time validation to retain, so discard its locks without committing
+	// a transaction that has no business writes. Other isolation levels retain
+	// their existing commit semantics. The acquired connection stays owned
+	// until completion, including this active-transaction status check.
+	if isolation == "read committed" {
+		if connection.Conn().PgConn().TxStatus() != 'T' {
+			return indexedMediaSource{}, PlaybackMediaAuthorization{}, fmt.Errorf("%w: playback media authorization transaction is not active", ErrUnavailable)
+		}
+		err = tx.Rollback(ctx)
+	} else {
+		err = tx.Commit(ctx)
+	}
+	if err != nil {
 		return indexedMediaSource{}, PlaybackMediaAuthorization{}, fmt.Errorf("%w: complete playback media authorization: %w", ErrUnavailable, err)
 	}
+	connection.Release()
 	if err := s.sealPrimaryMediaReadSnapshot(ctx, &snapshot); err != nil {
 		return indexedMediaSource{}, PlaybackMediaAuthorization{}, err
 	}
@@ -131,10 +150,11 @@ func (s *Store) readPlaybackMediaAuthorizationPrepared(ctx context.Context, prin
 type playbackMediaClockRow struct {
 	pgx.Row
 	observedAt *time.Time
+	isolation  *string
 }
 
 func (row playbackMediaClockRow) Scan(destinations ...any) error {
-	return row.Row.Scan(append(destinations, row.observedAt)...)
+	return row.Row.Scan(append(destinations, row.observedAt, row.isolation)...)
 }
 
 func lockPlaybackMediaAuthority(ctx context.Context, tx pgx.Tx, statement string, arguments ...any) error {

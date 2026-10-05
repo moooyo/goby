@@ -25,7 +25,7 @@ func ValidateRevalidatedSessionAt(principal Principal, observedAt time.Time) err
 	}
 	policy, err := ParseRuntimePolicy(principal.User.Policy)
 	if err != nil || !observedAt.Before(principal.ExpiresAt) ||
-		!loginPolicyAllows(principal.User.Policy, principal.Client.DeviceID, observedAt) ||
+		!parsedLoginPolicyAllows(policy, principal.User.Policy, principal.Client.DeviceID, observedAt) ||
 		(!policy.EnableRemoteAccess && !IsLocalPeer(principal.PeerIP)) {
 		return ErrUnauthorized
 	}

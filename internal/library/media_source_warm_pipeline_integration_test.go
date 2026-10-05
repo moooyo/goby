@@ -42,10 +42,12 @@ func (trace *mediaSourceWarmCommitTracer) release() {
 	trace.resumeOnce.Do(func() { close(trace.resume) })
 }
 
-func (trace *mediaSourceWarmCommitTracer) TraceQueryStart(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
-	if strings.EqualFold(strings.TrimSpace(data.SQL), "commit") {
+func (trace *mediaSourceWarmCommitTracer) TraceQueryStart(ctx context.Context, connection *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
+	command := strings.ToLower(strings.TrimSpace(data.SQL))
+	owned, _ := ctx.Value(mediaSourceAuthorizationOwnedKey{}).(bool)
+	if owned && connection.PgConn().TxStatus() == 'T' && (command == "commit" || command == "rollback") {
 		trace.enteredOnce.Do(func() { close(trace.entered) })
-		// Keep the actual transaction owner at its commit boundary, including
+		// Keep the actual transaction owner at its completion boundary, including
 		// after caller cancellation, until the independent observer releases it.
 		<-trace.resume
 	}
@@ -709,17 +711,17 @@ func TestMediaSourceWarmPipelineCommitsBeforeImmediateIOAdmission(t *testing.T) 
 						handoffOwners := mediaSourceHandoffAdmission.roots[root].active
 						mediaSourceHandoffAdmission.mu.Unlock()
 						if checks.Add(1) != 1 || ioOwners != 1 || authorityOwners != 0 || handoffOwners != 1 {
-							return errors.New("delivery did not hold only immediate IO and handoff after releasing committed AUTH")
+							return errors.New("delivery did not hold only immediate IO and handoff after releasing completed AUTH")
 						}
 						return nil
 					})
 				results <- playbackMediaTestResult{file: file, result: result, err: err}
 			}()
-			mediaSourceAdmissionTestWait(t, trace.entered, "fresh authority transaction before commit")
+			mediaSourceAdmissionTestWait(t, trace.entered, "fresh authority transaction before completion")
 			mediaSourceWarmPipelineTestCounts(t, root, 0, 1)
 			playbackMediaPipelineTestOwnerCounts(t, root, 0, 1)
 			if checks.Load() != 0 {
-				t.Fatal("delivery or IO admission preceded the authorization commit")
+				t.Fatal("delivery or IO admission preceded authorization completion")
 			}
 			playbackMediaPipelineTestRowLocked(t, ctx, fixture, "SELECT id FROM play_sessions WHERE id=$1 FOR UPDATE NOWAIT", play.ID, true)
 			trace.release()
@@ -728,12 +730,12 @@ func TestMediaSourceWarmPipelineCommitsBeforeImmediateIOAdmission(t *testing.T) 
 				if result.file != nil {
 					_ = result.file.Close()
 				}
-				t.Fatalf("post-commit immediate IO did not deliver once: checks=%d error=%v", checks.Load(), result.err)
+				t.Fatalf("post-completion immediate IO did not deliver once: checks=%d error=%v", checks.Load(), result.err)
 			}
 			contents, err := io.ReadAll(result.file)
 			_ = result.file.Close()
 			if err != nil || string(contents) != fixture.contents {
-				t.Fatalf("post-commit immediate IO returned an invalid descriptor: %v", err)
+				t.Fatalf("post-completion immediate IO returned an invalid descriptor: %v", err)
 			}
 			playbackMediaPipelineTestDrain(t, fixture.store)
 			mediaSourceWarmPipelineTestCounts(t, root, 0, 0)
@@ -765,13 +767,13 @@ func TestMediaSourceWarmPipelineCommitCancellationAvoidsOpenAndDelivery(t *testi
 					func(PlaybackMediaAuthorization) error { checks.Add(1); return nil })
 				results <- playbackMediaTestResult{file: file, result: result, err: err}
 			}()
-			mediaSourceAdmissionTestWait(t, trace.entered, "cancelable authority owner at commit")
+			mediaSourceAdmissionTestWait(t, trace.entered, "cancelable authority owner at completion")
 			mediaSourceWarmPipelineTestCounts(t, root, 0, 1)
 			playbackMediaPipelineTestOwnerCounts(t, root, 0, 1)
 			cancelCaller()
 			result := awaitPlaybackMediaTest(t, ctx, results)
 			if result.file != nil || !errors.Is(result.err, context.Canceled) || checks.Load() != 0 {
-				t.Fatalf("canceled commit delivered a file or reached policy: checks=%d error=%v", checks.Load(), result.err)
+				t.Fatalf("canceled completion delivered a file or reached policy: checks=%d error=%v", checks.Load(), result.err)
 			}
 			// Cancellation returns to the receiver while the actual transaction
 			// still owns its AUTH and Store lifetime at this controlled boundary.
@@ -784,7 +786,7 @@ func TestMediaSourceWarmPipelineCommitCancellationAvoidsOpenAndDelivery(t *testi
 			playbackMediaPipelineTestProfile(t, fixture.store, profile, 1, 0, 0, 0)
 			if checks.Load() != 0 || fixture.store.MediaSourceAdmissionProfile()["file_open_ns"] != profile["file_open_ns"] ||
 				mediaSourceWarmPipelineTestFileCount(t, fixture.path) != before {
-				t.Fatal("a failed authorization commit reached source opening or delivery")
+				t.Fatal("failed authorization completion reached source opening or delivery")
 			}
 		})
 	}
