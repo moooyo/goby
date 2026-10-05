@@ -40,6 +40,9 @@ class PreparationTests(unittest.TestCase):
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=30, check=False)
 
     def test_frozen_source_excludes_credentials_tests_and_generated_inputs(self):
+        (self.source / "src" / "components.tsx").write_text("export {};\n", encoding="utf-8")
+        (self.source / "src" / "components").mkdir()
+        (self.source / "src" / "components" / "button.tsx").write_text("export {};\n", encoding="utf-8")
         for directory in ("node_modules", "dist", "notices", "tests", "scripts"):
             (self.source / directory).mkdir()
             (self.source / directory / "ignored.txt").write_text("private", encoding="utf-8")
@@ -49,7 +52,7 @@ class PreparationTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         receipt = json.loads((output / "build-receipt.json").read_text())
         files = receipt["sourceInventory"]["files"]
-        self.assertEqual({item["name"] for item in files}, {*PLAYER_OCI.SOURCE_FILES, "src/main.tsx"})
+        self.assertEqual({item["name"] for item in files}, {*PLAYER_OCI.SOURCE_FILES, "src/main.tsx", "src/components.tsx", "src/components/button.tsx"})
         self.assertEqual(receipt["sourceInventory"]["sha256"], hashlib.sha256(PLAYER_OCI.canonical(files)).hexdigest())
         self.assertEqual(receipt["status"], "prepared")
         self.assertFalse(receipt["runtimeAccepted"])

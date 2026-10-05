@@ -75,7 +75,7 @@ def copy_file(source, destination, epoch=None):
 def inventory(root):
     need(root.is_dir() and root.resolve(strict=True) == root, f"Expected an unlinked directory: {root}")
     result = []
-    for path in sorted(root.rglob("*")):
+    for path in sorted(root.rglob("*"), key=lambda item: item.relative_to(root).as_posix()):
         need(not path.is_symlink(), f"Linked directory member is unsupported: {path}")
         if path.is_dir():
             continue

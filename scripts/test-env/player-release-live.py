@@ -69,6 +69,10 @@ class Host:
         image = self.run(["inspect", "--format={{.Image}}", self.container]).strip()
         owner = self.run(["inspect", '--format={{index .Config.Labels "goby.owner"}}', self.container]).strip()
         require(owner == OWNER and image == self.config["imageId"], "Container owner or image changed")
+        mounts = json.loads(self.run(["inspect", "--format={{json .Mounts}}", self.container]))
+        matches = [item for item in mounts if item["Destination"] == self.mount]
+        require(len(matches) == 1 and matches[0]["Type"] == "bind" and matches[0]["Source"] == str(self.media)
+                and matches[0]["RW"] is True, "The container must bind the exact owned media directory read-write")
 
     def run(self, arguments, timeout=30):
         return command(self.docker + arguments, timeout)

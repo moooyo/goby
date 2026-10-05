@@ -298,7 +298,9 @@ try {
     const after = (await quietHistory()).count;
     assert.equal(after, before);
     for (const key of sources.keys()) assert.equal(await host('snapshot', key), null);
-    return { automaticEnabled: false, descriptorTriggeredRuns: 0, mediaHelpers: (await host('processes')).media.length };
+    const processes = await host('processes');
+    assert.deepEqual(processes.media, [], 'Descriptor reads left media helpers running.');
+    return { automaticEnabled: false, descriptorTriggeredRuns: 0, mediaHelpers: processes.media.length };
   });
   await configurePlayer();
   for (const fixture of evidence.host.fixtures) {
