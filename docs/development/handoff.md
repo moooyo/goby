@@ -1,3 +1,64 @@
+# Stop and cumulative comparison completed with mixed results, 2026-10-06
+
+The user's selected order is Stop diagnosis/fix, then cumulative current-main
+comparison. Candidate `d9cc07e1a62b3b44f18f952d00b7c7304e3b25aa` is based on
+main `0cf4550c9433f583c1bb2273078868b15a2555b0` on the codex branch, with cached-HLS cancellation
+handling, same-account policy reuse and userdata lock batching. New main's
+external bitmap validation remains. Both green races and all six formal Stop
+products qualified. Normal8/32 Stop improves -20.8458/-21.5145% in all three pairs;
+normal1 remains +5.1337%/+0.862019ms slower (blocks1/3). GET p99 medians regress
+for normal32/key1/key8, and key8 lifetime rises +8.8105% despite faster Stop
+response. These are distinct windows and unresolved tradeoffs, not uniform gains.
+
+Exactly two original d467 diagnostics completed. Cdiag normal8 produced an actual
+HTTP500, retained with the failed receipt and raw. One deterministic red reproduced
+the old cancellation/seeker failure; expected-red qualification is not a green
+PASS. Bdiag clock-parser repair used the same original raw without a product replay.
+Stage2 also retains one runner-configuration failure: unsupported historical6683
+variant caused entry Fatal without observations. Corrected baseline-variant
+samples require distinct qualified new runIDs; the runtime revision is unchanged.
+
+The combined-green two-race source passed 19 top-level/28 subtests, zero skips;
+the six-product formal BC/CB/BC comparison used identical six-file instrumentation.
+Normal Stop remains 24 SQL/one COMMIT (candidate 22 direct + two batched); key Stop
+remains 31 SQL/three COMMITs, without the A/B batch. The historical6683 source was used
+for three baseline GET runs, two image TRACE1 count runs and six image TRACE0
+runs. Stage1 is accepted and all eleven corrected Stage2 products qualified;
+final resource closure is complete. Candidate GET samples are
+reused from Stage1, so cumulative GET is unpaired. Historical6683 predates later
+features; this is cumulative revision evidence, not isolated change attribution.
+
+Image job paired medians improve 10.3/28.0/11.8/30.4/31.5% across cold/warm/force/
+changed/removed, but cold block1 is +13.0%/+519.323ms slower. Process allocated
+bytes fall about 38.4% for cold/force and 57.8% for the other phases; allocation
+is not CPU or peak heap. Cumulative GET p99 improves in five groups but key8
+remains +10.2928%/+2.545012ms. This noncontemporary unpaired comparison does not
+erase Stage1 paired negatives. Its key32 lifetime upper bound also rises
++20.9687%/+5.756723ms. Counts retain identical row/xmin/probe outcomes while
+UPSERT commands fall from 672 (671 removed) to 136 per phase.
+
+Earlier n=3 Stop negative observations, image-force +0.55% and GET p99 +1.3%
+remain historical negative samples with unresolved exact causes. No N=1 result or
+faster new sample establishes the historical cause. All old raw, parser rejection
+history and source identities remain.
+
+Detailed report: `docs/development/stop-main-performance-20261006.md`; external
+evidence: `.artifacts/stop-main-performance-20261006`. Sources use retained
+physical8e plus small Go overlays; no cache/source expansion is duplicated.
+This task has 23 actual Go invocations: twenty PASS, one actual Cdiag failure,
+one expected red failure and one configuration failure. No adverse performance
+sample was replaced. Closure `evidence/closure-receipt.json` SHA256
+`d315492b24692009abc831151332b09a995f49ce174a12b23caf814494a46419` records all
+workers exited; only owned inactive compiler scratch and empty fixture were
+removed. Source backings/archives/raw/failures/DB/shared caches remain, PG/Goby
+and reserve 403374 are unchanged, final available capacity is 818,348,032 bytes.
+Final export SHA256 is `d4b9de1a6a0e873378b5a21eab4e10c6e448bd810fedaae54905dc4ce6ee6551`.
+Further normal1/key8 diagnosis requires a separate user selection, not an
+automatically started batch. Main/push identity is recorded by publication,
+separately from the measured candidate source.
+
+---
+
 # Current handoff: image writes, decode reuse and GET transactions (2026-10-06)
 
 The selected 1 -> 2 -> 3 work and integration are complete: 32 original stage products plus three integration races qualify, all 35 unique products exit, and actual temporary-resource closure/export is accepted. Six GET groups/18 pairs improve p50/p95/p99 and elapsed, but normal 1/32 Stop response medians 1.151006/1.096821 retain +2.082029 to +5.393277 ms slower samples and lifetime/output-lease observation increases up to +7.465010 ms. Stop/freshness/ownership assertions pass; no independent latency SLO was selected. Older n=3 force/p99 causal uncertainty and all stage negative samples remain retained.
