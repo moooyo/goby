@@ -436,7 +436,8 @@ func (s *Store) reconcileMissingScanItemsAttempt(task *scanTask, library Library
 			return task.ctx.Err()
 		}
 		stage = "descendant_proof"
-		if err := expandScanReconciliation(tx, proofCtx, library.ID, roots, evidence, budget, members, staging); err != nil {
+		seen, err := expandScanReconciliation(tx, proofCtx, library.ID, roots, evidence, budget, members, staging)
+		if err != nil {
 			return err
 		}
 		stage = "ancestor_readback"
@@ -450,9 +451,13 @@ func (s *Store) reconcileMissingScanItemsAttempt(task *scanTask, library Library
 		}
 		ids := scanReconciliationIDs(members)
 		stage = "seen_membership"
-		seen, err := scanReconciliationSeen(tx, staging, evidence, ids)
-		if err != nil {
-			return err
+		// The member set and session-local Seen rows have not changed since
+		// expansion. Close can still revoke the sealed handle before acquiring
+		// the owner mutex, so retain this final control check before deletion.
+		if staging != nil {
+			if err := staging.RequireSealed(tx); err != nil {
+				return err
+			}
 		}
 		stage = "auxiliary_snapshot"
 		before, err := readAuxiliaryCatalogSnapshot(task.ctx, raw, ids)
@@ -845,17 +850,17 @@ func scanReconciliationIDs(items map[string]scanReconciliationItem) []string {
 	return ids
 }
 
-func expandScanReconciliation(tx OwnedTx, ctx context.Context, libraryID string, roots map[string]*rootBindingScanCapture, evidence *scanReconciliationEvidence, budget *scanReconciliationBudgetState, members map[string]scanReconciliationItem, staging *scanReconciliationStaging) error {
+func expandScanReconciliation(tx OwnedTx, ctx context.Context, libraryID string, roots map[string]*rootBindingScanCapture, evidence *scanReconciliationEvidence, budget *scanReconciliationBudgetState, members map[string]scanReconciliationItem, staging *scanReconciliationStaging) (map[string]bool, error) {
 	frontier := scanReconciliationIDs(members)
 	for depth := 0; len(frontier) != 0; depth++ {
 		if depth >= scanReconciliationMaxDepth {
-			return scanReconciliationBudget()
+			return nil, scanReconciliationBudget()
 		}
 		// Do not filter by library or active status: the parent and auxiliary
 		// owner foreign keys can remove foreign children or inactive history.
 		items, err := readScanReconciliationStatement(tx, budget, scanReconciliationDescendantQuery(), frontier, scanReconciliationMaxItems+1)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		frontier = nil
 		for _, item := range items {
@@ -867,9 +872,12 @@ func expandScanReconciliation(tx OwnedTx, ctx context.Context, libraryID string,
 	}
 	seen, err := scanReconciliationSeen(tx, staging, evidence, scanReconciliationIDs(members))
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return proveScanReconciliationMembers(ctx, libraryID, roots, evidence, members, seen)
+	if err := proveScanReconciliationMembers(ctx, libraryID, roots, evidence, members, seen); err != nil {
+		return nil, err
+	}
+	return seen, nil
 }
 
 func readScanReconciliationAncestors(tx OwnedTx, libraryID string, roots map[string]*rootBindingScanCapture, budget *scanReconciliationBudgetState, members map[string]scanReconciliationItem) (map[string]scanReconciliationItem, error) {

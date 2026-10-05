@@ -19,6 +19,7 @@ import (
 type scanStagedPageMembershipTrace struct {
 	scanShortProofSQLTracer
 	pages, finalPages, membership, sealed int
+	onAncestorRead                        func() error
 }
 
 func (trace *scanStagedPageMembershipTrace) Reset() {
@@ -35,7 +36,6 @@ func (trace *scanStagedPageMembershipTrace) TraceQueryStart(ctx context.Context,
 	}
 	statement := strings.ToLower(strings.Join(strings.Fields(data.SQL), " "))
 	trace.mu.Lock()
-	defer trace.mu.Unlock()
 	if strings.Contains(statement, "and not exists (select 1 from pg_temp.goby_scan_reconciliation_seen seen") &&
 		strings.Contains(statement, "for update of i") {
 		trace.pages++
@@ -48,6 +48,18 @@ func (trace *scanStagedPageMembershipTrace) TraceQueryStart(ctx context.Context,
 	}
 	if strings.HasPrefix(statement, "select sealed,seen_rows,serialized_bytes,") {
 		trace.sealed++
+	}
+	var hook func() error
+	if trace.ordinal == 2 && strings.HasSuffix(statement, "where i.id=any($1::text[]) order by i.id limit $2 for update of i") {
+		hook, trace.onAncestorRead = trace.onAncestorRead, nil
+	}
+	trace.mu.Unlock()
+	if hook != nil {
+		if err := hook(); err != nil {
+			trace.mu.Lock()
+			trace.snapshot.HookErr = errors.Join(trace.snapshot.HookErr, err)
+			trace.mu.Unlock()
+		}
 	}
 	return ctx
 }
@@ -136,8 +148,9 @@ func TestScanReconciliationStagedPageMembershipUsesAntiJoin(t *testing.T) {
 	}
 	pages, finalPages, membership, sealed := trace.counts()
 	// Two nonempty final pages used to issue two additional membership SELECTs.
-	// Closure and final membership still each need one 257-ID Contains batch.
-	if pages != 3 || finalPages != 2 || membership != 2 || sealed != 6 {
+	// Expansion supplies the final 257-ID membership; the sealed control is
+	// still checked at the final boundary after ancestor readback.
+	if pages != 3 || finalPages != 2 || membership != 1 || sealed != 6 {
 		t.Fatalf("sealed page query consolidation changed its owner guards: pages=%d final_pages=%d membership=%d sealed=%d",
 			pages, finalPages, membership, sealed)
 	}
@@ -239,6 +252,77 @@ func TestScanReconciliationStagedPageClosedPassRollsBack(t *testing.T) {
 	}
 	if err := fixture.store.CheckOwnership(fixture.ctx); err != nil {
 		t.Fatalf("closed page rollback lost healthy ownership: %v", err)
+	}
+}
+
+func TestScanReconciliationStagedPageCloseAfterExpansionRollsBack(t *testing.T) {
+	fixture, trace := scanStagedPageMembershipFixture(t)
+	scanReconciliationCommitInsertItem(t, fixture, "closed-expanded-missing", "Missing.mkv", "Movie", fixture.library.ID, false)
+	stage := scanReconciliationStageFixture(t, fixture, nil)
+	capture := scanReconciliationCommitCapture(t, fixture, nil)
+	evidence := scanReconciliationCommitEvidence(t, capture)
+	before := scanReconciliationCommitSnapshot(t, fixture)
+	notifications := catalogChangesTestListener(t, fixture.store)
+	closed := make(chan error, 1)
+	closeStarted := false
+	trace.Reset()
+	trace.mu.Lock()
+	trace.onAncestorRead = func() error {
+		_, _, membership, _ := trace.counts()
+		if membership != 1 {
+			return fmt.Errorf("ancestor read preceded the complete expansion membership: %d", membership)
+		}
+		closeStarted = true
+		go func() { closed <- stage.Close() }()
+		wait, cancel := context.WithTimeout(fixture.ctx, 5*time.Second)
+		defer cancel()
+		ticker := time.NewTicker(time.Millisecond)
+		defer ticker.Stop()
+		for !stage.closed.Load() {
+			select {
+			case <-wait.Done():
+				return wait.Err()
+			case <-ticker.C:
+			}
+		}
+		select {
+		case closeErr := <-closed:
+			closed <- closeErr
+			return fmt.Errorf("pass cleanup crossed the active final owner transaction: %v", closeErr)
+		default:
+		}
+		return nil
+	}
+	trace.mu.Unlock()
+	_, err := fixture.store.reconcileMissingScanItems(fixture.task, fixture.library,
+		[]*rootBindingScanCapture{capture}, evidence, nil, stage)
+	if closeStarted {
+		wait, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		select {
+		case closeErr := <-closed:
+			if closeErr != nil {
+				t.Fatalf("retire pass after final-boundary rollback: %v", closeErr)
+			}
+		case <-wait.Done():
+			t.Fatal("closed pass did not retire after final-boundary rollback")
+		}
+	}
+	owner := trace.Snapshot()
+	if !closeStarted || owner.HookErr != nil || !errors.Is(err, errScanReconciliationStagingState) || scanReconciliationObservationOnly(err) {
+		t.Fatalf("actual reconciliation accepted a revoked expanded pass: started=%t error=%v hook=%v", closeStarted, err, owner.HookErr)
+	}
+	if len(owner.OwnerTransactionSpans) < 2 || owner.OwnerTransactionSpans[0].Finish != "commit" ||
+		owner.OwnerTransactionSpans[1].Finish != "rollback" {
+		t.Fatalf("revoked expanded pass did not roll back its final transaction: %+v", owner)
+	}
+	_, _, membership, _ := trace.counts()
+	if membership != 1 || scanReconciliationCommitSnapshot(t, fixture) != before {
+		t.Fatalf("revoked expansion changed its membership or retained catalog: membership=%d", membership)
+	}
+	assertNoCatalogTestNotification(t, notifications)
+	if err := fixture.store.CheckOwnership(fixture.ctx); err != nil {
+		t.Fatalf("revoked expanded pass lost healthy ownership: %v", err)
 	}
 }
 

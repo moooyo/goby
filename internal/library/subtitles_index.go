@@ -27,14 +27,16 @@ type subtitleDirectoryIndex struct {
 func newSubtitleDirectoryIndex(entries []os.DirEntry, collectionType string, info os.FileInfo) *subtitleDirectoryIndex {
 	index := &subtitleDirectoryIndex{info: info, byStem: make(map[string][]subtitleCandidate), overflow: make(map[string]bool)}
 	mediaStems := make(map[string]bool)
-	names := make([]string, 0, len(entries))
+	var names []string
 	for _, entry := range entries {
 		name := entry.Name()
-		names = append(names, name)
 		// Only media admitted by the main scanner can own a sidecar. Keep all
 		// subtitle names below so invalid existing sources retain their snapshots.
 		if entry.Type().IsRegular() && safeSubtitleFilename(name) && !ignoredName(name) && scannedMediaKind(name, collectionType) != "" {
 			mediaStems[strings.ToLower(strings.TrimSuffix(name, filepath.Ext(name)))] = true
+		}
+		if subtitleMIME(strings.TrimPrefix(strings.ToLower(filepath.Ext(name)), ".")) != "" {
+			names = append(names, name)
 		}
 	}
 	// Sorting makes the finite candidate subset deterministic across directory
@@ -45,9 +47,6 @@ func newSubtitleDirectoryIndex(entries []os.DirEntry, collectionType string, inf
 			continue
 		}
 		codec := strings.TrimPrefix(strings.ToLower(filepath.Ext(name)), ".")
-		if subtitleMIME(codec) == "" {
-			continue
-		}
 		stem := strings.TrimSuffix(name, filepath.Ext(name))
 		owner := strings.ToLower(stem)
 		for !mediaStems[owner] {

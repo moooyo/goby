@@ -820,6 +820,7 @@ func hlsColdMixedCase(t *testing.T, application bool, callers int) {
 		current.manifest[key] = filepath.Base(path)
 		paths = append(paths, path)
 	}
+	imageCorpus := hlsColdPrepareImages(t, paths)
 	var indexed int
 	if err := h.f.pool.QueryRow(h.f.ctx, "SELECT count(*) FROM items WHERE library_id=$1 AND path=ANY($2::text[])", h.libraryID, paths).Scan(&indexed); err != nil || indexed != 0 {
 		t.Fatal("the cold corpus was already indexed before admission")
@@ -924,6 +925,7 @@ func hlsColdMixedCase(t *testing.T, application bool, callers int) {
 	// Tagged per-request SQL facts remain the evidence for two fresh GET stages.
 	sourceAdmission := hlsProfileSourceAdmissionDelta(sourceAdmissionBefore, hlsProfileSourceAdmissionCounters(app))
 	trace.enabled.Store(false)
+	imageCorpus.verify(t, h.f.ctx, h.f.pool, h.libraryID, h.path, paths)
 	intervals, err := hlsColdReadAudit(audit, true)
 	if err != nil || len(intervals) != hlsColdCopies {
 		t.Fatal("the complete cold task did not run exactly 128 primary metadata probes")

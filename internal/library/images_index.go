@@ -3,6 +3,7 @@ package library
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -16,10 +17,13 @@ type imageDirectoryIndex struct {
 }
 
 func newImageDirectoryIndex(names []string, info os.FileInfo) *imageDirectoryIndex {
-	index := &imageDirectoryIndex{info: info, exact: make(map[string]string, len(names)), backdrops: make(map[string][]string)}
+	index := &imageDirectoryIndex{info: info, exact: make(map[string]string), backdrops: make(map[string][]string)}
 	groups := make(map[string][]string)
 	for _, name := range names {
 		if name == "" || name != filepath.Base(name) || strings.ContainsAny(name, "/\\\x00") {
+			continue
+		}
+		if !slices.Contains(localImageExtensions, strings.ToLower(filepath.Ext(name))) {
 			continue
 		}
 		key := strings.ToLower(name)
