@@ -1,3 +1,23 @@
+# Current handoff: real images, mixed playback and reconciliation (2026-10-05)
+
+The user-selected 1 -> 3 -> 2 scope is complete: fourteen real-media/image and mixed-playback invocations, seven directory-index/reconciliation invocations and four finite mechanism diagnostics all qualify; ten offline derivation commands add no product invocations. Unified closure/export is verified with 185 sealed files matching locally. The earlier n=3 force and GET p99 regressions retain their adverse samples and exact historical causes remain unresolved.
+
+Reproducible source: `115f23f6875feb90987eec391e041f9dd5e87dd5`, parent `b755e7558895d1e0277af7461bcbbfd55c0d69a2`, on `codex/scan-mixed-reconciliation-20261005`. Exactly three production files and five tests match frozen Step 3 D bytes. Step 1 compares B801/Cb755 with three identical tests; Step 3 compares b755-based B/D with four common tests; Step 2 compares B801/final D115f with common diagnostic instrumentation. Effective measurement archives are distinct from commit identities and these sample batches are not pooled. See [the complete current report](scan-mixed-reconciliation-20261005.md) and `D:/Code/goby/.artifacts/scan-mixed-reconciliation-20261005` for detailed raw/immutable references.
+
+Step 1 is mixed: four of five Library job paired medians improve, but force is C/B 1.005458 with blocks 2/3 slower; mixed scan job is 1.017075, Ping 1.100435 and overlap GET p99 1.012876. Warm/image_changed/image_removed also retain slower blocks. Warm/force C affects zero image rows but still executes 672 UPSERT commands. Cached HLS GET and independent Ping/Stopped validate their measured response/lifetime/output/lease scope; the already-completed encoder is not a live encoder exit/reap test.
+
+Step 3 filters directory-index candidates and reuses same-transaction reconciliation membership. All six constructor medians improve, with images/small block 1 +271 ns/op retained. Short-proof total/owner medians improve but block 3 is +3.467078/+4.347731 ms. These are constructor/short-proof results, not whole-scan throughput. The Close test proves staging-pass cleanup/join after owner-transaction rollback while the reserved owner remains healthy; fresh source/deletion/membership and owner/cancel controls remain.
+
+Step 2 is bounded N=1 diagnosis, not a new formal acceptance matrix or a fix. Force job improves 69.608 ms while observed terminal improves only 0.868152 ms; job-clipped SQL union falls 78.403220 ms and COMMIT union increases 19.185098 ms. About 74% of whole-Library sampled allocation lies under image.Decode. Active fresh-authority GET COMMIT spans contain actual WalSync/WalWrite/WALWrite wait samples; sparse sample counts are not exact wait durations or old-regression causality. The later checkpoint starts after the anomalous Step 1 C2 run ended, so it does not establish overlap.
+
+Remaining task decisions: consider decoded-image Info reuse after fresh full read/hash or per-item image row-set UPSERT, and separately assess the two fresh HTTP authorization/source transactions per successful GET. These candidates are not implemented or selected by this completion. Do not drop fresh token/source/play checks, source proof, owner/cancel controls or durability. Full existing-client audiovisual/native/GPU qualification and Docker delivery remain separately unselected.
+
+Final closeout exported and verified fourteen RAM profiles before reclamation and removed only owned empty scratch/fixtures. Six source trees, four binaries, raw/derived evidence, shared caches, PG data, old roots and the 1% ext4 reserve remain. PG/Goby identities are unchanged; final persistent availability is 3,634,929,664 bytes. Closure SHA256 is `f7e5700d9a4894003249dd4f6b1e03b7c960c01ed93b012e93efa154d03f028f`; the final export is `verified_and_closed`.
+
+Publication identities and exact main/origin readback belong in the external publication receipt. Preserve original-root 199 WIP byte states and 56 historical hashes, including its overlapping reconciliation file; do not import them into committed source. No local product verification was run. Prior handoff material below retains its historical facts and is not a statement that those older scopes were rerun here.
+
+## Retained prior handoff
+
 # Goby handoff - October 5, 2026
 
 Latest selected source is [scan transaction trimming](scan-transaction-trimming-20261005.md),
