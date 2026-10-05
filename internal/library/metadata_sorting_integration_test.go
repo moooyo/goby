@@ -147,3 +147,38 @@ func TestCachedOrdinaryScanPreservesExplicitOnlineAndHistoricalSortProvenance(t 
 		}
 	}
 }
+
+func TestScannedSortingRefreshesLockedProvenanceInBothDirections(t *testing.T) {
+	ctx, pool, store, root, userID := libraryIntegrationStore(t, &libraryFixtureProber{})
+	if err := store.WithOwnedTx(ctx, func(tx OwnedTx) error {
+		_, err := tx.Exec(`UPDATE managed_settings SET sort_remove_words=ARRAY['The']`)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	path := libraryIntegrationFile(t, root, "sort-provenance/The Film.mp4", "video:sort-provenance")
+	library := libraryIntegrationCreate(t, ctx, store, "Sort provenance", "movies", filepath.Dir(path))
+	for _, test := range []struct {
+		name, document, key string
+		explicit            bool
+	}{
+		{"generated", `<movie><title>The Film</title></movie>`, "film", false},
+		{"explicit", `<movie><title>The Film</title><sorttitle>zz-explicit</sorttitle></movie>`, "zz-explicit", true},
+		{"generated_again", `<movie><title>The Film</title></movie>`, "film", false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			libraryIntegrationFile(t, root, "sort-provenance/The Film.nfo", test.document)
+			job := libraryIntegrationScan(t, ctx, store, library.ID, "Completed")
+			if job.Error != "" {
+				t.Fatal(job.Error)
+			}
+			item := nfoCatalogItem(t, ctx, store, userID, library.ID, path)
+			var key string
+			var explicit bool
+			if err := pool.QueryRow(ctx, `SELECT i.sort_name,ms.automatic_sort_name_explicit FROM items i
+				JOIN item_metadata_state ms ON ms.item_id=i.id WHERE i.id=$1`, item.ID).Scan(&key, &explicit); err != nil || key != test.key || explicit != test.explicit {
+				t.Fatalf("scan retained stale locked sort provenance: key=%q explicit=%t error=%v", key, explicit, err)
+			}
+		})
+	}
+}

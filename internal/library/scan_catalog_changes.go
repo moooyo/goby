@@ -9,9 +9,10 @@ import (
 )
 
 type scanCatalogSnapshot struct {
-	present    bool
-	change     CatalogChange
-	properties string
+	present        bool
+	change         CatalogChange
+	properties     string
+	hasLocalImages bool
 }
 
 // Compare accepted item properties, not scan timestamps or metadata source
@@ -32,15 +33,20 @@ func readScanCatalogItem(ctx context.Context, tx pgx.Tx, id string) (scanCatalog
 }
 
 func readScanCatalogFolder(ctx context.Context, tx pgx.Tx, rootID, relative string) (scanCatalogSnapshot, error) {
-	return scanCatalogSnapshotRow(tx.QueryRow(ctx, "SELECT "+scanCatalogSnapshotColumns+`
+	var hasLocalImages bool
+	snapshot, err := scanCatalogSnapshotRow(tx.QueryRow(ctx, "SELECT "+scanCatalogSnapshotColumns+`,
+		EXISTS(SELECT 1 FROM item_images im WHERE im.item_id=i.id)
 		FROM items i LEFT JOIN item_metadata_state ms ON ms.item_id = i.id
-		WHERE i.root_id = $1 AND i.relative_path = $2 FOR UPDATE OF i`, rootID, relative))
+		WHERE i.root_id = $1 AND i.relative_path = $2 FOR UPDATE OF i`, rootID, relative), &hasLocalImages)
+	snapshot.hasLocalImages = hasLocalImages
+	return snapshot, err
 }
 
-func scanCatalogSnapshotRow(row rowScanner) (scanCatalogSnapshot, error) {
+func scanCatalogSnapshotRow(row rowScanner, additional ...any) (scanCatalogSnapshot, error) {
 	var snapshot scanCatalogSnapshot
-	err := row.Scan(&snapshot.change.ItemID, &snapshot.change.LibraryID, &snapshot.change.ParentID,
-		&snapshot.change.IsFolder, &snapshot.change.IsCollectionFolder, &snapshot.properties)
+	destinations := []any{&snapshot.change.ItemID, &snapshot.change.LibraryID, &snapshot.change.ParentID,
+		&snapshot.change.IsFolder, &snapshot.change.IsCollectionFolder, &snapshot.properties}
+	err := row.Scan(append(destinations, additional...)...)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return scanCatalogSnapshot{}, nil
 	}

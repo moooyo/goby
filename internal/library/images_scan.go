@@ -82,6 +82,7 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 	}()
 	noCandidates := true
 	var replaceTypes []string
+	var replaceCounts []int
 	ready := false
 	err = operation.Run(state.task.ctx, state.root.id, primaryio.Background, func(ctx context.Context) error {
 		if err := state.checkSidecarScanAuthority(ctx, row); err != nil {
@@ -177,9 +178,11 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 			}
 		}
 		replaceTypes = make([]string, 0, len(scannedImageTypes))
+		replaceCounts = make([]int, 0, len(scannedImageTypes))
 		for _, imageType := range scannedImageTypes {
 			if !preserve[imageType] {
 				replaceTypes = append(replaceTypes, imageType)
+				replaceCounts = append(replaceCounts, len(images[imageType]))
 			}
 		}
 		if len(replaceTypes) == 0 {
@@ -217,34 +220,54 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 	if err != nil {
 		return err
 	}
-	if _, err := tx.Exec(state.task.ctx, `DELETE FROM item_images
-		WHERE item_id = $1 AND image_type = ANY($2::text[])`, itemID, replaceTypes); err != nil {
+	// Candidate indexes are contiguous within each replaceable type. Keep
+	// existing keys for conditional updates, including rows from an old root.
+	deleted, err := tx.Exec(state.task.ctx, `DELETE FROM item_images im
+		USING unnest($2::text[], $3::integer[]) AS replacement(image_type, image_count)
+		WHERE im.item_id = $1 AND im.image_type = replacement.image_type
+		AND im.image_index >= replacement.image_count`, itemID, replaceTypes, replaceCounts)
+	if err != nil {
 		return err
 	}
+	changedRows := deleted.RowsAffected()
 	for _, imageType := range scannedImageTypes {
 		if preserve[imageType] {
 			continue
 		}
 		for index, source := range images[imageType] {
 			image := source.image
-			_, err := tx.Exec(state.task.ctx, `INSERT INTO item_images
+			written, err := tx.Exec(state.task.ctx, `INSERT INTO item_images
 				(item_id, root_id, image_type, image_index, relative_path, file_identity, source_hash,
 				 file_size, modified_at, width, height, mime_type)
-				VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+				VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+				ON CONFLICT (item_id, image_type, image_index) DO UPDATE SET
+				root_id = EXCLUDED.root_id, relative_path = EXCLUDED.relative_path,
+				file_identity = EXCLUDED.file_identity, source_hash = EXCLUDED.source_hash,
+				file_size = EXCLUDED.file_size, modified_at = EXCLUDED.modified_at,
+				width = EXCLUDED.width, height = EXCLUDED.height, mime_type = EXCLUDED.mime_type
+				WHERE (item_images.root_id, item_images.relative_path, item_images.file_identity,
+				item_images.source_hash, item_images.file_size, item_images.modified_at,
+				item_images.width, item_images.height, item_images.mime_type)
+				IS DISTINCT FROM (EXCLUDED.root_id, EXCLUDED.relative_path, EXCLUDED.file_identity,
+				EXCLUDED.source_hash, EXCLUDED.file_size, EXCLUDED.modified_at,
+				EXCLUDED.width, EXCLUDED.height, EXCLUDED.mime_type)`,
 				itemID, state.root.id, imageType, index, filepath.ToSlash(filepath.Join(directoryPath, source.filename)),
 				source.identity, image.Tag, image.Size, image.ModifiedAt, image.Width, image.Height, image.MIMEType)
 			if err != nil {
 				return err
 			}
+			changedRows += written.RowsAffected()
 		}
 	}
-	afterCatalog, err := readImageCatalogSnapshot(state.task.ctx, tx, itemID, state.library.ID, state.root.id)
-	if err != nil {
-		return err
-	}
-	if beforeCatalog.properties != afterCatalog.properties {
-		if err := recordCatalogChanges(tx, afterCatalog.owner); err != nil {
+	if changedRows != 0 {
+		afterCatalog, err := readImageCatalogSnapshot(state.task.ctx, tx, itemID, state.library.ID, state.root.id)
+		if err != nil {
 			return err
+		}
+		if beforeCatalog.properties != afterCatalog.properties {
+			if err := recordCatalogChanges(tx, afterCatalog.owner); err != nil {
+				return err
+			}
 		}
 	}
 	// The payload phase retired before this transaction. Its final source proof

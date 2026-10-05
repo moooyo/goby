@@ -226,6 +226,11 @@ func TestScanCatalogChangesCommittedFileSurvivesLaterFailureOrCancellation(t *te
 			}
 			notifications := catalogChangesTestListener(t, store)
 			libraryIntegrationFile(t, root, "first/First.mp4", "video:first-committed-with-new-facts")
+			if ending == "Failed" {
+				// Inject the deferred failure into a real second-item change;
+				// identical forced facts no longer require an items UPDATE.
+				libraryIntegrationFile(t, root, "second/Second.mp4", "video:second-change-must-not-commit")
+			}
 			block.Store(true)
 			job, err := store.StartScanWithOptions(ctx, created.ID, ScanOptions{ForceProbe: true})
 			if err != nil {

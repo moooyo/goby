@@ -189,7 +189,7 @@ func (s *Store) applyOnlineMetadata(ctx context.Context, actor *identity.Princip
 	if err != nil {
 		return ItemMetadataDetail{}, err
 	}
-	automatic, err = applyAutomaticSorting(ctx, tx, itemID, automatic, record.localSource, false)
+	automatic, err = applyAutomaticSorting(ctx, tx, itemID, automatic, record.localSource, false, nil)
 	if err != nil {
 		return ItemMetadataDetail{}, err
 	}

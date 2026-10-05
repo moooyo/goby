@@ -26,13 +26,14 @@ func syncScannedMetadata(ctx context.Context, tx pgx.Tx, itemID string, options 
 	var automatic, sourceKey, localSource, musicSource, onlineSource, rawOverrides, rawLocks []byte
 	var itemType, name, sortName, overview string
 	var indexNumber, parentIndexNumber int
+	var sortNameExplicit bool
 	err := tx.QueryRow(ctx, `SELECT i.name, i.sort_name, i.overview, i.type, i.index_number, i.parent_index_number,
 		i.local_metadata, ms.music_source, CASE WHEN ms.online_type=i.type THEN ms.online_source ELSE '{}'::jsonb END,
-		ms.overrides, ms.locked_values, catalog_metadata_source_key(i)
+		ms.overrides, ms.locked_values, catalog_metadata_source_key(i), ms.automatic_sort_name_explicit
 		FROM items i JOIN item_metadata_state ms ON ms.item_id = i.id
 		WHERE i.id = $1 FOR UPDATE OF ms`, itemID).
 		Scan(&name, &sortName, &overview, &itemType, &indexNumber, &parentIndexNumber,
-			&localSource, &musicSource, &onlineSource, &rawOverrides, &rawLocks, &sourceKey)
+			&localSource, &musicSource, &onlineSource, &rawOverrides, &rawLocks, &sourceKey, &sortNameExplicit)
 	if err != nil {
 		return fmt.Errorf("read scanned metadata state: %w", err)
 	}
@@ -113,7 +114,7 @@ func syncScannedMetadata(ctx context.Context, tx pgx.Tx, itemID string, options 
 	}
 	activeOverrides := activeMetadataControls(itemType, overrides)
 	activeLocks := activeMetadataControls(itemType, locks)
-	automatic, err = applyAutomaticSorting(ctx, tx, itemID, automatic, mergedSource, selected.Auxiliary)
+	automatic, err = applyAutomaticSorting(ctx, tx, itemID, automatic, mergedSource, selected.Auxiliary, &sortNameExplicit)
 	if err != nil {
 		return err
 	}

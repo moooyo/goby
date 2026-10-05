@@ -717,6 +717,8 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 	if err != nil {
 		return err
 	}
+	// Repeating the same facts need not change the item version. A successful
+	// forced probe still repairs associations and publishes accepted progress below.
 	_, err = tx.Exec(state.task.ctx, `INSERT INTO items
 		(id, library_id, root_id, parent_id, name, sort_name, type, path, relative_path,
 		 index_number, parent_index_number, media, file_identity, file_size, modified_at,
@@ -730,7 +732,16 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 		 overview = EXCLUDED.overview, local_metadata = EXCLUDED.local_metadata,
 		 local_metadata_hash = EXCLUDED.local_metadata_hash, local_metadata_path = EXCLUDED.local_metadata_path,
 		 file_identity = EXCLUDED.file_identity, file_size = EXCLUDED.file_size,
-		 modified_at = EXCLUDED.modified_at, updated_at = now()`, id, state.library.ID, state.root.id,
+		 modified_at = EXCLUDED.modified_at, updated_at = now()
+		WHERE ROW(items.root_id, items.parent_id, items.name, items.sort_name, items.type, items.path,
+			items.is_folder, items.relative_path, items.index_number, items.parent_index_number, items.media,
+			items.overview, items.local_metadata, items.local_metadata_hash, items.local_metadata_path,
+			items.file_identity, items.file_size, items.modified_at)
+		IS DISTINCT FROM ROW(EXCLUDED.root_id, EXCLUDED.parent_id, EXCLUDED.name, EXCLUDED.sort_name,
+			EXCLUDED.type, EXCLUDED.path, false, EXCLUDED.relative_path, EXCLUDED.index_number,
+			EXCLUDED.parent_index_number, EXCLUDED.media, EXCLUDED.overview, EXCLUDED.local_metadata,
+			EXCLUDED.local_metadata_hash, EXCLUDED.local_metadata_path, EXCLUDED.file_identity,
+			EXCLUDED.file_size, EXCLUDED.modified_at)`, id, state.library.ID, state.root.id,
 		parentID, name, sortName, itemType, fullPath, relative, indexNumber, parentIndex,
 		mediaJSON, fileIdentity(info), info.Size(), catalogModifiedTime(info), overview, localJSON, local.hash, local.path)
 	if err != nil {
@@ -995,7 +1006,11 @@ func (state *scanState) folder(relative, path, name, itemType, parentID string, 
 		state.queueMusicParent(id)
 	}
 	if metadataPath != "" {
-		if err := state.scanImages(id, itemType, metadataPath, true); err != nil {
+		// Use this committed folder's exact identity. Raw image rows include
+		// obsolete roots that the public image projection may no longer expose.
+		knownNoLocalImages := !beforeCatalog.present && id == insertID ||
+			beforeCatalog.present && beforeCatalog.change.ItemID == id && !beforeCatalog.hasLocalImages
+		if err := state.scanImagesWithKnownAbsence(id, itemType, metadataPath, true, knownNoLocalImages); err != nil {
 			return "", err
 		}
 	}

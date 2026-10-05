@@ -174,7 +174,7 @@ func TestImageCatalogChangesFailedCommitRetainsProjectionAndCanRecover(t *testin
 	imageScanTestWrite(t, poster, color.Black)
 	if _, err := pool.Exec(ctx, `CREATE FUNCTION reject_image_notification_commit() RETURNS trigger LANGUAGE plpgsql AS $$
 		BEGIN RAISE EXCEPTION 'image notification commit rejection'; RETURN NEW; END; $$;
-		CREATE CONSTRAINT TRIGGER reject_image_notification_commit AFTER INSERT ON item_images
+		CREATE CONSTRAINT TRIGGER reject_image_notification_commit AFTER INSERT OR UPDATE ON item_images
 		DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION reject_image_notification_commit()`); err != nil {
 		t.Fatal(err)
 	}

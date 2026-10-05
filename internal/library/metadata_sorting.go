@@ -16,7 +16,9 @@ import (
 // applyAutomaticSorting runs after source precedence is established and before
 // manual controls are applied. Raw source titles remain intact; each generated
 // key is derived from the full automatic Name so clearing rules is reversible.
-func applyAutomaticSorting(ctx context.Context, tx pgx.Tx, itemID string, automatic, source []byte, auxiliary bool) ([]byte, error) {
+// observedExplicit must come from a metadata row locked in this transaction.
+// Callers without that observation retain the conditional database update.
+func applyAutomaticSorting(ctx context.Context, tx pgx.Tx, itemID string, automatic, source []byte, auxiliary bool, observedExplicit *bool) ([]byte, error) {
 	fields, err := metadataSourceObject(source)
 	if err != nil {
 		return nil, err
@@ -28,8 +30,10 @@ func applyAutomaticSorting(ctx context.Context, tx pgx.Tx, itemID string, automa
 		}
 	}
 	explicit := sortTitle != ""
-	if _, err = tx.Exec(ctx, `UPDATE item_metadata_state SET automatic_sort_name_explicit=$2 WHERE item_id=$1 AND automatic_sort_name_explicit IS DISTINCT FROM $2`, itemID, explicit); err != nil {
-		return nil, fmt.Errorf("store automatic sort provenance: %w", err)
+	if observedExplicit == nil || *observedExplicit != explicit {
+		if _, err = tx.Exec(ctx, `UPDATE item_metadata_state SET automatic_sort_name_explicit=$2 WHERE item_id=$1 AND automatic_sort_name_explicit IS DISTINCT FROM $2`, itemID, explicit); err != nil {
+			return nil, fmt.Errorf("store automatic sort provenance: %w", err)
+		}
 	}
 	if explicit {
 		return automatic, nil
