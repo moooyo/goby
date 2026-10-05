@@ -1,5 +1,48 @@
 # Goby handoff - October 5, 2026
 
+Latest selected source is [scan progress batching](scan-progress-batching-20261005.md),
+commit d993454fef258301d3ff967c083fa2b2173be802 after main 3585a84, with exactly
+15 changed paths (seven production/eight tests) and four unchanged archive drivers.
+It implements user-requested batching, passes the functional/race scope, reduces
+progress transactions and lowers 19/21 job paired medians. This is a bounded
+optimization with known tradeoffs, not uniform improvement.
+
+Force negatives remain prominent: flat-episodes C/B median 1.049313307342171 is
+slower in all three blocks (B [2565.032,3209.296,2569.098],
+C [3351.579,3367.557,2586.560] ms). Directory force median 1.3174699239223628 is
+slower in blocks 1/2 (B [773.289,764.820,736.240], C [1018.785,1136.604,698.751]).
+They are not dismissed as noise, treated as solved regressions or PG-cause evidence. Movie incremental
+0.5105771518 improves in all three blocks; directory incremental 0.7763186032 has
+one adverse block. Movie cached_1/cached_2/task-owned medians 0.21904/0.2542/0.22479
+are lower in all three blocks. Full 21-group ratios/ranges/reverse samples remain.
+
+Checkpoints use 64 Scanned or cooperative 500 ms, checking ctx/Available every call.
+A blocked probe has no background wall-time poll. Saved primary/theme counter
+triplets are reused; successful cached/primary completion avoids per-file CTE
+fallback. Explicit forced checkpoints, error handling, terminal checks and exact saved-history deletion evidence
+remain. UI can lag and crashes can lose recent uncheckpointed Scanned; accepted
+media counters remain atomic. No new goroutine/lock/config or safety-lock removal.
+
+Targeted race passed 68/114/16 required with zero skips. Ordinary full Library
+passed 1328/2801/all16 with 11 declared skips; native-handle capability did not
+skip. The 10,688-item/10,000-leaf real-media case passed in 214.40 s functionally,
+not as a matched speedup. Eight performance processes passed: 42 TRACE1 count and
+126 TRACE0 formal records in BC/CB/BC blocks, no added samples. Movie incremental
+COMMIT/SQL 173/1277 to 15/488; directory incremental 85/842 to 37/603; directory
+force 131/2062 to 83/1822. Full-phase counts include admission/tail and do not
+replace old job-clipped 171 or assign formal milliseconds. Old timings are not pooled.
+
+A pre-command SSH signing failure and one identical successful retry remain;
+there was no product failure or extra sample. All 53 sealed evidence files match
+local exports. Invocations exited; empty owned scratch/fixture tmp are closed,
+with persistent source/archive/raw, shared caches and old roots retained.
+PG/Goby/reserve 403,374 are unchanged; disk available is 10,812,764,160 bytes.
+Closure SHA-256 is a37c9d8b9fcae7f95e778ad8b6dcb2ac14411f6c10c03496b3518662387fd36b.
+Publication confirms exact source/document/main identities and protects the original
+199 byte states/56 WIP hashes separately. The complete prior body follows unchanged.
+
+## Previous October 5 remaining scan regression diagnosis delivery at 3585a84
+
 Latest work is [remaining scan regression diagnosis](scan-regression-diagnosis-20261005.md),
 base d4cf2b5 and unchanged production F42cb91f. Five fixed processes passed:
 reference A/F TRACE0, then diagnostic A/I/F TRACE1 with SQL_TIMING=0, totaling
