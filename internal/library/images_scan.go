@@ -355,7 +355,12 @@ func (state *scanState) inspectLocalImageContext(ctx context.Context, root *os.R
 	if err != nil || !opened.Mode().IsRegular() || !os.SameFile(before, opened) || opened.Size() > maxLocalImageBytes {
 		return nil, fmt.Errorf("local artwork changed while opening")
 	}
-	info, err := artwork.InspectJoined(ctx, file)
+	var info artwork.Info
+	if state.imageInspection == nil {
+		info, err = artwork.InspectJoined(ctx, file)
+	} else {
+		info, err = state.imageInspection.InspectJoined(ctx, file)
+	}
 	if err != nil {
 		return nil, err
 	}

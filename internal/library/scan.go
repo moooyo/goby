@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/moooyo/goby/internal/artwork"
 	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/primaryio"
 )
@@ -40,6 +41,7 @@ type scanState struct {
 	numberingConflicts  int
 	directoryIdentities map[string]os.FileInfo
 	imageDirectories    map[string]*imageDirectoryIndex
+	imageInspection     *artwork.InspectionCache
 	subtitleDirectories map[string]*subtitleDirectoryIndex
 	musicParents        map[string]bool
 	virtualFolders      map[string]scannedVirtualFolder
@@ -113,6 +115,9 @@ func (s *Store) scanLibrary(task *scanTask) (message string, resultErr error) {
 		claimed: make(map[string]string), issues: make(map[string]int)}
 	musicParents := make(map[string]bool)
 	completeRoots := make(map[string]bool)
+	// Root walks and image publication have one serial owner. Share one bounded
+	// metadata cache across this scan, while concurrent probe workers only probe.
+	imageInspection := &artwork.InspectionCache{}
 	for _, root := range roots {
 		if err := task.ctx.Err(); err != nil {
 			return "Scan cancelled", err
@@ -127,7 +132,8 @@ func (s *Store) scanLibrary(task *scanTask) (message string, resultErr error) {
 			continue
 		}
 		state := &scanState{store: s, task: task, library: library, root: root, opened: opened,
-			themeLibrary: themeOwners, reconciliation: reconciliation.collector(), reconciliationPass: reconciliation}
+			themeLibrary: themeOwners, reconciliation: reconciliation.collector(), reconciliationPass: reconciliation,
+			imageInspection: imageInspection}
 		err = state.startThemeScan()
 		if err == nil {
 			err = state.startExtraScan()

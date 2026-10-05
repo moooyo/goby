@@ -31,13 +31,25 @@ type scanRealImageTemplate struct {
 	width, height int
 }
 
-func scanRealImagePNG(t *testing.T, width, height int, seed uint8) scanRealImageTemplate {
+func scanRealImagePNG(t *testing.T, width, height int, seed uint8, variant ...string) scanRealImageTemplate {
 	t.Helper()
+	var signature []byte
+	red, green, blue := seed, uint8(0), seed
+	if len(variant) != 0 {
+		digest := sha256.Sum256([]byte(variant[0]))
+		signature = digest[:]
+		red, green, blue = red+digest[0], digest[1], blue+digest[2]
+	}
 	frame := image.NewNRGBA(image.Rect(0, 0, width, height))
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
-			frame.SetNRGBA(x, y, color.NRGBA{R: uint8(x/8) + seed, G: uint8(y / 8), B: seed, A: 255})
+			frame.SetNRGBA(x, y, color.NRGBA{R: uint8(x/8) + red, G: uint8(y/8) + green, B: blue, A: 255})
 		}
+	}
+	// Keep the complete source signature in decoded pixels. Distinct content
+	// must not depend on trailing bytes or changing only the file's metadata.
+	for index, value := range signature {
+		frame.SetNRGBA(index, 0, color.NRGBA{R: value, G: uint8(index), B: seed, A: 255})
 	}
 	var encoded bytes.Buffer
 	if err := png.Encode(&encoded, frame); err != nil {
@@ -124,6 +136,13 @@ func TestScanRealImagesPerformance(t *testing.T) {
 	if os.Getenv("GOBY_TEST_DATABASE_URL") == "" {
 		t.Fatal("the enabled real image profile requires a PostgreSQL fixture")
 	}
+	contentMode := os.Getenv("GOBY_SCAN_REAL_IMAGES_CONTENT")
+	if contentMode == "" {
+		contentMode = "shared"
+	}
+	if contentMode != "shared" && contentMode != "diverse" {
+		t.Fatal("GOBY_SCAN_REAL_IMAGES_CONTENT must be shared or diverse")
+	}
 	ffmpeg, ffprobe := os.Getenv("GOBY_FFMPEG"), os.Getenv("GOBY_FFPROBE")
 	for _, tool := range []string{ffmpeg, ffprobe} {
 		info, err := os.Stat(tool)
@@ -172,9 +191,20 @@ func TestScanRealImagesPerformance(t *testing.T) {
 		t.Fatalf("invalid media templates: video=%d audio=%d errors=%v/%v", len(video), len(audio), videoErr, audioErr)
 	}
 	poster, backdrop, replacement := scanRealImagePNG(t, 320, 480, 17), scanRealImagePNG(t, 640, 360, 31), scanRealImagePNG(t, 320, 480, 93)
+	const changedPath = "Group00/Movie0000-poster.png"
+	if contentMode == "diverse" {
+		replacement = scanRealImagePNG(t, 320, 480, 93, changedPath+":replacement")
+	}
 	corpus := filepath.Join(root, "mixed")
 	sources, expected := make(map[string]scanRealImageTemplate), make(map[string]string)
 	writeImage := func(path string, template scanRealImageTemplate) {
+		if contentMode == "diverse" {
+			seed := uint8(17)
+			if template.hash == backdrop.hash {
+				seed = 31
+			}
+			template = scanRealImagePNG(t, template.width, template.height, seed, path)
+		}
 		catalogCapacityWriteExclusive(t, filepath.Join(corpus, filepath.FromSlash(path)), template.data)
 		sources[path] = template
 	}
@@ -199,6 +229,17 @@ func TestScanRealImagesPerformance(t *testing.T) {
 	}
 	for track := 0; track < 32; track++ {
 		catalogCapacityWriteExclusive(t, filepath.Join(corpus, "Album", fmt.Sprintf("%02d Track.flac", track+1)), audio)
+	}
+	uniqueHashes := make(map[string]bool)
+	for _, source := range sources {
+		uniqueHashes[source.hash] = true
+	}
+	wantHashes := 2
+	if contentMode == "diverse" {
+		wantHashes = len(sources)
+	}
+	if len(uniqueHashes) != wantHashes || uniqueHashes[replacement.hash] {
+		t.Fatalf("image content diversity differs from the selected corpus: hashes=%d want=%d replacement_duplicate=%t", len(uniqueHashes), wantHashes, uniqueHashes[replacement.hash])
 	}
 	var pngBytes, allocatedBytes int64
 	var manifest []string
@@ -228,11 +269,12 @@ func TestScanRealImagesPerformance(t *testing.T) {
 		}
 		manifest = append(manifest, fmt.Sprintf("%s %d %x", filepath.ToSlash(relative), info.Size(), sha256.Sum256(data)))
 		return nil
-	}); err != nil || len(sources) != 288 || len(expected) != 672 || pngBytes > 64<<20 || pngBytes-int64(len(poster.data))+int64(len(replacement.data)) > 64<<20 {
+	}); err != nil || len(sources) != 288 || len(expected) != 672 || pngBytes > 64<<20 || pngBytes-int64(len(sources[changedPath].data))+int64(len(replacement.data)) > 64<<20 {
 		t.Fatalf("image corpus exceeds its fixed budget: files=%d rows=%d bytes=%d error=%v", len(sources), len(expected), pngBytes, err)
 	}
 	t.Logf("scan_real_images_corpus videos=128 tracks=32 png_files=288 expected_image_rows=672 png_bytes=%d corpus_allocated_bytes=%d corpus_sha256=%x video_bytes=%d audio_bytes=%d video_sha256=%x audio_sha256=%x poster_bytes=%d poster_sha256=%s backdrop_bytes=%d backdrop_sha256=%s replacement_bytes=%d replacement_sha256=%s",
 		pngBytes, allocatedBytes, sha256.Sum256([]byte(strings.Join(manifest, "\n"))), len(video), len(audio), sha256.Sum256(video), sha256.Sum256(audio), len(poster.data), poster.hash, len(backdrop.data), backdrop.hash, len(replacement.data), replacement.hash)
+	t.Logf("scan_real_images_content mode=%s unique_png_hashes=%d expected_generic_backdrop_reselections=384 template_scope=shared_mode_sources_or_diverse_mode_base_patterns", contentMode, len(uniqueHashes))
 	library := libraryIntegrationCreate(t, ctx, store, "Real image profile", "mixed", corpus)
 	observerCtx := context.WithValue(ctx, scanPerformanceObserverContextKey{}, true)
 	taskOwned := os.Getenv("GOBY_TEST_SCAN_PROBE_TASK_OWNED") == "1"
@@ -306,7 +348,7 @@ func TestScanRealImagesPerformance(t *testing.T) {
 			}
 		}
 		previous = current
-		record := map[string]any{"phase": phase, "image_rows": len(current), "png_files": len(sources), "new_keys": inserted, "removed_keys": removed,
+		record := map[string]any{"phase": phase, "content_mode": contentMode, "image_rows": len(current), "png_files": len(sources), "new_keys": inserted, "removed_keys": removed,
 			"changed_xmin": changed, "unchanged_xmin": unchanged, "image_upsert_commands": nil, "image_delete_commands": nil,
 			"image_upsert_affected_rows": nil, "image_delete_affected_rows": nil, "image_catalog_snapshots": nil,
 			"peak_probe_cohorts": prober.maximum.Load(), "sql_trace_enabled": !trace.disabled,
@@ -329,7 +371,6 @@ func TestScanRealImagesPerformance(t *testing.T) {
 	scan("cold", false, 160)
 	scan("warm", false, 0)
 	scan("force", true, 160)
-	const changedPath = "Group00/Movie0000-poster.png"
 	if err := os.WriteFile(filepath.Join(corpus, filepath.FromSlash(changedPath)), replacement.data, 0600); err != nil {
 		t.Fatal(err)
 	}
