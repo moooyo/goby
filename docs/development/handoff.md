@@ -1,3 +1,63 @@
+# Unchanged-image write transactions eliminated and verified, 2026-10-07
+
+Source `6386c8fd88585557ee65acbc0a12be23d90a41d4` is based on main `ab675383`
+(runtime ab028), on `codex/image-noop-readonly-20261007`. Its two production and
+four regression files match the executed freeze. An owner-session SELECT checks
+the complete raw image rowset and physical root mapping, releases its mutex,
+then retains the final filesystem proof and operation-lifetime checks. A no-op
+accepts that snapshot without BEGIN/row locks/DML/COMMIT. Changed sets re-read
+under the original writer locks. Startup permission grants, cooperative progress
+checkpoints, real-write atomicity and notifications remain. Known absence only
+routes newly populated cold sets to the original writer.
+
+All nine selected remote Go products qualified: focused race 40 top-level and
+50 subtests, zero skips; two TRACE1 count runs; six TRACE0 timings in BC/CB/BC
+order. The original four performance drivers, diverse corpus, native probes,
+tuple/xmin, worker retirement and Store.Close guards are unchanged. No replay,
+prewarm, quiet-period selection, profile or artificial checkpoint occurred.
+
+Warm SQL drops 1659->979 and explicit BEGIN/COMMIT each 192->56; force SQL drops
+5776->5096 and each boundary 382->246. These eliminate 136 image transactions.
+Changed/removal each go 1664->990 SQL and 192->57 boundaries, retaining the one
+real image writer. Cold remains 6523 SQL and 382 boundaries. All ROLLBACK counts
+are zero, and image commands/affected rows/committed keys and versions conserve
+their original behavior. Projection-containing query counts are not counts of
+JSON evaluations or physical flushes.
+
+All three pairs improve warm/force/changed/removal jobs and observed terminal
+times. Whole-batch job paired medians are -72.2708/-29.3675/-44.1281/-45.9549%,
+but later baseline runs encounter slower storage and these are not stable
+code-only estimates. In the first pair, with similar whole-case QEMU/NVMe flush
+averages, changes are -41.8449/-13.4446/-44.1281/-42.5022%. Cold pair1 is slower
+by 19.619ms/+0.6125%; its unchanged counts and later slow baseline windows do not
+establish cold acceleration. Candidate performance under similarly slow flush
+conditions is not measured. All six observations and reverse resource/retirement
+metrics remain in the report; do not delete or re-pair them.
+
+The task explicitly used an initially empty private RAM GOCACHE with shared
+modules, separate tmpfs compiler scratch and ext4 media to fit persistent
+capacity. Both variants use this environment; older shared-cache samples are
+not pooled. Authentication interrupted the race export, then the user restored
+the agent. The original race result was exported and only the remaining eight
+products ran. Original errors and a harmless export-bytecode manifest correction
+are retained; no key, agent or storage/database setting was changed.
+
+Export and closeout are complete. Workers/observers exited; private compiler
+output, inactive scratch, empty fixtures and verified temporary RAM copies were
+reclaimed. Sources, matching binaries, raw evidence, databases, shared caches,
+protected service/VM identities and reserve 403374 remain. Guest closure SHA256
+starts d939e9e4, host aef979fa, final export 5e80ae66; final persistent availability
+293621760B is a snapshot. Original workspace fresh WIP must remain outside
+publication and must never be restored from stale historical hashes.
+
+Detail: [scan-image-noop-readonly-20261007.md](scan-image-noop-readonly-20261007.md).
+Evidence: `.artifacts/image-noop-readonly-20261007`; counts f01cecb3, timing
+eeedc243, storage context 1714eb4d. Other write batching, the 32 pure read-only
+embedded snapshots, and the device-internal cause of NVMe flush variability
+remain separate, unselected work.
+
+---
+
 # First scan SQL-reduction batch verified, 2026-10-06
 
 Source candidate `ab0282616de26f0000813d7667356e845eceaf62` is a direct child of
