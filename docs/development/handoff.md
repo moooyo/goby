@@ -1,3 +1,60 @@
+# Embedded-source diagnostics closed; candidate remains withheld, 2026-10-07
+
+All seven selected remote Go products qualified: SQL-only B/C, Prepare C/B,
+one private-statistics C experiment and CPU-endpoint B/C. Complete original
+five-phase correctness/probe/tuple/retirement/Store.Close guards remain, with no
+extra product or replay. No production source was changed. Candidate
+`cd22752397ff70b490b27f9b7536dfddb57d737f` remains unmerged; main runtime remains
+`6386c8fd88585557ee65acbc0a12be23d90a41d4`. Publication is documentation only,
+based on main `de83ff4b50a90f2573b3fe7a86710ca8e91387b9`.
+
+The first SQL pair has C removal +25.754 ms: new embedded SQL callbacks save
+7.264150 ms while other SQL grows 31.640379 ms. Callback savings are not a full
+embedded-path timer because JSON/helper work moves across callback boundaries.
+The second pair remains +16.130 ms, with zero Prepare callbacks in the four
+main common removal reads. All measured connections use cache describe, 512/512;
+no Prepare miss does not exclude server parsing/planning. The private-statistics
+experiment changes visible statistics without a poor-plan switch in six fixed
+slots. Fixed state order and same-state drift prevent assigning its reductions
+to ANALYZE. No shared PG or VM settings were changed.
+
+The final CPU pair reverses removal direction: B442.302/C405.168 ms, -37.134 ms.
+SQL union falls 32.578790 ms and the uncovered remainder falls 4.555210 ms.
+Go CPU is 177.069/166.502 ms and actual-query backend CPU is
+291.562103/266.189307 ms. These wider endpoint scopes include observer/admission
+work and are not additive job-wall components. Actual query-PID coverage is
+complete, but scheduler statistics are disabled, so wait/timeslices remain null
+and resource status is partial. Backend counts alone cannot explain direction:
+B2/C3 is slower in stage 1; B3/C2 is slower in stage 2 and faster in stage 4.
+Stage 4 cold +34.366 ms and force +103.676 ms remain adverse. This N=1 reversal
+does not explain or replace the earlier three adverse acceptance pairs, establish
+a stable speedup, or pass the candidate for source publication.
+
+Actual export and closeout are complete. Workers/observers/host samplers exited;
+the private compiler cache was reclaimed from 640,585,728 to 8,192 bytes. Owned
+scratch, empty ext4 fixtures and independently preserved temporary RAM copies
+were removed. Source/common overlays, raw evidence, matching binaries, receipts
+and shared caches remain. PG/Goby/QEMU identities and reserve 403374 are unchanged.
+Final persistent availability is 279,609,344 bytes; guest available memory is
+6,651,854,848 bytes, a separate snapshot. Closure 763b0af6; final export 01402fdf.
+No runtime work remains active.
+
+The historical regression mechanism remains unresolved. Preserve the candidate
+and all adverse samples; do not rerun the completed matrix or tune shared settings
+to obtain a preferred sample. Any reconsideration needs a bounded mechanism
+question and fresh acceptance evidence. Image no-op benefit under comparable
+natural slow storage, real-write batching and NVMe device-internal investigation
+remain separate, unselected work. Protect original workspace WIP using fresh
+current identities, never historical restores.
+
+Detail: [scan-embedded-source-attribution-20261007.md](scan-embedded-source-attribution-20261007.md).
+Evidence: `.artifacts/embedded-source-attribution-20261007`; stage 1 report
+6eb6b535, stage 2 report 8e71c69b, stage 3 summary d5bb7781, stage 4 summary
+accc6b62. The original candidate acceptance report and all earlier handoff text
+below remain unchanged.
+
+---
+
 # Embedded snapshot evaluated; candidate withheld from main, 2026-10-07
 
 Candidate cd22752397ff70b490b27f9b7536dfddb57d737f on
