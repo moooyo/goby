@@ -233,6 +233,52 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 			position++
 		}
 	}
+	// Preserve the same final source proof on both publication paths. It must
+	// follow the catalog observation, including any wait for the owner session.
+	finalSourceProof := func() error {
+		// The payload phase has retired. Its proof may only use immediately
+		// available capacity, never queue behind a held database transaction.
+		return scanReadFailure(operation.RunImmediate(state.task.ctx, state.root.id, primaryio.Background, func(context.Context) error {
+			current, err := state.opened.Lstat(directoryPath)
+			after, afterErr := directory.Stat()
+			if err != nil || afterErr != nil || !sameSubtitleDirectoryInfo(directoryInfo, current) ||
+				!sameSubtitleDirectoryInfo(directoryInfo, after) {
+				return ErrSourceChanged
+			}
+			for _, imageType := range replaceTypes {
+				for _, image := range images[imageType] {
+					if err := verifyScannedImage(directoryRoot, image); err != nil {
+						return errors.Join(ErrSourceChanged, err)
+					}
+				}
+			}
+			return nil
+		}))
+	}
+	// Known absence only selects the ordinary writer for newly populated sets;
+	// it never establishes equality or adds a precheck to every cold item.
+	if !knownNoLocalImages {
+		unchanged, err := state.imageCatalogReplacementUnchanged(itemID, replaceTypes, replacement, row)
+		if err != nil {
+			return err
+		}
+		if unchanged {
+			if err := finalSourceProof(); err != nil {
+				return err
+			}
+			if err := state.task.ctx.Err(); err != nil {
+				return err
+			}
+			if !state.store.Available() {
+				return ErrUnavailable
+			}
+			grant := state.task.authority.Load()
+			if grant == nil {
+				return ErrTaskScanInactive
+			}
+			return state.store.checkScanOperationActive(state.task.ctx, state.task, grant)
+		}
+	}
 	tx, err := state.store.beginOwnedTx(state.task.ctx)
 	if err != nil {
 		return err
@@ -246,8 +292,8 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 	if err != nil {
 		return err
 	}
-	// An exact rowset match still reaches the final source proof and owned
-	// transaction completion below.
+	// Re-read under the writer's locks even after a read-only mismatch. Its
+	// before-notification snapshot and changes belong to this transaction.
 	if changed {
 		// Candidate indexes are contiguous within each replaceable type. Keep
 		// existing keys for conditional updates, including rows from an old root.
@@ -301,25 +347,8 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 			}
 		}
 	}
-	// The payload phase retired before this transaction. Its final source proof
-	// may only use immediately available capacity, never a database-held queue.
-	if err := operation.RunImmediate(state.task.ctx, state.root.id, primaryio.Background, func(context.Context) error {
-		current, err := state.opened.Lstat(directoryPath)
-		after, afterErr := directory.Stat()
-		if err != nil || afterErr != nil || !sameSubtitleDirectoryInfo(directoryInfo, current) ||
-			!sameSubtitleDirectoryInfo(directoryInfo, after) {
-			return ErrSourceChanged
-		}
-		for _, imageType := range replaceTypes {
-			for _, image := range images[imageType] {
-				if err := verifyScannedImage(directoryRoot, image); err != nil {
-					return errors.Join(ErrSourceChanged, err)
-				}
-			}
-		}
-		return nil
-	}); err != nil {
-		return scanReadFailure(err)
+	if err := finalSourceProof(); err != nil {
+		return err
 	}
 	return tx.Commit(state.task.ctx)
 }

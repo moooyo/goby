@@ -37,15 +37,9 @@ var imageCatalogSnapshotProjection = `COALESCE((SELECT jsonb_agg(jsonb_build_obj
 	'Size', im.file_size, 'Width', im.width, 'Height', im.height)` + storedImageOrder + `)
 	FROM item_images im WHERE im.item_id = i.id AND im.root_id = r.id AND ` + directItemSQL("i") + `), '[]'::jsonb)::text`
 
-// Compare every replaceable raw row on the owned transaction's first item
-// read, including obsolete roots and fields outside the public projection.
-// The conditional projection avoids building notification JSON for an exact
-// no-op without adding a query to changed or newly populated image sets.
-func readImageCatalogReplacement(ctx context.Context, tx pgx.Tx, itemID, libraryID, rootID string,
-	replaceTypes []string, replacement imageScanReplacement) (imageCatalogSnapshot, bool, error) {
-	snapshot := imageCatalogSnapshot{owner: CatalogChange{Kind: CatalogUpdated}}
-	var changed bool
-	err := tx.QueryRow(ctx, `WITH replacement AS MATERIALIZED (
+// Both the read-only observation and the owned writer compare the complete
+// replaceable rowset, including obsolete roots and private source metadata.
+const imageCatalogReplacementComparisonSQL = `WITH replacement AS MATERIALIZED (
 		SELECT * FROM unnest($5::text[], $6::integer[], $7::text[], $8::text[], $9::text[],
 			$10::bigint[], $11::timestamptz[], $12::integer[], $13::integer[], $14::text[])
 		AS candidate(image_type, image_index, relative_path, file_identity, source_hash,
@@ -65,7 +59,74 @@ func readImageCatalogReplacement(ctx context.Context, tx pgx.Tx, itemID, library
 				replacement.source_hash, replacement.file_size, replacement.modified_at,
 				replacement.width, replacement.height, replacement.mime_type)
 		) AS changed
-	)
+	)`
+
+// imageCatalogReplacementUnchanged observes one fresh owner-session snapshot.
+// It releases the owner mutex before the caller's final filesystem proof. A
+// later catalog writer is later work; this observation never authorizes writes.
+func (state *scanState) imageCatalogReplacementUnchanged(itemID string, replaceTypes []string,
+	replacement imageScanReplacement, expected rootBindingRow) (bool, error) {
+	ctx := state.task.ctx
+	if !state.store.Available() {
+		return false, ErrUnavailable
+	}
+	grant := state.task.authority.Load()
+	if grant == nil {
+		return false, ErrTaskScanInactive
+	}
+	if err := state.store.checkScanOperationActive(ctx, state.task, grant); err != nil {
+		return false, err
+	}
+	granted, ok := grant.roots[expected.root.id]
+	if !ok || !granted.same(expected) || expected.root != state.root || grant.libraryID != state.library.ID {
+		return false, ErrRootBindingConflict
+	}
+	if err := state.store.lockOwnedSession(ctx); err != nil {
+		return false, err
+	}
+	defer state.store.ownership.mu.Unlock()
+	if !state.store.Available() {
+		return false, ErrUnavailable
+	}
+	// As with owned writes, caller cancellation must not close the lock session
+	// while its statement is in flight. Consume the result before checking it.
+	readCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 20*time.Second)
+	defer cancel()
+	var mappingMatches, changed bool
+	err := state.store.ownership.conn.QueryRow(readCtx, `/* image_catalog_unchanged */ `+imageCatalogReplacementComparisonSQL+`
+	SELECT (r.path, r.allowed_path, r.relative_path)
+		IS NOT DISTINCT FROM ($15::text, $16::text, $17::text), comparison.changed
+		FROM items i JOIN library_roots r ON r.id = i.root_id AND r.library_id = i.library_id
+		CROSS JOIN comparison
+		WHERE i.id = $1 AND i.library_id = $2 AND i.root_id = $3`,
+		itemID, state.library.ID, state.root.id, replaceTypes, replacement.types, replacement.indexes, replacement.paths,
+		replacement.identities, replacement.hashes, replacement.sizes, replacement.modified,
+		replacement.widths, replacement.heights, replacement.mimes,
+		expected.root.path, expected.root.allowedPath, expected.root.relativePath).Scan(&mappingMatches, &changed)
+	err = state.store.ownershipErrorLocked(err)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, ErrNotFound
+	}
+	if err != nil {
+		return false, fmt.Errorf("read unchanged image catalog: %w", err)
+	}
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+	if !mappingMatches {
+		return false, ErrRootBindingConflict
+	}
+	return !changed, nil
+}
+
+// Compare every replaceable raw row again under the owned writer's item lock.
+// The conditional projection avoids notification JSON for an exact match,
+// including when a concurrent writer repaired a preceding read-only mismatch.
+func readImageCatalogReplacement(ctx context.Context, tx pgx.Tx, itemID, libraryID, rootID string,
+	replaceTypes []string, replacement imageScanReplacement) (imageCatalogSnapshot, bool, error) {
+	snapshot := imageCatalogSnapshot{owner: CatalogChange{Kind: CatalogUpdated}}
+	var changed bool
+	err := tx.QueryRow(ctx, imageCatalogReplacementComparisonSQL+`
 	SELECT i.id, i.library_id, COALESCE(i.parent_id, ''), i.is_folder,
 		i.type = 'CollectionFolder', comparison.changed,
 		CASE WHEN comparison.changed THEN `+imageCatalogSnapshotProjection+` ELSE '' END

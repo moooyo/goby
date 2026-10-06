@@ -72,8 +72,8 @@ func TestScanImageRowsBatchWritesAllTypesOnceAndRetainsNoopVersions(t *testing.T
 	if trace.inserts.Load() != 0 || trace.deletes.Load() != 0 {
 		t.Fatalf("no-op rowset issued image DML: inserts=%d deletes=%d", trace.inserts.Load(), trace.deletes.Load())
 	}
-	if after := scanImageDiffVersions(t, ctx, pool, itemID); !reflect.DeepEqual(after, before) || trace.snapshots.Load() != 1 {
-		t.Fatalf("no-op rowset rewrote versions or changed its publication read count: before=%v after=%v snapshots=%d", before, after, trace.snapshots.Load())
+	if after := scanImageDiffVersions(t, ctx, pool, itemID); !reflect.DeepEqual(after, before) || trace.snapshots.Load() != 0 {
+		t.Fatalf("no-op rowset rewrote versions or read a notification projection: before=%v after=%v snapshots=%d", before, after, trace.snapshots.Load())
 	}
 	assertNoCatalogTestNotification(t, notifications)
 	// A storage-only correction must update its exact row without notifying a

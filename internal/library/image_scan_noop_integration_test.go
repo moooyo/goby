@@ -9,6 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -156,21 +158,90 @@ func TestScanImageNoopPreservesInvalidTypeAndDeletesExtraIndex(t *testing.T) {
 }
 
 type imageScanNoopProofTrace struct {
-	publication scanPublicationIOTrace
-	authority   primarySidecarQueuedAuthorityTrace
+	authority primarySidecarQueuedAuthorityTrace
+	mu        sync.Mutex
+	itemID    string
+	snapshots int
+	inject    func() error
+	err       error
+	once      sync.Once
+}
+
+type imageScanNoopProofQueryKey struct{}
+
+type imageScanNoopProofQuery struct {
+	trace     *imageScanNoopProofTrace
+	statement string
 }
 
 func (trace *imageScanNoopProofTrace) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
 	ctx = trace.authority.TraceQueryStart(ctx, conn, data)
-	return trace.publication.TraceQueryStart(ctx, conn, data)
+	if conn != trace.authority.owner.Load() || !strings.Contains(data.SQL, "/* image_catalog_unchanged */") || len(data.Args) == 0 {
+		return ctx
+	}
+	itemID, ok := data.Args[0].(string)
+	trace.mu.Lock()
+	matched := ok && itemID == trace.itemID
+	trace.mu.Unlock()
+	if !matched {
+		return ctx
+	}
+	return context.WithValue(ctx, imageScanNoopProofQueryKey{}, imageScanNoopProofQuery{
+		trace: trace, statement: scanPerformanceNormalizeSQL(data.SQL),
+	})
 }
 
 func (trace *imageScanNoopProofTrace) TraceQueryEnd(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryEndData) {
-	trace.publication.TraceQueryEnd(ctx, conn, data)
 	trace.authority.TraceQueryEnd(ctx, conn, data)
+	query, ok := ctx.Value(imageScanNoopProofQueryKey{}).(imageScanNoopProofQuery)
+	if !ok || query.trace != trace {
+		return
+	}
+	trace.mu.Lock()
+	trace.err = errors.Join(trace.err, data.Err)
+	if data.Err != nil {
+		trace.mu.Unlock()
+		return
+	}
+	if conn != trace.authority.owner.Load() || conn.PgConn().TxStatus() != 'I' || data.CommandTag.String() != "SELECT 1" {
+		trace.err = errors.Join(trace.err, errors.New("image no-op snapshot did not consume one row on the idle owner session"))
+		trace.mu.Unlock()
+		return
+	}
+	for _, forbidden := range []string{"for update", "for share", "for no key update", "for key share", "jsonb_build_object", "jsonb_agg"} {
+		if strings.Contains(query.statement, forbidden) {
+			trace.err = errors.Join(trace.err, errors.New("image no-op snapshot used a row lock or notification JSON projection"))
+			trace.mu.Unlock()
+			return
+		}
+	}
+	trace.snapshots++
+	var inject func() error
+	trace.once.Do(func() { inject = trace.inject })
+	trace.mu.Unlock()
+	if inject != nil {
+		if err := inject(); err != nil {
+			trace.mu.Lock()
+			trace.err = errors.Join(trace.err, err)
+			trace.mu.Unlock()
+		}
+	}
 }
 
-func TestScanImageNoopRetainsOwnedTransactionAndFinalSourceProof(t *testing.T) {
+func (trace *imageScanNoopProofTrace) arm(itemID string, inject func() error) {
+	trace.mu.Lock()
+	defer trace.mu.Unlock()
+	trace.itemID, trace.inject = itemID, inject
+	trace.snapshots, trace.err, trace.once = 0, nil, sync.Once{}
+}
+
+func (trace *imageScanNoopProofTrace) snapshot() (reads int, err error) {
+	trace.mu.Lock()
+	defer trace.mu.Unlock()
+	return trace.snapshots, trace.err
+}
+
+func TestScanImageReadonlyNoopRetainsSnapshotAndFinalSourceProof(t *testing.T) {
 	for _, scenario := range []string{"stable", "replaced_source", "cancelled_context"} {
 		t.Run(scenario, func(t *testing.T) {
 			ctx, pool, originalStore, approved, userID := libraryIntegrationStore(t, &libraryFixtureProber{})
@@ -187,7 +258,6 @@ func TestScanImageNoopRetainsOwnedTransactionAndFinalSourceProof(t *testing.T) {
 				t.Fatal(err)
 			}
 			trace := &imageScanNoopProofTrace{}
-			trace.publication.rolledBack = make(chan struct{})
 			configuration := pool.Config()
 			configuration.ConnConfig.Tracer = trace
 			tracedPool, err := pgxpool.NewWithConfig(ctx, configuration)
@@ -220,11 +290,10 @@ func TestScanImageNoopRetainsOwnedTransactionAndFinalSourceProof(t *testing.T) {
 				}
 			}
 			state := imageScanTestState(t, ctx, pool, store, library, ".")
+			primaryScanRoutingRetainWalk(t, state)
 			notifications := catalogChangesTestListener(t, store)
 			owner := store.ownership.conn.Conn()
 			trace.authority.owner.Store(owner)
-			trace.publication.expectedOwner = owner
-			trace.publication.libraryID, trace.publication.rootID, trace.publication.itemID = library.ID, state.root.id, item.ID
 			var inject func() error
 			switch scenario {
 			case "replaced_source":
@@ -244,27 +313,24 @@ func TestScanImageNoopRetainsOwnedTransactionAndFinalSourceProof(t *testing.T) {
 				}
 			}
 			trace.authority.reset()
-			trace.publication.arm(inject)
+			trace.arm(item.ID, inject)
 			err = state.scanImages(item.ID, item.Type, "Film.mp4", false)
-			wantCommits, wantRollbacks, wantWarnings := int64(1), 0, 0
-			if scenario != "stable" {
-				wantCommits, wantRollbacks = 0, 1
-			}
+			wantWarnings := 0
 			if scenario == "replaced_source" {
 				wantWarnings = 1
 			}
 			if scenario == "cancelled_context" {
 				if !errors.Is(err, context.Canceled) {
-					t.Fatalf("image no-op ignored cancellation after its owned root read: %v", err)
+					t.Fatalf("image no-op ignored cancellation after its owner snapshot: %v", err)
 				}
 			} else if err != nil {
 				t.Fatal(err)
 			}
-			roots, _, _, rollbacks, traceErr := trace.publication.snapshot()
-			if traceErr != nil || roots != 1 || rollbacks != wantRollbacks || state.warnings != wantWarnings ||
-				trace.authority.ownedBegins.Load() != 1 || trace.authority.ownedCommits.Load() != wantCommits || trace.authority.imageWrites.Load() != 0 {
-				t.Fatalf("image no-op lost its owned publication or final source proof: roots=%d begins=%d commits=%d rollbacks=%d writes=%d warnings=%d trace_error=%v",
-					roots, trace.authority.ownedBegins.Load(), trace.authority.ownedCommits.Load(), rollbacks, trace.authority.imageWrites.Load(), state.warnings, traceErr)
+			reads, traceErr := trace.snapshot()
+			begins, commits, rollbacks := trace.authority.authority.begins.Load(), trace.authority.authority.commits.Load(), trace.authority.authority.rollbacks.Load()
+			if traceErr != nil || reads != 1 || begins != 0 || commits != 0 || rollbacks != 0 || state.warnings != wantWarnings || trace.authority.imageWrites.Load() != 0 {
+				t.Fatalf("image no-op lost its read-only snapshot or final source proof: reads=%d begins=%d commits=%d rollbacks=%d writes=%d warnings=%d trace_error=%v",
+					reads, begins, commits, rollbacks, trace.authority.imageWrites.Load(), state.warnings, traceErr)
 			}
 			if after := scanImageDiffVersions(t, ctx, pool, item.ID); !reflect.DeepEqual(after, before) || imageScanNoopRow(t, ctx, pool, item.ID, "Primary") != beforeRow {
 				t.Fatalf("image no-op proof changed the retained rowset: before=%v after=%v", before, after)

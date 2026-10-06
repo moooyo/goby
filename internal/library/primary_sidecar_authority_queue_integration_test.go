@@ -233,11 +233,7 @@ func TestPrimarySidecarQueuedWalkRetainsOperationAuthority(t *testing.T) {
 			if trace.startup.startups.Load() != 0 {
 				t.Fatalf("queued sidecar repeated startup authorization: startups=%d", trace.startup.startups.Load())
 			}
-			wantTransactions, wantWrites := int64(0), int64(0)
-			if scenario.want == nil {
-				wantTransactions = 1
-			}
-			if trace.begins.Load() != wantTransactions || trace.ownedBegins.Load() != wantTransactions || trace.ownedCommits.Load() != wantTransactions || trace.imageWrites.Load() != wantWrites ||
+			if trace.begins.Load() != 0 || trace.ownedBegins.Load() != 0 || trace.ownedCommits.Load() != 0 || trace.imageWrites.Load() != 0 ||
 				(state.imageDirectories != nil) != (scenario.want == nil) || state.warnings != 0 {
 				t.Fatalf("sidecar operation changed its publication boundary: begins=%d owned_begin=%d owned_commit=%d writes=%d directories=%v warnings=%d",
 					trace.begins.Load(), trace.ownedBegins.Load(), trace.ownedCommits.Load(), trace.imageWrites.Load(), state.imageDirectories, state.warnings)
