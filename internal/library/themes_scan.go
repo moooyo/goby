@@ -501,12 +501,13 @@ func deactivateInvalidThemeChildren(ctx context.Context, tx pgx.Tx, ownerIDs []s
 		ORDER BY resource.id FOR UPDATE OF resource) locked`, ownerIDs).Scan(&locked); err != nil {
 		return err
 	}
-	_, err := tx.Exec(ctx, `UPDATE item_theme_resources relationship SET active=false
-		WHERE relationship.active AND relationship.owner_item_id=ANY($1::text[])
-		AND NOT EXISTS(SELECT 1 FROM items resource WHERE resource.id=relationship.resource_item_id AND `+
-		database.ThemeResourceItemSQL("resource", true)+`)`, ownerIDs)
-	if err != nil {
-		return err
+	if len(locked) != 0 {
+		if _, err := tx.Exec(ctx, `UPDATE item_theme_resources relationship SET active=false
+			WHERE relationship.active AND relationship.owner_item_id=ANY($1::text[])
+			AND NOT EXISTS(SELECT 1 FROM items resource WHERE resource.id=relationship.resource_item_id AND `+
+			database.ThemeResourceItemSQL("resource", true)+`)`, ownerIDs); err != nil {
+			return err
+		}
 	}
 	return deactivateInvalidExtraChildren(ctx, tx, ownerIDs)
 }

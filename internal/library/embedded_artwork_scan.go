@@ -58,7 +58,7 @@ func (state *scanState) scanEmbeddedArtworkAttempt(itemID, itemType, relative st
 		return err
 	}
 	defer rollback(tx)
-	snapshot, err := readIndexedMediaSource(ctx, tx, unrestrictedLibraryAccess(), itemID, "")
+	snapshot, err := readIndexedMediaRevalidation(ctx, tx, unrestrictedLibraryAccess(), itemID, "", false)
 	if err != nil {
 		state.warnings++
 		return nil

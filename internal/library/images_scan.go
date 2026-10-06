@@ -215,25 +215,21 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 	// One item's selected population is bounded to 32 backdrops and one image
 	// for each of the other five types. Prepare equal-length arrays before
 	// acquiring catalog ownership; preserved types never enter this rowset.
-	imageTypes := make([]string, rowCount)
-	imageIndexes := make([]int, rowCount)
-	imagePaths := make([]string, rowCount)
-	imageIdentities := make([]string, rowCount)
-	imageHashes := make([]string, rowCount)
-	imageSizes := make([]int64, rowCount)
-	imageModified := make([]time.Time, rowCount)
-	imageWidths := make([]int, rowCount)
-	imageHeights := make([]int, rowCount)
-	imageMIMEs := make([]string, rowCount)
+	replacement := imageScanReplacement{
+		types: make([]string, rowCount), indexes: make([]int, rowCount), paths: make([]string, rowCount),
+		identities: make([]string, rowCount), hashes: make([]string, rowCount), sizes: make([]int64, rowCount),
+		modified: make([]time.Time, rowCount), widths: make([]int, rowCount), heights: make([]int, rowCount),
+		mimes: make([]string, rowCount),
+	}
 	position := 0
 	for _, imageType := range replaceTypes {
 		for index, source := range images[imageType] {
 			image := source.image
-			imageTypes[position], imageIndexes[position] = imageType, index
-			imagePaths[position] = filepath.ToSlash(filepath.Join(directoryPath, source.filename))
-			imageIdentities[position], imageHashes[position] = source.identity, image.Tag
-			imageSizes[position], imageModified[position] = image.Size, image.ModifiedAt
-			imageWidths[position], imageHeights[position], imageMIMEs[position] = image.Width, image.Height, image.MIMEType
+			replacement.types[position], replacement.indexes[position] = imageType, index
+			replacement.paths[position] = filepath.ToSlash(filepath.Join(directoryPath, source.filename))
+			replacement.identities[position], replacement.hashes[position] = source.identity, image.Tag
+			replacement.sizes[position], replacement.modified[position] = image.Size, image.ModifiedAt
+			replacement.widths[position], replacement.heights[position], replacement.mimes[position] = image.Width, image.Height, image.MIMEType
 			position++
 		}
 	}
@@ -245,22 +241,26 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 	if err := state.checkSidecarScanRootTx(tx, row); err != nil {
 		return err
 	}
-	beforeCatalog, err := readImageCatalogSnapshot(state.task.ctx, tx, itemID, state.library.ID, state.root.id)
+	beforeCatalog, changed, err := readImageCatalogReplacement(state.task.ctx, tx, itemID, state.library.ID, state.root.id,
+		replaceTypes, replacement)
 	if err != nil {
 		return err
 	}
-	// Candidate indexes are contiguous within each replaceable type. Keep
-	// existing keys for conditional updates, including rows from an old root.
-	deleted, err := tx.Exec(state.task.ctx, `DELETE FROM item_images im
+	// An exact rowset match still reaches the final source proof and owned
+	// transaction completion below.
+	if changed {
+		// Candidate indexes are contiguous within each replaceable type. Keep
+		// existing keys for conditional updates, including rows from an old root.
+		deleted, err := tx.Exec(state.task.ctx, `DELETE FROM item_images im
 		USING unnest($2::text[], $3::integer[]) AS replacement(image_type, image_count)
 		WHERE im.item_id = $1 AND im.image_type = replacement.image_type
 		AND im.image_index >= replacement.image_count`, itemID, replaceTypes, replaceCounts)
-	if err != nil {
-		return err
-	}
-	changedRows := deleted.RowsAffected()
-	if rowCount != 0 {
-		written, err := tx.Exec(state.task.ctx, `INSERT INTO item_images
+		if err != nil {
+			return err
+		}
+		changedRows := deleted.RowsAffected()
+		if rowCount != 0 {
+			written, err := tx.Exec(state.task.ctx, `INSERT INTO item_images
 			(item_id, root_id, image_type, image_index, relative_path, file_identity, source_hash,
 			 file_size, modified_at, width, height, mime_type)
 			SELECT $1,$2,replacement.image_type,replacement.image_index,replacement.relative_path,
@@ -282,21 +282,22 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 			IS DISTINCT FROM (EXCLUDED.root_id, EXCLUDED.relative_path, EXCLUDED.file_identity,
 			EXCLUDED.source_hash, EXCLUDED.file_size, EXCLUDED.modified_at,
 			EXCLUDED.width, EXCLUDED.height, EXCLUDED.mime_type)`,
-			itemID, state.root.id, imageTypes, imageIndexes, imagePaths, imageIdentities, imageHashes,
-			imageSizes, imageModified, imageWidths, imageHeights, imageMIMEs)
-		if err != nil {
-			return err
-		}
-		changedRows += written.RowsAffected()
-	}
-	if changedRows != 0 {
-		afterCatalog, err := readImageCatalogSnapshot(state.task.ctx, tx, itemID, state.library.ID, state.root.id)
-		if err != nil {
-			return err
-		}
-		if beforeCatalog.properties != afterCatalog.properties {
-			if err := recordCatalogChanges(tx, afterCatalog.owner); err != nil {
+				itemID, state.root.id, replacement.types, replacement.indexes, replacement.paths, replacement.identities, replacement.hashes,
+				replacement.sizes, replacement.modified, replacement.widths, replacement.heights, replacement.mimes)
+			if err != nil {
 				return err
+			}
+			changedRows += written.RowsAffected()
+		}
+		if changedRows != 0 {
+			afterCatalog, err := readImageCatalogSnapshot(state.task.ctx, tx, itemID, state.library.ID, state.root.id)
+			if err != nil {
+				return err
+			}
+			if beforeCatalog.properties != afterCatalog.properties {
+				if err := recordCatalogChanges(tx, afterCatalog.owner); err != nil {
+					return err
+				}
 			}
 		}
 	}

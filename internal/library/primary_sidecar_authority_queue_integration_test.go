@@ -235,7 +235,7 @@ func TestPrimarySidecarQueuedWalkRetainsOperationAuthority(t *testing.T) {
 			}
 			wantTransactions, wantWrites := int64(0), int64(0)
 			if scenario.want == nil {
-				wantTransactions, wantWrites = 1, 2
+				wantTransactions = 1
 			}
 			if trace.begins.Load() != wantTransactions || trace.ownedBegins.Load() != wantTransactions || trace.ownedCommits.Load() != wantTransactions || trace.imageWrites.Load() != wantWrites ||
 				(state.imageDirectories != nil) != (scenario.want == nil) || state.warnings != 0 {
