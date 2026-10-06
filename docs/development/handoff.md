@@ -1,3 +1,60 @@
+# First scan SQL-reduction batch verified, 2026-10-06
+
+Source candidate `ab0282616de26f0000813d7667356e845eceaf62` is a direct child of
+main `1a9ec5f1ff06b91efdc951ac864e5c56c3286cbb` (runtime b100), on
+`codex/scan-sql-reduction-20261006`. Exact scope is five production files, two
+existing test expectation updates and three new test files. It matches the
+frozen ten-file overlay; the four performance drivers are unchanged.
+
+The batch narrows embedded-artwork source reads, skips theme/extra UPDATEs for
+the current transaction's empty locked populations, and compares the complete
+raw image replacement rowset before issuing image DML. Exact no-ops skip
+DELETE/UPSERT and public notification JSON construction. Existing owned/item
+locks, transactions, final source proof and retirement remain. Private-field
+repair, preserved invalid types, obsolete roots and missing/extra indexes are
+covered; force probes, derived repair and refresh notifications remain.
+
+All nine remote Go invocations qualified: focused race 41 top-level/39 subtests
+with zero skips, two TRACE1 count runs, and six TRACE0 timings in BC/CB/BC order.
+Warm SQL falls 2045->1659 and force 6482->5776. Warm/force image DELETE and
+UPSERT counts each fall 136->0; changed/removal each use one of each command.
+Explicit BEGIN/COMMIT counts remain 192 for warm/edit/removal and 382 for
+cold/force. Snapshot counters are projection-containing queries, not actual
+JSON expression evaluations. The complete corpus, rows/xmin, media probe
+call counts and Store.Close guards qualified; native media work remains.
+
+Job paired median changes are cold -5.2642%, warm -20.3612%, force -13.5419%,
+image_changed -21.7116%, image_removed -19.8140%. Only cold has a slower job
+pair: block 1 +1032.533ms/+23.5916%, retained without causal assignment. The
+other four job phases improve in all three pairs. Process allocation decreases
+in all pairs. Terminal/retirement/resource windows are separate, and their
+reverse observations remain in the full report. Earlier samples are not pooled;
+neither the previous third-pair regression nor this new slow window is solved.
+
+Detail: [scan-sql-reduction-20261006.md](scan-sql-reduction-20261006.md).
+Evidence: `.artifacts/scan-sql-reduction-20261006`; counts JSON9ca38e3b,
+timing JSON9a7e756b. Independent numerical/source review passed1165 checks.
+Source commit binding is an addendum to immutable freezea7be7a8d and overlay
+a9a648a0; no measured source or raw output was rewritten.
+
+Actual closure is complete: SHA2ebcc0f5, final exportb992ba5f. A capacity guard
+after the race run prevented the next product; an explicit remaining-budget
+revision kept the128MiB exit reserve and resumed only the original eight
+remaining products. Total9Go, no replay. A namespace/footer correction and two
+zero-Go export-preparation errors are retained separately. Only owned inactive
+scratch and an empty fixture were removed; source/raw/shared caches remain.
+PG/Goby/reserve403374 are unchanged; closure availability363065344B is a snapshot.
+Original workspace fresh WIP remains protected and is never a source input.
+
+Next: the image no-op read-only acceptance point and removal of explicit write
+transactions require a separate concurrency change and verification. Current
+publication retains the existing post-wait transaction semantics. A single
+FOR SHARE query is not a complete substitute and can still generate tuple-lock
+WAL. Do not describe the first batch as eliminating transactions or as proving
+uniform latency improvement.
+
+---
+
 # Store-lifetime scan cache accepted with latency limits, 2026-10-06
 
 The selected scan-hotspot batch is only successful digest-to-Info reuse across
