@@ -1,3 +1,62 @@
+# Embedded snapshot evaluated; candidate withheld from main, 2026-10-07
+
+Candidate cd22752397ff70b490b27f9b7536dfddb57d737f on
+codex/embedded-source-readonly-20261007 is a direct child of main 934abbb4
+(runtime 6386c8fd). Its two production and two regression files match the
+executed freeze. Keep this candidate; do not merge it as a verified latency
+optimization. This publication contains only the report and handoff, and main
+retains the previously published image no-op runtime.
+
+The candidate combines indexed source/root and embedded cache metadata into one
+statement snapshot, replacing 32 BEGIN/SELECT/SELECT/COMMIT sequences per phase.
+Complete source checks, startup permissions, real writers and publication proofs
+remain. SQL/Scan failures now return errors; invalid indexed snapshots retain
+warning-and-skip behavior. No cached image BLOB or public catalog/subtitle data
+is loaded by the new read.
+
+All 12 selected remote invocations qualified: race 22 top-level/66 subtests,
+zero skips; B/C TRACE1 counts; and nine TRACE0 timings in ABC/BCA/CAB order.
+A is ab028 before image no-op; B is 6386 with image no-op; C is the new candidate.
+The common logger only adds existing job UnixNS anchors. No product was replayed.
+Each phase saves exactly 96 SQL callbacks and 32 explicit read-only BEGIN/COMMIT
+pairs; actual image DML/keys/xmin and probes are unchanged. Warm SQL is 979->883,
+force 5096->5000. These are not 32 avoided WAL flushes.
+
+C/B job paired median changes are cold +0.0742%, warm +0.8097%, force +0.2496%,
+changed -2.8094%, removal +11.2951%. Removal is slower in all three pairs by
+45.032/59.201/13.252 ms. The first and third pairs have only not-slow storage
+bins on both sides; the second has a slow C. GC/pool/retirement data do not
+explain the complete difference. No specific code cause is established, but
+correctness and count savings are insufficient for performance acceptance.
+Root and independent review therefore withhold the source merge.
+
+B/A warm/force/changed/removal improve in all three pairs, but A2 has a slow
+storage background. Predeclared matching finds 0/15 B/A and 0/15 C/B phase pairs:
+all B jobs are outside the only slow plateau. The finite supplementary batch is
+complete; image no-op benefit under comparable natural slow storage is still
+unquantified. No re-pairing, relaxed threshold or extra run is selected.
+
+Next work, not started: locate the candidate's removal-phase reversal before
+reconsidering its merge. Comparable slow-window evidence remains outstanding.
+Real-write batching and NVMe device-internal investigation remain unselected.
+Use the retained candidate and immutable evidence; do not replay the completed
+matrix or reintroduce per-file permission checks without a concrete reason.
+
+Export and actual closeout are complete. Workers and collectors exited; the
+private RAM compiler cache was reclaimed from 689,840,128 to 8,192 bytes.
+Inactive scratch, empty ext4 fixtures and verified temporary RAM copies were
+removed. Sources, raw evidence, four matching binaries, shared caches and
+PG/Goby/QEMU identities remain. Closure b6eba828 / 45ed9ec1; export adb9285b.
+Final persistent availability is 289,538,048 bytes. No runtime work is active.
+
+Detail: [scan-embedded-source-readonly-20261007.md](scan-embedded-source-readonly-20261007.md).
+Evidence: .artifacts/embedded-source-readonly-20261007. Count summary f1d1cc66,
+timing fdefe94c, slow labels 86167330; source-freeze 87909554 and separate source
+commit binding 4a16e3a0. Original workspace WIP remains outside publication and
+must be protected using fresh current identities, not historical restores.
+
+---
+
 # Unchanged-image write transactions eliminated and verified, 2026-10-07
 
 Source `6386c8fd88585557ee65acbc0a12be23d90a41d4` is based on main `ab675383`
