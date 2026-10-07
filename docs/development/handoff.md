@@ -1,3 +1,72 @@
+# Embedded-source mechanism follow-up closed; source changes withheld, 2026-10-07
+
+Direct source-read savings are measured, but stable end-to-end benefit and the
+historical regression's root cause remain unproven. All three selected mechanism
+products, complete exports and actual resource cleanup are finished. This update
+is documentation only, based on main `e27093860472f4c8dd8b77cb44b57bc91215066b`;
+runtime remains `6386c8fd88585557ee65acbc0a12be23d90a41d4`. Candidate
+`cd22752397ff70b490b27f9b7536dfddb57d737f` remains withheld, and acquired-row T is
+artifact-only. No production edit or source publication occurred.
+
+The first product keeps original five S phases, SLLS/SLLS controls, the 32-Audio
+L/S equality contract and measured Close in one Store/schema/pool. S saves
+8.759-10.403 ms in the approximate complete Audio envelope in every contrast,
+but S-minus-L jobs are +1.455/+8.163/-6.017/+5.092 ms. Later lookup/bitmap reads
+and Go endpoint CPU offset the saving, including within the same PG PID. Static
+sizes/copy instructions do not establish a millisecond cost, and the caller does
+not introduce a new 912-byte heap closure. L2/L7 recorder growth is a confirmed
+instrumentation confound. No particular later function is identified.
+
+The second product tests Pool.QueryRow S against same-SQL explicit
+Acquire/Conn.QueryRow/Release T with constant recorder capacity 32768. Fixed
+T-minus-S job deltas +2.455/-12.932/+41.568/-9.581 ms provide no stable T gain.
+The poolRow state difference has therefore been checked; it is not a proven fix.
+Adjacent same-code T6/T7 drops 63.753 ms despite identical sequences of 883
+application templates, physical PIDs, final row tags and error flags, covering
+67 fingerprints. Source ordinals are identical. File.ReadDir(64) has no explicit
+name sort; identical SQL order does not prove parameter/path, plan, temporary-CTE
+or physical-cost equivalence. Observer interleaving also changes with progress.
+
+The third product uses unchanged second-product Go/source bytes plus external
+CPU observation. T is faster in all four fixed pairs by
+47.179/64.995/22.024/18.889 ms, with lower source/Audio and endpoint CPU. This is
+an association under a different observer condition; it does not override the
+previous mixed product, establish a portable optimization or accept C/T.
+Every product retains five original phases, eight controls, equality and Close;
+all three qualified, with no extra product or replay.
+
+CPU context observes placement variability but does not establish a slow-core,
+frequency, scheduling or hardware cause, or exclude code-induced pacing. Actual
+clock hull width is 64.681472 ms. All 423 application-PID observations succeed,
+but only 3 satisfy the strict cross-host sampled-placement rule; 177 not_present
+records start 203.077354 ms after the final control. Reported-frequency medians
+near 5.05 GHz are not task-effective frequency, and low values also occur in fast
+windows. Scheduler waits remain null. Guest/host observer CPU is about
+3.81%/4.30% of one CPU over different lifetimes and is not subtracted or used to
+normalize earlier results. Go-thread placement and instructions/cycles are absent.
+
+Actual closeout reclaimed the private compiler cache from 330,342,400 to 8,192
+bytes, owned scratch, three empty ext4 fixtures and independently retained
+12 guest/14 host temporary copies. All source/common/raw/binary/receipt evidence,
+shared caches and PG/Goby/QEMU identities remain; reserve 403374 is unchanged.
+Final persistent availability is 330,231,808 bytes; guest available memory is
+6,639,820,800 bytes, a separate snapshot. Workers and observers exited. Final
+close/export 5c78a9ac; third raw export f9914d04. No diagnostic runtime is active.
+
+The next useful selection, if work continues, is bounded function/server-execution
+profiling or instructions/cycles evidence that separates extra work from changed
+execution conditions per unit of work. Another unrestricted benchmark or new
+production edit is not selected. Preserve every adverse sample and the original
+acceptance decision. Protect workspace WIP using fresh identities.
+
+Detail: [scan-embedded-source-attribution-20261007.md](scan-embedded-source-attribution-20261007.md).
+Evidence: `.artifacts/embedded-source-mechanism-20261007`; first summary 5615e441,
+second 5d080952, sequence f4466fbe, third query 1d435b0f, CPU conditions b60bda91.
+All current-main handoff bytes remain unchanged below; their earlier closed
+batches are distinct historical evidence.
+
+---
+
 # Embedded-source diagnostics closed; candidate remains withheld, 2026-10-07
 
 All seven selected remote Go products qualified: SQL-only B/C, Prepare C/B,

@@ -1,3 +1,352 @@
+# Embedded-source mechanism follow-up, 2026-10-07
+
+Source-read savings are measured, but a stable end-to-end scan improvement and
+the historical regression's root cause remain unproven. The first same-process
+L/S control retains its early Audio-region saving while later work offsets it.
+The acquired-row S/T comparison has mixed directions; a third process with added
+CPU observation favors T, without resolving that inconsistency. Neither C nor T
+is published as a performance fix.
+
+All three selected Go products, their exports and actual resource closeout are
+complete. Each retained the original five phases, eight fixed controls, the
+32-Audio equality contract and measured Store.Close. No extra product or replay
+was started. This documentation-only update is based on main
+`e27093860472f4c8dd8b77cb44b57bc91215066b`; published runtime remains
+`6386c8fd88585557ee65acbc0a12be23d90a41d4`. Candidate
+`cd22752397ff70b490b27f9b7536dfddb57d737f` stays withheld, and T exists only in
+artifacts. No production source was edited in this follow-up. The prior
+four-stage report is preserved in full below.
+
+## Offline localization and static limits
+
+The earlier captures show distributed common-read differences, including shifts
+in medians, rather than only a few long outliers. Their direction reverses in
+stage 4, and neither a fixed candidate surcharge nor a universal server-speed
+factor fits all families and time positions. These descriptive distribution views
+retain every original sample and do not trim or correct acceptance results.
+
+Recorded reader blocks occur early, approximately 4.7%-26.1% through the earlier
+removal jobs. Only one lookup and one media-facts read precede the first reader
+SQL; their signs differ between stages. Most common reads follow the reader
+blocks. This establishes order without excluding prior-phase carryover or
+assigning later work to the reader implementation.
+
+Static inspection does not support permanent twenty-column scan-plan pollution:
+the pgconn field-description array stays fixed at sixteen and later queries
+rebuild their reader/scan plans. The measured S source callbacks, with maxima
+2.50/1.64/1.57/2.84 ms in its four controls, do not support the fifteen-millisecond
+slow-write background-reader trigger. Existing matching-binary disassembly was
+inspected without another execution or build. DWARF reports 840-byte
+indexedMediaSource and 912-byte embedded snapshot types; S/L attempt frames
+differ by 136 bytes. Caller snapshot/closure addresses are on the stack, rather
+than a new 912-byte heap closure. Copy/write-barrier instructions exist, but sizes
+and instructions do not establish milliseconds of cost or per-item stack growth.
+
+Pool.QueryRow advances a per-physical-connection poolRow batch cursor, while the
+retained transaction reader does not; a subsequent batch is 5,120 raw bytes.
+The second product directly examined the acquired-row alternative and found
+mixed directions. The third found a favorable association under its added
+observer, without establishing a stable benefit. This code difference has been
+checked and does not justify prioritizing explicit Acquire as a proven fix.
+
+## First mechanism product: complete L/S paths in one process
+
+Exactly one Go product qualified. It retained the original five S phases, then
+eight warm scans of the fixed post-removal state in the predeclared order
+S L L S / S L L S, followed by a 32-Audio L/S full-value equality contract and
+the unique measured Store.Close. L preserves the complete legacy attempt,
+locals, closure, rollback defer and validation helpers; S preserves the candidate
+attempt. The same Store, schema and pools remain, without forcing backend routes.
+These are eight correlated controls, not eight independent replicates or a
+replacement for the historical removal acceptance samples.
+
+All controls retain 160 media items and 671 images, unchanged image keys/xmin,
+no image DML and no native probes/extractions. L/S use 979/883 application
+callbacks: 32 complete legacy four-command groups versus 32 single SELECTs.
+The post-control contract validates 64 logical reads with equal values.
+
+All deltas below are S minus L in the four fixed adjacent contrasts. The Audio
+envelope runs from the first lookup QueryStart to the first following image
+QueryStart; it contains interleaved source/owner/media/Go work and initial
+post-source work, rather than exclusively timing the reader helper.
+
+| Pair | S/L windows | Job delta, ms | Source callback union delta, ms | Approximate Audio envelope delta, ms | Rest-of-job delta, ms | Go endpoint CPU delta, ms |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| 1 | 1 / 2 | +1.455 | -9.132501 | -9.137783 | +10.592783 | +3.542 |
+| 2 | 4 / 3 | +8.163 | -9.392784 | -8.759162 | +16.922162 | +15.765 |
+| 3 | 5 / 6 | -6.017 | -11.570032 | -10.403306 | +4.386306 | +4.153 |
+| 4 | 8 / 7 | +5.092 | -10.405396 | -9.420175 | +14.512175 | +10.196 |
+
+The early envelope remains faster in all four comparisons, including an
+alternative endpoint after the first image callback. Thus immediate work inside
+that envelope does not consume all source callback savings. The offset lies
+outside the envelope, but this is not a function-level attribution. Lookup and
+bitmap callback medians and p95, and Go endpoint CPU, rise in every S contrast;
+images/media have mixed signs. No stable end-to-end acceleration is established.
+
+Lookup/bitmap differences persist within the same physical PG PID. Pairs 1/3
+retain the same PID and equal counts; pairs 2/4 split S across two PIDs, so their
+same-PID subsets also change ordinal/work cohorts. No query arguments were
+captured for parameter matching. Each adjacent pair uses the same PID for all
+32 source blocks. Two S windows switch data PID after the middle observer poll,
+but other windows poll the other PID without switching. Routing share or polling
+alone is therefore insufficient to explain the result.
+
+The query recorder grows its slice during L2 (16,164 to 20,406 capacity) and L7
+(20,406 to 25,746). Their roughly 30 MB allocation versus roughly 28 MB elsewhere
+is confounded by instrumentation growth; those bytes and later GC work must not
+be assigned to production code. All windows remain included. L2/L6 each have two
+first-use legacy Prepare callbacks on separate connections, with no common-read
+Prepare in any control. This does not exclude server parsing/planning.
+
+CPU endpoints include wider terminal/retirement/observer work. Actual-query PID
+CPU coverage is complete, but disabled scheduler statistics leave wait/timeslices
+null and resource status partial. CPU, SQL wall coverage and GC estimates are
+separate scopes. Passive PG context has 239 active/no-wait common-read points and
+one ClientRead in a 0.163035-ms callback; no common-read long lock/WAL/data-I/O
+wait was sampled. Host clock-expanded windows overlap adjacent controls; aggregate
+steal/vCPU runtime cannot identify critical-thread delay, and dynamic frequency
+or host-core placement was not measured. No specific storage, CPU-frequency,
+scheduling, JSON or copying cause is established.
+
+## Second mechanism product: no stable acquired-row benefit
+
+One separately frozen Go product qualified all thirteen phases, the 32-Audio
+S/T equality contract and measured Store.Close. It retains five original S
+phases, then S T T S / S T T S. Both paths use the same twenty-column statement,
+arguments, destinations, JSON work and validations. S keeps Pool.QueryRow; T uses
+explicit Acquire, Conn.QueryRow.Scan and immediate Release, with deferred
+error/panic cleanup and the original statement/argument evaluation order. This
+compares the complete acquired-row path, not the poolRow cursor alone.
+
+Every control actually has 883 application callbacks, the same application
+fingerprint/count multiset, 32 single-source SELECTs, zero application Prepare
+and unchanged 32,768-query collector capacity. The total of 883 is an observed
+result, not a gate that rejected natural bookkeeping. All controls retain 160
+items, 671 unchanged image rows and no image/embedded-cache DML or native
+probes/extractions. The post-control contract verifies equal full values for
+64 logical reads.
+
+All eight job observations appear in the four fixed adjacent contrasts below.
+Deltas are T minus S; the controls remain correlated within one process.
+
+| Pair | T/S windows | T job, ms | S job, ms | Job delta, ms | Source callback delta, ms | Go endpoint CPU delta, ms | PG endpoint CPU delta, ms |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 2 / 1 | 414.967 | 412.512 | +2.455 | +1.042129 | -5.236 | +7.477655 |
+| 2 | 3 / 4 | 412.901 | 425.833 | -12.932 | +5.215129 | -5.788 | -2.574654 |
+| 3 | 6 / 5 | 458.435 | 416.867 | +41.568 | -0.523525 | +15.492 | +27.363258 |
+| 4 | 7 / 8 | 394.682 | 404.263 | -9.581 | -4.292201 | -0.602 | -7.757486 |
+
+There is no stable T advantage. In slow T6, the source callback and approximate
+Audio envelope are slightly faster than S5 (-0.523525/-0.579255 ms), while four
+common-read sums grow 28.833825 ms, SQL wall union grows 31.176790 ms and the
+coverage remainder grows 10.391210 ms. COMMIT union contributes only +1.072418 ms.
+The unfavorable window remains included. T6 is slow despite one stable data PID;
+route stability alone does not establish performance. Source routes differ in
+pair 3, further limiting a per-source client/server comparison.
+
+The preallocated collector removes the first experiment's measured slice-growth
+confound for both paths, but changes their common observation environment.
+Absolute time/allocation differences between the two products are not isolated
+code gains. CPU endpoints remain wider than the job and include observer work;
+query-PID identity/runtime coverage is complete, but scheduler wait/timeslices
+are still null. CPU totals, GC estimates and SQL wall coverage remain separate
+views. This product does not confirm a poolRow-cursor cause or qualify T as a fix.
+
+## T6 to T7: equal observed command work, different execution cost
+
+The adjacent controls execute the same T path on the same Store/schema/pools.
+Both have 883 application callbacks and 67 fingerprints; every fingerprint has
+the same count and final RowsAffected distribution, with no query errors. Each
+full-phase histogram is `{0:87, 1:794, 32:2}`; the two 32s are SELECT results.
+Direct items/metadata no-op DML affects zero rows. No image or embedded-cache DML
+occurs. Expected job/library/activity bookkeeping changes rows equally in count;
+both create two temporary tables, ANALYZE once and drop two tables.
+
+| Metric | T6 | T7 | T7 minus T6 |
+| --- | ---: | ---: | ---: |
+| Job, ms | 458.435000 | 394.682000 | -63.753000 |
+| Application SQL union, ms | 376.648353 | 328.001410 | -48.646943 |
+| COMMIT union, ms | 26.030706 | 28.033447 | +2.002741 |
+| Go user/system CPU total, ms | 181.034000 | 157.411000 | -23.623000 |
+| Actual query-backend CPU, ms | 303.262250 | 257.729811 | -45.532439 |
+
+Lookup/bitmap use the same data PID throughout both windows; media/images use
+the same owner PID. All four common-read medians and sums fall in T7, largely
+after the source blocks. The approximate Audio envelope falls only 2.621414 ms,
+compared with the job's 63.753 ms (13.9067%) decline. COMMIT coverage increases,
+so smaller COMMIT coverage is not the explanation. The independent terminal
+observation increases 0.100878 ms within the original polling boundary.
+
+Both windows have four GCs; allocation differs by only 238,352 bytes. Query
+capacity stays 32,768 and there is no Prepare. Those facts, small pool/GC pause
+differences and CPU totals are not additive explanations of job wall time.
+
+Equal SQL counts and final command-row distributions exclude observed extra
+commands or final affected rows. They do not establish identical parameters,
+plans, planning/executor cost, physical page activity or temporary-CTE insertion
+work: that CTE's outer SELECT returns one while its inner inserted count was not
+captured. Same PIDs do not establish identical scheduling or CPU conditions.
+The data narrow the question but prove neither a hardware cause nor the cause
+of the historical candidate regression.
+
+## T6/T7 sequence proof and remaining workload limits
+
+A separate frozen appendix matches all 883 application callbacks ordinal by
+ordinal in template, physical PID, final RowsAffected and error flag. Record
+index and QueryStart ordering agree. The 869 callbacks intersecting each job
+also have identical selected template sequences. All 32 source queries occur
+at ordinals 55, 58, ..., 148; first lookup is 53 and first following image
+comparison 167 in both windows. A changed observed callback order/population,
+PID sequence or row-tag sequence therefore does not explain this T6/T7 change.
+
+The scanner calls File.ReadDir(64) without an explicit filename sort. Identical
+recorded templates and unchanged directory membership do not prove the same
+file/argument at each ordinal; the capture contains no such arguments. The
+later equality contract's ORDER BY does not govern scan traversal. The middle
+observer query also interleaves after 431 application starts in T6 versus 552
+in T7. Each scan creates fresh job/generation and temporary-table state. No
+argument, plan or physical-cost equivalence is inferred from the sequence proof.
+
+## Third mechanism product: a favorable association under a new observer
+
+One final independently frozen product reused the second product's effective
+Go/source bytes and complete STTS/STTS workload. The new external 20 ms CPU
+observer changes the measurement environment. All thirteen phase observations,
+the equality contract and Store.Close qualified and were exported.
+
+All eight controls have 883 application callbacks, 67 fingerprints, 32 single
+snapshot SELECTs, zero application Prepare and fixed query/Prepare capacities
+32768/150. Fingerprint counts, final RowsAffected distributions and application
+template order agree across controls. Image/cache keys/xmin and the original
+no-probe/no-DML guards remain. Equal template order still does not establish
+identical arguments, temporary-relation state or plans.
+
+All deltas below are T minus S. The eight original jobs and all four fixed
+contrasts are retained; the prior product's mixed directions remain unchanged.
+
+| Pair | T/S windows | T job, ms | S job, ms | Job delta, ms | Go endpoint CPU delta, ms | Actual-query PG CPU delta, ms |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| 1 | 2 / 1 | 405.117 | 452.296 | -47.179 | -25.264 | -29.331505 |
+| 2 | 3 / 4 | 399.957 | 464.952 | -64.995 | -54.440 | -29.275962 |
+| 3 | 6 / 5 | 402.666 | 424.690 | -22.024 | -12.423 | -14.373959 |
+| 4 | 7 / 8 | 392.137 | 411.026 | -18.889 | -18.532 | -3.131441 |
+
+Source callback and approximate Audio envelope durations also fall in all four
+contrasts. Much of the job difference remains outside Audio. Reverse observations
+are retained: pair 4 terminal rises 1.086496 ms and image-read sum rises
+0.682280 ms; pair 2/4 allocation rises 16,024/46,128 bytes. CPU endpoints remain
+wider than jobs and include observer work. T2 has an observer-only backend in
+its actual-query CPU total; that PID is excluded from application placement.
+CPU, GC estimates and wall coverage are not combined into an exclusive partition.
+
+This is a consistent association inside this observed process, not a portable
+optimization estimate, poolRow-cursor isolation or replacement for either the
+preceding mixed process or historical N=3 acceptance. No eight-window causal fit,
+cross-case speed subtraction or favorable re-pairing is used.
+
+## CPU conditions: observed variability, limited placement attribution
+
+The actual before/after clock anchors give a conservative guest-minus-host hull
+[+11.005488, +75.686960] ms, width 64.681472 ms. Analysis retains possible host
+envelopes and guaranteed interiors rather than using a precise midpoint. A stable
+observed backend-to-host link requires all bracketed placement observations across
+its full possible alignment range to agree. That rule succeeds for only 3 of
+423 complete application-backend observations, and 3 of 317 after-source/post-Audio
+observations. Even these are sampled positions, not continuous residency.
+
+All 423 application-PID reads inside the controls succeed. The 177 not_present
+records begin 203.077354 ms after the final control ended, so they are not gaps
+inside the application control windows. Physical identities remain stable;
+first registration still does not prove an earlier atomic identity. Both
+scheduler settings remain disabled, leaving wait/timeslices null.
+
+Observed VM placement varies. Broad reported-frequency medians are all about
+5.05 GHz, and low values also occur in fast T windows. Static maximum-frequency
+groups are not newly measured core types, and the cpufreq driver's semantics
+were not recorded. Sampled lastCPU and sysfs frequency cannot establish effective
+execution frequency, task residency, cycles or a slow-core explanation.
+
+Fast T2 has 13 aggregate steal ticks, 12 on guest CPU 9. Its runtime-advanced
+application-PG observations show other CPUs, while Go-thread placement was not
+sampled. This prevents assigning that aggregate stolen CPU-time to the observed
+SQL critical path, but does not exclude unobserved Go execution on CPU 9. Slow
+S1/S4 have lower steal totals; aggregate steal does not consistently explain the
+ordering. Neither these facts nor sparse placement links prove a hardware cause
+or exclude code-induced pacing and changing execution cost.
+
+The adjunct itself uses approximately 3.81% of one guest CPU and 4.30% of one
+host CPU over different sampler lifetimes. These measured observer costs can
+perturb execution; they are not deducted from application CPU or used to normalize
+old acceptance times. All controls, ambiguous mappings and null fields remain.
+The new observation improves context but leaves the main mechanism unresolved.
+
+## Decision and bounded next step
+
+C and T remain withheld. Direct source savings and a mode association in some
+conditions are insufficient to establish stable end-to-end benefit or the cause
+of the old removal regressions. No shared setting was changed and no further
+product is selected. Additional unrestricted benchmark rounds would not resolve
+the missing attribution.
+
+If work continues, select a bounded function/server-execution profile or
+instructions/cycles observation with explicit intervals, to distinguish extra
+work from changed execution conditions per unit of work. Per-parameter plans,
+PMU evidence and Go-worker thread coverage are absent here. Do not introduce a
+production fix or assign CPU/hardware causality before that distinction is made.
+
+## Actual closeout and evidence
+
+All three products and observers exited. The final source/export/closure receipts
+are hash verified, with no extra products or replay. Actual cleanup reclaimed
+the inactive private compiler cache from 330,342,400 to 8,192 bytes, owned scratch,
+three empty ext4 fixture directories and 12 guest/14 host temporary copies whose
+independent evidence was retained. Source/common backings, raw captures, matching
+binaries, receipts, shared Go build/module caches and protected service/VM
+identities remain. Reserve 403374 is unchanged. Final persistent availability is
+330,231,808 bytes and guest available memory is 6,639,820,800 bytes; these separate
+snapshots are not attributed wholly to cleanup. No runtime work remains active.
+
+Evidence root: `.artifacts/embedded-source-mechanism-20261007`. The three
+independent product export SHA-256 values are:
+
+- First: `ed8deeefd2647073a27784ff1cf935ede9d23593613dbf0ab358015823ef0fb5`.
+- Second: `85ebb8a6f8476e6c41e7fd1d9abc4de5d22d81ec67fecb498195bf5a273a1eb6`.
+- Third: `f9914d04b94f9b859d319ff2446d089ef44c8cca3e3c90fb925a80fc4465cda7`.
+
+| Frozen artifact | SHA-256 |
+| --- | --- |
+| `mechanism-report.md` | `916d653606a2d655433537c882da505556a04a1c56151b1ef279936d653a54be` |
+| `reader-boundaries.md` | `2ad04c9c33cd04930a4b483d80bf57425e99df0b78dc1e5f392fa1c21773aec0` |
+| `analysis/crossover-report.md` | `7f2207ec19b0a9f2cb1f3a78d54624d4dc7c26b2527dd5717dec778f323c0b22` |
+| `analysis/crossover-summary.json` | `5615e4414976b5574662c14fe5215c84e0c1f0200c9dbea366c1d94ea33b8336` |
+| `analysis/pid-audio-appendix.md` | `00300826df2bed48147183230a11b010294adc7fc66433582e061c372ea7f03d` |
+| `analysis/control-pg-storage-context.md` | `8d5979732e2b09299164121de147d68afb8752bcb99c79010541693cb63f448a` |
+| `evidence/binary-inspection/inspection-receipt.json` | `ac100966c25712b0a95e88fe472531532cd117e93ef69a9a7064df0ee6153725` |
+| `pool-row-control/diagnostic-plan.md` | `20e3ff471dc6a1f6cf1a7f5b83537eb812fdd065e7850d8e0127a2f5c55dbf4e` |
+| `pool-row-control/analysis/pool-row-report.md` | `f84f9a7027e8064b0d1bf170f13c695314d37fa6f825fcfcc5522b49a4e0ee70` |
+| `pool-row-control/analysis/crossover-summary.json` | `5d0809529f077a3499ce2f62113cefaaa4698a2cd86b919ef5476906b6fc788a` |
+| `pool-row-control/analysis/t6-t7-workload-appendix.md` | `4e66e00bf816c84f7b4a8f11a051892f5c4fdee21a6ea0592d2ec51366b200ac` |
+| `pool-row-control/analysis/t6-t7-workload-appendix.json` | `fab158c9806db12c1997940a895ce517b2ccef04f7b1abfaf83f9542d2f6c1ed` |
+| `cpu-placement-observer/diagnostic-plan.md` | `8edc1a7ebaa0c447100a237e0c0b6a6afa48e64642b461af54c7727d0cb6f5e5` |
+| `pool-row-control/analysis/sequence-appendix.md` | `ef4d225ca156bc747ca7a05f2f402ee857e8df3d3ffaf39dad66583b95687c83` |
+| `pool-row-control/analysis/sequence-appendix.json` | `f4466fbe79562fb71fd09601be53b027006140bd24d04a5e976a57b15831f4d7` |
+| `cpu-placement-observer/analysis/cpu-observer-query-report.md` | `db3fc572893229764e8c5e82f31bea005e1e27ee151d715586a55f9e238f2c5c` |
+| `cpu-placement-observer/analysis/cpu-observer-query-report.json` | `1d435b0f1a7eefa9a9faba4540f0f42754e2cd64f96d1d928396ca26259308fb` |
+| `cpu-placement-observer/analysis/cpu-condition-report.md` | `7a38ccaffa8b1a7edb2f944d5e15f9662d2ebfc01cf55524c98adfcd990e2ef4` |
+| `cpu-placement-observer/analysis/cpu-condition-report.json` | `b60bda91ae284624c121b5c85381a95c1ee61438b5cbe58658ba4eb9c045df86` |
+| `cpu-placement-observer/actual-close-export-verification.json` | `5c78a9ac7ab31a5ee539a64a64e3c05027ce204168e0a41ee3c9066652084e6f` |
+| `cpu-placement-observer/closure-guest.json` | `4ab6d5a99c28ef3122d0d900a895d7a547bce62d3f9242907f9ea974fbc91123` |
+| `cpu-placement-observer/closure-host.json` | `c9f54f32df9d0b00b5b53600265910aa806df4e5b7c8692caf4278e4159948c1` |
+
+The earlier report is preserved below from main e2709386, original SHA-256
+`95107962f95a1e7a309422f6442c73305e7d76ab712843157ed10b601dffb2b5`.
+Its original stage 1-4 numbers, adverse samples, source decision and completed
+historical closure have not been rewritten. This report and the handoff are the
+only publication changes; original workspace WIP remains outside publication.
+
+---
+
 # Embedded-source removal diagnostics, 2026-10-07
 
 Seven qualified remote Go processes narrow the removal-regression question but
