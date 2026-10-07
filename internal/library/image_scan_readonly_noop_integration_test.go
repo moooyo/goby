@@ -30,6 +30,11 @@ type imageScanReadonlyFixture struct {
 
 func imageScanReadonlyPrepare(t *testing.T, populated bool, allowedCloseErrors ...error) imageScanReadonlyFixture {
 	t.Helper()
+	return imageScanReadonlyPrepareWithConfig(t, populated, nil, allowedCloseErrors...)
+}
+
+func imageScanReadonlyPrepareWithConfig(t *testing.T, populated bool, configure func(*pgxpool.Config), allowedCloseErrors ...error) imageScanReadonlyFixture {
+	t.Helper()
 	ctx, pool, original, approved, _ := libraryIntegrationStore(t, &libraryFixtureProber{})
 	media := libraryIntegrationFile(t, approved, "movies/Film.mp4", "video:image-readonly-noop")
 	poster := filepath.Join(filepath.Dir(media), "Film-poster.png")
@@ -48,6 +53,9 @@ func imageScanReadonlyPrepare(t *testing.T, populated bool, allowedCloseErrors .
 	trace := &imageScanNoopProofTrace{}
 	configuration := pool.Config()
 	configuration.ConnConfig.Tracer = trace
+	if configure != nil {
+		configure(configuration)
+	}
 	tracedPool, err := pgxpool.NewWithConfig(ctx, configuration)
 	if err != nil {
 		t.Fatal(err)

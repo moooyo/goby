@@ -179,7 +179,14 @@ func (trace *imageScanNoopProofTrace) TraceQueryStart(ctx context.Context, conn 
 	if conn != trace.authority.owner.Load() || !strings.Contains(data.SQL, "/* image_catalog_unchanged */") || len(data.Args) == 0 {
 		return ctx
 	}
-	itemID, ok := data.Args[0].(string)
+	args := data.Args
+	if _, ok := args[0].(pgx.QueryExecMode); ok {
+		args = args[1:]
+	}
+	if len(args) == 0 {
+		return ctx
+	}
+	itemID, ok := args[0].(string)
 	trace.mu.Lock()
 	matched := ok && itemID == trace.itemID
 	trace.mu.Unlock()

@@ -128,7 +128,7 @@ func (control *scanQueryPlanControl) configure(t *testing.T, config *pgxpool.Con
 
 func (control *scanQueryPlanControl) bind(t *testing.T, store *Store) {
 	t.Helper()
-	if store.scanMediaFactsReadMode != pgx.QueryExecModeCacheStatement || store.scanPooledReadMode != pgx.QueryExecModeCacheStatement {
+	if store.scanOwnedReadMode != pgx.QueryExecModeCacheStatement || store.scanPooledReadMode != pgx.QueryExecModeCacheStatement {
 		t.Fatal("the production constructor did not select the owner and pooled scan read policies")
 	}
 	owner := store.ownership.conn.Conn().Config()
@@ -189,18 +189,18 @@ func (control *scanQueryPlanControl) observeResult(t *testing.T, job Job, probes
 func (control *scanQueryPlanControl) runControls(t *testing.T, store *Store, scan func(string, bool, int64)) {
 	t.Helper()
 	// scan returns only after worker retirement and the original tuple guards.
-	// Owner media facts and pooled ordinary lookup/bitmap reads switch together. Both caches remain populated.
+	// Owner media/image reads and pooled ordinary lookup/bitmap reads switch together. Both caches remain populated.
 	// First D descriptions remain labelled; this is not a clean cold or lookup-only acceptance comparison.
 	for index, mode := range scanQueryPlanOrder {
 		selected := pgx.QueryExecModeCacheStatement
 		if mode == "D" {
 			selected = pgx.QueryExecModeCacheDescribe
 		}
-		store.scanMediaFactsReadMode, store.scanPooledReadMode = selected, selected
+		store.scanOwnedReadMode, store.scanPooledReadMode = selected, selected
 		control.mode = mode
 		scan(fmt.Sprintf("query_plan_%02d_%s", index+1, mode), false, 0)
 	}
-	store.scanMediaFactsReadMode = pgx.QueryExecModeCacheStatement
+	store.scanOwnedReadMode = pgx.QueryExecModeCacheStatement
 	store.scanPooledReadMode = pgx.QueryExecModeCacheStatement
 	control.mode = "C"
 }

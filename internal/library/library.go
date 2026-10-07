@@ -179,8 +179,8 @@ type Store struct {
 
 	// Zero preserves the physical connection's default mode. These owner/pool read
 	// choices are fixed at construction and never cache source or presence data.
-	scanMediaFactsReadMode pgx.QueryExecMode
-	scanPooledReadMode     pgx.QueryExecMode
+	scanOwnedReadMode  pgx.QueryExecMode
+	scanPooledReadMode pgx.QueryExecMode
 
 	// Source admission has its own lock so shutdown never waits for Store.mu.
 	mediaSourceOwners mediaSourceOwnerRuntime

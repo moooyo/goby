@@ -92,17 +92,20 @@ func (state *scanState) imageCatalogReplacementUnchanged(itemID string, replaceT
 	// while its statement is in flight. Consume the result before checking it.
 	readCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 20*time.Second)
 	defer cancel()
+	args := []any{state.store.scanOwnedReadMode, itemID, state.library.ID, state.root.id, replaceTypes,
+		replacement.types, replacement.indexes, replacement.paths, replacement.identities, replacement.hashes,
+		replacement.sizes, replacement.modified, replacement.widths, replacement.heights, replacement.mimes,
+		expected.root.path, expected.root.allowedPath, expected.root.relativePath}
+	if state.store.scanOwnedReadMode == 0 {
+		args = args[1:]
+	}
 	var mappingMatches, changed bool
 	err := state.store.ownership.conn.QueryRow(readCtx, `/* image_catalog_unchanged */ `+imageCatalogReplacementComparisonSQL+`
 	SELECT (r.path, r.allowed_path, r.relative_path)
 		IS NOT DISTINCT FROM ($15::text, $16::text, $17::text), comparison.changed
 		FROM items i JOIN library_roots r ON r.id = i.root_id AND r.library_id = i.library_id
 		CROSS JOIN comparison
-		WHERE i.id = $1 AND i.library_id = $2 AND i.root_id = $3`,
-		itemID, state.library.ID, state.root.id, replaceTypes, replacement.types, replacement.indexes, replacement.paths,
-		replacement.identities, replacement.hashes, replacement.sizes, replacement.modified,
-		replacement.widths, replacement.heights, replacement.mimes,
-		expected.root.path, expected.root.allowedPath, expected.root.relativePath).Scan(&mappingMatches, &changed)
+		WHERE i.id = $1 AND i.library_id = $2 AND i.root_id = $3`, args...).Scan(&mappingMatches, &changed)
 	err = state.store.ownershipErrorLocked(err)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return false, ErrNotFound

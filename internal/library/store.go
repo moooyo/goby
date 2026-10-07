@@ -69,7 +69,7 @@ func New(pool *pgxpool.Pool, prober Prober, allowedRoots []string, options ...Op
 	s.ownership = ownership
 	// The reserved owner's physical configuration remains fixed for this Store.
 	if ownership.conn.Conn().Config().StatementCacheCapacity > 0 {
-		s.scanMediaFactsReadMode = pgx.QueryExecModeCacheStatement
+		s.scanOwnedReadMode = pgx.QueryExecModeCacheStatement
 	}
 	// Per-connection configuration hooks can change pooled cache capacities.
 	// Preserve defaults when BeforeConnect or a connection tracer can do so.

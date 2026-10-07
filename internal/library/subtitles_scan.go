@@ -279,8 +279,8 @@ func (state *scanState) readEmptySubtitleScanLocked(ctx context.Context, itemID,
 	var modified *time.Time
 	var mediaJSON []byte
 	var active bool
-	args := []any{state.store.scanMediaFactsReadMode, itemID, state.library.ID, state.root.id, filepath.ToSlash(relative)}
-	if state.store.scanMediaFactsReadMode == 0 {
+	args := []any{state.store.scanOwnedReadMode, itemID, state.library.ID, state.root.id, filepath.ToSlash(relative)}
+	if state.store.scanOwnedReadMode == 0 {
 		args = args[1:]
 	}
 	err := state.store.ownership.conn.QueryRow(readCtx, `SELECT i.file_identity, i.file_size, i.modified_at, i.media,

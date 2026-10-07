@@ -1,3 +1,32 @@
+# Unchanged-image query plan reuse accepted, 2026-10-08
+
+The image_catalog_unchanged read now reuses the existing reserved owner's
+prepared-plan policy. scanOwnedReadMode is the shared owner-mode field; its
+constructor capacity rule and fallback remain. SQL, all seventeen data
+parameters, writer behavior, authorization/cancellation and final source proof
+are unchanged. No result cache, new lock or transaction relaxation was added.
+
+Remote verification passes 15 top-level tests/32 subtests with zero skips and
+four first ABBA performance processes/twenty original phases. Warm target-query
+callback sums fall 61.063 to 23.716 ms and 57.587 to 25.692 ms (136 reads each);
+warm job changes are -16.6679%/-8.6111%. All eight noncold target comparisons
+improve, with matching SQL multisets, work/results, parameters and traversal.
+Cold has zero target reads and retains a +212.322 ms second contrast. Whole-job
+changes are not wholly credited to image planning, and no tail or memory-saving
+claim is made. Retained-plan memory and the final historical cumulative version
+comparison remain separate unselected work.
+
+One candidate build and five native invocations completed. Candidate binary is
+922b09a71ae40d023915ea65f4a06444df0d0116f7885b953048e9abdabaa378;
+baseline remains 64703882. Fifty-seven exported files match their hashes and
+remote task resources are actually closed, preserving shared caches and ext4
+corpus. The separate low-level COMMIT investigation remains stopped; this task
+does not resume it. Original workspace WIP is excluded from measured source.
+
+Details: [image plan reuse report](scan-image-plan-reuse-20261008.md).
+
+---
+
 # COMMIT wait-domain evidence; sustained historical trigger unresolved, 2026-10-08
 
 Selected diagnostic acquisitions are complete; attribution of the sustained
