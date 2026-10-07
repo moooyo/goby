@@ -1,3 +1,53 @@
+# Real-version comparison and accepted S/lookup scans, 2026-10-07
+
+The selected tasks 1/3/4 are complete. Task 2 retained-plan-memory remains
+unselected. Stage1 builds the genuine previous 08ed/runtime6386 and current
+5f/runtimee2 binaries with one common two-file observer and restored ext4 corpus.
+Its pre1/current1/current2/pre2 order yields two fixed correlated contrasts per
+phase. Media and bitmap callbacks each improve 10/10, but whole jobs only 4/10;
+all current2 jobs are slower, including force +1300.342 ms. COMMIT union adds
+1172.784257 ms: only +0.095534 ms is in 32 matched source COMMITs and
++1172.688723 ms remains. This locates callbacks, not WAL/CPU/storage/scheduler
+cause, and does not establish stable overall version acceleration.
+
+Stage3 S passes the fixed gate: 23 functional tests/72 subtests/zero skips and
+four native cases/twenty phases. Warm improves 5.7991%/9.6118%, removed
+3.4024%/19.6508%; first-order image_changed +2.2074% is retained, as are broad
+allocation/GC and Audio-boundary reversals. Source callbacks are 128 to 32,
+with 32 fewer read-only BEGIN/COMMIT pairs and 96 fewer SQL commands per phase;
+remaining SQL-template multisets/writes/probes/catalog/paths match. Combined
+SQL/Scan errors now propagate; missing or invalid snapshots still warn and skip.
+The old n=3 decline is preserved beside this newer-baseline decision.
+
+Stage4 L passes: 30 functional tests/91 subtests/zero skips and the four first
+performance cases. All ten job/ordinary-lookup contrasts improve. Warm jobs
+change -5.0415%/-35.4549% with lookup -34.766060/-44.904403 ms; removed jobs
+change -10.6919%/-32.7511% with lookup -40.072359/-39.461932 ms. SQL multisets,
+32 source reads, work/catalog/path/corpus guards match. Terminal/GC adverse
+samples remain. Second-order large remaining-COMMIT swings are not entirely
+credited to S or lookup; stage ratios are not multiplied or treated as tail data.
+
+The unique lookup build succeeded. Attempt-01's functionality was interrupted
+at exit -15 when `du` encountered a normally vanished TempDir descendant;
+performance had not started. This is a retained harness failure, not a completed
+product PASS/FAIL. Only descendant ENOENT was ignored; root/other errors remain
+fatal. Attempt-02 used the same source/binary/budget without rebuilding or replacing
+performance samples. Total: four builds, fifteen native invocations (fourteen
+qualified, one harness interruption), twelve performance cases. Actual closeout
+removed 111,276,032 bytes of verified RAM duplicates/owned compiler scratch;
+source/shared ext4 corpus/local originals/shared caches/data remain. Workers
+exited; PG/Goby/QEMU/reserve403374 unchanged; final available 725,893,120 bytes.
+
+Accepted exact source chain: 5f992b6d -> d869b96d (S4) -> 515d2ba8 (L6).
+Only those ten source/test files are selected; old cd/T branches are not imported.
+[This report](scan-version-hotspots-20261007.md) contains all ten Stage1 contrasts,
+S/L decisions and external evidence links. Earlier reports and all adverse raw
+remain unchanged. Final delivery identity is recorded in the external publication
+receipt. Preserve fresh original D WIP/index/current hashes, including scan.go;
+never overwrite them with historical 199/56 bytes. No additional optimization or
+memory investigation is selected by this handoff.
+
+---
 # Narrow scan query-plan reuse accepted and closed, 2026-10-07
 
 Accepted source `e2f262d846e20bc058e95f71abe6f2bf1699c691` is a direct child of
