@@ -1,3 +1,49 @@
+# COMMIT wait-domain evidence; sustained historical trigger unresolved, 2026-10-08
+
+Selected diagnostic acquisitions are complete; attribution of the sustained
+historical regression remains open. Production source remains c5b5b701: zero builds/source changes or transaction/authorization/durability
+relaxation, no PG/VM setting change. Plan-memory/image-noop work is not selected.
+All three blocks reuse the same retained final lookup binary 64703882.
+
+The repaired fixed continuous block has four qualified processes/twenty phases.
+Three cold callbacks (28.794359/24.220142/29.107171 ms) have repeated strict
+active IO/WalSync samples (6/5/5), joined by tag/PID/backend_start/query_start/xid
+and full observer brackets. This confirms a server WAL-sync wait domain in those
+specific events; it does not identify their device/scheduling trigger or explain
+all historical 205 large tails. Query-start is only 32-44 us late; suffixes
+1.229/0.968/4.824 ms after the last strict request start remain unclassified,
+not precise client tails. Phase medians stay 1.036-1.318 ms; no sustained historical
+4-7 ms regime returns, and cold4 max is 6.399 ms.
+
+There are 69 strict points/56 callbacks, 505 point-only observations and five
+ambiguous rows; 33 idle points have zero fully contained idle brackets. Counts
+are not multiplied by cadence. First observed autovacuum/checkpointer activity
+follows the cases; these observations give no contemporaneous maintenance
+support and do not exclude every checkpoint or scheduling effect. Coarse IO
+bins, no new host clock anchor, and observer-only
+owner_cgroup zero-throttle counters cannot directly attribute NVMe latency or
+exclude PostgreSQL/client scheduling.
+The final PG log check finds no logged active-checkpoint overlap with the repaired
+17:51:20.108849726-17:51:55.178845265 UTC block; the next checkpoint begins
+11.107 seconds after its final case. Other IO/scheduling causes remain unresolved.
+
+
+The spaced four-case block, partial continuous two-qualified/third JSONDecodeError
+interruption/fourth not-started, and repaired four are kept separate. Total ledger:
+zero builds, eleven actual natives (ten qualified, one collector interruption),
+fifty complete phases, plus one preparation error with zero native. No failed case
+or historical sample was replaced and no blocks are pooled into version speedup.
+
+All blocks are actually closed; owned workers/PG observer tags are gone. Original
+corpus/source/local binary/raw, all attempts/shared caches/data remain; task RAM
+is zero, shared cache 6,158,499,840 bytes, final disk availability 724,320,256 bytes.
+PG/Goby/QEMU/reserve403374 remain unchanged. [This report](scan-commit-latency-20261008.md)
+binds detailed evidence and limits. Further diagnosis would need per-backend
+sync/scheduling and controlled preceding-write evidence; no new tools/runtime or
+production optimization is selected here. Final docs-only identity and fresh
+original WIP/index preservation belong to the external publication receipt.
+
+---
 # Real-version comparison and accepted S/lookup scans, 2026-10-07
 
 The selected tasks 1/3/4 are complete. Task 2 retained-plan-memory remains
