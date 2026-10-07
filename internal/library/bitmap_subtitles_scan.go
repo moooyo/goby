@@ -164,7 +164,11 @@ func (state *scanState) scanBitmapSubtitlesAttempt(itemID, relative string, prob
 		selected := index.bitmap.selection(relative)
 		if len(selected.present) == 0 && !selected.overflow {
 			var active bool
-			if err := state.store.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM item_bitmap_subtitles WHERE item_id=$1 AND active)`, itemID).Scan(&active); err != nil {
+			args := []any{state.store.scanBitmapPresenceReadMode, itemID}
+			if state.store.scanBitmapPresenceReadMode == 0 {
+				args = args[1:]
+			}
+			if err := state.store.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM item_bitmap_subtitles WHERE item_id=$1 AND active)`, args...).Scan(&active); err != nil {
 				return err
 			}
 			if !active {

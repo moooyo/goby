@@ -279,13 +279,17 @@ func (state *scanState) readEmptySubtitleScanLocked(ctx context.Context, itemID,
 	var modified *time.Time
 	var mediaJSON []byte
 	var active bool
+	args := []any{state.store.scanMediaFactsReadMode, itemID, state.library.ID, state.root.id, filepath.ToSlash(relative)}
+	if state.store.scanMediaFactsReadMode == 0 {
+		args = args[1:]
+	}
 	err := state.store.ownership.conn.QueryRow(readCtx, `SELECT i.file_identity, i.file_size, i.modified_at, i.media,
 		(EXISTS(SELECT 1 FROM item_subtitles s WHERE s.item_id = i.id AND s.active)
 		 OR EXISTS(SELECT 1 FROM item_bitmap_subtitles s WHERE s.item_id = i.id AND s.active))
 		FROM items i JOIN library_roots r ON r.id = i.root_id AND r.library_id = i.library_id
 		WHERE i.id = $1 AND i.library_id = $2 AND i.root_id = $3 AND i.relative_path = $4
 		AND NOT i.is_folder AND i.media IS NOT NULL`,
-		itemID, state.library.ID, state.root.id, filepath.ToSlash(relative)).Scan(&identity, &size, &modified, &mediaJSON, &active)
+		args...).Scan(&identity, &size, &modified, &mediaJSON, &active)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return false, false, ErrNotFound
 	}

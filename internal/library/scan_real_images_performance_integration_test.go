@@ -130,6 +130,22 @@ func scanRealImageSnapshot(t *testing.T, ctx context.Context, pool *pgxpool.Pool
 // Copy this complete opt-in file unchanged to both measured revisions. Tuple
 // changes are observations: an older scanner may rewrite unchanged valid rows.
 func TestScanRealImagesPerformance(t *testing.T) {
+	runScanRealImagesPerformance(t, nil)
+}
+
+// The optional test companion preserves this driver's standalone copy contract.
+type scanRealImageQueryPlanControl interface {
+	configure(*testing.T, *pgxpool.Config, *scanRealImageTrace)
+	bind(*testing.T, *Store)
+	begin(*testing.T, string)
+	end(*testing.T, Job, time.Duration)
+	observeResult(*testing.T, Job, int64, int, int, int, int, int)
+	runControls(*testing.T, *Store, func(string, bool, int64))
+	report(*testing.T)
+}
+
+func runScanRealImagesPerformance(t *testing.T, queryPlans scanRealImageQueryPlanControl) {
+	t.Helper()
 	if os.Getenv("GOBY_TEST_SCAN_REAL_IMAGES") != "1" {
 		t.Skip("GOBY_TEST_SCAN_REAL_IMAGES=1 enables the bounded real image scan profile")
 	}
@@ -161,6 +177,9 @@ func TestScanRealImagesPerformance(t *testing.T) {
 	if !trace.disabled {
 		configuration.ConnConfig.Tracer = trace
 	}
+	if queryPlans != nil {
+		queryPlans.configure(t, configuration, trace)
+	}
 	pool, err := pgxpool.NewWithConfig(ctx, configuration)
 	if err != nil {
 		t.Fatal(err)
@@ -169,6 +188,9 @@ func TestScanRealImagesPerformance(t *testing.T) {
 	store, err := New(pool, prober, []string{root})
 	if err != nil {
 		t.Fatal(err)
+	}
+	if queryPlans != nil {
+		queryPlans.bind(t, store)
 	}
 	t.Cleanup(func() {
 		cleanup, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -298,6 +320,9 @@ func TestScanRealImagesPerformance(t *testing.T) {
 			counter.Store(0)
 		}
 		prober.maximum.Store(0)
+		if queryPlans != nil {
+			queryPlans.begin(t, phase)
+		}
 		measurement := scanPerformanceBeginMeasurement(pool)
 		calls, started := prober.calls.Load(), time.Now()
 		var job Job
@@ -317,6 +342,9 @@ func TestScanRealImagesPerformance(t *testing.T) {
 		elapsed := time.Since(started)
 		retirement := scanPerformanceWaitWorkerRetired(t, ctx, store, job.ID)
 		observation := scanPerformanceEndMeasurement(measurement, pool)
+		if queryPlans != nil {
+			queryPlans.end(t, job, elapsed)
+		}
 		wantAdded, wantUpdated := 0, 0
 		if phase == "cold" {
 			wantAdded = 160
@@ -364,6 +392,9 @@ func TestScanRealImagesPerformance(t *testing.T) {
 			t.Fatal(err)
 		}
 		t.Logf("scan_real_images_observation=%s", encoded)
+		if queryPlans != nil {
+			queryPlans.observeResult(t, job, probes, len(current), inserted, removed, changed, unchanged)
+		}
 		if taskOwned {
 			taskScanAssertChild(t, observerCtx, observer, childID, job)
 		}
@@ -390,10 +421,16 @@ func TestScanRealImagesPerformance(t *testing.T) {
 		expected[fmt.Sprintf("Group00/Movie0000.mp4:Backdrop:%d", index)] = "Group00/" + name
 	}
 	scan("image_removed", false, 0)
+	if queryPlans != nil {
+		queryPlans.runControls(t, store, scan)
+	}
 	result, err := store.QueryItems(ctx, Query{UserID: userID, ParentID: library.ID, Recursive: true,
 		IncludeItemTypes: []string{"Movie", "Audio"}, Limit: 160})
 	if err != nil || result.TotalRecordCount != 160 || len(result.Items) != 160 {
 		t.Fatalf("real image profile lost catalog items: total=%d items=%d error=%v", result.TotalRecordCount, len(result.Items), err)
 	}
 	scanPerformanceCloseMeasurementStore(t, store)
+	if queryPlans != nil {
+		queryPlans.report(t)
+	}
 }

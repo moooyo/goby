@@ -67,6 +67,17 @@ func New(pool *pgxpool.Pool, prober Prober, allowedRoots []string, options ...Op
 		return nil, err
 	}
 	s.ownership = ownership
+	// The reserved owner's physical configuration remains fixed for this Store.
+	if ownership.conn.Conn().Config().StatementCacheCapacity > 0 {
+		s.scanMediaFactsReadMode = pgx.QueryExecModeCacheStatement
+	}
+	// Per-connection configuration hooks can change pooled cache capacities.
+	// Preserve defaults when BeforeConnect or a connection tracer can do so.
+	poolConfig := pool.Config()
+	_, connectionTracer := poolConfig.ConnConfig.Tracer.(pgx.ConnectTracer)
+	if poolConfig.BeforeConnect == nil && !connectionTracer && poolConfig.ConnConfig.StatementCacheCapacity > 0 {
+		s.scanBitmapPresenceReadMode = pgx.QueryExecModeCacheStatement
+	}
 	s.ctx, s.cancel = context.WithCancel(context.Background())
 	if settings.scanEvidence != nil {
 		scope, scopeErr := s.scanEvidenceScope(ctx, settings.scanEvidence.ServerID)

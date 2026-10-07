@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/moooyo/goby/internal/artwork"
 	"github.com/moooyo/goby/internal/media"
@@ -175,6 +176,11 @@ type Store struct {
 	workers             sync.WaitGroup
 	fileDeletions       sync.WaitGroup
 	done                chan struct{}
+
+	// Zero preserves the physical connection's default mode. These two read
+	// choices are fixed at construction and never cache source or presence data.
+	scanMediaFactsReadMode     pgx.QueryExecMode
+	scanBitmapPresenceReadMode pgx.QueryExecMode
 
 	// Source admission has its own lock so shutdown never waits for Store.mu.
 	mediaSourceOwners mediaSourceOwnerRuntime
