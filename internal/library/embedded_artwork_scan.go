@@ -3,9 +3,11 @@ package library
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/artwork"
@@ -20,6 +22,61 @@ const maxEmbeddedArtworkCacheEntries int64 = 25000
 // revisions. Publication still records the current external projection stamp.
 const embeddedArtworkScanSourceSQL = `md5(jsonb_build_array(i.root_id,
 	i.relative_path,i.file_identity,i.file_size,extract(epoch FROM i.modified_at),i.media)::text)`
+
+// Source facts and cache metadata share one statement snapshot. The source
+// read needs only cache reuse fields and never loads the artwork bytes.
+const embeddedArtworkScanSnapshotSQL = `/* embedded_artwork_scan_snapshot */ SELECT i.id, i.library_id, i.type, i.path, i.media,
+	i.relative_path, i.file_identity, i.file_size, i.modified_at,
+	r.id, r.library_id, r.path, r.allowed_path, r.relative_path, r.binding_revision,
+	` + embeddedArtworkSourceRevisionSQL + `,` + embeddedArtworkScanSourceSQL + `,
+	COALESCE(e.source_revision,''),COALESCE(e.status,''),COALESCE(e.extraction_version,0)
+	FROM items i JOIN library_roots r ON r.id = i.root_id AND r.library_id = i.library_id
+	LEFT JOIN item_embedded_artwork e ON e.item_id = i.id
+	WHERE i.id = $1 AND NOT i.is_folder AND i.media IS NOT NULL
+	AND i.type IN ('Movie', 'Episode', 'Video', 'Audio') AND `
+
+type embeddedArtworkScanSnapshot struct {
+	snapshot                                        indexedMediaSource
+	source, sourceFacts, cachedSource, cachedStatus string
+	cachedVersion                                   int
+}
+
+// A false validity result means the source is missing or has invalid indexed
+// facts. Query and scan failures remain errors rather than successful skips.
+func (s *Store) readEmbeddedArtworkScanSnapshot(ctx context.Context, itemID string) (embeddedArtworkScanSnapshot, bool, error) {
+	var result embeddedArtworkScanSnapshot
+	var modified *time.Time
+	var encoded []byte
+	snapshot := &result.snapshot
+	item := &snapshot.mediaFile.Item
+	access := unrestrictedLibraryAccess()
+	err := s.pool.QueryRow(ctx, embeddedArtworkScanSnapshotSQL+access.directSQL("i"), itemID).
+		Scan(&item.ID, &item.LibraryID, &item.Type, &item.Path, &encoded,
+			&snapshot.relativePath, &snapshot.identity, &snapshot.mediaFile.Size, &modified,
+			&snapshot.root.id, &snapshot.root.libraryID, &snapshot.root.path, &snapshot.root.allowedPath, &snapshot.root.relativePath, &snapshot.rootBindingRevision,
+			&result.source, &result.sourceFacts, &result.cachedSource, &result.cachedStatus, &result.cachedVersion)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return embeddedArtworkScanSnapshot{}, false, nil
+	}
+	if err != nil {
+		return embeddedArtworkScanSnapshot{}, false, err
+	}
+	if len(encoded) != 0 && string(encoded) != "null" {
+		item.Media = &media.Info{}
+		if err := json.Unmarshal(encoded, item.Media); err != nil {
+			return embeddedArtworkScanSnapshot{}, false, nil
+		}
+	}
+	result.snapshot, err = prepareIndexedMediaSourceSnapshot(result.snapshot, "", modified, access.canPlay)
+	if err != nil {
+		return embeddedArtworkScanSnapshot{}, false, nil
+	}
+	result.snapshot, err = finishIndexedMediaSourceSnapshot(result.snapshot)
+	if err != nil {
+		return embeddedArtworkScanSnapshot{}, false, nil
+	}
+	return result, true, nil
+}
 
 type embeddedArtworkExtractor interface {
 	ExtractEmbeddedArtwork(context.Context, *os.File, media.Info) (media.EmbeddedArtworkResult, error)
@@ -53,26 +110,16 @@ func (state *scanState) scanEmbeddedArtworkAttempt(itemID, itemType, relative st
 		state.warnings++
 		return nil
 	}
-	tx, err := state.store.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
+	read, valid, err := state.store.readEmbeddedArtworkScanSnapshot(ctx, itemID)
 	if err != nil {
 		return err
 	}
-	defer rollback(tx)
-	snapshot, err := readIndexedMediaRevalidation(ctx, tx, unrestrictedLibraryAccess(), itemID, "", false)
-	if err != nil {
+	if !valid {
 		state.warnings++
 		return nil
 	}
-	var source, sourceFacts, cachedSource, cachedStatus string
-	var cachedVersion int
-	err = tx.QueryRow(ctx, `SELECT `+embeddedArtworkSourceRevisionSQL+`,`+embeddedArtworkScanSourceSQL+`,COALESCE(e.source_revision,''),COALESCE(e.status,''),COALESCE(e.extraction_version,0)
-		FROM items i LEFT JOIN item_embedded_artwork e ON e.item_id=i.id WHERE i.id=$1`, itemID).Scan(&source, &sourceFacts, &cachedSource, &cachedStatus, &cachedVersion)
-	if err != nil {
-		return err
-	}
-	if err := tx.Commit(ctx); err != nil {
-		return err
-	}
+	snapshot := read.snapshot
+	source, sourceFacts := read.source, read.sourceFacts
 	if snapshot.root.id != state.root.id || snapshot.relativePath != filepath.ToSlash(relative) || snapshot.mediaFile.Item.Type != "Audio" {
 		state.warnings++
 		return nil
@@ -93,7 +140,7 @@ func (state *scanState) scanEmbeddedArtworkAttempt(itemID, itemType, relative st
 			state.warnings++
 			return nil
 		}
-		if source == cachedSource && cachedVersion == media.EmbeddedArtworkVersion && (cachedStatus == "ready" || cachedStatus == "none") && !state.task.job.ForceProbe {
+		if source == read.cachedSource && read.cachedVersion == media.EmbeddedArtworkVersion && (read.cachedStatus == "ready" || read.cachedStatus == "none") && !state.task.job.ForceProbe {
 			stable, cached = true, true
 			return nil
 		}

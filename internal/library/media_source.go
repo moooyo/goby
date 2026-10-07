@@ -234,6 +234,23 @@ func readIndexedMediaSource(ctx context.Context, tx pgx.Tx, access libraryAccess
 // Both complete opens and delivery revalidation use exactly the same source
 // snapshot contract before touching the filesystem.
 func completeIndexedMediaSource(ctx context.Context, tx pgx.Tx, access libraryAccess, snapshot indexedMediaSource, sourceID string, modified *time.Time, includeSubtitles bool) (indexedMediaSource, error) {
+	snapshot, err := prepareIndexedMediaSourceSnapshot(snapshot, sourceID, modified, access.canPlay)
+	if err != nil {
+		return indexedMediaSource{}, err
+	}
+	if includeSubtitles {
+		items := []Item{snapshot.mediaFile.Item}
+		if err := attachSubtitles(ctx, tx, items); err != nil {
+			return indexedMediaSource{}, err
+		}
+		snapshot.mediaFile.Item = items[0]
+	}
+	return finishIndexedMediaSourceSnapshot(snapshot)
+}
+
+// Prepare and finish are pure snapshot stages shared with internal scans. The
+// authorized read keeps optional subtitle attachment between the same checks.
+func prepareIndexedMediaSourceSnapshot(snapshot indexedMediaSource, sourceID string, modified *time.Time, canPlay bool) (indexedMediaSource, error) {
 	item := snapshot.mediaFile.Item
 	if item.Media == nil || len(item.Media.Streams) == 0 {
 		return indexedMediaSource{}, ErrNotFound
@@ -248,20 +265,18 @@ func completeIndexedMediaSource(ctx context.Context, tx pgx.Tx, access libraryAc
 	if modified == nil || modified.IsZero() || snapshot.identity == "" || snapshot.mediaFile.Size <= 0 {
 		return indexedMediaSource{}, fmt.Errorf("%w: media source has no valid indexed snapshot", ErrUnavailable)
 	}
-	item.CanPlay = access.canPlay
-	if includeSubtitles {
-		items := []Item{item}
-		if err := attachSubtitles(ctx, tx, items); err != nil {
-			return indexedMediaSource{}, err
-		}
-		item = items[0]
-	}
+	item.CanPlay = canPlay
 	snapshot.mediaFile.Item = item
 	snapshot.mediaFile.SourceID = expectedSourceID
 	snapshot.mediaFile.ModifiedAt = modified.UTC()
+	return snapshot, nil
+}
+
+func finishIndexedMediaSourceSnapshot(snapshot indexedMediaSource) (indexedMediaSource, error) {
 	if err := validateMediaSource(snapshot); err != nil {
 		return indexedMediaSource{}, err
 	}
+	item := snapshot.mediaFile.Item
 	snapshot.mediaFile.Container = media.CanonicalContainer(*item.Media, item.Path)
 	snapshot.mediaFile.MIMEType = media.SourceMIMEType(*item.Media, item.Path)
 	snapshot.mediaFile.ETag = mediaSnapshotTag(snapshot)

@@ -19,10 +19,20 @@ import (
 
 type embeddedArtworkScanProjectionTrace struct {
 	sources, catalog, subtitles atomic.Int64
+	queries, snapshots, begins  atomic.Int64
+	statement                   atomic.Value
 }
 
 func (trace *embeddedArtworkScanProjectionTrace) TraceQueryStart(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
 	statement := strings.Join(strings.Fields(data.SQL), " ")
+	trace.queries.Add(1)
+	if strings.HasPrefix(strings.ToLower(statement), "begin") {
+		trace.begins.Add(1)
+	}
+	if strings.Contains(statement, "/* embedded_artwork_scan_snapshot */") {
+		trace.snapshots.Add(1)
+		trace.statement.Store(statement)
+	}
 	if strings.Contains(statement, "AND i.type IN ('Movie', 'Episode', 'Video', 'Audio')") {
 		trace.sources.Add(1)
 		if strings.Contains(statement, "catalog_entities") {
@@ -44,6 +54,24 @@ func (trace *embeddedArtworkScanProjectionTrace) reset() {
 	trace.sources.Store(0)
 	trace.catalog.Store(0)
 	trace.subtitles.Store(0)
+	trace.queries.Store(0)
+	trace.snapshots.Store(0)
+	trace.begins.Store(0)
+	trace.statement.Store("")
+}
+
+func (trace *embeddedArtworkScanProjectionTrace) assertSnapshotProjection(t *testing.T) {
+	t.Helper()
+	if trace.sources.Load() != 1 || trace.snapshots.Load() != 1 || trace.catalog.Load() != 0 || trace.subtitles.Load() != 0 {
+		t.Fatalf("embedded scan did not use one narrow source/cache snapshot: sources=%d snapshots=%d catalog=%d subtitles=%d",
+			trace.sources.Load(), trace.snapshots.Load(), trace.catalog.Load(), trace.subtitles.Load())
+	}
+	statement, _ := trace.statement.Load().(string)
+	for _, fragment := range []string{"e.content", "catalog_entities", "item_metadata_state", "item_intro_state", "item_subtitles", "item_owned_subtitles", "item_bitmap_subtitles", "FOR UPDATE", "FOR SHARE", "FROM users", "FROM sessions", "FROM application_keys"} {
+		if strings.Contains(statement, fragment) {
+			t.Fatalf("embedded source snapshot loaded unused bytes, projection, lock, or authority: %q", fragment)
+		}
+	}
 }
 
 func TestScanEmbeddedArtworkUsesSourceProjectionWithoutCatalogOrSubtitles(t *testing.T) {
@@ -102,10 +130,7 @@ func TestScanEmbeddedArtworkUsesSourceProjectionWithoutCatalogOrSubtitles(t *tes
 					if job.Error != "" || job.Scanned != 1 || job.Added != phase.added || job.Updated != phase.updated {
 						t.Fatalf("source projection changed accepted scan progress: %+v", job)
 					}
-					if trace.sources.Load() != 1 || trace.catalog.Load() != 0 || trace.subtitles.Load() != 0 {
-						t.Fatalf("embedded scan loaded unused catalog or subtitles: sources=%d catalog=%d subtitles=%d",
-							trace.sources.Load(), trace.catalog.Load(), trace.subtitles.Load())
-					}
+					trace.assertSnapshotProjection(t)
 					if probes, extractions := prober.counts(); probes != phase.probes || extractions != phase.extractions {
 						t.Fatalf("source projection changed probe or extraction reuse: probes=%d/%d extractions=%d/%d",
 							probes, phase.probes, extractions, phase.extractions)
