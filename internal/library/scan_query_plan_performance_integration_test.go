@@ -128,8 +128,8 @@ func (control *scanQueryPlanControl) configure(t *testing.T, config *pgxpool.Con
 
 func (control *scanQueryPlanControl) bind(t *testing.T, store *Store) {
 	t.Helper()
-	if store.scanMediaFactsReadMode != pgx.QueryExecModeCacheStatement || store.scanBitmapPresenceReadMode != pgx.QueryExecModeCacheStatement {
-		t.Fatal("the unchanged production constructor did not select both local statement-cache exceptions")
+	if store.scanMediaFactsReadMode != pgx.QueryExecModeCacheStatement || store.scanPooledReadMode != pgx.QueryExecModeCacheStatement {
+		t.Fatal("the production constructor did not select the owner and pooled scan read policies")
 	}
 	owner := store.ownership.conn.Conn().Config()
 	if owner.DefaultQueryExecMode != pgx.QueryExecModeCacheDescribe || owner.StatementCacheCapacity != 512 ||
@@ -189,19 +189,19 @@ func (control *scanQueryPlanControl) observeResult(t *testing.T, job Job, probes
 func (control *scanQueryPlanControl) runControls(t *testing.T, store *Store, scan func(string, bool, int64)) {
 	t.Helper()
 	// scan returns only after worker retirement and the original tuple guards.
-	// Both caches remain populated. The first D use can prepare its description;
-	// it is retained and labelled, not discarded or called a clean cold control.
+	// Owner media facts and pooled ordinary lookup/bitmap reads switch together. Both caches remain populated.
+	// First D descriptions remain labelled; this is not a clean cold or lookup-only acceptance comparison.
 	for index, mode := range scanQueryPlanOrder {
 		selected := pgx.QueryExecModeCacheStatement
 		if mode == "D" {
 			selected = pgx.QueryExecModeCacheDescribe
 		}
-		store.scanMediaFactsReadMode, store.scanBitmapPresenceReadMode = selected, selected
+		store.scanMediaFactsReadMode, store.scanPooledReadMode = selected, selected
 		control.mode = mode
 		scan(fmt.Sprintf("query_plan_%02d_%s", index+1, mode), false, 0)
 	}
 	store.scanMediaFactsReadMode = pgx.QueryExecModeCacheStatement
-	store.scanBitmapPresenceReadMode = pgx.QueryExecModeCacheStatement
+	store.scanPooledReadMode = pgx.QueryExecModeCacheStatement
 	control.mode = "C"
 }
 
@@ -211,7 +211,7 @@ func scanQueryPlanFamily(sql string) string {
 		return "bitmap"
 	case strings.HasPrefix(sql, "SELECT i.file_identity, i.file_size, i.modified_at, i.media,") && strings.HasSuffix(sql, "AND NOT i.is_folder AND i.media IS NOT NULL"):
 		return "media"
-	case strings.HasPrefix(sql, "SELECT "+storedFileColumns+", (") && strings.HasSuffix(sql, "FROM items WHERE root_id = $1 AND relative_path = $2"):
+	case sql == "SELECT "+storedFileColumns+", ("+ordinaryItemSQL("items")+") FROM items WHERE root_id = $1 AND relative_path = $2":
 		return "lookup"
 	case strings.Contains(sql, imageCatalogSnapshotProjection):
 		return "images"
@@ -269,7 +269,7 @@ func (control *scanQueryPlanControl) TraceQueryStart(ctx context.Context, conn *
 	record := scanQueryPlanRecord{Kind: "query", Family: family, template: index, Ordinal: phase.Queries,
 		BackendPID: conn.PgConn().PID(), started: started, StartedUnixNS: started.UnixNano()}
 	args := data.Args
-	if family == "media" || family == "bitmap" {
+	if family == "lookup" || family == "media" || family == "bitmap" {
 		if len(args) == 0 {
 			control.problem = "target query omitted its arguments"
 			return ctx
@@ -299,6 +299,10 @@ func (control *scanQueryPlanControl) TraceQueryStart(ctx context.Context, conn *
 	switch family {
 	case "lookup":
 		if len(args) == 2 {
+			if rootID, ok := args[0].(string); !ok || rootID == "" {
+				control.problem = "lookup query root parameter differs"
+				return ctx
+			}
 			pathIndex = 1
 		}
 	case "media":
@@ -381,7 +385,8 @@ func (control *scanQueryPlanControl) report(t *testing.T) {
 			if count != 0 {
 				template := control.templates[index]
 				digest := fmt.Sprintf("%x", sha256.Sum256([]byte(template.sql)))
-				if (template.family == "media" && digest != "6bf1992ebd49df413f0061c62e606ae2ffcdc57858ff2a8d68de7dbeb35c800a") ||
+				if (template.family == "lookup" && digest != "9438c5685901e1a0b10ae7e3127366a7666c40f214e20652745a370ce0a34c1f") ||
+					(template.family == "media" && digest != "6bf1992ebd49df413f0061c62e606ae2ffcdc57858ff2a8d68de7dbeb35c800a") ||
 					(template.family == "bitmap" && digest != "2b0fe30f97645400db3f9a82e6d46ae2e4097f9ff072981a32cf68549f893219") {
 					issues = append(issues, phase.Phase+" target SQL text differs from the selected production query")
 				}
@@ -434,21 +439,22 @@ func (control *scanQueryPlanControl) report(t *testing.T) {
 		issues = append(issues, "Store.Close did not complete")
 	}
 	encoded, err := json.Marshal(struct {
-		Version          int                  `json:"version"`
-		Order            [8]string            `json:"fixed_order"`
-		DefaultQueryMode string               `json:"default_query_mode"`
-		CacheCapacities  [2]int               `json:"statement_description_capacities"`
-		JIT              string               `json:"jit"`
-		RecordCapacity   int                  `json:"record_capacity"`
-		StoreClosed      bool                 `json:"store_closed"`
-		Scope            string               `json:"scope"`
-		CacheScope       string               `json:"cache_scope"`
-		Issues           []string             `json:"issues"`
-		Phases           []scanQueryPlanPhase `json:"phases"`
-	}{1, scanQueryPlanOrder, "cache_describe", [2]int{512, 512}, "off", scanQueryPlanRecordCapacity, closed,
-		"one Store/schema/fixture; callbacks from scan request through worker retirement; job endpoints separate; post-removal pairs only",
+		Version            int                  `json:"version"`
+		Order              [8]string            `json:"fixed_order"`
+		DefaultQueryMode   string               `json:"default_query_mode"`
+		CacheCapacities    [2]int               `json:"statement_description_capacities"`
+		JIT                string               `json:"jit"`
+		RecordCapacity     int                  `json:"record_capacity"`
+		StoreClosed        bool                 `json:"store_closed"`
+		Scope              string               `json:"scope"`
+		CacheScope         string               `json:"cache_scope"`
+		ModeTargetFamilies []string             `json:"mode_target_families"`
+		Issues             []string             `json:"issues"`
+		Phases             []scanQueryPlanPhase `json:"phases"`
+	}{2, scanQueryPlanOrder, "cache_describe", [2]int{512, 512}, "off", scanQueryPlanRecordCapacity, closed,
+		"one Store/schema/fixture; current media, ordinary lookup and bitmap modes switch together; callbacks through worker retirement; post-removal compatibility controls, not lookup-only acceptance",
 		"original five phases use production C; both caches persist and D does not deallocate C plans; first observed PID/family/mode and Prepare retained; no clean-cold or retained-memory mode comparison",
-		issues, control.phases})
+		[]string{"lookup", "media", "bitmap"}, issues, control.phases})
 	if err != nil {
 		t.Fatal(err)
 	}

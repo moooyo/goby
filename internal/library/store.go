@@ -76,7 +76,7 @@ func New(pool *pgxpool.Pool, prober Prober, allowedRoots []string, options ...Op
 	poolConfig := pool.Config()
 	_, connectionTracer := poolConfig.ConnConfig.Tracer.(pgx.ConnectTracer)
 	if poolConfig.BeforeConnect == nil && !connectionTracer && poolConfig.ConnConfig.StatementCacheCapacity > 0 {
-		s.scanBitmapPresenceReadMode = pgx.QueryExecModeCacheStatement
+		s.scanPooledReadMode = pgx.QueryExecModeCacheStatement
 	}
 	s.ctx, s.cancel = context.WithCancel(context.Background())
 	if settings.scanEvidence != nil {

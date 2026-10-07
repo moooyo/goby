@@ -1099,9 +1099,17 @@ func (state *scanState) findStoredFileForRole(relative string, info os.FileInfo,
 	// Read role compatibility and metadata in one snapshot of the unique path.
 	// Reject a permanent opposite role before claims or JSON decoding, including
 	// inactive resources whose pathname must never acquire a fresh identity.
+	var mode pgx.QueryExecMode
+	if role == scannedRoleOrdinary {
+		mode = state.store.scanPooledReadMode
+	}
+	args := []any{mode, state.root.id, relative}
+	if mode == 0 {
+		args = args[1:]
+	}
 	row := scannedRoleRow{row: state.store.pool.QueryRow(state.task.ctx,
 		"SELECT "+storedFileColumns+", ("+visibility+") FROM items WHERE root_id = $1 AND relative_path = $2",
-		state.root.id, relative)}
+		args...)}
 	stored, err := readStoredFileAccepted(row, func(id string) bool { return state.scannedIDAvailable(id, relative, role) })
 	if err == nil {
 		return stored, nil
