@@ -1,3 +1,300 @@
+# Embedded-source execution-profile follow-up, 2026-10-07
+
+Profiling identifies recurring PostgreSQL parsing and planning work on the
+existing CacheDescribe execution path. Non-overlapping classifications place
+20.9% of the application-PID PG samples in planning/plan acquisition and 10.5%
+in parse/analysis. This is measured work under a policy also present in baseline,
+not a cost newly introduced by C or a predicted wall-time saving. Go samples instead mainly
+show kernel/scheduler execution under the profiling condition; they do not
+establish a business-lock or JSON hotspot. Instruction bounds do not prove that
+the candidate executes more business instructions.
+
+The historical C/B regression's unique cause remains unproven, and neither C nor
+T is accepted for source publication. A narrow per-query CacheStatement exception
+is a new optimization lead, separate from that attribution question. No such
+change has been implemented or verified. Both selected native products, their
+exports and actual cleanup are complete; the failed first acquisition remains
+part of the record. This documentation-only update is based on main
+`7346bba8f3033858ccf76053f75f0776f8291a5f`, with runtime unchanged at
+`6386c8fd88585557ee65acbc0a12be23d90a41d4`. The prior report is preserved below.
+
+## Selected workload, acquisition failure and repair
+
+Both products execute the unchanged retained S/T native binary, SHA-256
+`e5c4050a7246d7745511fd0eef678c282edb14b685b843f676afdaaf361dd02e`:
+five original S phases, STTS/STTS controls, the 32-Audio equality contract and
+measured Store.Close. Each passes all thirteen functional observations, contract
+and Close. Accounting is two native products, three bounded own-process tool
+trials and zero Go builds. No implicit test2json build or fabricated GoJSON is
+used. Earlier source, samples and acceptance decisions are unchanged.
+
+Task-local perf 6.12.111 and required libraries were extracted privately without
+system installation. Perf-only library paths never enter the test's child tree.
+No shared PG/VM/CPU, scheduler, affinity, swap or durability setting was changed.
+Attachment is restricted to the owned test and exact-tag dedicated PG backends.
+
+Attempt 1 is a functional pass with failed acquisition: its six profile targets
+stop around initial enable acknowledgement, leaving no usable control attribution
+coverage. The matching perf ELF writes five bytes, `ack\n\0` / `61636b0a00`.
+The v1 newline parser consumes four, leaving NUL before the next ACK and causing
+its own shutdown. This collector fault does not explain the product regression.
+All failed outputs and native stop codes remain retained.
+
+The separately authorized attempt-02 collector consumes the exact five-byte
+frame, retaining raw bytes and separate identity/protocol errors. One bounded
+own-Python protocol trial passes with four ACKs, empty residual buffers, 143
+samples, 13 stat intervals and 150,006,480 ns helper CPU. Requested-SIGINT native
+profiler exit codes of -2 are preserved. This is the third tool trial, not an
+extra product or shared-service attachment.
+
+V2 then functionally passes using the same binary, workload, validator, rate and
+settings. Main Go and PG profiles enable before and span the controls. Early/late
+fixture targets, native stop codes and partial-lifetime metadata remain explicit;
+functional PASS is separate from acquisition coverage. V1 is neither replaced
+nor filled with V2 data.
+
+## V2 control results and scope
+
+All eight controls have 883 application callbacks, 67 fingerprints, 32 single
+snapshot queries, 24 full-phase COMMIT callbacks, identical template/final-row-tag
+sequences and stable query/Prepare capacities 32768/150. No application Prepare
+occurs. Original media/image, no-DML, key/xmin and no-probe/extraction guards
+remain. Equal observed order does not prove equal arguments, plans or physical
+execution work.
+
+All four fixed T-minus-S jobs are lower in this process, but source and CPU
+changes are mixed. All eight jobs and both contrast orders remain below.
+
+| Pair | T/S windows | T job, ms | S job, ms | Job delta, ms | Source callback delta, ms | Go endpoint CPU delta, ms | PG endpoint CPU delta, ms |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 2 / 1 | 483.955 | 490.744 | -6.789 | +0.303912 | -5.578 | -0.087135 |
+| 2 | 3 / 4 | 499.854 | 519.387 | -19.533 | -7.049209 | +7.440 | -29.739709 |
+| 3 | 6 / 5 | 552.111 | 559.065 | -6.954 | +2.325935 | -23.553 | +6.253502 |
+| 4 | 7 / 8 | 517.653 | 547.598 | -29.945 | +4.208069 | -11.699 | -29.518657 |
+
+Source callbacks increase in pairs 1/3/4, Go CPU in pair 2, PG CPU in pair 3,
+terminal time in pair 3 and allocation in pair 2. These correlated windows are
+not independent N=8 or a replacement for preceding mixed acquisitions. Resource
+endpoints exceed the job interval and include runtime/observer participation;
+SQL union excludes ownership Ping and pre-tracer waits. Source callback and
+approximate Audio enclosures are not exclusive source-helper CPU.
+
+## Cross-acquisition order and region audit
+
+A separate bounded offline audit corrects the interpretation of region labels;
+original captures and frozen derived reports are unchanged. V2's eight controls
+share one application-template sequence, and the earlier acquired-row and CPU-
+observation products each share the earlier sequence. The cross-acquisition
+sequences differ even though each control has the same 883-callback multiset.
+All 32 V2 source snapshots occur at one-based application ordinals
+475, 478, ..., 568;
+in the earlier two products they occur at 55, 58, ..., 148.
+
+| Read family | Earlier before first source | V2 before first source | Earlier after last source | V2 after last source |
+| --- | ---: | ---: | ---: | ---: |
+| Stored-item lookup | 1 | 81 | 128 | 48 |
+| Media facts | 1 | 81 | 128 | 48 |
+| Image comparison | 0 | 85 | 136 | 51 |
+| Bitmap existence | 0 | 80 | 128 | 48 |
+
+The historical Audio approximation begins at the whole phase's first common
+lookup, not the first Audio-specific lookup. In V2 its approximately 301-352 ms
+envelope includes substantial non-source reading before the 32 source snapshots;
+it must not be interpreted as Audio-only or source-exclusive work. Static
+fixture/call-family structure supports prior non-source item work, but raw SQL
+has no arguments and cannot prove specific movie paths or per-ordinal item
+identity. In V2 window 1, roughly 48%-66% describes the first/last source
+callbacks' positions inside the job, not their fraction of CPU or execution cost.
+
+The first/last source timestamps and the after_source/post_audio cutoff arithmetic
+match the raw callbacks. The boundaries are correct, but their remaining work
+populations differ across acquisitions: V2 has 48 later lookup/media/bitmap reads
+and 51 image comparisons, versus 128/128/128 and 136 earlier. Cross-acquisition
+region CPU, instructions or sample totals therefore do not represent identical
+work cohorts and must not be interpreted as isolated source/profiler effects.
+Within-acquisition observations and their unchanged raw values remain retained.
+
+Production enumeration uses File.ReadDir(64), appends entries in returned order
+and recurses without explicit filename sorting. The fixture manifest's WalkDir
+hashing does not establish the production traversal order. Identical template
+order within one process still does not prove identical path/parameter ordering.
+The new appendix records this distinction rather than rewriting the earlier
+reports or inventing a mapping for unrecorded arguments.
+
+## Function samples: recurring PG work and a changed Go observation condition
+
+The eight controls contain 3,063 samples on the actual Go TGID and 2,774 on each
+window's application-participating PG backends. Every recorded period is
+1,003,009 ns, a sample weight rather than exact CPU time. The same-guest
+mono/wall/mono hull is 4,600 ns wide; samples are included only when their entire
+possible time lies inside a window. This is observed clock coverage, not proof
+against every unobserved clock change.
+
+Go exclusive kernel leaves are 2,289/3,063 (74.7%). The `finish_task_switch.isra.0`
+leaf is 1,704/3,063 (55.6%), a subset of the kernel category rather than the whole
+74.7%. Runtime leaves are 430 (14.0%); no application leaf dominates. Cumulative
+sysmon, scheduling, worker and scan ancestors overlap and cannot be added as
+separate CPU owners. Frequent nanosleep/sysmon/scheduler stacks show execution
+around transitions, not business computation or measured sleep duration.
+
+Go system CPU spans 189.787-261.987 ms per wider endpoint window, substantially
+above preceding observations; user CPU overlaps earlier ranges. The acquisitions
+also differ in traversal order, region work cohorts and resource-endpoint scope.
+There is no single-factor profiling-overhead control. These are changed
+profiling/execution conditions, without isolating perf, VM, runtime or ordering
+causality. Absence of a named perf_event frame cannot exclude inlined
+context-switch profiling work. It does not justify changing business locks,
+JSON handling or Go scheduling. Sample weights, rusage, task-clock and estimated
+observer cost are not subtracted to reconstruct the old unprofiled workload.
+
+PG categories below are mutually exclusive. Unknown leaves are retained first,
+then kernel and allocator leaves; the nearest visible parse/plan/execute ancestor
+classifies the remaining known samples. This is callchain classification, not
+complete server-stage accounting.
+
+| PG category | Samples | Share of 2,774 application-PID samples |
+| --- | ---: | ---: |
+| Kernel | 685 | 24.7% |
+| Planning / plan acquisition | 579 | 20.9% |
+| Unknown leaf | 576 | 20.8% |
+| Parse / analysis | 292 | 10.5% |
+| Allocator | 281 | 10.1% |
+| Other known | 183 | 6.6% |
+| Execution | 178 | 6.4% |
+
+Visible standard_planner, subquery_planner, parser and analysis frames establish
+actual recurring work. Plan acquisition does not mean every sample compiled a
+new plan. Overlapping cumulative planning/parse/execution counts of 1052/460/328
+include descendants and are not added to this table or to allocator samples.
+The percentages are not recoverable wall-time fractions or a forecast of 31%
+acceleration. No major category consistently falls with the four lower T jobs.
+
+Parsing/planning also appears in common reads, not just source snapshots. The
+stored-item, image-noop, media-facts and bitmap families have 195/168/122/35
+non-overlapping named planning-plus-parse samples, respectively. Four PG samples
+associate with observer callbacks and 28 remain ambiguous/between callbacks;
+application-PID membership is not an exclusive business CPU partition.
+
+Unknown PG leaves remain 576, including 449 in the matching postgres ELF's .text
+with no exact exported-function match. They are not renamed by nearest symbol or
+redistributed. At least one unknown frame appears in 2773/2774 PG callchains,
+limiting FP unwinding completeness despite visible named anchors. Five nonempty
+records decode with no reported lost/throttle events; that does not prove unbiased
+sampling or complete attachment/unwinding. The empty early/late PG record is
+unavailable, not zero cost. All losses, unknowns and lifecycle limits remain.
+
+## Instructions and cycles do not resolve the old difference
+
+Counters retain native task-clock and unscaled grouped cycles/instructions,
+event runtime, rounded running percentage and unsupported/not-counted nulls.
+100.00% does not reconstruct exact enabled time. Conditional on matching stat
+source provenance, origin/read support uses launch-to-disabled-ACK uncertainty
+and serial interval read bounds; the wider first-result model is also retained.
+Crossing intervals are never divided proportionally. Contained sums and enclosing
+sums describe whole observed support, not all unscheduled physical execution.
+
+The two fixed pairs with closed Go instruction bounds overlap:
+
+| Pair | S observed instruction range, million | T observed instruction range, million |
+| --- | ---: | ---: |
+| 1 | 472.020-577.937 | 446.789-543.694 |
+| 2 | 442.164-519.306 | 434.403-521.708 |
+
+Later enclosing sets include not-counted rows, preventing a closed bound and a
+signed conclusion. Full aggregate PG enclosing bounds are unavailable in every
+job because participating backends can idle or exchange routes and emit null
+rows. Known subtotals remain visible but are not substituted for a complete upper
+bound; missing values are not zero. The evidence does not establish more business
+instructions, physical frequency, or a specific function-cost difference.
+
+The Go record contains 3,930 samples on one TGID, with six sampled TIDs, nine
+COMM records and no FORK record. Controls independently retain zero native probes.
+This does not prove every possible child lifetime is observed or make inherited
+stat counters inherently Go-self-only. PG parallel workers not actually captured
+are not implied covered. Counter/sample/CPU scopes remain distinct.
+
+## Existing query-mode policy and the narrow optimization lead
+
+Static source history establishes that global CacheDescribe predates B and C.
+The same database.go blob is present in main, baseline and candidate. The policy
+preserves typed execution without retaining named server plans, following earlier
+backend-memory observations. JIT is already disabled. Neither JIT-off nor a
+cached client description removes repeated unnamed Parse/analysis; cache_describe
+uses ExecParams/SendParse. Zero PrepareTracer events therefore do not imply no
+server parsing/planning. This is measured recurring work under a policy also present in B, not a new C-only
+change or proof of the historical reversal's cause.
+
+CacheStatement also uses statement descriptions and parameter OIDs. It can reuse
+named parse state while still planning custom executions or responding to
+invalidation. It caches execution plans, not query results. The review finds no
+basis to globally switch modes or reuse an earlier freshness observation.
+
+First control the comparison's workload ordering: reuse one fixture, Store and
+schema in fixed interleaved windows, recording actual item/path digest order,
+query order and before/after-source family counts on the test side. Retain first
+uses, Prepare events and all windows. Do not change production directory sorting
+to manufacture a stable benchmark order. This addresses the observed ordering
+confound without claiming to remove cache/plan first-use or time variation.
+
+Then evaluate the smallest local CacheStatement candidate: the media-facts read
+`6bf1992ebd49` and bitmap-existence read `2b0fe30f9764`, leaving the global default
+intact. These are stable parameterized shapes on the owner
+and data-pool paths. The larger item-lookup and image-comparison queries are
+later, separate candidates with more plan-state/array-estimate risk.
+
+Before accepting such a selected change, preserve parameter type/null semantics,
+source/root/freshness observation points and real writer/permission contracts.
+Provide a declared cache-disabled fallback, and verify cold/replacement/reconnected
+sessions, eviction, schema/statistics invalidation, custom/generic plan behavior
+across varying parameters and retained named-plan memory. Keep the existing
+zero-named-statement default tests intact for ordinary callers. No implementation,
+new benchmark or production release of this proposal has occurred here.
+
+## Actual closeout
+
+Both native products and all owned profilers/observers exited. Final decoded
+exports and closeout receipts are hash verified. Task tool RAM falls from
+41,168,896 to 0 bytes and output RAM from 113,569,792 to 0; two empty ext4 fixture
+directories are removed. No private compiler cache was used or Go build selected;
+the unused prior 8,192-byte cache and shared caches remain. Source, both failed
+and corrected raw attempts, matching Go/PG ELFs, receipts and the private tool
+snapshot are retained. PG/Goby/QEMU identities and reserve 403374 are unchanged.
+
+Final persistent availability is 328,396,800 bytes and guest available memory is
+6,646,124,544 bytes; these are separate snapshots, not a total cleanup attribution.
+No diagnostic runtime remains active. No additional product, production edit or
+source publication is selected. Workspace WIP remains outside documentation
+publication and must be protected using fresh current identities.
+
+## Evidence
+
+Evidence root: `.artifacts/embedded-source-profiling-20261007`.
+Private tool snapshot SHA-256:
+`80407b2c62d200156cfa2413342b8d8f8d63ef44914b211ae34e1f00706a5289`.
+
+| Artifact | SHA-256 |
+| --- | --- |
+| `diagnostic-plan.md` | `4dfca06190172d28045eae89e7dca9c94d6e0c67aaaeb622c5088e250dfdac9c` |
+| `evidence/diagnostic-receipt.json` | `8646a7c161af9b1d183f40a6c731732fa7dffed9a75215793fefb74d82f10385` |
+| `attempt-02/protocol-check/protocol-final-receipt.json` | `2728c60a36ea67a09ac3c405e552548eda5bb43623b02dc03db41a6920e15426` |
+| `attempt-02/evidence/diagnostic-receipt.json` | `9129543ca8eec3832dd9c69e918686c6b9ee6915fc63a64bc2a408e6c6f4521d` |
+| `attempt-02/analysis/counter-query-report.md` | `df495dcec717323a9ed0414d1cec54251460b65ef1ee45fc25a98b6a50a58420` |
+| `attempt-02/analysis/counter-summary.json` | `b990adb582e33be76d800993470eafa173add6eb567ac498a203ee508eea2066` |
+| `attempt-02/analysis/query-summary.json` | `c227ba99687006b9730a84cc6145d8d05b37dd7c34edd22472c9544730de6dbc` |
+| `attempt-02/analysis/query-order-audit.md` | `7107b9b3cfdd5b4cae6e9153f9b62914c2f522df63880cfe385af738fa5ecaaa` |
+| `attempt-02/analysis/query-order-audit.json` | `ca25431fa8a17b6997898a86b28128a4a97844300714adcaca50f457dd5df465` |
+| `attempt-02/analysis/function-samples-report.md` | `0dc253746628ec27c09df8497721fbe3f2790a2961e4145eb1886bd88e85cd58` |
+| `attempt-02/analysis/function-samples-report.json` | `d6b85f649acd2b08ce1ff716f696c7a873f191331c437428a4e4d68ae50c6923` |
+| `analysis/query-mode-policy-review.md` | `d0c92e99c20be724109ba714759e85b6ccf16e187b5d60e370ab6f1ce3d28613` |
+| `attempt-02/closure-receipt.json` | `fc058aac3cda7941ae1f1b386d8edbb787eef77d3d199e50a0f82dd8ab959399` |
+| `attempt-02/actual-close-export-verification.json` | `f0873215864cfa613c12f9c8e4dce0a8c68c051ddfff754f9084373d9473ff68` |
+
+The current-main report is preserved byte-for-byte below, original SHA-256
+`ff5c81a4d1c1d1f3afa8c0ebc1e0b1f3cf0adbdc6779274044c38b75e0dcc453`.
+Its historical source decisions and completed closures remain unchanged.
+
+---
+
 # Embedded-source mechanism follow-up, 2026-10-07
 
 Source-read savings are measured, but a stable end-to-end scan improvement and

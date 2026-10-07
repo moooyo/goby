@@ -1,3 +1,85 @@
+# Embedded-source profiling closed; local query-mode optimization remains a proposal, 2026-10-07
+
+Profiling identifies recurring PG parsing/planning work on the existing
+CacheDescribe path: non-overlapping planning/plan-acquisition samples are
+579/2774 (20.9%), parse/analysis 292 (10.5%) and execution 178 (6.4%), with
+kernel, allocator, other and unknown categories separate. These are sample
+classifications, not expected wall-time savings. The global policy is identical
+in baseline B and candidate C and predates both; it is not a new C regression.
+The historical reversal's unique cause remains unproven, and C/T stay withheld.
+
+A new cross-acquisition order audit is material to interpretation. V2 source
+queries occur at one-based ordinals 475,478,...,568 rather than the earlier
+55,58,...,148,
+although the 883-callback multiset agrees. Before source, V2 already has 81
+lookup/media, 85 image and 80 bitmap reads; only 48 lookup/media/bitmap and 51
+image reads remain afterward, versus 128/128/128 and 136 earlier. The historical
+Audio approximation starts at the whole phase's first lookup and includes prior
+non-source work. Its 301-352 ms V2 span is not Audio-only. Timestamp boundaries
+are correct, but cross-acquisition after_source/post_audio cohorts differ.
+File.ReadDir(64) is unsorted; fixture-manifest WalkDir hashing does not prove
+scan order, and raw records do not establish exact path/parameter mapping.
+
+Go control samples are mainly kernel/scheduler: 2289/3063 (74.7%) kernel,
+including 1704 finish_task_switch leaves (55.6% of all Go samples). Wider endpoint
+system CPU rises to 189.787-261.987 ms under this observation condition. That
+does not establish business-lock/JSON hotspots or isolate perf/VM/runtime cause;
+traversal/cohort and wider-endpoint differences also prevent attributing the
+cross-acquisition increase solely to sampling.
+Complete Go instruction bounds overlap in the two closed pairs; other enclosing
+bounds are incomplete, and PG aggregate upper bounds are unavailable. Keep
+not-counted values null. Do not subtract estimated overhead, add nested stacks,
+infer physical frequency or reconstruct old performance from this profile.
+
+Before a query-mode comparison, retain one fixture/Store/schema, use fixed
+interleaving and record actual query/item/path digest order and source-relative
+family counts. Retain first uses and every window; do not change production
+sorting. Then evaluate limited explicit CacheStatement use for media facts
+`6bf1992ebd49` and bitmap existence `2b0fe30f9764`, preserving the global default,
+typed/null semantics and existing freshness/source observation points. The
+baseline policy intentionally limits retained named-plan memory. Any selected
+implementation needs a cache-disabled fallback plus reconnect/eviction,
+custom/generic plan, invalidation and retained-memory checks. No such change has
+been implemented, tested or published; larger queries/batching remain separate.
+
+This documentation-only update is based on main
+`7346bba8f3033858ccf76053f75f0776f8291a5f`; runtime remains
+`6386c8fd88585557ee65acbc0a12be23d90a41d4`. The retained native S/T binary
+(e5c4050a) is unchanged. Accounting is two selected native products, three
+own-process tool trials and zero Go builds. Both products pass all thirteen
+functional observations, the equality contract and measured Close.
+
+V1's acquisition fails because perf writes five-byte ACK ack/newline/NUL while
+the parser consumed only four. This collector bug is unrelated to the historical
+product regression; every original failure remains. A separate strict-frame
+repair passes four ACKs, 143 samples and 13 stat intervals on the bounded Python
+helper, retaining native requested-stop -2 codes. V2 profiles then cover controls;
+early/late target limits and unknown stacks remain explicit. Its four T-minus-S
+jobs are -6.789/-19.533/-6.954/-29.945 ms, but source callbacks rise in pairs
+1/3/4, Go CPU in pair 2 and PG CPU in pair 3. This does not replace earlier mixed
+results or constitute performance acceptance.
+
+Actual closeout/export is complete. Owned workers/profilers/observers exited;
+private tool RAM 41,168,896 to 0 bytes, output RAM 113,569,792 to 0 and two empty
+ext4 fixtures reclaimed. No private compiler cache was used; shared caches and
+the prior unused 8,192-byte cache remain. Sources, failed/corrected raw data,
+matching ELFs, receipts and tool snapshot 80407b2c are retained. PG/Goby/QEMU and
+reserve 403374 are unchanged. Final persistent availability 328,396,800 bytes and
+guest memory 6,646,124,544 bytes are separate snapshots. Final close/export
+f0873215; closure fc058aac. No diagnostic runtime remains active.
+
+No extra product or production edit is selected. Preserve earlier adverse
+samples and current WIP using fresh identities. The proposed query-mode work
+needs its own bounded correctness, memory/plan and performance evidence.
+
+Detail: [scan-embedded-source-attribution-20261007.md](scan-embedded-source-attribution-20261007.md).
+Evidence: `.artifacts/embedded-source-profiling-20261007`; query c227ba99,
+counter b990adb5, function d6b85f64, policy d0c92e99, order audit ca25431f.
+All main 7346bba8 handoff
+bytes remain unchanged below as historical evidence.
+
+---
+
 # Embedded-source mechanism follow-up closed; source changes withheld, 2026-10-07
 
 Direct source-read savings are measured, but stable end-to-end benefit and the
