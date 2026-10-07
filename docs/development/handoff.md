@@ -1,3 +1,57 @@
+# Narrow scan query-plan reuse accepted and closed, 2026-10-07
+
+Accepted source `e2f262d846e20bc058e95f71abe6f2bf1699c691` is a direct child of
+main `08ed21267ab647a4a49bf818ee2d2a2d19d26e39` (runtime6386), with exactly seven
+source/test files on `codex/scan-query-plan-reuse`. It matches the executed
+selection. Only media facts and bitmap existence opt into local CacheStatement;
+constructor-selected modes retain disabled-cache and configuration-hook fallback.
+Global CacheDescribe/DescribeExec, SQL, typed values, freshness, startup authority
+and writers remain. No result cache, new lock, Acquire or retry was added. The
+older withheld embedded-source and acquired-row candidates remain excluded.
+
+The corrected nonrace native verification passes 18 top-level tests and 11
+subtests without skips, plus all thirteen performance phases. Fixed C-minus-D
+warm job deltas are -63.061/-20.755/-24.883/-18.800 ms; target callback sums fall
+33.454964/27.735643/26.954334/27.688569 ms, with both families faster in every
+pair. All controls preserve the 1043-query multiset and actual lookup/target
+path/item order. D uses prior mode at candidate call sites, not an old binary.
+These are correlated warm observations in one Store/schema/fixture; no cold,
+force, CPU, old-binary or old-regression-cause improvement is claimed.
+
+Terminal deltas are adverse: +0.262213/+0.685844/+2.452615/+0.592315 ms. The
+existing long-test loop polls every 250 ms; all 390-453 ms jobs finish before the
+second tick, with terminal observations around 504-507 ms. This is the test's
+polling window, not evidence of UI or terminal acceleration. Allocation/GC are
+mixed. All twelve focused CachedPlan memory observations are unavailable;
+retained backend bytes are unknown, not zero or per-query saving. Named-plan
+count/type, invalidation, session replacement and data-freshness assertions pass.
+
+Accounting retains two builds (RSS capacity stop, then success) and three native
+invocations (TempDir configuration failure, focused PASS, performance PASS).
+Exactly one performance product ran. Same successful binary5d77a776 was used;
+no failure was erased or treated as a performance sample. Go1.27.1 TempDir prefers
+GOTMPDIR, so native GOTMPDIR and TMPDIR both use the selected ext4 fixture root.
+The capacity policy documents split build/native bindings and combined go-test
+execution without inheriting reclaimed RAM compiler scratch.
+
+Actual export/closeout is complete. Private cache264,454,144 to8,192 bytes and
+scratch were reclaimed before native execution. Final task RAM50,012,160 to
+421,888 bytes retains source overlays/empty cache; independently preserved
+49,590,272-byte temporary copies and the empty fixture were removed. Source,
+raw failures, binary, shared caches and PG/Goby/QEMU/reserve403374 remain.
+Final persistent availability288,096,256 and guest memory6,648,561,664 bytes are
+separate snapshots. No diagnostic worker or sampler remains active.
+
+Scope acceptance retains the memory and timing limitations above. No further run
+is selected. Publication identity is recorded separately; protect original WIP
+using fresh identities. The previous main handoff bytes remain unchanged below.
+
+Detail: [scan-query-plan-reuse-20261007.md](scan-query-plan-reuse-20261007.md).
+Evidence: `.artifacts/scan-query-plan-reuse-20261007`; selection8d37930b,
+performance66c6afff/c85a84d5, export4c672acf, closure13968ab4.
+
+---
+
 # Embedded-source profiling closed; local query-mode optimization remains a proposal, 2026-10-07
 
 Profiling identifies recurring PG parsing/planning work on the existing

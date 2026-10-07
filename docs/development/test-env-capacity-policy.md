@@ -43,12 +43,24 @@ A private cache is disposable compiler output, not an archive of test evidence.
 
 ## Separate compiler scratch from media fixtures
 
-`GOTMPDIR` is compiler scratch. Give it a task-owned path on storage appropriate
-to the compiler budget, and reclaim its disposable contents after worker exit.
-`TMPDIR` controls test temporary files and may carry media fixture requirements.
+During compilation, set `GOTMPDIR` and build-time `TMPDIR` to task-owned compiler
+scratch appropriate to the build budget, separate from media/data fixtures and
+retained evidence. Reclaim disposable scratch only after actual compiler exit
+and the selected binary/source preservation.
+
+For native test execution, set both `GOTMPDIR` and `TMPDIR` to the selected media
+fixture root and filesystem, including ext4 when required. The pinned Go 1.27.1
+`testing.T.TempDir` prefers `GOTMPDIR`; changing only `TMPDIR` does not redirect
+it. Native workers must not inherit an already removed RAM compiler directory.
+Test frameworks that explicitly consult `GOTMPDIR` follow this same runtime
+binding. Record and guard both effective variables at each phase transition.
+For one `go test` command that both compiles and executes tests, both variables
+must use the required fixture filesystem, or split compilation and native
+execution into separate phases.
+
 Tests depending on physical filesystem identity, native enumeration, ctime,
 rename or other filesystem behavior must keep their selected fixture filesystem.
-Do not move all fixtures to tmpfs merely because the compiler cache uses RAM.
+Do not move fixtures to tmpfs merely because the compiler cache uses RAM.
 Keep compiler scratch, media/data fixtures and retained evidence in distinct paths.
 
 ## Reclaim only confirmed inactive compiler output
