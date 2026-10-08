@@ -22,7 +22,7 @@ var ErrEpisodePlaybackQueueLimit = errors.New("episode playback queue exceeds it
 // ordering, but retains played episodes: explicit replay is a client decision.
 // The client chooses the current item and whether to advance automatically.
 // This read never prepares playback, advances history, or grants future access.
-func (s *Store) EpisodePlaybackQueue(ctx context.Context, subject Subject, seriesID string) (ItemResult, error) {
+func (s *Store) EpisodePlaybackQueue(ctx context.Context, subject Subject, seriesID string, projections ...QueryProjection) (ItemResult, error) {
 	if !validSubject(subject) || strings.TrimSpace(seriesID) == "" || !utf8.ValidString(seriesID) || strings.ContainsRune(seriesID, '\x00') {
 		return ItemResult{}, ErrInvalidInput
 	}
@@ -57,7 +57,11 @@ func (s *Store) EpisodePlaybackQueue(ctx context.Context, subject Subject, serie
 	if result.TotalRecordCount > MaxEpisodePlaybackQueueItems {
 		return ItemResult{}, ErrEpisodePlaybackQueueLimit
 	}
-	rows, err := tx.Query(ctx, prefix+`SELECT `+access.scopeSQL(nextUpItemColumns)+` FROM episode_queue queue
+	projection := QueryProjection{}
+	if len(projections) != 0 {
+		projection = projections[0]
+	}
+	rows, err := tx.Query(ctx, prefix+`SELECT `+access.scopeSQL(projectBrowseMediaSQL(nextUpItemColumns, projection))+` FROM episode_queue queue
 		JOIN items i ON i.id=queue.id AND i.library_id=queue.library_id ORDER BY queue.episode_order`, args...)
 	if err != nil {
 		return ItemResult{}, fmt.Errorf("query episode playback queue: %w", err)

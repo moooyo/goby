@@ -13,6 +13,7 @@ import (
 // SearchHintsQuery describes Goby's bounded legacy search adapter. It does not
 // reuse item IDs as entity IDs or apply personal playback preferences to search.
 type SearchHintsQuery struct {
+	Projection                                                                 QueryProjection
 	SearchTerm                                                                 string
 	StartIndex, Limit                                                          int
 	IncludeMedia, IncludePeople, IncludeGenres, IncludeStudios, IncludeArtists *bool
@@ -120,7 +121,7 @@ func (s *Store) SearchHints(ctx context.Context, subject Subject, query SearchHi
 		if err != nil {
 			return SearchHintResult{}, fmt.Errorf("finish search hint references: %w", err)
 		}
-		if err := populateSearchHints(ctx, tx, subject, access, result.SearchHints); err != nil {
+		if err := populateSearchHints(ctx, tx, subject, access, result.SearchHints, query.Projection); err != nil {
 			return SearchHintResult{}, err
 		}
 	}
@@ -191,7 +192,7 @@ func searchHintsSQL(query SearchHintsQuery, access libraryAccess) (string, []any
 	return prefix + ") ", args
 }
 
-func populateSearchHints(ctx context.Context, tx pgx.Tx, subject Subject, access libraryAccess, hints []SearchHint) error {
+func populateSearchHints(ctx context.Context, tx pgx.Tx, subject Subject, access libraryAccess, hints []SearchHint, projection QueryProjection) error {
 	itemIDs, entityIDs := []string{}, []string{}
 	itemPositions, entityPositions := map[string]int{}, map[string]int{}
 	for index, hint := range hints {
@@ -207,7 +208,7 @@ func populateSearchHints(ctx context.Context, tx pgx.Tx, subject Subject, access
 		}
 	}
 	if len(itemIDs) != 0 {
-		rows, err := tx.Query(ctx, "SELECT "+access.itemColumnsSQL()+" FROM items i WHERE i.id=ANY($1::text[]) AND "+access.ordinarySQL("i"), itemIDs)
+		rows, err := tx.Query(ctx, "SELECT "+access.scopeSQL(itemQueryColumns(Query{Projection: projection}))+" FROM items i WHERE i.id=ANY($1::text[]) AND "+access.ordinarySQL("i"), itemIDs)
 		if err != nil {
 			return fmt.Errorf("project item search hints: %w", err)
 		}
@@ -230,12 +231,14 @@ func populateSearchHints(ctx context.Context, tx pgx.Tx, subject Subject, access
 		if err != nil {
 			return fmt.Errorf("finish item search hints: %w", err)
 		}
-		images, err := searchHintItemImages(ctx, tx, access, itemIDs)
-		if err != nil {
-			return err
-		}
-		for id, index := range itemPositions {
-			hints[index].Images = images[id]
+		if !projection.ImagesDisabled {
+			images, err := searchHintItemImages(ctx, tx, access, itemIDs)
+			if err != nil {
+				return err
+			}
+			for id, index := range itemPositions {
+				hints[index].Images = images[id]
+			}
 		}
 	}
 	if len(entityIDs) != 0 {
@@ -270,7 +273,7 @@ func populateSearchHints(ctx context.Context, tx pgx.Tx, subject Subject, access
 		if err != nil {
 			return fmt.Errorf("finish entity search hints: %w", err)
 		}
-		if err := populateEntityProjections(ctx, tx, subject, access, entities); err != nil {
+		if err := populateEntityProjections(ctx, tx, subject, access, entities, projection); err != nil {
 			return err
 		}
 		for index := range entities {

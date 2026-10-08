@@ -60,13 +60,13 @@ func (s *Server) downloadMedia(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	prepare, cancel := context.WithTimeout(r.Context(), 20*time.Second)
-	file, source, err := s.library.OpenDownloadFor(prepare, librarySubject(principal, principal.User.ID), r.PathValue("Id"), "")
-	cancel()
+	defer cancel()
+	source, err := s.library.PlanDownloadFor(prepare, librarySubject(principal, principal.User.ID), r.PathValue("Id"), "")
 	if err != nil {
 		s.downloadMediaError(w, r, err)
 		return
 	}
-	s.serveOriginalDownloadSnapshot(w, r, file, source)
+	s.servePreparedOriginalDownloadSnapshot(w, r, prepare, source)
 }
 
 func (s *Server) downloadMediaError(w http.ResponseWriter, r *http.Request, err error) {

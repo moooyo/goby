@@ -414,7 +414,7 @@ func lockClientSession(ctx context.Context, tx pgx.Tx, principal Principal, muta
 		return false, ErrUnauthorized
 	}
 	policy, err := ParseRuntimePolicy(policyJSON)
-	if err != nil || !loginPolicyAllows(policyJSON, deviceID, observedAt) ||
+	if err != nil || !parsedLoginPolicyAllows(policy, policyJSON, deviceID, observedAt) ||
 		(!policy.EnableRemoteAccess && !IsLocalPeer(principal.PeerIP)) {
 		return false, ErrUnauthorized
 	}

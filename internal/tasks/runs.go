@@ -428,6 +428,17 @@ func refreshRun(tx library.OwnedTx, runID string) (Run, error) {
 			}
 		}
 	}
+	// The run is locked and the totals come from durable children in this
+	// transaction. An unchanged poll must not create a new parent row version.
+	// Terminal transitions still pass through persistTotals and its side effects.
+	if state == run.State && code == run.ErrorCode && message == run.ErrorMessage &&
+		counts.total == run.TotalChildren && counts.terminal == run.TerminalChildren &&
+		counts.completed == run.CompletedChildren && counts.failed == run.FailedChildren &&
+		counts.cancelled == run.CancelledChildren && counts.interrupted == run.InterruptedChildren &&
+		counts.unavailable == run.UnavailableChildren && counts.scanned == run.Scanned &&
+		counts.added == run.Added && counts.updated == run.Updated {
+		return run, nil
+	}
 	return persistTotals(tx, runID, state, code, message, counts)
 }
 

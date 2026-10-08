@@ -145,7 +145,7 @@ func authorizeUserSettings(ctx context.Context, tx pgx.Tx, actor Principal, user
 			return fmt.Errorf("authorize user settings: %w", err)
 		}
 		policy, err := ParseRuntimePolicy(policyJSON)
-		if err != nil || !loginPolicyAllows(policyJSON, deviceID, observedAt) ||
+		if err != nil || !parsedLoginPolicyAllows(policy, policyJSON, deviceID, observedAt) ||
 			(!policy.EnableRemoteAccess && !IsLocalPeer(actor.PeerIP)) {
 			return ErrUnauthorized
 		}

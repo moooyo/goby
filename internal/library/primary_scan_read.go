@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/primaryio"
 )
@@ -19,26 +20,31 @@ import (
 type JoinedProbeCallbacks interface{ ProbeFileJoinedContract() bool }
 
 type primaryScanRead struct {
-	state          *scanState
-	work           context.Context
-	finish         func()
-	owner          *primaryio.Owner
-	route          primaryio.Route
-	claim          *originalMediaReadDomainClaim
-	row            rootBindingRow
-	file           *os.File
-	stamp          os.FileInfo
-	path           string
-	namedRoot      *os.Root
-	ownedRoot      bool
-	phase          *primaryio.PrimaryReadLease
-	receipt        *media.ProbeRetirementReceipt
-	publicationIO  *PrimaryRootIO
-	missingReceipt bool
-	mu             sync.Mutex
-	closeOnce      sync.Once
-	closeErr       error
-	closed         chan struct{}
+	state              *scanState
+	work               context.Context
+	finish             func()
+	owner              *primaryio.Owner
+	route              primaryio.Route
+	claim              *originalMediaReadDomainClaim
+	row                rootBindingRow
+	file               *os.File
+	stamp              os.FileInfo
+	path               string
+	namedRoot          *os.Root
+	namedAnchor        *os.Root
+	anchorCapture      *rootBindingScanCapture
+	anchorSource       *scanSourceRootWitness
+	ownedAnchor        bool
+	ownedRoot          bool
+	phase              *primaryio.PrimaryReadLease
+	receipt            *media.ProbeRetirementReceipt
+	publicationIO      *PrimaryRootIO
+	publicationWorkers sync.WaitGroup
+	missingReceipt     bool
+	mu                 sync.Mutex
+	closeOnce          sync.Once
+	closeErr           error
+	closed             chan struct{}
 }
 
 type primaryScanReadFailure struct{ err error }
@@ -186,8 +192,48 @@ func (input *primaryScanRead) runPublicationMetadata(operation *PrimaryRootIO, w
 		if !input.row.same(row) {
 			return scanReadFailure(ErrRootBindingConflict)
 		}
-		return work(ctx)
+		if err := input.checkPhysicalSource(ctx); err != nil {
+			return err
+		}
+		if err := work(ctx); err != nil {
+			return err
+		}
+		return input.checkPhysicalSource(ctx)
 	})
+}
+
+func (input *primaryScanRead) revalidatePublicationSource(tx pgx.Tx) error {
+	owned, ok := tx.(*ownedTx)
+	if !ok || owned.ctx == nil || input.publicationIO == nil {
+		return scanReadFailure(ErrUnavailable)
+	}
+	deadline, ok := owned.ctx.Deadline()
+	if !ok {
+		return scanReadFailure(ErrUnavailable)
+	}
+	ctx, cancel := context.WithDeadline(input.work, deadline.Add(-scanReconciliationRollbackSpace))
+	defer cancel()
+	return input.publicationIO.RunImmediate(ctx, input.row.root.id, primaryio.Background, func(work context.Context) error {
+		return input.observePublicationSource(work, input.checkPhysicalSource)
+	})
+}
+
+func (input *primaryScanRead) observePublicationSource(ctx context.Context, observe func(context.Context) error) error {
+	// Retain before the observation worker starts, not from inside its callback.
+	// Close can therefore join the exact worker even if its caller times out
+	// before the first source syscall. The phase keeps its existing reference.
+	retained := withStorageObservationPhaseRetention(ctx, func() (func() error, error) {
+		release, err := retainStorageObservationPhase(ctx)
+		if err != nil {
+			return nil, err
+		}
+		input.publicationWorkers.Add(1)
+		return func() error {
+			defer input.publicationWorkers.Done()
+			return release()
+		}, nil
+	})
+	return runStorageObservation(retained, nil, observe)
 }
 
 func closeScanPublicationIO(operation *PrimaryRootIO) error {
@@ -258,10 +304,81 @@ func (input *primaryScanRead) attach(file *os.File, path string, stamp os.FileIn
 	if stamp == nil || !stamp.Mode().IsRegular() {
 		return scanReadFailure(errScanProbeSourceChanged)
 	}
-	// Reuse the walker's first observation. checkSource still observes the live
-	// descriptor and named path before this input can enter the probe queue.
+	// Preserve the first observation used by the walker and cache decision.
+	// checkSource still observes the live descriptor and named path.
 	input.stamp = stamp
+	if input.namedAnchor == nil {
+		if source := input.state.sourceRoot; source != nil {
+			if !source.row.same(input.row) {
+				return scanReadFailure(ErrRootBindingConflict)
+			}
+			var err error
+			input.anchorSource, err = source.borrow()
+			if err != nil {
+				return scanReadFailure(err)
+			}
+			input.namedAnchor = input.anchorSource.anchor
+		} else if pass := input.state.reconciliationPass; pass != nil {
+			if capture := pass.byRoot[input.row.root.id]; capture != nil && capture.status == RootBindingVerified && capture.capture != nil {
+				// The normal verified path already owns its approved anchor.
+				// Pin that capture until this input and any late proof have joined,
+				// instead of opening another anchor descriptor for every file.
+				if !capture.observation.retain() {
+					return scanReadFailure(ErrUnavailable)
+				}
+				input.anchorCapture = capture
+				if named, ok := capture.capture.(*rootBindingNamedCapture); ok && named.lease != nil {
+					input.namedAnchor = named.lease.approved
+				} else {
+					var err error
+					input.namedAnchor, err = capture.capture.CloneApprovedAnchor()
+					if err != nil {
+						return scanReadFailure(err)
+					}
+					input.ownedAnchor = true
+				}
+				if input.namedAnchor == nil {
+					return scanReadFailure(ErrUnavailable)
+				}
+			}
+		}
+		if input.namedAnchor == nil {
+			lease, err := input.state.store.leaseScanOperationRoot(input.work, input.state.task, input.row.root)
+			if err != nil {
+				return scanReadFailure(err)
+			}
+			input.namedAnchor = lease.approved
+			input.ownedAnchor = true
+		}
+	}
 	return input.checkSource()
+}
+
+func (input *primaryScanRead) checkPhysicalSource(ctx context.Context) (resultErr error) {
+	if input.namedAnchor == nil || input.namedRoot == nil || input.file == nil || input.stamp == nil {
+		return scanReadFailure(ErrUnavailable)
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if err := checkTaskSourceAnchorName(input.row.root.allowedPath, input.namedAnchor); err != nil {
+		return errors.Join(ErrRootBindingConflict, err)
+	}
+	current, err := openRegisteredRoot(input.namedAnchor, input.row.root.relativePath)
+	if err != nil {
+		return errors.Join(ErrRootBindingConflict, err)
+	}
+	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryRoot(ctx, current)) }()
+	if !sameMediaSourceDirectory(input.namedRoot, current) {
+		return ErrRootBindingConflict
+	}
+	if err := checkScanProbeFileAt(ctx, current, input.file, input.stamp, input.path); err != nil {
+		return err
+	}
+	if err := checkTaskSourceAnchorName(input.row.root.allowedPath, input.namedAnchor); err != nil {
+		return errors.Join(ErrRootBindingConflict, err)
+	}
+	return ctx.Err()
 }
 
 func (input *primaryScanRead) checkSource() (resultErr error) {
@@ -279,33 +396,17 @@ func (input *primaryScanRead) checkSource() (resultErr error) {
 			}
 		}
 	}
-	// Reopen the granted anchor and safe registered-name chain independently
-	// of cached Store anchors. Root and exact source identity are checked per
-	// read; complete topology remains a publication and final deletion proof.
-	current, err := input.state.store.openScanOperationRoot(work, input.state.task, input.row.root)
-	if err != nil {
-		return scanReadFailure(fmt.Errorf("%w: scan root name is unavailable: %w", ErrUnavailable, err))
-	}
-	defer func() {
-		if err := current.Close(); err != nil {
-			resultErr = errors.Join(resultErr, scanReadFailure(err))
-		}
-	}()
-	if !sameMediaSourceDirectory(input.namedRoot, current) {
-		return scanReadFailure(ErrRootBindingConflict)
-	}
-	err = checkScanProbeFileAt(work, current, input.file, input.stamp, input.path)
-	if err == errScanProbeSourceChanged {
+	err := input.checkPhysicalSource(work)
+	if scanProbeSourceChangedOnly(err) {
 		input.mu.Lock()
 		receipt, phase, missing := input.receipt, input.phase, input.missingReceipt
 		input.mu.Unlock()
-		// A joined, known-retired probe can reject stale source facts without
-		// turning that ordinary rejection into an ownership failure. Before a
-		// backend is called, its acquired phase must still retire in the caller.
-		// Root and close failures above remain fatal when joined with this error.
+		// Stale facts are recoverable only after a known-retired probe or before
+		// invoking a backend whose acquired phase the caller still must retire.
+		// Root, cancellation and cleanup failures remain ownership failures.
 		if receipt != nil && receipt.RetirementComplete() && !receipt.UnknownObserved() ||
 			receipt == nil && phase != nil && !missing {
-			return err
+			return errScanProbeSourceChanged
 		}
 	}
 	return scanReadFailure(err)
@@ -412,7 +513,12 @@ func (input *primaryScanRead) probeContext(ctx context.Context, prober Prober, f
 		// Only a branch that never invoked a backend can retire without a
 		// receipt. A backend violating its opaque contract stays quarantined.
 		if called {
+			input.mu.Lock()
+			input.missingReceipt = true
+			input.mu.Unlock()
 			err = errors.Join(err, media.ErrProcessRetirementUnknown)
+		}
+		if called {
 			return media.Info{}, scanReadFailure(err)
 		}
 		return media.Info{}, err
@@ -482,6 +588,7 @@ func (input *primaryScanRead) close(closeFile func() error) error {
 			input.phase = nil
 			input.mu.Unlock()
 		}
+		input.publicationWorkers.Wait()
 		if closeFile != nil {
 			if err := closeFile(); err != nil && !errors.Is(err, os.ErrClosed) {
 				input.closeErr = errors.Join(input.closeErr, err)
@@ -508,6 +615,13 @@ func (input *primaryScanRead) close(closeFile func() error) error {
 				time.Sleep(time.Millisecond)
 			}
 		}
+		if input.ownedAnchor && input.namedAnchor != nil {
+			input.closeErr = errors.Join(input.closeErr, closeAuxiliaryRoot(input.namedAnchor))
+		}
+		if input.anchorCapture != nil {
+			input.closeErr = errors.Join(input.closeErr, input.anchorCapture.observation.release())
+		}
+		input.closeErr = errors.Join(input.closeErr, input.anchorSource.Close())
 		input.closeErr = errors.Join(input.closeErr, input.retireRegistration())
 		close(input.closed)
 	})

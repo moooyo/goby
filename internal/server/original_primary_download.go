@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"mime"
 	"net/http"
@@ -14,9 +15,8 @@ import (
 	"github.com/moooyo/goby/internal/primaryio"
 )
 
-// serveOriginalDownloadSnapshot consumes the planning descriptor before the
-// download-purpose owner is registered and the actual delivery FD is opened.
-// Fresh download authority and the exact planning ETag remain mandatory.
+// serveOriginalDownloadSnapshot preserves ownership for internal callers that
+// already hold a planning descriptor. HTTP requests plan without opening a file.
 func (s *Server) serveOriginalDownloadSnapshot(w http.ResponseWriter, r *http.Request, planning *os.File, expected library.MediaFile) {
 	if planning == nil {
 		s.downloadMediaError(w, r, library.ErrUnavailable)
@@ -26,8 +26,16 @@ func (s *Server) serveOriginalDownloadSnapshot(w http.ResponseWriter, r *http.Re
 		s.downloadMediaError(w, r, library.ErrUnavailable)
 		return
 	}
+	prepare, cancel := context.WithTimeout(r.Context(), 20*time.Second)
+	defer cancel()
+	s.servePreparedOriginalDownloadSnapshot(w, r, prepare, expected)
+}
+
+// Fresh download authority and the planning ETag are checked after admission.
+// Only preparation observes its deadline; delivery retains the request lifetime.
+func (s *Server) servePreparedOriginalDownloadSnapshot(w http.ResponseWriter, r *http.Request, prepare context.Context, expected library.MediaFile) {
 	principal := r.Context().Value(principalKey).(identity.Principal)
-	file, source, content, err := s.library.OpenOriginalDownloadFor(r.Context(), librarySubject(principal, principal.User.ID), expected.Item.ID, expected.SourceID, expected.ETag)
+	file, source, content, err := s.library.OpenPreparedOriginalDownloadFor(prepare, r.Context(), librarySubject(principal, principal.User.ID), expected.Item.ID, expected.SourceID, expected.ETag)
 	if err != nil {
 		s.downloadMediaError(w, r, err)
 		return

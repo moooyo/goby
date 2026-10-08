@@ -60,11 +60,21 @@ func seedMusicSnapshotWitness(t *testing.T, ctx context.Context, pool *pgxpool.P
 	return musicSnapshotState(t, ctx, pool)
 }
 
-func musicSnapshotState(t *testing.T, ctx context.Context, pool *pgxpool.Pool) string {
+func musicSnapshotState(t *testing.T, ctx context.Context, pool *pgxpool.Pool, sourceVersion ...int64) string {
 	t.Helper()
+	items := `(SELECT jsonb_agg(to_jsonb(i) ORDER BY id) FROM items i WHERE library_id='music-snapshot-library')`
+	if len(sourceVersion) > 1 {
+		t.Fatal("a music snapshot supplied multiple historical source versions")
+	}
+	if len(sourceVersion) == 1 {
+		// Compare every original item column from the authenticated source
+		// catalog. Same-schema snapshots keep the complete current row.
+		items = `(SELECT jsonb_agg(item ORDER BY item->>'id') FROM jsonb_array_elements((` +
+			historicalArchiveRowsStatement(t, "items", sourceVersion[0]) + `)::jsonb) item WHERE item->>'library_id'='music-snapshot-library')`
+	}
 	var state string
 	if err := pool.QueryRow(ctx, `SELECT jsonb_build_object(
-		'items',(SELECT jsonb_agg(to_jsonb(i) ORDER BY id) FROM items i WHERE library_id='music-snapshot-library'),
+		'items',`+items+`,
 		'metadata',(SELECT jsonb_agg(to_jsonb(m)-'online_source'-'online_type'-'online_base'-'automatic_sort_name_explicit' ORDER BY item_id) FROM item_metadata_state m WHERE item_id IN ('music-snapshot-track','music-snapshot-album')),
 		'associations',(SELECT jsonb_agg(to_jsonb(a) ORDER BY item_id,entity_id,credit_group,position) FROM item_entities a WHERE item_id IN ('music-snapshot-track','music-snapshot-album')),
 		'entities',(SELECT jsonb_agg(to_jsonb(e) ORDER BY id) FROM catalog_entities e WHERE id IN
@@ -114,7 +124,7 @@ func TestPostgreSQLOfflineSchema25ArchivePreservesMusicAndBackfillsThemeOwners(t
 		'Historical ordinary song','historical ordinary song','Audio',false,'Legacy/Theme-Music/song.flac')`); err != nil {
 		t.Fatalf("seed known historical theme paths without changing the schema25 contract: %v", err)
 	}
-	musicBefore = musicSnapshotState(t, ctx, source)
+	musicBefore = musicSnapshotState(t, ctx, source, 25)
 	archive, facts := sourceArchive(t, ctx, source, options)
 	if facts.SchemaVersion != 25 || len(facts.MigrationChecksums) != 25 || len(facts.Tables) != 30 {
 		t.Fatal("the historical music archive is not the exact schema25 migration prefix")
@@ -143,9 +153,10 @@ func TestPostgreSQLOfflineSchema25ArchivePreservesMusicAndBackfillsThemeOwners(t
 			t.Errorf("schema25 restoration changed an original row or field in %s", table)
 		}
 	}
-	if musicSnapshotState(t, ctx, target) != musicBefore {
+	if musicSnapshotState(t, ctx, target, facts.SchemaVersion) != musicBefore {
 		t.Fatal("theme owner backfill changed persisted music source, identities, roles, or metadata layers")
 	}
+	assertMigratedMediaOperationSourceCache(t, ctx, target)
 	assertMusicSnapshotIdentity(t, ctx, target)
 	assertHistoricalArchiveThemeDefaults(t, ctx, target, `[["schema25-theme-root","Legacy/Theme-Music",true]]`)
 	assertHistoricalArchiveExtraDefaults(t, ctx, target)

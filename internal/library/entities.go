@@ -162,7 +162,7 @@ func (s *Store) listEntities(ctx context.Context, kind string, query Query, acto
 		return EntityResult{}, fmt.Errorf("read visible catalog entities: %w", err)
 	}
 	rows.Close()
-	if err := populateEntityProjections(ctx, tx, Subject{UserID: query.UserID, ApplicationCredentialID: query.ApplicationCredentialID}, access, result.Items); err != nil {
+	if err := populateEntityProjections(ctx, tx, Subject{UserID: query.UserID, ApplicationCredentialID: query.ApplicationCredentialID}, access, result.Items, query.Projection); err != nil {
 		return EntityResult{}, err
 	}
 	if actor != nil {
@@ -183,7 +183,7 @@ func (s *Store) GetEntity(ctx context.Context, userID, kind, name string) (Entit
 }
 
 // GetEntityFor resolves an associated entity within the subject's catalog scope.
-func (s *Store) GetEntityFor(ctx context.Context, subject Subject, kind, name string) (Entity, error) {
+func (s *Store) GetEntityFor(ctx context.Context, subject Subject, kind, name string, projections ...QueryProjection) (Entity, error) {
 	kind, err := normalizeEntityKind(kind)
 	if err != nil {
 		return Entity{}, err
@@ -191,7 +191,11 @@ func (s *Store) GetEntityFor(ctx context.Context, subject Subject, kind, name st
 	if strings.TrimSpace(name) == "" || !utf8.ValidString(name) || strings.ContainsRune(name, '\x00') {
 		return Entity{}, ErrInvalidInput
 	}
-	return s.getEntity(ctx, subject, `entity.kind = $3 AND entity.normalized_hash = sha256(convert_to(lower(btrim($4::text)), 'UTF8'))
+	projection := QueryProjection{}
+	if len(projections) != 0 {
+		projection = projections[0]
+	}
+	return s.getEntity(ctx, subject, projection, `entity.kind = $3 AND entity.normalized_hash = sha256(convert_to(lower(btrim($4::text)), 'UTF8'))
 		AND entity.normalized_name = lower(btrim($4::text))`, kind, name)
 }
 
@@ -200,14 +204,18 @@ func (s *Store) GetEntityByID(ctx context.Context, userID string, id int64) (Ent
 }
 
 // GetEntityByIDFor does not expose orphaned catalog entities.
-func (s *Store) GetEntityByIDFor(ctx context.Context, subject Subject, id int64) (Entity, error) {
+func (s *Store) GetEntityByIDFor(ctx context.Context, subject Subject, id int64, projections ...QueryProjection) (Entity, error) {
 	if id <= 0 {
 		return Entity{}, ErrInvalidInput
 	}
-	return s.getEntity(ctx, subject, "entity.id = $3", id)
+	projection := QueryProjection{}
+	if len(projections) != 0 {
+		projection = projections[0]
+	}
+	return s.getEntity(ctx, subject, projection, "entity.id = $3", id)
 }
 
-func (s *Store) getEntity(ctx context.Context, subject Subject, condition string, values ...any) (Entity, error) {
+func (s *Store) getEntity(ctx context.Context, subject Subject, projection QueryProjection, condition string, values ...any) (Entity, error) {
 	tx, access, err := s.beginSubjectRead(ctx, subject)
 	if err != nil {
 		return Entity{}, err
@@ -226,7 +234,7 @@ func (s *Store) getEntity(ctx context.Context, subject Subject, condition string
 		return Entity{}, fmt.Errorf("get visible catalog entity: %w", err)
 	}
 	projected := []Entity{entity}
-	if err := populateEntityProjections(ctx, tx, subject, access, projected); err != nil {
+	if err := populateEntityProjections(ctx, tx, subject, access, projected, projection); err != nil {
 		return Entity{}, err
 	}
 	entity = projected[0]

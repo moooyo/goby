@@ -532,18 +532,26 @@ func (s *Server) authorizeRemotePlayItems(ctx context.Context, actor, target lib
 		return errRemoteCommandInput
 	}
 	// A controller's administrator role never substitutes for target access.
-	checked := map[string]bool{}
+	controller, err := s.library.ItemPermissionsFor(ctx, actor, ids)
+	if err != nil {
+		return err
+	}
+	// Preserve the first item's controller rejection before consulting target
+	// authority, then apply the original per-item error order to both snapshots.
+	if _, visible := controller[ids[0]]; !visible {
+		return library.ErrNotFound
+	}
+	receiver, err := s.library.ItemPermissionsFor(ctx, target, ids)
+	if err != nil {
+		return err
+	}
 	for _, itemID := range ids {
-		if checked[itemID] {
-			continue
+		if _, visible := controller[itemID]; !visible {
+			return library.ErrNotFound
 		}
-		checked[itemID] = true
-		if _, err := s.library.GetItemFor(ctx, actor, itemID); err != nil {
-			return err
-		}
-		item, err := s.library.GetItemFor(ctx, target, itemID)
-		if err != nil {
-			return err
+		item, visible := receiver[itemID]
+		if !visible {
+			return library.ErrNotFound
 		}
 		if !item.CanPlay {
 			return library.ErrForbidden

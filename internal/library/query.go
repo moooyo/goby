@@ -259,7 +259,7 @@ func (s *Store) getItemForOnPool(ctx context.Context, subject Subject, id string
 		return item, nil
 	}
 	var analysisSourceRevision string
-	item, err := scanItem(tx.QueryRow(ctx, "SELECT "+access.itemColumnsSQL()+`, CASE WHEN i.type IN ('Movie','Episode') AND NOT i.is_folder THEN `+introSourceRevisionSQL+` ELSE '' END FROM items i
+	item, err := scanItem(tx.QueryRow(ctx, "SELECT "+access.itemColumnsSQL()+`, CASE WHEN i.type IN ('Movie','Episode') AND NOT i.is_folder AND jsonb_typeof(i.media)='object' THEN `+introSourceRevisionSQL+` ELSE '' END FROM items i
 		WHERE i.id = $1 AND ($2::boolean OR i.library_id = ANY($3::text[]) OR i.library_id = `+policySQLString(collectionLibraryID)+`) AND `+access.directSQL("i"),
 		id, access.all, access.folders), &analysisSourceRevision)
 	if errors.Is(err, pgx.ErrNoRows) {

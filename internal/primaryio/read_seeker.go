@@ -32,7 +32,7 @@ type ReadSeeker struct {
 	ioMu         sync.Mutex
 	methods      sync.WaitGroup
 	owner        *Owner
-	route        Route
+	route        preparedRoute
 	class        Class
 	source       ReadSeekCloser
 	chunk        int
@@ -54,7 +54,7 @@ func NewReadSeeker(owner *Owner, route Route, class Class, source ReadSeekCloser
 	if owner == nil || owner.Context() == nil || source == nil || maxChunk < 1 || maxChunk > MaxReadChunkBytes || class != Foreground && class != Background {
 		return nil, ErrInvalid
 	}
-	route, err := copyRoute(route)
+	prepared, err := prepareRoute(route)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func NewReadSeeker(owner *Owner, route Route, class Class, source ReadSeekCloser
 	if err != nil {
 		return nil, err
 	}
-	reader := &ReadSeeker{owner: owned, route: route, class: class, source: source, chunk: maxChunk,
+	reader := &ReadSeeker{owner: owned, route: prepared, class: class, source: source, chunk: maxChunk,
 		retired: retired, closeDone: make(chan struct{}), callbackDone: make(chan struct{})}
 	reader.stopCallback = context.AfterFunc(owned.Context(), func() {
 		defer close(reader.callbackDone)
@@ -141,7 +141,7 @@ func (r *ReadSeeker) Read(buffer []byte) (n int, err error) {
 	if len(buffer) == 0 {
 		return 0, nil
 	}
-	lease, err := r.owner.Acquire(r.route, r.class)
+	lease, err := r.owner.acquirePrepared(r.route, r.class)
 	if err != nil {
 		return 0, err
 	}

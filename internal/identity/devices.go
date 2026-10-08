@@ -211,7 +211,7 @@ func authorizeDeviceActor(ctx context.Context, tx AuthorizationTx, actor Princip
 	}
 	if actor.Kind == "emby" {
 		policy, err := ParseRuntimePolicy(policyJSON)
-		if err != nil || !loginPolicyAllows(policyJSON, deviceID, observedAt) ||
+		if err != nil || !parsedLoginPolicyAllows(policy, policyJSON, deviceID, observedAt) ||
 			(!policy.EnableRemoteAccess && !IsLocalPeer(actor.PeerIP)) {
 			return ErrUnauthorized
 		}

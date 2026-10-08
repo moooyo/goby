@@ -36,11 +36,12 @@ func retainStorageObservationPhase(ctx context.Context) (func() error, error) {
 // still uses. The final worker releases retired resources without application or
 // database locks; a blocked close continues to occupy its observation slot.
 type storageObservationLifetime struct {
-	mu       sync.Mutex
-	active   int
-	retired  bool
-	close    func() error
-	closeErr error
+	mu        sync.Mutex
+	active    int
+	retired   bool
+	close     func() error
+	reference *storageObservationLifetime
+	closeErr  error
 }
 
 type storageObservationRetirementFailure struct {
@@ -99,14 +100,50 @@ func (lifetime *storageObservationLifetime) release() error {
 	lifetime.mu.Lock()
 	lifetime.active--
 	var closeResources func() error
+	var reference *storageObservationLifetime
 	if lifetime.active == 0 && lifetime.retired {
 		closeResources, lifetime.close = lifetime.close, nil
+		reference, lifetime.reference = lifetime.reference, nil
 	}
 	lifetime.mu.Unlock()
+	if reference != nil {
+		return lifetime.releaseReference(reference)
+	}
 	if closeResources != nil {
 		return lifetime.closeResources(closeResources)
 	}
 	return nil
+}
+
+// A borrowed handle retires only a reference acquired before its publication.
+// Releasing it is trusted memory accounting. The final origin still closes its
+// actual resources through the isolated callback path in closeResources.
+func (lifetime *storageObservationLifetime) retireReference(reference *storageObservationLifetime) error {
+	lifetime.mu.Lock()
+	if lifetime.retired {
+		err := lifetime.closeErr
+		lifetime.mu.Unlock()
+		return err
+	}
+	lifetime.retired = true
+	if lifetime.active != 0 {
+		lifetime.reference = reference
+		lifetime.mu.Unlock()
+		return nil
+	}
+	lifetime.mu.Unlock()
+	return lifetime.releaseReference(reference)
+}
+
+func (lifetime *storageObservationLifetime) releaseReference(reference *storageObservationLifetime) error {
+	err := reference.release()
+	if err != nil {
+		lifetime.mu.Lock()
+		lifetime.reference = reference
+		lifetime.closeErr = err
+		lifetime.mu.Unlock()
+	}
+	return err
 }
 
 func (lifetime *storageObservationLifetime) retire(closeResources func() error) error {

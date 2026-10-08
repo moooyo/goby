@@ -224,6 +224,11 @@ func (s *Store) ReadGeneration(ctx context.Context, id string) (GenerationFiles,
 	if err := s.verify(ctx); err != nil {
 		return GenerationFiles{}, err
 	}
+	return s.readGenerationLocked(ctx, id)
+}
+
+// readGenerationLocked requires the gate and a successful full verification.
+func (s *Store) readGenerationLocked(ctx context.Context, id string) (GenerationFiles, error) {
 	entry, ok := s.findGeneration(id)
 	if !ok {
 		return GenerationFiles{}, ErrNotFound
@@ -244,15 +249,22 @@ func (s *Store) ReadGeneration(ctx context.Context, id string) (GenerationFiles,
 		return GenerationFiles{}, ErrUnavailable
 	}
 	result := GenerationFiles{Generation: publicGeneration(entry), Config: config}
+	returned := false
+	defer func() {
+		if !returned {
+			clear(result.Config)
+			clear(result.Master)
+		}
+	}()
 	if entry.Master != nil {
 		master, actual, err := readRegular(ctx, directory, masterName, 32)
 		if err != nil {
 			return GenerationFiles{}, err
 		}
+		result.Master = master
 		if actual.Identity != entry.Master.Identity || actual.Digest != entry.Master.SHA256 {
 			return GenerationFiles{}, ErrUnavailable
 		}
-		result.Master = master
 	}
 	if err := s.checkRoot(ctx); err != nil {
 		return GenerationFiles{}, err
@@ -260,6 +272,7 @@ func (s *Store) ReadGeneration(ctx context.Context, id string) (GenerationFiles,
 	if err := checkNamed(s.directory, generationName(id), entry.Directory, true); err != nil {
 		return GenerationFiles{}, err
 	}
+	returned = true
 	return result, nil
 }
 
@@ -277,6 +290,11 @@ func (s *Store) MasterKeyPath(ctx context.Context, id string) (string, error) {
 	if err := s.verify(ctx); err != nil {
 		return "", err
 	}
+	return s.masterKeyPathLocked(id)
+}
+
+// masterKeyPathLocked requires the gate and a successful full verification.
+func (s *Store) masterKeyPathLocked(id string) (string, error) {
 	entry, ok := s.findGeneration(id)
 	if !ok {
 		return "", ErrNotFound

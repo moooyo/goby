@@ -136,6 +136,11 @@ func metadataMigrationSnapshot(t *testing.T, ctx context.Context, pool *pgxpool.
 	result := make(map[string]string, len(tables))
 	for _, table := range tables {
 		statement := `SELECT COALESCE(jsonb_agg(to_jsonb(original) ORDER BY to_jsonb(original)::text), '[]'::jsonb)::text FROM ` + pgx.Identifier{table}.Sanitize() + " original"
+		if table == "items" {
+			// Source stamp caches are new derived fields; compare every old item field.
+			projection := `to_jsonb(original) - ARRAY['media_operation_source_revision','media_operation_source_binding_revision']`
+			statement = `SELECT COALESCE(jsonb_agg(` + projection + ` ORDER BY (` + projection + `)::text), '[]'::jsonb)::text FROM items original`
+		}
 		if table == "scan_jobs" {
 			// Nullable task ownership is checked independently after migration.
 			statement = `SELECT COALESCE(jsonb_agg(to_jsonb(original) - 'force_probe' - 'task_child_id' ORDER BY id), '[]'::jsonb)::text FROM scan_jobs original`
@@ -203,7 +208,8 @@ func metadataMigrationPhase3Defaults(t *testing.T, ctx context.Context, pool *pg
 	var totalEvents, initializedEvents int
 	if err := pool.QueryRow(ctx, `WITH event_defaults AS (
 		SELECT count(*) AS total, count(*) FILTER (WHERE name IN
-			('ServerStarted','LibraryChanged','ConfigurationChanged','IntroAnalysisRequested','PreviewGenerationRequested')
+			('ServerStarted','LibraryChanged','ConfigurationChanged','IntroAnalysisRequested','PreviewGenerationRequested',
+			 'BackgroundPreviewGenerationRequested','AudioWaveformGenerationRequested','CreditsAnalysisRequested','SubtitleTimelineGenerationRequested')
 			AND sequence=0 AND lifecycle_key='' AND occurred_at IS NOT NULL) AS initialized
 		FROM task_system_events
 	) SELECT
@@ -219,7 +225,7 @@ func metadataMigrationPhase3Defaults(t *testing.T, ctx context.Context, pool *pg
 		AND NOT EXISTS(SELECT 1 FROM artwork_images)
 		AND NOT EXISTS(SELECT 1 FROM entity_user_data)
 		AND NOT EXISTS(SELECT 1 FROM task_triggers WHERE system_event IS NOT NULL OR last_event_sequence IS DISTINCT FROM 0)
-		AND (SELECT total=5 AND initialized=5 FROM event_defaults)
+		AND (SELECT total=9 AND initialized=9 FROM event_defaults)
 		AND NOT EXISTS(SELECT 1 FROM task_system_event_receipts),
 		(SELECT total FROM event_defaults), (SELECT initialized FROM event_defaults)`).Scan(&valid, &totalEvents, &initializedEvents); err != nil || !valid {
 		t.Fatalf("metadata migration inferred phase 3 library, preference, artwork, or event state: valid=%t total_events=%d initialized_events=%d error=%v",
@@ -247,6 +253,7 @@ func metadataMigrationPlaybackCompatibilityDefaults(t *testing.T, ctx context.Co
 			OR local_password_failures IS DISTINCT FROM 0 OR local_password_blocked_until IS NOT NULL)
 		AND NOT EXISTS(SELECT 1 FROM sessions WHERE local_auth IS DISTINCT FROM false)
 		AND NOT EXISTS(SELECT 1 FROM item_intro_state)
+		AND NOT EXISTS(SELECT 1 FROM item_credits_state)
 		AND NOT EXISTS(SELECT 1 FROM media_operations)
 		AND NOT EXISTS(SELECT 1 FROM media_operation_cues)
 		AND NOT EXISTS(SELECT 1 FROM item_owned_subtitles)
@@ -282,7 +289,10 @@ func metadataMigrationItem(t *testing.T, ctx context.Context, pool *pgxpool.Pool
 	t.Helper()
 	columns := itemColumns
 	if legacy {
+		// Schema 13 has neither source-bound marker table. Their historical
+		// values are absent; retain typed slots for the current Item decoder.
 		columns = strings.Replace(columns, itemIntroColumn, "NULL::jsonb", 1)
+		columns = strings.Replace(columns, itemCreditsColumn, "NULL::jsonb", 1)
 		columns = strings.Replace(columns,
 			"COALESCE((SELECT ms.effective FROM item_metadata_state ms WHERE ms.item_id = i.id), i.local_metadata)",
 			"i.local_metadata", 1)
@@ -296,8 +306,8 @@ func metadataMigrationItem(t *testing.T, ctx context.Context, pool *pgxpool.Pool
 		for _, alias := range []string{"child", "parent", "tv_parent", "tv_series"} {
 			columns = strings.ReplaceAll(columns, ordinaryItemSQL(alias), "true")
 		}
-		if strings.Contains(columns, "item_metadata_state") {
-			t.Fatal("legacy projection still depends on the new metadata table")
+		if strings.Contains(columns, "item_metadata_state") || strings.Contains(columns, "item_intro_state") || strings.Contains(columns, "item_credits_state") {
+			t.Fatal("legacy projection still depends on a later metadata or marker table")
 		}
 		if strings.Contains(columns, "theme_reserved_paths") || strings.Contains(columns, "item_theme_resources") ||
 			strings.Contains(columns, "extra_reserved_paths") || strings.Contains(columns, "item_extra_resources") {
@@ -514,8 +524,14 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 	expectedAdditions = append(expectedAdditions, "series_episode_rosters", "episode_roster_imports", "expected_episodes")
 	expectedAdditions = append(expectedAdditions, "notification_transport", "notification_journal_state", "notification_registrations", "notification_source_events", "notification_deliveries")
 	analysisTables := []string{"analysis_settings", "analysis_run_profiles", "analysis_work", "analysis_work_sources", "analysis_feature_cache",
-		"analysis_detections", "analysis_detection_sources", "analysis_intro_decisions", "analysis_intro_audit", "analysis_preview_state", "analysis_previews"}
+		"analysis_detections", "analysis_detection_sources", "analysis_intro_decisions", "analysis_intro_audit", "analysis_preview_state", "analysis_previews",
+		"analysis_credits_detections", "analysis_credits_detection_sources"}
 	expectedAdditions = append(expectedAdditions, analysisTables...)
+	derivedTables := []string{"item_credits_state", "item_bitmap_subtitles", "item_background_preview_settings",
+		"background_preview_queue", "background_preview_requests", "audio_waveform_queue", "audio_waveform_requests",
+		"subtitle_timeline_queue", "subtitle_timeline_requests"}
+	expectedAdditions = append(expectedAdditions, "background_preview_settings")
+	expectedAdditions = append(expectedAdditions, derivedTables...)
 	sort.Strings(expectedAdditions)
 	if !reflect.DeepEqual(additions, expectedAdditions) {
 		t.Errorf("metadata migration created unexpected tables: %+v", additions)
@@ -538,12 +554,27 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 			t.Errorf("metadata migration populated analysis table %s without admission: count=%d error=%v", table, count, err)
 		}
 	}
+	// Later derived-media features retain the same explicit-admission boundary.
+	for _, table := range derivedTables {
+		var count int
+		if err := pool.QueryRow(ctx, "SELECT count(*) FROM "+pgx.Identifier{table}.Sanitize()).Scan(&count); err != nil || count != 0 {
+			t.Errorf("metadata migration populated derived-media table %s without admission: count=%d error=%v", table, count, err)
+		}
+	}
 	var analysisDefaults bool
 	if err := pool.QueryRow(ctx, `SELECT (SELECT count(*) FROM analysis_settings)=1 AND EXISTS(
 		SELECT 1 FROM analysis_settings WHERE id=1 AND revision=1 AND publication_epoch=1 AND auto_publish_intros
 		AND preview_interval_seconds=10 AND preview_quality=80 AND max_source_bytes=137438953472
-		AND max_item_runtime_seconds=1200 AND feature_cache_max_bytes=134217728)`).Scan(&analysisDefaults); err != nil || !analysisDefaults {
+		AND max_item_runtime_seconds=1200 AND feature_cache_max_bytes=134217728
+		AND intro_skipper_options='{"AnalysisPercent":25,"AnalysisLengthLimit":10,"MinimumIntroDuration":15,"MaximumIntroDuration":120,"MaximumFingerprintPointDifferences":6,"MaximumTimeSkip":3.5,"InvertedIndexShift":2}'::jsonb)`).Scan(&analysisDefaults); err != nil || !analysisDefaults {
 		t.Errorf("metadata migration did not preserve the independent initial analysis profile: defaults=%v error=%v", analysisDefaults, err)
+	}
+	var backgroundDefaults bool
+	if err := pool.QueryRow(ctx, `SELECT (SELECT count(*) FROM background_preview_settings)=1 AND EXISTS(
+		SELECT 1 FROM background_preview_settings WHERE id=1 AND revision=1 AND duration_seconds=25
+		AND max_width=1280 AND video_bitrate=1500000 AND max_item_runtime_seconds=1200 AND updated_at IS NOT NULL)`).
+		Scan(&backgroundDefaults); err != nil || !backgroundDefaults {
+		t.Errorf("metadata migration did not initialize the independent background-preview profile: defaults=%v error=%v", backgroundDefaults, err)
 	}
 	var keys, clients int
 	if err := pool.QueryRow(ctx, `SELECT (SELECT count(*) FROM application_keys),

@@ -189,6 +189,21 @@ func (s *Store) DispatchDue(ctx context.Context, limit int) (bool, error) {
 }
 
 func (s *Store) dispatchOneSchedule(ctx context.Context, excluded ...string) (bool, error) {
+	// This pool read is only an idle hint. Concurrent edits or dispatchers can
+	// change it; the owned transaction still selects and validates current work.
+	var available bool
+	if err := s.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM task_triggers t
+        JOIN task_definitions d ON d.id = t.task_id
+        WHERE d.key = ANY($1::text[]) AND d.enabled
+            AND NOT (t.task_id = ANY(COALESCE($2::text[], '{}'::text[])))
+            AND t.retired_at IS NULL AND t.calculation_error = ''
+            AND t.kind <> 'startup' AND t.next_fire_at <= statement_timestamp())`,
+		s.executorKeys(), excluded).Scan(&available); err != nil {
+		return false, fmt.Errorf("check due task schedules: %w", err)
+	}
+	if !available {
+		return false, nil
+	}
 	processed := false
 	err := s.owner.WithOwnedTx(ctx, func(tx library.OwnedTx) error {
 		// Lock every supported definition in the same fixed order as Reconcile,

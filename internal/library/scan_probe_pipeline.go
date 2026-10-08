@@ -74,6 +74,28 @@ func scanInputInspectionRejectedOnly(err error, rejection *scanInputInspectionRe
 	return true
 }
 
+func scanProbeSourceChangedOnly(err error) bool {
+	if err == errScanProbeSourceChanged {
+		return true
+	}
+	if joined, ok := err.(interface{ Unwrap() []error }); ok {
+		children := joined.Unwrap()
+		if len(children) == 0 {
+			return false
+		}
+		for _, child := range children {
+			if child != nil && !scanProbeSourceChangedOnly(child) {
+				return false
+			}
+		}
+		return true
+	}
+	if wrapped, ok := err.(interface{ Unwrap() error }); ok {
+		return scanProbeSourceChangedOnly(wrapped.Unwrap())
+	}
+	return false
+}
+
 type scanProbePending struct {
 	path, kind string
 	hierarchy  hierarchy
@@ -387,11 +409,11 @@ func (state *scanState) prepareScannedMedia(path, kind string, role scannedMedia
 	}
 	accepted = true
 	input.info, input.stored, input.probe = info, stored, probe
-	input.unchanged, input.checksVersion = unchanged, checksVersion
+	input.unchanged = unchanged
 	return input, nil
 }
 
-func (state *scanState) acceptScannedMedia(input *scannedMediaInput, kind string, probeErr error) (accepted bool, resultErr error) {
+func (state *scanState) acceptScannedMedia(input *scannedMediaInput, kind string, probeErr error) (bool, error) {
 	if probeErr != nil {
 		var failure *primaryScanReadFailure
 		if errors.As(probeErr, &failure) || errors.Is(probeErr, media.ErrProcessRetirementUnknown) {
@@ -403,36 +425,9 @@ func (state *scanState) acceptScannedMedia(input *scannedMediaInput, kind string
 		state.warnings++
 		return false, state.store.persistProgress(state.task)
 	}
-	if !input.unchanged {
-		if input.primary == nil {
-			return false, scanReadFailure(ErrUnavailable)
-		}
-		operation, err := input.primary.preparePublicationIO()
-		if err != nil {
-			return false, scanReadFailure(err)
-		}
-		defer func() {
-			if err := closeScanPublicationIO(operation); err != nil {
-				accepted = false
-				resultErr = errors.Join(resultErr, err)
-			}
-		}()
-		var after os.FileInfo
-		var statErr error
-		if err := input.primary.runPublicationMetadata(operation, func(context.Context) error {
-			after, statErr = input.file.Stat()
-			return nil
-		}); err != nil {
-			return false, err
-		}
-		err = statErr
-		if err != nil || !os.SameFile(input.info, after) || after.Size() != input.info.Size() ||
-			!after.ModTime().Equal(input.info.ModTime()) ||
-			((input.authority != nil || input.checksVersion) && media.FileChangeTime(after) != media.FileChangeTime(input.info)) {
-			state.warnings++
-			return false, state.store.persistProgress(state.task)
-		}
-	}
+	// A changed input was already checked after actual probe retirement while
+	// its I/O phase was held. Publication performs its own current source proof;
+	// acceptance only validates retained facts between those source boundaries.
 	if err := state.task.ctx.Err(); err != nil {
 		return false, err
 	}
@@ -634,15 +629,6 @@ func (state *scanState) checkScanProbeAuthorityWithRelation(tx pgx.Tx, path stri
 		return errScanProbeSourceChanged
 	}
 	return state.task.ctx.Err()
-}
-
-func (state *scanState) checkScanProbeFile(path string, input *scannedMediaInput) error {
-	if input.primary == nil {
-		return scanReadFailure(ErrUnavailable)
-	}
-	return input.primary.runPublicationMetadata(input.primary.publicationIO, func(ctx context.Context) error {
-		return checkScanProbeFileAt(ctx, state.opened, input.file, input.info, path)
-	})
 }
 
 func (state *scanState) revalidateScanProbeStorage(tx pgx.Tx, path string, input *scannedMediaInput) error {

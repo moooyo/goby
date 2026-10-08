@@ -54,6 +54,12 @@ an adapter for the existing vault loader, not a filesystem authority token. The
 vault loader must retain its own no-follow and ownership checks, and the caller
 must keep this lifecycle store open while using the path.
 
+`ReadCurrent` captures the current state, its generation files, and its selected
+master-key path while holding the same cancellable gate. Startup consumers use
+this coherent snapshot to verify all retained history once instead of repeating
+the complete verification through separate public reads. Historical damage still
+prevents startup, including damage to generations that are no longer active.
+
 ## Failure and trust boundaries
 
 If a rename has happened but the directory sync fails, the outcome is uncertain.

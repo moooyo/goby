@@ -91,7 +91,7 @@ func (s *Store) QuerySimilarArtists(ctx context.Context, seedID string, query Si
 	if err != nil {
 		return EntityResult{}, fmt.Errorf("read similar artists: %w", err)
 	}
-	if err := populateEntityProjections(ctx, tx, subject, access, result.Items); err != nil {
+	if err := populateEntityProjections(ctx, tx, subject, access, result.Items, query.Projection); err != nil {
 		return EntityResult{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {

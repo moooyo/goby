@@ -273,8 +273,9 @@ func (s *Store) RevokeManagedSession(ctx context.Context, actor Principal, id st
 		return ManagedSessionRevocation{}, fmt.Errorf("read managed session owner: %w", err)
 	}
 	// All accounts precede all authentication rows, both in deterministic ID
-	// order. The owner lookup does not retain a session lock ahead of accounts.
-	rows, err := tx.Query(ctx, "SELECT id FROM users WHERE id = ANY($1::text[]) ORDER BY id FOR UPDATE", []string{actor.User.ID, targetUserID})
+	// order. SHARE protects account authority while allowing sibling sessions
+	// to authorize during a wait for the target authentication row.
+	rows, err := tx.Query(ctx, "SELECT id FROM users WHERE id = ANY($1::text[]) ORDER BY id FOR SHARE", []string{actor.User.ID, targetUserID})
 	if err != nil {
 		return ManagedSessionRevocation{}, fmt.Errorf("lock managed session accounts: %w", err)
 	}

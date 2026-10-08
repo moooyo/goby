@@ -66,6 +66,7 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 	var directoryRoot *os.Root
 	var directory *os.File
 	var directoryInfo os.FileInfo
+	var sourceRoot *scanSourceRootWitness
 	images := make(map[string][]*scannedImage)
 	preserve := make(map[string]bool)
 	inspected := make(map[string]*scannedImage)
@@ -78,6 +79,9 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 		}
 		if directoryRoot != nil {
 			resultErr = errors.Join(resultErr, closePrimarySidecarResource(cleanupContext, directoryRoot))
+		}
+		if sourceRoot != nil {
+			resultErr = errors.Join(resultErr, sourceRoot.Close())
 		}
 		resultErr = scanReadFailure(errors.Join(resultErr, operation.Close()))
 	}()
@@ -186,6 +190,12 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 		if len(replaceTypes) == 0 {
 			return nil
 		}
+		if !knownNoLocalImages || !noCandidates {
+			sourceRoot, err = state.captureScanSourceRoot(ctx, row)
+			if err != nil {
+				return err
+			}
+		}
 		ready = true
 		return nil
 	})
@@ -238,7 +248,10 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 	finalSourceProof := func() error {
 		// The payload phase has retired. Its proof may only use immediately
 		// available capacity, never queue behind a held database transaction.
-		return scanReadFailure(operation.RunImmediate(state.task.ctx, state.root.id, primaryio.Background, func(context.Context) error {
+		return scanReadFailure(operation.RunImmediate(state.task.ctx, state.root.id, primaryio.Background, func(proof context.Context) error {
+			if err := sourceRoot.Check(proof); err != nil {
+				return err
+			}
 			current, err := state.opened.Lstat(directoryPath)
 			after, afterErr := directory.Stat()
 			if err != nil || afterErr != nil || !sameSubtitleDirectoryInfo(directoryInfo, current) ||
@@ -252,7 +265,7 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 					}
 				}
 			}
-			return nil
+			return sourceRoot.Check(proof)
 		}))
 	}
 	// Known absence only selects the ordinary writer for newly populated sets;

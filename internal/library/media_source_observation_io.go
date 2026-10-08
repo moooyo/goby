@@ -79,7 +79,7 @@ func closeSourceMetadataWarm(ctx context.Context, reservation *sourceMetadataRes
 			continue
 		}
 		err = operation.Run(context.WithoutCancel(ctx), warm.root.id, primaryio.Foreground, func(work context.Context) error {
-			return closeDirectoryPrimaryResource(work, warm.releaseChecked)
+			return warm.releasePrimary(work)
 		})
 		if err != nil {
 			_ = operation.MarkUnknown(err)

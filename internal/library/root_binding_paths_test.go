@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -103,6 +104,9 @@ func rootBindingPathsAssertOpen(t *testing.T, store *Store, root libraryRoot, ex
 }
 
 func TestRootBindingPathsReplacementIsScopedAndRetainsIndependentHandles(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("fixture requires renaming a directory while its top-level os.Root remains open")
+	}
 	fixture := newRootBindingPathsFixture(t)
 	store := fixture.store
 	shared := store.roots[0].root
@@ -164,6 +168,9 @@ func TestRootBindingPathsReplacementIsScopedAndRetainsIndependentHandles(t *test
 }
 
 func TestRootBindingPathsInstallationRetainsThePreparedAnchor(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("fixture requires renaming a directory while its top-level os.Root remains open")
+	}
 	fixture := newRootBindingPathsFixture(t)
 	fixture.replaceDirectories(t, "original", "accepted-first", "unapproved-second")
 	anchor := rootBindingPathsCandidate(t, fixture.approved)
@@ -240,6 +247,9 @@ func TestRootBindingPathsRejectMappingAndConfigurationChanges(t *testing.T) {
 }
 
 func TestRootBindingPathsInstallationKeepsNewOpensBehindAdmission(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("fixture requires renaming a directory while its top-level os.Root remains open")
+	}
 	fixture := newRootBindingPathsFixture(t)
 	fixture.replaceDirectories(t, "original", "accepted-first", "unapproved-second")
 	anchor := rootBindingPathsCandidate(t, fixture.approved)
@@ -322,6 +332,9 @@ func TestRootBindingPathsStoreCloseRetiresAnchorsAndPreservesLeases(t *testing.T
 }
 
 func TestRootBindingPathsSlowOpenRetainsGenerationWithoutBlockingOtherRoots(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("fixture requires renaming a directory while its top-level os.Root remains open")
+	}
 	fixture := newRootBindingPathsFixture(t)
 	store := fixture.store
 	original := rootBindingPathsCandidate(t, fixture.approved)
@@ -395,6 +408,9 @@ func TestRootBindingPathsSlowOpenRetainsGenerationWithoutBlockingOtherRoots(t *t
 }
 
 func TestRootBindingPathsLazyCaptureCannotOverwriteNewBinding(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("fixture requires renaming a directory while its top-level os.Root remains open")
+	}
 	store, approved, registered := rootBindingRegistrationDirectory(t)
 	root := libraryRoot{id: "lazy-root", libraryID: "lazy-library", path: registered, allowedPath: approved, relativePath: "registered"}
 	t.Cleanup(func() {

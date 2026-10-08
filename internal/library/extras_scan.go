@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/database"
@@ -141,8 +142,8 @@ func (state *scanState) classifyExtraDirectory(relative string, entries []os.Dir
 	for _, directory := range directories {
 		group := state.extraGroup(relative)
 		if err := state.enumerateExtraDirectory(group, directory); err != nil {
-			if state.task.ctx.Err() != nil {
-				return nil, state.task.ctx.Err()
+			if !auxiliaryInputWarning(err) {
+				return nil, err
 			}
 			state.warnings++
 			group.failed = true
@@ -152,13 +153,13 @@ func (state *scanState) classifyExtraDirectory(relative string, entries []os.Dir
 }
 
 func (state *scanState) enumerateExtraDirectory(group *extraDirectoryScan, relative string) error {
-	return state.runPrimaryScanMetadata(state.task.ctx, func(ctx context.Context) error {
-		return state.enumerateExtraDirectoryObserved(ctx, group, relative)
+	return state.store.observeScanAuxiliaryRoot(state.task, state.root, func(ctx context.Context, root *os.Root) error {
+		return state.enumerateExtraDirectoryObserved(ctx, root, group, relative)
 	})
 }
 
-func (state *scanState) enumerateExtraDirectoryObserved(ctx context.Context, group *extraDirectoryScan, relative string) (resultErr error) {
-	parent, err := openRegisteredRoot(state.opened, filepath.Dir(relative))
+func (state *scanState) enumerateExtraDirectoryObserved(ctx context.Context, root *os.Root, group *extraDirectoryScan, relative string) (resultErr error) {
+	parent, err := openRegisteredRoot(root, filepath.Dir(relative))
 	if err != nil {
 		return err
 	}
@@ -167,7 +168,7 @@ func (state *scanState) enumerateExtraDirectoryObserved(ctx context.Context, gro
 	if err != nil {
 		return err
 	}
-	defer func() { resultErr = errors.Join(resultErr, directory.Close()) }()
+	defer func() { resultErr = errors.Join(resultErr, scanReadFailure(directory.Close())) }()
 	before, err := directory.Stat()
 	if err != nil || !before.IsDir() {
 		return fmt.Errorf("extra directory is unavailable")
@@ -241,12 +242,37 @@ func readExtraActiveResources(ctx context.Context, source themeRowQuerier, owner
 	return resources, nil
 }
 
+type extraPublicationTransactionFailure struct{ err error }
+
+func (failure *extraPublicationTransactionFailure) Error() string { return failure.err.Error() }
+func (failure *extraPublicationTransactionFailure) Unwrap() error { return failure.err }
+
+func extraTransactionFailure(err error) error {
+	return &extraPublicationTransactionFailure{err: err}
+}
+
 func (state *scanState) publishExtraOwner(ownerID string, files []*preparedThemeFile, kinds map[string]string) error {
+	for {
+		committed := false
+		err := state.publishExtraOwnerAttempt(ownerID, files, kinds, &committed)
+		if committed && err != nil {
+			return extraTransactionFailure(err)
+		}
+		if committed || !sidecarAdmissionRetryable(err) {
+			return err
+		}
+		if err := waitAuxiliaryPublicationAdmission(map[string]*scanState{state.root.id: state}, err); err != nil {
+			return err
+		}
+	}
+}
+
+func (state *scanState) publishExtraOwnerAttempt(ownerID string, files []*preparedThemeFile, kinds map[string]string, committed *bool) (resultErr error) {
 	if err := state.verifyThemeDirectories(".", true); err != nil {
-		return fmt.Errorf("%w: extra source directories changed before publication", ErrUnavailable)
+		return fmt.Errorf("%w: extra source directories changed before publication: %w", ErrUnavailable, err)
 	}
 	if err := verifyPreparedThemeFiles(files); err != nil {
-		return fmt.Errorf("%w: extra sources changed before publication", ErrUnavailable)
+		return fmt.Errorf("%w: extra sources changed before publication: %w", ErrUnavailable, err)
 	}
 	active, err := readExtraActiveResources(state.task.ctx, state.store.pool, ownerID)
 	if err != nil {
@@ -273,7 +299,10 @@ func (state *scanState) publishExtraOwner(ownerID string, files []*preparedTheme
 		if err != nil || classification.Kind == "" || classification.Kind != resource.Kind || resource.RootID != state.root.id {
 			return fmt.Errorf("%w: an unobserved extra is outside the accepted root or layouts", ErrUnavailable)
 		}
-		absent, err := themePathAbsent(state.opened, resource.Relative)
+		absent, err := state.store.scanAuxiliaryPathAbsent(state.task, state.root, resource.Relative)
+		if err != nil && !auxiliaryInputWarning(err) {
+			return err
+		}
 		if err != nil || !absent {
 			return fmt.Errorf("%w: an unobserved extra is present or its absence is uncertain", ErrUnavailable)
 		}
@@ -287,41 +316,45 @@ func (state *scanState) publishExtraOwner(ownerID string, files []*preparedTheme
 	if err != nil {
 		return err
 	}
-	defer witness.Close()
+	defer func() { resultErr = errors.Join(resultErr, witness.Close()) }()
 	tx, err := state.store.beginOwnedTx(state.task.ctx)
 	if err != nil {
-		return err
+		return extraTransactionFailure(err)
 	}
-	defer rollback(tx)
+	defer func() {
+		if !*committed {
+			resultErr = errors.Join(resultErr, rollbackSidecarTransaction(tx, resultErr))
+		}
+	}()
 	relation, err := lockScanPublicationProgress(scanProbeAuthorityTx{ctx: state.task.ctx, tx: tx}, state.task)
 	if err != nil {
-		return err
+		return extraTransactionFailure(err)
 	}
 	if relation.job.LibraryID != state.library.ID {
 		return taskScanAssociationError()
 	}
 	if err := witness.checkOperationRoots(state.task.ctx, tx); err != nil {
-		return err
+		return extraTransactionFailure(err)
 	}
 	var locked []string
 	if err := tx.QueryRow(state.task.ctx, `SELECT COALESCE(array_agg(id),'{}'::text[]) FROM (
 		SELECT i.id FROM items i WHERE i.id=$1 OR i.id=ANY($2::text[]) OR i.id IN
 		(SELECT resource_item_id FROM item_extra_resources WHERE owner_item_id=$1 AND active)
 		ORDER BY i.id FOR UPDATE OF i) locked`, ownerID, expected).Scan(&locked); err != nil {
-		return err
+		return extraTransactionFailure(err)
 	}
 	var validOwner bool
 	if err := tx.QueryRow(state.task.ctx, `SELECT EXISTS(SELECT 1 FROM items owner WHERE owner.id=$1 AND owner.library_id=$2
 		AND owner.root_id=$3 AND owner.type='Movie' AND NOT owner.is_folder AND `+ordinaryItemSQL("owner")+`)`,
 		ownerID, state.library.ID, state.root.id).Scan(&validOwner); err != nil {
-		return err
+		return extraTransactionFailure(err)
 	}
 	if !validOwner {
 		return fmt.Errorf("%w: the extra Movie owner changed before publication", ErrUnavailable)
 	}
 	activeNow, err := readExtraActiveResources(state.task.ctx, tx, ownerID)
 	if err != nil {
-		return err
+		return extraTransactionFailure(err)
 	}
 	if !reflect.DeepEqual(active, activeNow) {
 		return fmt.Errorf("%w: the extra population changed after source verification", ErrUnavailable)
@@ -329,20 +362,20 @@ func (state *scanState) publishExtraOwner(ownerID string, files []*preparedTheme
 	var invalidBefore int
 	if err := tx.QueryRow(state.task.ctx, `SELECT count(*) FROM item_extra_resources r JOIN items i ON i.id=r.resource_item_id
 		WHERE r.owner_item_id=$1 AND r.active AND NOT `+database.ExtraResourceItemSQL("i", true), ownerID).Scan(&invalidBefore); err != nil {
-		return err
+		return extraTransactionFailure(err)
 	}
 	if invalidBefore != 0 {
 		return fmt.Errorf("%w: the existing active extra population has an invalid shape", ErrUnavailable)
 	}
 	beforeAuxiliary, err := readAuxiliaryCatalogSnapshot(state.task.ctx, tx, append([]string{ownerID}, expected...))
 	if err != nil {
-		return err
+		return extraTransactionFailure(err)
 	}
 	if len(retire) != 0 {
 		tag, err := tx.Exec(state.task.ctx, `UPDATE item_extra_resources SET active=false
 			WHERE owner_item_id=$1 AND active AND resource_item_id=ANY($2::text[])`, ownerID, retire)
 		if err != nil {
-			return err
+			return extraTransactionFailure(err)
 		}
 		if tag.RowsAffected() != int64(len(retire)) {
 			return fmt.Errorf("%w: the proved missing extra population changed", ErrUnavailable)
@@ -351,7 +384,7 @@ func (state *scanState) publishExtraOwner(ownerID string, files []*preparedTheme
 	roleChanged := make(map[string]bool)
 	for _, file := range files {
 		if err := persistThemeFile(state.task.ctx, tx, file); err != nil {
-			return err
+			return extraTransactionFailure(err)
 		}
 		tag, err := tx.Exec(state.task.ctx, `INSERT INTO item_extra_resources(resource_item_id,owner_item_id,kind,active)
 			VALUES($1,$2,$3,true) ON CONFLICT(resource_item_id) DO UPDATE
@@ -359,17 +392,17 @@ func (state *scanState) publishExtraOwner(ownerID string, files []*preparedTheme
 			WHERE item_extra_resources.owner_item_id<>EXCLUDED.owner_item_id OR item_extra_resources.kind<>EXCLUDED.kind OR NOT item_extra_resources.active`,
 			file.id, ownerID, kinds[file.id])
 		if err != nil {
-			return err
+			return extraTransactionFailure(err)
 		}
 		roleChanged[file.id] = tag.RowsAffected() != 0
 	}
 	if err := deactivateInvalidThemeChildren(state.task.ctx, tx, expected); err != nil {
-		return err
+		return extraTransactionFailure(err)
 	}
 	var count, invalid int
 	if err := tx.QueryRow(state.task.ctx, `SELECT count(*),count(*) FILTER(WHERE NOT `+database.ExtraResourceItemSQL("i", true)+`)
 		FROM item_extra_resources r JOIN items i ON i.id=r.resource_item_id WHERE r.owner_item_id=$1 AND r.active`, ownerID).Scan(&count, &invalid); err != nil {
-		return err
+		return extraTransactionFailure(err)
 	}
 	if count != len(expected) || invalid != 0 {
 		return fmt.Errorf("%w: atomic extra publication did not preserve its complete valid shape", ErrUnavailable)
@@ -381,31 +414,44 @@ func (state *scanState) publishExtraOwner(ownerID string, files []*preparedTheme
 		}
 	}
 	if err := beforeAuxiliary.record(state.task.ctx, tx, forcedIDs); err != nil {
-		return err
+		return extraTransactionFailure(err)
+	}
+	candidate := state.task.job
+	for _, file := range files {
+		if file.input.stored.id == "" {
+			candidate.Added++
+		} else if file.changed || roleChanged[file.id] {
+			candidate.Updated++
+		}
+	}
+	published, err := writeScanPublicationProgress(scanProbeAuthorityTx{ctx: state.task.ctx, tx: tx}, relation, candidate)
+	if err != nil {
+		return extraTransactionFailure(err)
 	}
 	if err := runStorageObservation(state.task.ctx, []*storageObservationLifetime{&witness.observation}, witness.validate); err != nil {
 		if state.task.ctx.Err() != nil {
 			return state.task.ctx.Err()
 		}
-		return fmt.Errorf("%w: extra publication could not verify its final sources", ErrUnavailable)
+		return fmt.Errorf("%w: extra publication could not verify its final sources: %w", ErrUnavailable, err)
 	}
 	if err := state.task.ctx.Err(); err != nil {
 		return err
 	}
 	if err := tx.Commit(state.task.ctx); err != nil {
-		return err
+		return extraTransactionFailure(err)
 	}
+	*committed = true
+	state.task.job.Scanned, state.task.job.Added, state.task.job.Updated = published.Scanned, published.Added, published.Updated
+	state.task.recordSavedProgress(published, time.Now())
 	for _, file := range files {
 		if file.input.stored.itemType == "Audio" {
 			state.queueMusicParent(file.input.stored.parentID)
 		}
-		if file.input.stored.id == "" {
-			state.task.job.Added++
-		} else if file.changed || roleChanged[file.id] {
-			state.task.job.Updated++
-		}
 	}
-	return state.store.persistProgress(state.task)
+	if state.task.job.TaskChildID != "" {
+		return state.store.checkCachedTaskScanProgress(state.task)
+	}
+	return state.store.maybePersistProgress(state.task)
 }
 
 // Each Movie belongs to exactly one registered root, so its complete extra
@@ -417,6 +463,9 @@ func (state *scanState) finishExtraScan() error {
 		return nil
 	}
 	if err := state.verifyThemeDirectories(".", true); err != nil {
+		if !auxiliaryInputWarning(err) {
+			return err
+		}
 		state.warnings++
 		return nil
 	}
@@ -485,8 +534,14 @@ func (state *scanState) finishExtraScan() error {
 		for _, file := range files {
 			kinds[file.id] = pathKinds[file.candidate.relative]
 		}
-		err = state.publishExtraOwner(ownerID, files, kinds)
-		closeThemeFiles(files)
+		err = errors.Join(state.publishExtraOwner(ownerID, files, kinds), closeThemeFiles(files))
+		var transactionFailure *extraPublicationTransactionFailure
+		var readFailure *primaryScanReadFailure
+		if errors.As(err, &transactionFailure) || errors.As(err, &readFailure) ||
+			errors.Is(err, errSidecarRollbackUnknown) || errors.Is(err, errSidecarRetirementUnknown) ||
+			errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return err
+		}
 		if errors.Is(err, ErrUnavailable) || errors.Is(err, ErrInvalidInput) {
 			state.warnings++
 			return nil

@@ -59,6 +59,14 @@ type ApplicationKeyRevocation struct {
 	CurrentCredentialRevoked bool
 }
 
+type applicationKeyOperation uint8
+
+const (
+	applicationKeyMetadataRead applicationKeyOperation = iota
+	applicationKeyReveal
+	applicationKeyMutation
+)
+
 // ResolveEmby accepts either a normal Emby login or a userless application key.
 // Resolve itself continues to enforce its original exact login-kind boundary.
 func (s *Store) ResolveEmby(ctx context.Context, token string) (Principal, error) {
@@ -143,7 +151,7 @@ func (s *Store) CreateApplicationKey(ctx context.Context, actor Principal, appNa
 	if err := validateClient(serverClient); err != nil {
 		return ApplicationKey{}, err
 	}
-	tx, err := s.beginApplicationKeyOperation(ctx, actor, "", true)
+	tx, err := s.beginApplicationKeyOperation(ctx, actor, "", applicationKeyMutation)
 	if err != nil {
 		return ApplicationKey{}, err
 	}
@@ -231,7 +239,11 @@ func (s *Store) ListApplicationKeys(ctx context.Context, actor Principal, filter
 	if err != nil {
 		return ApplicationKeyPage{}, err
 	}
-	tx, err := s.beginApplicationKeyOperation(ctx, actor, "", false)
+	operation := applicationKeyMetadataRead
+	if filter.RevealTokens {
+		operation = applicationKeyReveal
+	}
+	tx, err := s.beginApplicationKeyOperation(ctx, actor, "", operation)
 	if err != nil {
 		return ApplicationKeyPage{}, err
 	}
@@ -324,7 +336,11 @@ func (s *Store) GetApplicationKey(ctx context.Context, actor Principal, id int64
 	if id < 1 {
 		return ApplicationKey{}, fmt.Errorf("%w: application key ID must be positive", ErrInvalidInput)
 	}
-	tx, err := s.beginApplicationKeyOperation(ctx, actor, "", false)
+	operation := applicationKeyMetadataRead
+	if reveal {
+		operation = applicationKeyReveal
+	}
+	tx, err := s.beginApplicationKeyOperation(ctx, actor, "", operation)
 	if err != nil {
 		return ApplicationKey{}, err
 	}
@@ -399,7 +415,7 @@ func (s *Store) revokeApplicationKey(ctx context.Context, actor Principal, id in
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return ApplicationKeyRevocation{}, fmt.Errorf("find application key revocation: %w", err)
 	}
-	tx, err := s.beginApplicationKeyOperation(ctx, actor, credentialID, true)
+	tx, err := s.beginApplicationKeyOperation(ctx, actor, credentialID, applicationKeyMutation)
 	if err != nil {
 		return ApplicationKeyRevocation{}, err
 	}
@@ -466,7 +482,7 @@ func validApplicationKeyActor(actor Principal) bool {
 		((actor.Kind == "admin" || actor.Kind == "emby") && actor.ApplicationKeyID == 0 && actor.ClientSessionID == "" && validRevalidationID(actor.User.ID)))
 }
 
-func (s *Store) beginApplicationKeyOperation(ctx context.Context, actor Principal, targetCredentialID string, mutate bool) (pgx.Tx, error) {
+func (s *Store) beginApplicationKeyOperation(ctx context.Context, actor Principal, targetCredentialID string, operation applicationKeyOperation) (pgx.Tx, error) {
 	if !validApplicationKeyActor(actor) {
 		return nil, ErrUnauthorized
 	}
@@ -483,13 +499,16 @@ func (s *Store) beginApplicationKeyOperation(ctx context.Context, actor Principa
 	if err := authorizeApplicationKeyActor(ctx, tx, actor, nil); err != nil {
 		return nil, err
 	}
-	// All key management, including reads, uses the existing management lock.
-	// Readers never hold their own credential while waiting for crossed targets.
-	if _, err := tx.Exec(ctx, "SELECT pg_advisory_xact_lock($1)", managedUsersLockID); err != nil {
-		return nil, fmt.Errorf("lock application key management: %w", err)
-	}
-	if err := authorizeApplicationKeyActor(ctx, tx, actor, nil); err != nil {
-		return nil, err
+	// Metadata reads only retain shared actor locks. Reveal and mutation keep
+	// the management lock before credentials, preserving crossed-target order
+	// and the authority boundary for secret preparation and audit writes.
+	if operation != applicationKeyMetadataRead {
+		if _, err := tx.Exec(ctx, "SELECT pg_advisory_xact_lock($1)", managedUsersLockID); err != nil {
+			return nil, fmt.Errorf("lock application key management: %w", err)
+		}
+		if err := authorizeApplicationKeyActor(ctx, tx, actor, nil); err != nil {
+			return nil, err
+		}
 	}
 	if actor.User.ID != "" {
 		var accountID string
@@ -502,7 +521,7 @@ func (s *Store) beginApplicationKeyOperation(ctx context.Context, actor Principa
 		}
 	}
 	locking := " FOR SHARE"
-	if mutate {
+	if operation == applicationKeyMutation {
 		locking = " FOR UPDATE"
 	}
 	rows, err := tx.Query(ctx, `SELECT id FROM sessions WHERE id = ANY($1::text[]) ORDER BY id`+locking,

@@ -11,7 +11,11 @@ import (
 
 func TestSortRebuildRefreshesRemainingBudgetBeforeJournalLock(t *testing.T) {
 	ctx, pool, store, _, _ := libraryIntegrationStore(t, &libraryFixtureProber{})
-	if _, err := pool.Exec(ctx, `INSERT INTO libraries(id,name,collection_type) VALUES('sorting-budget','Budget','movies');
+	// Enabled transport still orders subscriber eligibility behind the journal
+	// lock. Disabled transport intentionally bypasses that lock entirely.
+	if _, err := pool.Exec(ctx, `UPDATE notification_transport SET enabled=true,endpoint='https://sorting-budget.invalid/events',
+		credential_ciphertext=decode(repeat('00',48),'hex') WHERE id=1;
+		INSERT INTO libraries(id,name,collection_type) VALUES('sorting-budget','Budget','movies');
 		INSERT INTO items(id,library_id,name,sort_name,type,is_folder) VALUES('sorting-budget','sorting-budget','Budget','budget','CollectionFolder',true),('sorting-budget-film','sorting-budget','The Film','the film','Movie',false);
 		CREATE FUNCTION sorting_budget_work() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM pg_sleep(2.6); RETURN NEW; END $$;
 		CREATE TRIGGER sorting_budget_work BEFORE UPDATE ON items FOR EACH ROW EXECUTE FUNCTION sorting_budget_work()`); err != nil {

@@ -80,6 +80,7 @@ type Item struct {
 	CanPlay                                                       bool
 	PlaylistItemID                                                string
 	Collection                                                    *CollectionInfo
+	CollectionType                                                string
 	ExpectedEpisode                                               *ExpectedEpisodeInfo
 }
 
@@ -97,6 +98,7 @@ type TVParentRef struct {
 }
 
 type Query struct {
+	Projection                                                QueryProjection
 	UserID, ParentID, SearchTerm, SortBy, SortOrder           string
 	ApplicationCredentialID                                   string
 	Recursive                                                 bool

@@ -73,6 +73,7 @@ func (state *scanState) scanSubtitlesAttempt(itemID, relative string, probe *med
 	var root, currentRoot, currentDirectory *os.Root
 	var directory *os.File
 	var directoryInfo, primary os.FileInfo
+	var sourceRoot *scanSourceRootWitness
 	inspected := make(map[string]*scannedSubtitle)
 	present := make(map[string]bool)
 	defer func() {
@@ -90,6 +91,9 @@ func (state *scanState) scanSubtitlesAttempt(itemID, relative string, probe *med
 		}
 		if root != nil {
 			resultErr = errors.Join(resultErr, closePrimarySidecarResource(cleanupContext, root))
+		}
+		if sourceRoot != nil {
+			resultErr = errors.Join(resultErr, sourceRoot.Close())
 		}
 		resultErr = scanReadFailure(errors.Join(resultErr, operation.Close()))
 	}()
@@ -183,6 +187,10 @@ func (state *scanState) scanSubtitlesAttempt(itemID, relative string, probe *med
 		if err := ctx.Err(); err != nil {
 			return err
 		}
+		sourceRoot, err = state.captureScanSourceRoot(work, row)
+		if err != nil {
+			return err
+		}
 		ready, empty = true, len(candidates) == 0
 		return nil
 	})
@@ -193,7 +201,10 @@ func (state *scanState) scanSubtitlesAttempt(itemID, relative string, probe *med
 		return nil
 	}
 	finalProof := func() error {
-		return operation.RunImmediate(ctx, state.root.id, primaryio.Background, func(context.Context) error {
+		return operation.RunImmediate(ctx, state.root.id, primaryio.Background, func(proof context.Context) error {
+			if err := sourceRoot.Check(proof); err != nil {
+				return err
+			}
 			if !state.subtitleSourceStable(relative, directoryInfo, primary, directory, currentRoot, currentDirectory) {
 				return ErrSourceChanged
 			}
@@ -202,7 +213,7 @@ func (state *scanState) scanSubtitlesAttempt(itemID, relative string, probe *med
 					return errors.Join(ErrSourceChanged, err)
 				}
 			}
-			return nil
+			return sourceRoot.Check(proof)
 		})
 	}
 	if empty {

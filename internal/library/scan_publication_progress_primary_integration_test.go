@@ -67,6 +67,46 @@ func scanPrimaryPublicationFixture(t *testing.T, update bool) (context.Context, 
 	return ctx, pool, store, state, input, name, runID
 }
 
+func TestScanPrimaryPublicationRejectsSourceChangeAfterProbeRetirement(t *testing.T) {
+	for _, mutation := range []string{"modified", "replaced"} {
+		t.Run(mutation, func(t *testing.T) {
+			ctx, pool, store, state, input, relative, _ := scanPrimaryPublicationFixture(t, false)
+			if input.primary.receipt == nil || !input.primary.receipt.RetirementComplete() || input.primary.phase != nil {
+				t.Fatal("fixture did not complete its admitted source probe")
+			}
+			before := state.task.job
+			notifications := catalogChangesTestListener(t, store)
+			path := filepath.Join(state.root.path, relative)
+			if mutation == "modified" {
+				changed := input.info.ModTime().Add(time.Second)
+				if err := os.Chtimes(path, changed, changed); err != nil {
+					t.Fatal(err)
+				}
+			} else {
+				if err := os.Rename(path, path+".retained"); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(path, []byte("video:replacement-after-probe"), 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := state.publishScannedMedia(relative, "video", hierarchy{parentID: state.library.ID}, input); err != nil || state.warnings != 1 {
+				t.Fatalf("publication accepted a source changed after probe retirement: warnings=%d error=%v", state.warnings, err)
+			}
+			var count int
+			if err := pool.QueryRow(ctx, "SELECT count(*) FROM items WHERE root_id=$1 AND relative_path=$2", state.root.id, relative).Scan(&count); err != nil || count != 0 {
+				t.Fatalf("stale retained facts reached the catalog: count=%d error=%v", count, err)
+			}
+			job, err := store.GetJob(ctx, before.ID)
+			if err != nil || job.Added != before.Added || job.Updated != before.Updated ||
+				state.task.job.Added != before.Added || state.task.job.Updated != before.Updated {
+				t.Fatalf("source rejection advanced accepted counters: job=%+v error=%v", job, err)
+			}
+			assertNoCatalogTestNotification(t, notifications)
+		})
+	}
+}
+
 func scanPrimaryAdvanceDurableProgress(t *testing.T, ctx context.Context, pool *pgxpool.Pool, task *scanTask) Job {
 	t.Helper()
 	tx, err := pool.Begin(ctx)
@@ -314,7 +354,7 @@ func TestScanPrimaryPublicationRetainsDurableCountersAfterRejection(t *testing.T
 	}
 }
 
-func TestScanPrimaryPublicationChecksDatabaseStopAtNextCheckpoint(t *testing.T) {
+func TestScanPrimaryPublicationRechecksTaskAfterCommittedItem(t *testing.T) {
 	ctx, pool, store, state, input, path, runID := scanPrimaryPublicationFixture(t, false)
 	before := state.task.job
 	var stopErr error
@@ -327,17 +367,11 @@ func TestScanPrimaryPublicationChecksDatabaseStopAtNextCheckpoint(t *testing.T) 
 		}
 	})
 	t.Cleanup(func() { store.SetCatalogChangeListener(nil) })
-	if err := state.publishScannedMedia(path, "video", hierarchy{parentID: state.library.ID}, input); err != nil && !errors.Is(err, context.Canceled) {
-		t.Fatalf("post-publication stop returned an unrelated failure: %v", err)
+	if err := state.publishScannedMedia(path, "video", hierarchy{parentID: state.library.ID}, input); !errors.Is(err, context.Canceled) {
+		t.Fatalf("post-publication completion check ignored a stopped parent: %v", err)
 	}
 	if stopErr != nil {
 		t.Fatal(stopErr)
-	}
-	// The committed item already supplies this batch's watermark. A database-
-	// only stop must be observed by the next due checkpoint without discarding it.
-	state.task.progress.savedAt = time.Time{}
-	if err := store.maybePersistProgress(state.task); !errors.Is(err, context.Canceled) {
-		t.Fatalf("due checkpoint ignored the committed item's stopped parent: %v", err)
 	}
 	job, err := store.GetJob(ctx, before.ID)
 	if err != nil || job.Added != before.Added+1 || job.Updated != before.Updated || !job.CancelRequested ||

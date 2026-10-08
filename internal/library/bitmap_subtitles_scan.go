@@ -184,6 +184,7 @@ func (state *scanState) scanBitmapSubtitlesAttempt(itemID, relative string, prob
 	var root, currentRoot, currentDirectory *os.Root
 	var directory *os.File
 	var directoryInfo, primary os.FileInfo
+	var sourceRoot *scanSourceRootWitness
 	inspected := make(map[string]*scannedBitmapSubtitle)
 	present := make(map[string]bool)
 	defer func() {
@@ -201,6 +202,9 @@ func (state *scanState) scanBitmapSubtitlesAttempt(itemID, relative string, prob
 					resultErr = errors.Join(resultErr, closePrimarySidecarResource(cleanup, file))
 				}
 			}
+		}
+		if sourceRoot != nil {
+			resultErr = errors.Join(resultErr, sourceRoot.Close())
 		}
 		resultErr = scanReadFailure(errors.Join(resultErr, operation.Close()))
 	}()
@@ -287,6 +291,10 @@ func (state *scanState) scanBitmapSubtitlesAttempt(itemID, relative string, prob
 				state.warnings++
 			}
 		}
+		sourceRoot, err = state.captureScanSourceRoot(work, row)
+		if err != nil {
+			return err
+		}
 		ready = true
 		return work.Err()
 	})
@@ -294,7 +302,10 @@ func (state *scanState) scanBitmapSubtitlesAttempt(itemID, relative string, prob
 		return scanReadFailure(err)
 	}
 	proof := func() error {
-		return operation.RunImmediate(ctx, state.root.id, primaryio.Background, func(context.Context) error {
+		return operation.RunImmediate(ctx, state.root.id, primaryio.Background, func(proof context.Context) error {
+			if err := sourceRoot.Check(proof); err != nil {
+				return err
+			}
 			if !state.subtitleSourceStable(relative, directoryInfo, primary, directory, currentRoot, currentDirectory) {
 				return ErrSourceChanged
 			}
@@ -303,7 +314,7 @@ func (state *scanState) scanBitmapSubtitlesAttempt(itemID, relative string, prob
 					return err
 				}
 			}
-			return nil
+			return sourceRoot.Check(proof)
 		})
 	}
 	return state.persistBitmapSubtitles(itemID, relative, primary, present, inspected, row, proof)

@@ -45,7 +45,10 @@ func validateResourceState(ctx context.Context, tx pgx.Tx, version int64) error 
 	if err := validateSubtitleTimelineState(ctx, tx, version); err != nil {
 		return err
 	}
-	return validateBitmapSubtitleState(ctx, tx, version)
+	if err := validateBitmapSubtitleState(ctx, tx, version); err != nil {
+		return err
+	}
+	return validateMediaOperationSourceState(ctx, tx, version)
 }
 
 func validateThemeState(ctx context.Context, tx pgx.Tx, version int64) error {

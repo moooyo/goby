@@ -26,12 +26,20 @@ var (
 	ErrMediaOperationRecovery = errors.New("media operation requires explicit recovery")
 )
 
-// MediaOperationSourceRevisionSQL is an invalidation stamp, never authority.
-// All owned subtitle readers and operation admissions must use this expression.
-// The surrounding item alias is i, matching the catalog projection helpers.
-const MediaOperationSourceRevisionSQL = `('media-operation-source-v1-' || md5(jsonb_build_array(i.root_id,
+const mediaOperationRootBindingRevisionSQL = `(SELECT ir.binding_revision FROM library_roots ir WHERE ir.id=i.root_id)`
+
+const mediaOperationUncachedSourceRevisionSQL = `('media-operation-source-v1-' || md5(jsonb_build_array(i.root_id,
 	i.relative_path, i.file_identity, i.file_size, extract(epoch FROM i.modified_at), i.media,
-	(SELECT ir.binding_revision FROM library_roots ir WHERE ir.id=i.root_id))::text))`
+	` + mediaOperationRootBindingRevisionSQL + `)::text))`
+
+// MediaOperationSourceRevisionSQL is an invalidation stamp, never authority.
+// Source writes cache the exact v1 expression. Every read still observes the
+// current root binding, falling back to that expression after a binding change
+// or for an uncached row. Root edits therefore need no item writes or locks.
+// The surrounding item alias is i, matching the catalog projection helpers.
+const MediaOperationSourceRevisionSQL = `(CASE WHEN i.media_operation_source_revision IS NOT NULL
+	AND i.media_operation_source_binding_revision IS NOT DISTINCT FROM ` + mediaOperationRootBindingRevisionSQL + `
+	THEN i.media_operation_source_revision ELSE ` + mediaOperationUncachedSourceRevisionSQL + ` END)`
 
 type MediaOperationParameters struct {
 	ModelIDs          []string `json:"ModelIds,omitempty"`

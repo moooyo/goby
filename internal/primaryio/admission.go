@@ -42,6 +42,18 @@ type Route struct {
 	Domains []string
 }
 
+// preparedRoute owns validated, deduplicated keys. Its slices never leave this
+// package and are immutable after preparation, so a retained reader can reuse
+// them for each actual-I/O admission without copying caller-owned memory again.
+type preparedRoute struct {
+	value Route
+}
+
+func prepareRoute(route Route) (preparedRoute, error) {
+	owned, err := copyRoute(route)
+	return preparedRoute{value: owned}, err
+}
+
 // Limits are independent of source-open and subprocess concurrency. Background
 // limits reserve at least one foreground owner at every governed level. These
 // counts bound active owners; they do not promise byte-rate or latency isolation.
@@ -331,14 +343,23 @@ func (g *Governor) acquire(ctx context.Context, route Route, class Class) (*requ
 	if g == nil || ctx == nil || (class != Foreground && class != Background) {
 		return nil, ErrInvalid
 	}
-	route, err := copyRoute(route)
+	prepared, err := prepareRoute(route)
 	if err != nil {
 		return nil, err
 	}
-	if err = ctx.Err(); err != nil {
+	return g.acquirePrepared(ctx, prepared, class)
+}
+
+// The private prepared route changes only key preparation. Every chunk still
+// enters the same cancellation, capacity, queue, and fairness checks.
+func (g *Governor) acquirePrepared(ctx context.Context, route preparedRoute, class Class) (*request, error) {
+	if g == nil || ctx == nil || (class != Foreground && class != Background) || len(route.value.Roots) == 0 || len(route.value.Domains) == 0 {
+		return nil, ErrInvalid
+	}
+	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	r := &request{ctx: ctx, route: route, class: class, ready: make(chan struct{})}
+	r := &request{ctx: ctx, route: route.value, class: class, ready: make(chan struct{})}
 	g.mu.Lock()
 	if g.closed {
 		g.mu.Unlock()
@@ -359,7 +380,7 @@ func (g *Governor) acquire(ctx context.Context, route Route, class Class) (*requ
 	select {
 	case <-r.ready:
 		g.mu.Lock()
-		err = r.err
+		err := r.err
 		g.mu.Unlock()
 		if err == nil {
 			err = ctx.Err()

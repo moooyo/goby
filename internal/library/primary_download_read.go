@@ -18,6 +18,13 @@ func (s *Store) OpenOriginalDownloadFor(ctx context.Context, subject Subject, it
 	return s.openOriginalReadFor(ctx, subject, itemID, sourceID, expectedETag, s.readOriginalDownloadRevalidationFor, s.openPublicMediaSource)
 }
 
+// OpenPreparedOriginalDownloadFor bounds admission and source opening by prepare
+// while keeping a successfully handed-off reader alive for the response context.
+// The preparation context must not be reused as the response lifetime.
+func (s *Store) OpenPreparedOriginalDownloadFor(prepare, response context.Context, subject Subject, itemID, sourceID, expectedETag string) (*os.File, MediaFile, *primaryio.ReadSeeker, error) {
+	return s.openPreparedOriginalReadFor(prepare, response, subject, itemID, sourceID, expectedETag, s.readOriginalDownloadRevalidationFor, s.openPublicMediaSource)
+}
+
 // readOriginalDownloadRevalidationFor preserves download authority independently
 // from playback. It carries every primary media fact and source/publication
 // proof, without fetching catalog presentation, intro or subtitle projections

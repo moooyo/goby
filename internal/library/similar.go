@@ -108,7 +108,7 @@ func (s *Store) querySimilar(ctx context.Context, seedID string, query SimilarQu
 		SELECT i.id, ranked.score, row_number() OVER (ORDER BY ` + order + `) AS ordinal
 		FROM items i JOIN similar_scores ranked ON ranked.id = i.id WHERE ranked.score >= 2
 		ORDER BY ordinal` + fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)-1, len(args)) + ") "
-	rows, err := tx.Query(ctx, prefix+"SELECT "+access.scopeSQL(similarItemColumns(seedType))+` FROM items i
+	rows, err := tx.Query(ctx, prefix+"SELECT "+access.scopeSQL(projectBrowseMediaSQL(similarItemColumns(seedType), query.Projection))+` FROM items i
 		JOIN similar_page ranked ON ranked.id = i.id ORDER BY ranked.ordinal`, args...)
 	if err != nil {
 		return ItemResult{}, fmt.Errorf("query similar items: %w", err)

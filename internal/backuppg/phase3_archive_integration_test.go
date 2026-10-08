@@ -37,6 +37,7 @@ func TestPostgreSQLPhase3Schema35ArchivePreservesHistoricalRows(t *testing.T) {
 	assertPhase3HistoricalPreferenceDefaults(t, ctx, target)
 	assertPhase3HistoricalArtworkDefaults(t, ctx, target)
 	assertPhase3HistoricalSystemEventDefaults(t, ctx, target)
+	assertMigratedMediaOperationSourceCache(t, ctx, target)
 	assertSourceWitness(t, ctx, source, options, before, sequences)
 }
 
@@ -155,6 +156,10 @@ func assertPhase3HistoricalSystemEventDefaults(t *testing.T, ctx context.Context
 		(SELECT count(*) FROM task_system_events)=3
 			+CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=51) THEN 1 ELSE 0 END
 			+CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=52) THEN 1 ELSE 0 END
+			+CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=57) THEN 1 ELSE 0 END
+			+CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=58) THEN 1 ELSE 0 END
+			+CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=59) THEN 1 ELSE 0 END
+			+CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=60) THEN 1 ELSE 0 END
 		AND (SELECT count(*) FROM task_system_events WHERE name IN
 			('ServerStarted','LibraryChanged','ConfigurationChanged') AND sequence=0
 			AND lifecycle_key='' AND occurred_at IS NOT NULL)=3
@@ -162,6 +167,14 @@ func assertPhase3HistoricalSystemEventDefaults(t *testing.T, ctx context.Context
 			AND sequence=0 AND lifecycle_key='' AND occurred_at IS NOT NULL)=CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=51) THEN 1 ELSE 0 END
 		AND (SELECT count(*) FROM task_system_events WHERE name='PreviewGenerationRequested'
 			AND sequence=0 AND lifecycle_key='' AND occurred_at IS NOT NULL)=CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=52) THEN 1 ELSE 0 END
+		AND (SELECT count(*) FROM task_system_events WHERE name='BackgroundPreviewGenerationRequested'
+			AND sequence=0 AND lifecycle_key='' AND occurred_at IS NOT NULL)=CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=57) THEN 1 ELSE 0 END
+		AND (SELECT count(*) FROM task_system_events WHERE name='AudioWaveformGenerationRequested'
+			AND sequence=0 AND lifecycle_key='' AND occurred_at IS NOT NULL)=CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=58) THEN 1 ELSE 0 END
+		AND (SELECT count(*) FROM task_system_events WHERE name='CreditsAnalysisRequested'
+			AND sequence=0 AND lifecycle_key='' AND occurred_at IS NOT NULL)=CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=59) THEN 1 ELSE 0 END
+		AND (SELECT count(*) FROM task_system_events WHERE name='SubtitleTimelineGenerationRequested'
+			AND sequence=0 AND lifecycle_key='' AND occurred_at IS NOT NULL)=CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=60) THEN 1 ELSE 0 END
 		AND NOT EXISTS(SELECT 1 FROM task_system_event_receipts)
 		AND EXISTS(SELECT 1 FROM task_triggers WHERE id=repeat('7',32)
 			AND kind='startup' AND system_event IS NULL AND last_event_sequence=0)`).Scan(&valid); err != nil || !valid {

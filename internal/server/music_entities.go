@@ -94,7 +94,7 @@ func (s *Server) musicEntityByName(family string) http.HandlerFunc {
 		if !ok {
 			return
 		}
-		entity, err := s.library.GetMusicEntityFor(r.Context(), requestLibrarySubject(r, userID), family, r.PathValue("Name"))
+		entity, err := s.library.GetMusicEntityFor(r.Context(), requestLibrarySubject(r, userID), family, r.PathValue("Name"), requestQueryProjection(r))
 		if err != nil {
 			s.libraryError(w, r, err)
 			return

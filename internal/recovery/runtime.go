@@ -90,10 +90,12 @@ func (r *Runtime) ActiveConfig(ctx context.Context) (config.Config, lifecycle.St
 	if err := ctx.Err(); err != nil {
 		return config.Config{}, lifecycle.State{}, err
 	}
-	state, err := r.lifecycle.Current()
+	snapshot, err := r.lifecycle.ReadCurrent(ctx)
 	if err != nil {
 		return config.Config{}, lifecycle.State{}, err
 	}
+	defer clear(snapshot.Files.Master)
+	state := snapshot.State
 	active := r.deployment
 	switch state.DatabaseSlot {
 	case lifecycle.DatabasePrimary:
@@ -111,12 +113,7 @@ func (r *Runtime) ActiveConfig(ctx context.Context) (config.Config, lifecycle.St
 		}
 		return active, state, nil
 	}
-	files, err := r.lifecycle.ReadGeneration(ctx, state.GenerationID)
-	if err != nil {
-		return config.Config{}, lifecycle.State{}, err
-	}
-	defer clear(files.Master)
-	defaults, err := config.DecodeBackupDefaults(files.Config)
+	defaults, err := config.DecodeBackupDefaults(snapshot.Files.Config)
 	if err != nil {
 		return config.Config{}, lifecycle.State{}, ErrArchive
 	}
@@ -127,10 +124,7 @@ func (r *Runtime) ActiveConfig(ctx context.Context) (config.Config, lifecycle.St
 	switch state.Master {
 	case lifecycle.MasterDefault:
 	case lifecycle.MasterGeneration:
-		active.APIKeyMasterKeyFile, err = r.lifecycle.MasterKeyPath(ctx, state.GenerationID)
-		if err != nil {
-			return config.Config{}, lifecycle.State{}, err
-		}
+		active.APIKeyMasterKeyFile = snapshot.MasterKeyPath
 	default:
 		return config.Config{}, lifecycle.State{}, ErrUnavailable
 	}

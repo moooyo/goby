@@ -356,11 +356,10 @@ func TestPrimaryScanReadQueuedOperationAuthorityAndSourceFence(t *testing.T) {
 			return err
 		}, nil},
 		{"persisted-task-cancel", func(f primaryScanReadFixture) error {
-			_, err := f.pool.Exec(f.ctx, "UPDATE scan_jobs SET cancel_requested=true WHERE id=$1", f.state.task.job.ID)
-			if err == nil {
-				f.state.task.cancel()
-			}
-			return err
+			return f.store.CancelJob(f.ctx, f.state.task.job.ID)
+		}, context.Canceled},
+		{"owner-cancel", func(f primaryScanReadFixture) error {
+			return f.input.owner.Cancel()
 		}, context.Canceled},
 		{"queued-source-change", func(f primaryScanReadFixture) error {
 			info, err := os.Stat(f.path)
@@ -498,6 +497,8 @@ func TestPrimaryScanReadStoreCloseRetainsActualFD(t *testing.T) {
 		t.Fatalf("actual probe child was not reaped before callback gate: %v", err)
 	}
 	f.store.mu.Lock()
+	// Registration may install a bound anchor without opening the configured
+	// fallback. Retain the exact witness selected by this fixture's root open.
 	anchor, anchorErr := f.store.approvedLibraryRootLocked(f.state.root)
 	f.store.mu.Unlock()
 	if anchorErr != nil || anchor == nil {
@@ -715,6 +716,8 @@ func TestPrimaryScanReadWarmNoopAndJoinedOverride(t *testing.T) {
 	}
 	refused := &primaryScanReadTestProber{joined: false, Prober: primaryScanReadTool(t, "")}
 	f.store.prober = refused
+	// Direct probe dispatch does not consult the scan cache. Keep the admitted
+	// operation's ForceProbe identity unchanged while testing the marker.
 	f.prepare(t)
 	got := primaryScanReadReceive(t, f.ctx, primaryScanReadStartProbe(t, f, refused))
 	if !errors.Is(got.err, ErrUnavailable) || refused.calls.Load() != 0 || got.info.Size != 0 {
@@ -722,6 +725,45 @@ func TestPrimaryScanReadWarmNoopAndJoinedOverride(t *testing.T) {
 	}
 	if err := primaryScanReadClose(t, f.input, f.file.Close); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestPrimaryScanReadJoinedSourceChangeIsRecoverable(t *testing.T) {
+	gate := primaryScanReadTestGate()
+	f := primaryScanReadFixtureAt(t, gate, "")
+	beforeIO, beforeOwners := originalMediaReadGovernor.Stats(), originalMediaReadOwners.Stats().RegisteredOwners
+	f.prepare(t)
+	result := primaryScanReadStartProbe(t, f, gate)
+	primaryScanReadSignal(t, f.ctx, gate.entered, "joined source read before a source change")
+	stat, err := os.Stat(f.path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chtimes(f.path, stat.ModTime().Add(time.Second), stat.ModTime().Add(time.Second)); err != nil {
+		t.Fatal(err)
+	}
+	gate.openGate()
+	got := primaryScanReadReceive(t, f.ctx, result)
+	var failure *primaryScanReadFailure
+	if !errors.Is(got.err, errScanProbeSourceChanged) || errors.As(got.err, &failure) || got.info.Size != 0 {
+		t.Fatalf("known-retired source change became an ownership failure or accepted facts: %+v", got)
+	}
+	if f.input.receipt == nil || !f.input.receipt.RetirementComplete() || f.input.receipt.UnknownObserved() {
+		t.Fatal("recoverable source rejection lacked known actual probe retirement")
+	}
+	warnings := f.state.warnings
+	accepted, acceptanceErr := f.state.acceptScannedMedia(&scannedMediaInput{}, "video", got.err)
+	if accepted || acceptanceErr != nil || f.state.warnings != warnings+1 {
+		t.Fatalf("source change did not preserve the warning path: accepted=%v warnings=%d -> %d error=%v", accepted, warnings, f.state.warnings, acceptanceErr)
+	}
+	if stats := originalMediaReadGovernor.Stats(); stats != beforeIO {
+		t.Fatalf("source rejection retained an actual phase: before=%+v after=%+v", beforeIO, stats)
+	}
+	if err := primaryScanReadClose(t, f.input, f.file.Close); err != nil {
+		t.Fatal(err)
+	}
+	if stats := originalMediaReadOwners.Stats(); stats.RegisteredOwners != beforeOwners {
+		t.Fatalf("source rejection retained its descriptor owner: %+v", stats)
 	}
 }
 

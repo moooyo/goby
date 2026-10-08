@@ -57,6 +57,16 @@ type GenerationFiles struct {
 	Master     []byte
 }
 
+// Snapshot captures the current state and its generation under one store gate.
+// Files is empty for revision zero. Its byte slices belong to the caller and
+// follow GenerationFiles' sensitive-material contract. MasterKeyPath is set
+// only when State selects the generation master; it is not an authority token.
+type Snapshot struct {
+	State         State
+	Files         GenerationFiles
+	MasterKeyPath string
+}
+
 // State revision zero selects deployment configuration and the primary
 // database. Digest is a CAS token for the complete persisted manifest.
 type State struct {

@@ -599,7 +599,8 @@ func historicalManagerCatalogState(t *testing.T, ctx context.Context, pool *pgxp
 	return recoveryEngineJSONState(t, ctx, pool, `SELECT jsonb_build_object(
 		'libraries',(SELECT jsonb_agg(to_jsonb(l)-'revision'-'options' ORDER BY id) FROM libraries l),
 		'roots',(SELECT jsonb_agg(to_jsonb(r)-'binding_revision'-'storage_binding'-'bound_at'-'bound_by' ORDER BY id) FROM library_roots r),
-		'items',(SELECT jsonb_agg(to_jsonb(i) ORDER BY id) FROM items i),
+		'items',(SELECT jsonb_agg(to_jsonb(i)-ARRAY['media_operation_source_revision',
+			'media_operation_source_binding_revision'] ORDER BY id) FROM items i),
 		'entities',(SELECT jsonb_agg(to_jsonb(e) ORDER BY id) FROM catalog_entities e),
 		'credits',(SELECT jsonb_agg(to_jsonb(c)-'credit_group' ORDER BY item_id,entity_id,position) FROM item_entities c),
 		'metadata',(SELECT jsonb_agg(to_jsonb(m)-'music_source'-'online_source'-'online_type'-'online_base'-'automatic_sort_name_explicit' ORDER BY item_id) FROM item_metadata_state m))::text`)
@@ -625,6 +626,14 @@ func assertHistoricalManagerTarget(t *testing.T, ctx context.Context, pool *pgxp
 	}
 	if actual := historicalManagerCatalogState(t, ctx, pool); actual != state.catalog {
 		t.Fatal("native historical restoration changed an original metadata, catalog, or credit field")
+	}
+	// This archive contains only rootless catalog rows. The new derived cache
+	// must stay absent through migration, activation, and startup reopening.
+	var sourceCacheDefaults bool
+	if err := pool.QueryRow(ctx, `SELECT NOT EXISTS(SELECT 1 FROM items WHERE root_id IS NOT NULL
+		OR media_operation_source_revision IS NOT NULL OR media_operation_source_binding_revision IS NOT NULL)`).
+		Scan(&sourceCacheDefaults); err != nil || !sourceCacheDefaults {
+		t.Fatalf("historical restoration invented a source binding or derived stamp cache: %v", err)
 	}
 	var bindingDefaults bool
 	if err := pool.QueryRow(ctx, `SELECT

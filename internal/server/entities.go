@@ -65,7 +65,7 @@ func (s *Server) entityByName(kind string) http.HandlerFunc {
 		if !ok {
 			return
 		}
-		entity, err := s.library.GetEntityFor(r.Context(), requestLibrarySubject(r, userID), kind, r.PathValue("Name"))
+		entity, err := s.library.GetEntityFor(r.Context(), requestLibrarySubject(r, userID), kind, r.PathValue("Name"), requestQueryProjection(r))
 		if err != nil {
 			s.libraryError(w, r, err)
 			return

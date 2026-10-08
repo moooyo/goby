@@ -599,7 +599,7 @@ func TestMediaSourceStoreCloseDeadlineKeepsActualCleanupOwned(t *testing.T) {
 	}
 	releaseOnce.Do(func() { close(releaseWork) })
 	mediaSourceAdmissionTestWait(t, store.done, "Store cleanup after its caller deadline")
-	if _, err := file.Stat(); !errors.Is(err, os.ErrClosed) {
+	if err := file.Close(); !errors.Is(err, os.ErrClosed) {
 		t.Fatalf("late source descriptor outlived Store cleanup: %v", err)
 	}
 }

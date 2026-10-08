@@ -23,27 +23,23 @@ func (s *Server) nextUpItems(w http.ResponseWriter, r *http.Request) {
 		s.libraryError(w, r, library.ErrUnsupportedFilter)
 		return
 	}
-	zeroLimit := query.Limit == 0
-	if zeroLimit {
-		query.Limit = 1
-	}
 	attachApplicationCredentialID(r, &query)
 	result, err := s.library.NextUp(r.Context(), library.NextUpQuery{
 		UserID: userID, SeriesID: r.URL.Query().Get("SeriesId"), ParentID: query.ParentID,
 		ApplicationCredentialID: query.ApplicationCredentialID,
 		StartIndex:              query.StartIndex, Limit: query.Limit,
+		CountOnly:  query.Limit == 0,
+		Projection: query.Projection,
 	})
 	if err != nil {
 		s.libraryError(w, r, err)
 		return
 	}
 	items := make([]map[string]any, 0, len(result.Items))
-	if !zeroLimit {
-		for _, item := range result.Items {
-			dto := s.itemDTOForRequest(r, item, queryValues(r.URL.Query()["Fields"]), false)
-			applyItemSwitches(dto, r)
-			items = append(items, dto)
-		}
+	for _, item := range result.Items {
+		dto := s.itemDTOForRequest(r, item, queryValues(r.URL.Query()["Fields"]), false)
+		applyItemSwitches(dto, r)
+		items = append(items, dto)
 	}
 	if !s.applyIndexedImages(w, r, userID, items, false) {
 		return

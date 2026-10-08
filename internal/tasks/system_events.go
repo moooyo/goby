@@ -60,6 +60,22 @@ func (s *Store) DispatchSystemEvents(ctx context.Context, limit int) (bool, erro
 }
 
 func (s *Store) dispatchSystemEvent(ctx context.Context, excluded ...string) (bool, error) {
+	// An idle poll must not occupy the catalog owner. This hint carries no
+	// trigger or event state into the authoritative transaction below.
+	var available bool
+	if err := s.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM task_triggers t
+        JOIN task_definitions d ON d.id = t.task_id
+        JOIN task_system_events e ON e.name = t.system_event
+        WHERE d.key = ANY($1::text[]) AND d.enabled
+            AND NOT (t.task_id = ANY(COALESCE($2::text[], '{}'::text[])))
+            AND t.kind = 'system_event' AND t.retired_at IS NULL
+            AND t.calculation_error = '' AND t.last_event_sequence < e.sequence)`,
+		s.executorKeys(), excluded).Scan(&available); err != nil {
+		return false, fmt.Errorf("check pending task system events: %w", err)
+	}
+	if !available {
+		return false, nil
+	}
 	processed := false
 	err := s.owner.WithOwnedTx(ctx, func(tx library.OwnedTx) error {
 		definitions := make(map[string]Definition)

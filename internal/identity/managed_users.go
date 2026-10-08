@@ -497,7 +497,7 @@ func (s *Store) beginManagedUserMutation(ctx context.Context, actor Principal, i
 			return nil, ManagedUser{}, fmt.Errorf("read managed user actor policy context: %w", err)
 		}
 		policy, err := ParseRuntimePolicy(account.User.Policy)
-		if err != nil || !loginPolicyAllows(account.User.Policy, deviceID, observedAt) ||
+		if err != nil || !parsedLoginPolicyAllows(policy, account.User.Policy, deviceID, observedAt) ||
 			(!policy.EnableRemoteAccess && !IsLocalPeer(actor.PeerIP)) {
 			return nil, ManagedUser{}, ErrUnauthorized
 		}

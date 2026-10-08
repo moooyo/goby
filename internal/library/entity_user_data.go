@@ -144,7 +144,7 @@ func (s *Store) UpdateEntityUserDataFor(ctx context.Context, subject Subject, id
 
 // The entity IDs have already passed the caller's same-transaction visibility
 // query. Userless application reads have no synthetic shared user preferences.
-func populateEntityProjections(ctx context.Context, tx pgx.Tx, subject Subject, access libraryAccess, entities []Entity) error {
+func populateEntityProjections(ctx context.Context, tx pgx.Tx, subject Subject, access libraryAccess, entities []Entity, projection QueryProjection) error {
 	if len(entities) == 0 {
 		return nil
 	}
@@ -157,6 +157,36 @@ func populateEntityProjections(ctx context.Context, tx pgx.Tx, subject Subject, 
 			entities[index].UserData = &UserData{ItemID: strconv.FormatInt(entities[index].ID, 10)}
 		}
 	}
+	if !projection.ImagesDisabled {
+		if err := populateEntityImages(ctx, tx, access, entities, ids, byID); err != nil {
+			return err
+		}
+	}
+	if subject.UserID == "" {
+		return nil
+	}
+	rows, err := tx.Query(ctx, "SELECT "+entityUserDataColumns+" FROM entity_user_data WHERE user_id=$1 AND entity_id=ANY($2::bigint[])", subject.UserID, ids)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		data, err := scanEntityUserData(rows)
+		if err != nil {
+			return err
+		}
+		id, err := strconv.ParseInt(data.ItemID, 10, 64)
+		if err != nil {
+			return ErrUnavailable
+		}
+		if entity := byID[id]; entity != nil {
+			entity.UserData = &data
+		}
+	}
+	return rows.Err()
+}
+
+func populateEntityImages(ctx context.Context, tx pgx.Tx, access libraryAccess, entities []Entity, ids []int64, byID map[int64]*Entity) error {
 	rows, err := tx.Query(ctx, `SELECT state.entity_id,im.image_type,im.image_index,im.source_hash,im.mime_type,im.width,im.height,octet_length(im.content),im.modified_at
 		FROM artwork_state state JOIN artwork_images im ON im.state_id=state.id WHERE state.entity_id=ANY($1::bigint[]) ORDER BY state.entity_id,im.image_type,im.image_index`, ids)
 	if err != nil {
@@ -178,39 +208,19 @@ func populateEntityProjections(ctx context.Context, tx pgx.Tx, subject Subject, 
 	if err != nil {
 		return err
 	}
-	for index := range entities {
-		entity := &entities[index]
-		if entity.Type != "Genre" || hasPrimaryImage(entity.Images) {
-			continue
-		}
-		manifest, err := readCollageManifest(ctx, tx, access, ArtworkTarget{EntityID: entity.ID})
-		if err != nil {
-			return err
-		}
-		if manifest != nil {
-			entity.Images = append([]Image{manifest.image()}, entity.Images...)
+	genreIDs := make([]int64, 0, len(entities))
+	for _, entity := range entities {
+		if entity.Type == "Genre" && !hasPrimaryImage(entity.Images) {
+			genreIDs = append(genreIDs, entity.ID)
 		}
 	}
-	if subject.UserID == "" {
-		return nil
-	}
-	rows, err = tx.Query(ctx, "SELECT "+entityUserDataColumns+" FROM entity_user_data WHERE user_id=$1 AND entity_id=ANY($2::bigint[])", subject.UserID, ids)
+	manifests, err := readGenreCollageManifests(ctx, tx, access, genreIDs)
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
-	for rows.Next() {
-		data, err := scanEntityUserData(rows)
-		if err != nil {
-			return err
-		}
-		id, err := strconv.ParseInt(data.ItemID, 10, 64)
-		if err != nil {
-			return ErrUnavailable
-		}
-		if entity := byID[id]; entity != nil {
-			entity.UserData = &data
-		}
+	for id, manifest := range manifests {
+		entity := byID[id]
+		entity.Images = append([]Image{manifest.image()}, entity.Images...)
 	}
-	return rows.Err()
+	return nil
 }

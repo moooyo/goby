@@ -151,7 +151,8 @@ func (s *Server) embyRoot(w http.ResponseWriter, r *http.Request) {
 
 func readItemQuery(w http.ResponseWriter, r *http.Request, userID string) (library.Query, bool) {
 	values := r.URL.Query()
-	query := library.Query{UserID: userID, ParentID: values.Get("ParentId"), SearchTerm: values.Get("SearchTerm"), SortBy: values.Get("SortBy"), SortOrder: values.Get("SortOrder"), Limit: 100}
+	query := library.Query{UserID: userID, ParentID: values.Get("ParentId"), SearchTerm: values.Get("SearchTerm"), SortBy: values.Get("SortBy"), SortOrder: values.Get("SortOrder"), Limit: 100,
+		Projection: requestQueryProjection(r)}
 	if query.ParentID == virtualRootID() {
 		query.ParentID = ""
 	}
@@ -304,15 +305,10 @@ func (s *Server) sendItemQuery(w http.ResponseWriter, r *http.Request, query lib
 		for _, entry := range result.Items {
 			item := s.itemDTOForRequest(r, entry, fields, false)
 			if entry.Type == "CollectionFolder" {
-				lib, err := s.library.GetLibrary(r.Context(), entry.LibraryID)
-				if err != nil {
-					s.libraryError(w, r, err)
-					return
-				}
-				if lib.CollectionType == "mixed" {
+				if entry.CollectionType == "mixed" {
 					item["CollectionType"] = nil
 				} else {
-					item["CollectionType"] = lib.CollectionType
+					item["CollectionType"] = entry.CollectionType
 				}
 			}
 			applyItemSwitches(item, r)
@@ -343,7 +339,7 @@ func (s *Server) embyItem(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, library.ErrNotFound) {
 			if id, valid := positiveEntityID(r.PathValue("Id")); valid {
-				entity, entityErr := s.library.GetEntityByIDFor(r.Context(), subject, id)
+				entity, entityErr := s.library.GetEntityByIDFor(r.Context(), subject, id, requestQueryProjection(r))
 				if entityErr != nil {
 					s.libraryError(w, r, entityErr)
 					return
@@ -747,6 +743,15 @@ func metadataEntityDTOs(entities []library.EntityRef) []map[string]any {
 		items = append(items, item)
 	}
 	return items
+}
+
+func requestQueryProjection(r *http.Request) library.QueryProjection {
+	projection := library.QueryProjection{Browse: true}
+	if value := r.URL.Query().Get("EnableImages"); value != "" {
+		enabled, err := strconv.ParseBool(value)
+		projection.ImagesDisabled = err == nil && !enabled
+	}
+	return projection
 }
 
 func applyItemSwitches(item map[string]any, r *http.Request) {

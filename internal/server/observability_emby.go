@@ -153,9 +153,8 @@ func embyActivityDTO(page activity.Page, options embyObservabilityPageOptions) (
 func (s *Server) embyActivity(w http.ResponseWriter, r *http.Request) {
 	principal := observabilityPrincipal(r)
 	var result embyObservabilityResult[embyActivityEntry]
-	err := s.library.WithOwnedTx(r.Context(), func(tx library.OwnedTx) error {
-		adapter := observabilityOwnedAuthorization{tx: tx}
-		if err := identity.CheckAdministrator(context.Background(), adapter, principal, identity.AdministratorEmby, true); err != nil {
+	err := s.library.WithReadTx(r.Context(), func(tx library.ReadTx) error {
+		if err := identity.CheckAdministrator(r.Context(), tx, principal, identity.AdministratorEmby, true); err != nil {
 			return err
 		}
 		values, err := embyObservabilityQuery(r, "StartIndex", "Limit", "MinDate")
@@ -174,7 +173,7 @@ func (s *Server) embyActivity(w http.ResponseWriter, r *http.Request) {
 			}
 			query.MinDate = &date
 		}
-		page, err := activity.QueryOwned(func(statement string, args ...any) activity.Row { return tx.QueryRow(statement, args...) }, query)
+		page, err := activity.QueryOwned(func(statement string, args ...any) activity.Row { return tx.QueryRow(r.Context(), statement, args...) }, query)
 		if err != nil {
 			if errors.Is(err, activity.ErrInvalidInput) {
 				return err
@@ -185,7 +184,7 @@ func (s *Server) embyActivity(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return err
 		}
-		return identity.CheckAdministrator(context.Background(), adapter, principal, identity.AdministratorEmby, false)
+		return identity.CheckAdministrator(r.Context(), tx, principal, identity.AdministratorEmby, false)
 	})
 	if err != nil {
 		s.embyObservabilityError(w, r, err, false)

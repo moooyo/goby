@@ -43,7 +43,7 @@ func TestEnsureStreamConsumesRejectedDescriptor(t *testing.T) {
 	if _, err := manager.EnsureStream(context.Background(), Spec{}, reader); !errors.Is(err, ErrInvalidPlan) {
 		t.Fatal("regular plan was accepted by stream entry point")
 	}
-	if _, err := reader.Stat(); !errors.Is(err, os.ErrClosed) {
+	if err := reader.Close(); !errors.Is(err, os.ErrClosed) {
 		t.Fatal("rejected stream descriptor was retained")
 	}
 }

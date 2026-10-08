@@ -22,15 +22,42 @@ import (
 	"github.com/moooyo/goby/internal/media"
 )
 
-func analysisRecoveryFingerprint(profile library.AnalysisProfile, execution library.AnalysisExecutionProfile) string {
-	raw, _ := json.Marshal(struct {
+// Retained v5 history must not acquire current v6 admission fields. The
+// introdetect package remains frozen, and this envelope keeps its wire order.
+type analysisRecoveryV5Execution struct {
+	Version             int
+	Available           bool
+	UnavailableReason   string
+	FFmpegSHA256        string
+	FFprobeSHA256       string
+	FingerprintSHA256   string
+	DetectorVersion     string
+	DetectorOptions     introdetect.Options
+	VisualIntervalTicks int64
+	PreviewProfile      string
+	PreviewWidths       []int
+	IntroProfile        string
+}
+
+func analysisRecoveryV5Fingerprint(t *testing.T, execution analysisRecoveryV5Execution) string {
+	t.Helper()
+	profile := json.RawMessage(analysisRecoveryV1Profile)
+	raw, err := json.Marshal(struct {
 		Version         int
 		Revision, Epoch int64
-		Profile         library.AnalysisProfile
-		Execution       library.AnalysisExecutionProfile
-	}{library.AnalysisExecutionProfileVersion, 1, 1, profile, execution})
+		Profile         json.RawMessage
+		Execution       analysisRecoveryV5Execution
+	}{5, 1, 1, profile, execution})
+	if err != nil {
+		t.Fatal("encode frozen v5 analysis admission", err)
+	}
 	digest := sha256.Sum256(raw)
-	return hex.EncodeToString(digest[:])
+	fingerprint := hex.EncodeToString(digest[:])
+	executionRaw, err := json.Marshal(execution)
+	if err != nil || library.ValidateStoredAnalysisAdmission(profile, executionRaw, 1, 1, fingerprint) != nil {
+		t.Fatal("retained v5 analysis fixture violated its frozen admission contract")
+	}
+	return fingerprint
 }
 
 // This is a logical archive fixture, not a media-analysis accuracy fixture.
@@ -46,13 +73,12 @@ func seedAnalysisRecoveryFixture(t *testing.T, f *engineRecoveryFixture) {
 			t.Fatal("seed reclassified retained analysis item")
 		}
 	}
-	profile := library.DefaultAnalysisProfile()
-	profileRaw, _ := json.Marshal(profile)
-	intro := library.AnalysisExecutionProfile{Version: library.AnalysisExecutionProfileVersion, Available: true, FFmpegSHA256: strings.Repeat("a", 64), FFprobeSHA256: strings.Repeat("b", 64), FingerprintSHA256: strings.Repeat("c", 64), DetectorVersion: introdetect.Version, DetectorOptions: introdetect.DefaultOptions(), VisualIntervalTicks: media.TicksPerSecond / 2, IntroProfile: "archive-intro-v1"}
-	preview := library.AnalysisExecutionProfile{Version: library.AnalysisExecutionProfileVersion, Available: true, FFmpegSHA256: strings.Repeat("a", 64), FFprobeSHA256: strings.Repeat("b", 64), PreviewProfile: media.PreviewAnalysisProfile, PreviewWidths: []int{240, 320, 400}}
+	profileRaw := []byte(analysisRecoveryV1Profile)
+	intro := analysisRecoveryV5Execution{Version: 5, Available: true, FFmpegSHA256: strings.Repeat("a", 64), FFprobeSHA256: strings.Repeat("b", 64), FingerprintSHA256: strings.Repeat("c", 64), DetectorVersion: introdetect.Version, DetectorOptions: introdetect.DefaultOptions(), VisualIntervalTicks: media.TicksPerSecond / 2, IntroProfile: "archive-intro-v1"}
+	preview := analysisRecoveryV5Execution{Version: 5, Available: true, FFmpegSHA256: strings.Repeat("a", 64), FFprobeSHA256: strings.Repeat("b", 64), PreviewProfile: "source-pts-display-preceding-hold-jpeg-v3;geometry=orthogonal-display-sar-v2", PreviewWidths: []int{240, 320, 400}}
 	children := make([]string, 2)
 	fingerprints := make([]string, 2)
-	for index, execution := range []library.AnalysisExecutionProfile{intro, preview} {
+	for index, execution := range []analysisRecoveryV5Execution{intro, preview} {
 		key := library.TaskIntroAnalysisKey
 		if index == 1 {
 			key = library.TaskPreviewGenerationKey
@@ -63,7 +89,7 @@ func seedAnalysisRecoveryFixture(t *testing.T, f *engineRecoveryFixture) {
 		}
 		childDigest := sha256.Sum256([]byte(run + ":" + scope))
 		children[index] = hex.EncodeToString(childDigest[:16])
-		fingerprints[index] = analysisRecoveryFingerprint(profile, execution)
+		fingerprints[index] = analysisRecoveryV5Fingerprint(t, execution)
 		encoded, _ := json.Marshal(execution)
 		if _, err := f.source.Exec(f.ctx, `INSERT INTO task_definitions(id,key,name)VALUES($1,$2,$2)`, definition, key); err != nil {
 			t.Fatal("seed analysis task definition")

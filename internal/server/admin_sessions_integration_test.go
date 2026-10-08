@@ -442,8 +442,8 @@ func TestHTTPAdminSessionRevocationCommitsBeforeDisconnectingExactSocketAndHLSOw
 	requestCtx, cancelRequest := context.WithTimeout(h.f.ctx, 12*time.Second)
 	defer cancelRequest()
 	// A legitimate activity writer holds the account before waiting for this
-	// credential. The administrator consequently waits behind that writer at
-	// its account lock, rather than directly at the owned credential lock.
+	// credential. Both operations use compatible account SHARE locks, so the
+	// administrator joins the credential UPDATE queue behind that writer.
 	activityDone := make(chan error, 1)
 	go func() {
 		activityDone <- h.f.users.TouchClientSessionFromAddress(requestCtx, activityActor, "")
@@ -495,9 +495,9 @@ func TestHTTPAdminSessionRevocationCommitsBeforeDisconnectingExactSocketAndHLSOw
 			WHERE activity.wait_event_type = 'Lock' AND blocked.depth < 8
 			AND NOT activity.pid = ANY(blocked.visited)
 		) SELECT EXISTS (SELECT 1 FROM blocked WHERE $2::integer = ANY(visited)
-			AND (position('SELECT id FROM users WHERE id = ANY($1::text[]) ORDER BY id FOR UPDATE' in query) > 0
-			OR (position('SELECT id, user_id, kind FROM sessions' in query) > 0
-				AND position('AND kind IN (''admin'', ''emby'') ORDER BY id FOR UPDATE' in query) > 0)))`,
+			AND position('FROM sessions' in query) > 0
+			AND position('WHERE id = ANY($1::text[])' in query) > 0
+			AND position('AND kind IN (''admin'', ''emby'') ORDER BY id FOR UPDATE' in query) > 0)`,
 			blocker.Conn().PgConn().PID(), activityPID).Scan(&waiting); err != nil {
 			t.Fatalf("observe pending session revocation lock: %v", err)
 		}
@@ -508,7 +508,7 @@ func TestHTTPAdminSessionRevocationCommitsBeforeDisconnectingExactSocketAndHLSOw
 		case result := <-done:
 			t.Fatalf("session revocation returned before its database lock was released: status %d, error type %T", result.response.status, result.err)
 		case <-waitCtx.Done():
-			t.Fatal("session revocation did not enter the proven activity-to-session blocking chain")
+			t.Fatal("session revocation did not queue behind activity at the target credential")
 		case <-tick.C:
 		}
 	}

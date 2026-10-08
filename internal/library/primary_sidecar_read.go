@@ -96,8 +96,7 @@ func (s *Store) waitSidecarAdmission(ctx context.Context, hint mediaSourceRootHi
 	for {
 		operation, err := s.preparePrimaryRootIO(ctx, []mediaSourceRootHint{hint})
 		if err == nil {
-			err = operation.Run(ctx, hint.root.id, class, fresh)
-			err = errors.Join(err, operation.Close())
+			err = waitSidecarCapacityAndRefresh(ctx, operation, hint.root.id, class, fresh)
 		}
 		if !sidecarAdmissionRetryable(err) {
 			return err
@@ -108,6 +107,28 @@ func (s *Store) waitSidecarAdmission(ctx context.Context, hint mediaSourceRootHi
 			return err
 		}
 	}
+}
+
+// The admitted callback only observes cancellation. SQL refresh retains the
+// owner lifetime after the actual I/O lease has been released.
+func waitSidecarCapacityAndRefresh(ctx context.Context, operation *PrimaryRootIO, rootID string,
+	class primaryio.Class, fresh func(context.Context) error) (resultErr error) {
+	defer func() { resultErr = errors.Join(resultErr, operation.Close()) }()
+	if err := operation.Run(ctx, rootID, class, func(work context.Context) error { return work.Err() }); err != nil {
+		return err
+	}
+	ownerCtx := operation.Context()
+	work, cancel := context.WithCancel(ctx)
+	stop := context.AfterFunc(ownerCtx, cancel)
+	defer func() { stop(); cancel() }()
+	// AfterFunc is asynchronous; an already canceled owner must fence refresh.
+	if ownerCtx.Err() != nil {
+		cancel()
+	}
+	if err := work.Err(); err != nil {
+		return err
+	}
+	return errors.Join(fresh(work), work.Err(), ownerCtx.Err())
 }
 
 func (state *scanState) waitSidecarScanAdmission() error {
@@ -212,14 +233,14 @@ func (s *Store) checkSidecarRootHint(ctx context.Context, expected mediaSourceRo
 	return ctx.Err()
 }
 
-// An active scan shares its immutable operation authorization and routing.
-// Standalone preparation authorizes the operation before registering storage.
+// Preparation uses the scan's retained operation grant before registering
+// storage or reusing an idle operation with the same granted routing.
 func (state *scanState) prepareSidecarScanIO() (*PrimaryRootIO, rootBindingRow, error) {
-	row, err := state.primaryScanRoutingRow(state.task.ctx)
+	row, err := state.readPrimaryScanAuthority(state.task.ctx)
 	if err != nil {
 		return nil, rootBindingRow{}, err
 	}
-	if state.walkIO != nil {
+	if state.walkIO != nil && state.walkRow.same(row) {
 		operation, err := state.walkIO.Fork(state.task.ctx)
 		return operation, row, err
 	}

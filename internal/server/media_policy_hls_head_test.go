@@ -17,7 +17,7 @@ func TestHLSSegmentHEADDoesNotStartProducerOrReserveMediaDelivery(t *testing.T) 
 	if err != nil || handle != nil || len(jobs.ensured) != 0 || len(session.producers) != 0 {
 		t.Fatalf("uncached HEAD started media production: handle=%v err=%v jobs=%d", handle, err, len(jobs.ensured))
 	}
-	if _, err := input.Stat(); !errors.Is(err, os.ErrClosed) {
+	if err := input.Close(); !errors.Is(err, os.ErrClosed) {
 		t.Fatal("HEAD retained its source descriptor")
 	}
 	if _, err := runtime.segmentHeader(context.Background(), session, hlsRuntimeInput(t), len(session.timeline.Segments)); !errors.Is(err, transcode.ErrJobNotFound) {

@@ -61,7 +61,7 @@ func authorizeAvatar(ctx context.Context, tx pgx.Tx, actor Principal, userID str
 			return fmt.Errorf("read avatar authority: %w", err)
 		}
 		policy, err := ParseRuntimePolicy(policyJSON)
-		if err != nil || deviceID != actor.Client.DeviceID || !loginPolicyAllows(policyJSON, deviceID, observedAt) ||
+		if err != nil || deviceID != actor.Client.DeviceID || !parsedLoginPolicyAllows(policy, policyJSON, deviceID, observedAt) ||
 			!policy.EnableRemoteAccess && !IsLocalPeer(actor.PeerIP) {
 			return ErrUnauthorized
 		}

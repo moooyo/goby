@@ -6,9 +6,68 @@ import (
 	"fmt"
 	"io"
 	"testing"
+	"time"
 
 	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/primaryio"
 )
+
+func TestSidecarAdmissionRefreshRetainsOwnerWithoutIOLease(t *testing.T) {
+	refreshFailure := errors.New("fresh authority failed")
+	for _, scenario := range []struct {
+		name string
+		want error
+	}{
+		{"success", nil},
+		{"refresh_failure", refreshFailure},
+		{"caller_cancellation", context.Canceled},
+		{"owner_cancellation", context.Canceled},
+	} {
+		t.Run(scenario.name, func(t *testing.T) {
+			operation, governor, owners, finished := primaryRootIOTestFixture(t, 1)
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			refreshed := false
+			err := waitSidecarCapacityAndRefresh(ctx, operation, "root-0", primaryio.Background, func(work context.Context) error {
+				refreshed = true
+				if err := work.Err(); err != nil {
+					return fmt.Errorf("fresh context was already canceled: %w", err)
+				}
+				if stats := governor.Stats(); stats.Active != 0 || stats.Queued != 0 {
+					return fmt.Errorf("SQL refresh retained actual I/O admission: %+v", stats)
+				}
+				if owners.Stats().RegisteredOwners != 1 {
+					return errors.New("SQL refresh lost its retained owner")
+				}
+				switch scenario.name {
+				case "refresh_failure":
+					return refreshFailure
+				case "caller_cancellation":
+					cancel()
+				case "owner_cancellation":
+					if err := operation.handle.state.owner.Cancel(); err != nil {
+						return err
+					}
+				default:
+					return nil
+				}
+				select {
+				case <-work.Done():
+					return work.Err()
+				case <-time.After(5 * time.Second):
+					return errors.New("SQL refresh did not observe cancellation")
+				}
+			})
+			if !refreshed || !errors.Is(err, scenario.want) {
+				t.Fatalf("refresh result=%v want=%v refreshed=%v", err, scenario.want, refreshed)
+			}
+			if owners.Stats().RegisteredOwners != 0 || governor.Stats().Active != 0 {
+				t.Fatalf("refresh did not retire admission: owners=%+v IO=%+v", owners.Stats(), governor.Stats())
+			}
+			primaryRootIOTestWait(t, finished, "sidecar refresh owner completion")
+		})
+	}
+}
 
 func TestSidecarAdmissionRetriesWrappedCapacityWithoutRetryingUnknownRetirement(t *testing.T) {
 	for _, test := range []struct {

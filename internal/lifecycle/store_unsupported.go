@@ -7,8 +7,9 @@ import "context"
 // Store requires Linux descriptor-relative filesystem operations and flock.
 type Store struct{}
 
-func Open(context.Context, string) (*Store, error) { return nil, ErrUnavailable }
-func (*Store) Current() (State, error)             { return State{}, ErrUnavailable }
+func Open(context.Context, string) (*Store, error)           { return nil, ErrUnavailable }
+func (*Store) Current() (State, error)                       { return State{}, ErrUnavailable }
+func (*Store) ReadCurrent(context.Context) (Snapshot, error) { return Snapshot{}, ErrUnavailable }
 func (*Store) StageGeneration(context.Context, string, []byte, []byte) (Generation, error) {
 	return Generation{}, ErrUnavailable
 }

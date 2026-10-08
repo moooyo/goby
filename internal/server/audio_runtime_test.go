@@ -219,7 +219,7 @@ func audioRuntimeLease(t *testing.T, fixture *audioRuntimeFixture, session *hlsS
 	if err != nil || reader == nil || release == nil {
 		t.Fatalf("open controlled progressive lease: %v", err)
 	}
-	if _, err := input.Stat(); !errors.Is(err, os.ErrClosed) {
+	if err := input.Close(); !errors.Is(err, os.ErrClosed) {
 		t.Error("runtime did not transfer its source descriptor to Ensure")
 	}
 	session.mu.Lock()
@@ -355,7 +355,7 @@ func TestAudioRuntimeStartupFailureAndCancellationReleaseTheirSourceAndLease(t *
 			if !errors.Is(err, want) || reader != nil || release != nil {
 				t.Errorf("failed progressive open returned invalid ownership: error=%v want=%v", err, want)
 			}
-			if _, err := input.Stat(); !errors.Is(err, os.ErrClosed) {
+			if err := input.Close(); !errors.Is(err, os.ErrClosed) {
 				t.Error("failed progressive open leaked its input descriptor")
 			}
 			fixture.session.mu.Lock()
@@ -389,7 +389,7 @@ func TestAudioRuntimeFailedJoiningConsumerLeavesExistingProducerRunning(t *testi
 	if readers != 1 || closed || err != nil || record.State != "running" {
 		t.Error("a failed joining consumer cancelled the existing consumer's producer")
 	}
-	if _, err := input.Stat(); !errors.Is(err, os.ErrClosed) {
+	if err := input.Close(); !errors.Is(err, os.ErrClosed) {
 		t.Error("failed joining consumer retained its input descriptor")
 	}
 	first()
@@ -466,7 +466,7 @@ func TestAudioRuntimeRetirementFencesDeduplicationBeforeReplacementRegistration(
 				t.Fatalf("replacement registration did not create a new revision: %v", registerErr)
 			}
 			defer releaseNew()
-			if _, err := newInput.Stat(); !errors.Is(err, os.ErrClosed) {
+			if err := newInput.Close(); !errors.Is(err, os.ErrClosed) {
 				t.Error("replacement failed to transfer its input descriptor")
 			}
 			if newID == oldID {

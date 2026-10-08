@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -232,6 +233,9 @@ func hlsAdmissionSegmentRequest(t *testing.T, h *hlsRuntime, session *hlsSession
 }
 
 func TestHLSAdmissionSlowEnsureDoesNotBlockStopOrIndependentSession(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("HLS admission calls transcode.DuplicateInput, which requires Linux")
+	}
 	h, jobs := hlsAdmissionFixture(t)
 	slow := hlsRuntimeTestSession(t, h, "slow-admission", false)
 	fast := hlsRuntimeTestSession(t, h, "independent-admission", false)
@@ -270,6 +274,9 @@ func TestHLSAdmissionSlowEnsureDoesNotBlockStopOrIndependentSession(t *testing.T
 }
 
 func TestHLSAdmissionNearbyRequestsCoalesceAndCancelWaiters(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("HLS admission calls transcode.DuplicateInput, which requires Linux")
+	}
 	h, jobs := hlsAdmissionFixture(t)
 	session := hlsRuntimeTestSession(t, h, "coalesced-admission", false)
 	firstInput, firstResult := hlsAdmissionSegmentRequest(t, h, session, context.Background(), 0)
@@ -302,6 +309,9 @@ func TestHLSAdmissionNearbyRequestsCoalesceAndCancelWaiters(t *testing.T) {
 }
 
 func TestHLSAdmissionCancelledCreatorFencesLateRecordBeforeReplacement(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("HLS admission calls transcode.DuplicateInput, which requires Linux")
+	}
 	h, jobs := hlsAdmissionFixture(t)
 	session := hlsRuntimeTestSession(t, h, "cancelled-creator", false)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -327,6 +337,9 @@ func TestHLSAdmissionCancelledCreatorFencesLateRecordBeforeReplacement(t *testin
 }
 
 func TestHLSAdmissionErrorWithRecordCancelsExactlyThatRecord(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("HLS admission calls transcode.DuplicateInput, which requires Linux")
+	}
 	h, jobs := hlsAdmissionFixture(t)
 	session := hlsRuntimeTestSession(t, h, "failed-create", false)
 	_, result := hlsAdmissionSegmentRequest(t, h, session, context.Background(), 0)
@@ -345,6 +358,9 @@ func TestHLSAdmissionErrorWithRecordCancelsExactlyThatRecord(t *testing.T) {
 }
 
 func TestHLSAdmissionReplacementRegistrationRetainsFenceAcrossEmptySession(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("HLS admission calls transcode.DuplicateInput, which requires Linux")
+	}
 	h, jobs := hlsAdmissionFixture(t)
 	original := hlsRuntimeTestSession(t, h, "registry-fence", false)
 	original.principal.User.Policy = []byte("{}")
@@ -379,6 +395,9 @@ func TestHLSAdmissionReplacementRegistrationRetainsFenceAcrossEmptySession(t *te
 }
 
 func TestHLSAdmissionCloseWaitsForLateCreationAndReclaimsGates(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("HLS admission calls transcode.DuplicateInput, which requires Linux")
+	}
 	h, jobs := hlsAdmissionFixture(t)
 	session := hlsRuntimeTestSession(t, h, "closing-admission", false)
 	_, result := hlsAdmissionSegmentRequest(t, h, session, context.Background(), 0)
@@ -429,6 +448,9 @@ func hlsAdmissionWaitPending(t *testing.T, session *hlsSession, first int) *hlsA
 }
 
 func TestHLSAdmissionChainedSeekCannotBypassEarlierCancellationFence(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("HLS admission calls transcode.DuplicateInput, which requires Linux")
+	}
 	h, jobs := hlsAdmissionFixture(t)
 	session := hlsRuntimeTestSession(t, h, "chained-seek", false)
 	const ticks = int64(60_000_000)
@@ -505,6 +527,9 @@ func TestHLSAdmissionBoundsDetachedWorkAndReleasesUnusedReservations(t *testing.
 }
 
 func TestHLSAdmissionActiveWaiterRetriesCancelledCreator(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("HLS admission calls transcode.DuplicateInput, which requires Linux")
+	}
 	h, jobs := hlsAdmissionFixture(t)
 	session := hlsRuntimeTestSession(t, h, "retrying-waiter", false)
 	creatorCtx, cancel := context.WithCancel(context.Background())
@@ -527,6 +552,9 @@ func TestHLSAdmissionActiveWaiterRetriesCancelledCreator(t *testing.T) {
 }
 
 func TestHLSAdmissionTransportLocationCannotSplitCancellationFence(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("HLS admission calls transcode.DuplicateInput, which requires Linux")
+	}
 	h, jobs := hlsAdmissionFixture(t)
 	original := hlsRuntimeTestSession(t, h, "transport-fence", false)
 	original.principal.User.Policy = []byte("{}")
@@ -564,6 +592,9 @@ func TestHLSAdmissionTransportLocationCannotSplitCancellationFence(t *testing.T)
 }
 
 func TestHLSAdmissionOldWaiterCannotRetryAgainstSupersedingSeek(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("HLS admission calls transcode.DuplicateInput, which requires Linux")
+	}
 	h, jobs := hlsAdmissionFixture(t)
 	session := hlsRuntimeTestSession(t, h, "superseded-waiter", false)
 	const ticks = int64(60_000_000)
@@ -599,6 +630,9 @@ func TestHLSAdmissionOldWaiterCannotRetryAgainstSupersedingSeek(t *testing.T) {
 }
 
 func TestHLSAdmissionNormalizedPlansCannotSplitCancellationFence(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("HLS admission calls transcode.DuplicateInput, which requires Linux")
+	}
 	h, jobs := hlsAdmissionFixture(t)
 	// Model the manager's canonicalization of executable plans. Distinct raw
 	// registration plans can converge to the same spec and deduplicated ID.
@@ -642,6 +676,9 @@ func TestHLSAdmissionNormalizedPlansCannotSplitCancellationFence(t *testing.T) {
 }
 
 func TestHLSAdmissionCreatorCancellationAndSeekCannotReviveOldWaiter(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("HLS admission calls transcode.DuplicateInput, which requires Linux")
+	}
 	h, jobs := hlsAdmissionFixture(t)
 	session := hlsRuntimeTestSession(t, h, "combined-cancellation", false)
 	const ticks = int64(60_000_000)

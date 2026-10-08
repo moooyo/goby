@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http/httptest"
 	"net/url"
+	"runtime"
 	"testing"
 
 	"github.com/moooyo/goby/internal/transcode"
@@ -114,6 +115,9 @@ func TestGeneratedProducerPausedColdGraphDoesNotBootstrap(t *testing.T) {
 }
 
 func TestGeneratedProducerPauseFencesLateAdmissionWithoutSealingAttachedOutput(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("HLS admission calls transcode.DuplicateInput, which requires Linux")
+	}
 	h, jobs := hlsAdmissionFixture(t)
 	session := hlsRuntimeTestSession(t, h, "pause-pending-generated", false)
 	session.key.plan.Container, session.key.plan.HLS.SegmentType = "mp4", "fmp4"

@@ -102,6 +102,9 @@ func scanLookupPlanOpen(t *testing.T, base mediaSourceFixture, test scanReadPlan
 		wantNamed: config.ConnConfig.StatementCacheCapacity > 0 && !test.beforeConnect && !test.connectTracer,
 	}}
 	fixture.openStore(t)
+	if err := fixture.store.prepareScanOperationAuthority(base.ctx, fixture.state.task, nil); err != nil {
+		t.Fatal(err)
+	}
 	return fixture
 }
 

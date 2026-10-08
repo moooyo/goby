@@ -71,10 +71,10 @@ type Options struct {
 	// Neither hook changes the manager-owned lifetime context of an accepted job.
 	PlaybackAdmission func(context.Context, Spec) (context.Context, func(), error)
 	PlaybackStopped   func(Spec) bool
-	// SourceRead prepares an opaque route from fresh committed authority before
-	// the input enters the manager queue. The first context bounds preparation;
-	// the second is the accepted job lifetime, independent of HTTP completion.
-	// It runs outside all manager locks and must not classify from Spec paths.
+	// SourceRead prepares a catalog-issued route before the input enters the
+	// queue. Preparation follows the first context; retained source ownership
+	// follows the manager-owned job context, independently of the HTTP request.
+	// The callback runs outside manager locks and must not classify Spec paths.
 	SourceRead func(context.Context, context.Context, Spec, *os.File) (SourceReadLifetime, error)
 	// ValidateHardware rechecks the captured device against the process's
 	// startup-authorized inventory after queue waits and before execution. It
@@ -368,7 +368,7 @@ func (m *Manager) ensureInputs(ctx context.Context, spec Spec, inputs StreamInpu
 			m.releasePlaybackAdmission(admissionRelease)
 		}
 	}()
-	record, resultErr := func() (Record, error) {
+	result, resultErr = func() (Record, error) {
 		admissionChecked := false
 		if ctx == nil {
 			return Record{}, ErrInvalidOptions
@@ -610,7 +610,7 @@ func (m *Manager) ensureInputs(ctx context.Context, spec Spec, inputs StreamInpu
 		return record, nil
 	}()
 	returned = true
-	return record, resultErr
+	return result, resultErr
 }
 
 func (m *Manager) admitPlaybackLocked(ctx context.Context, spec Spec) (context.Context, func(), error) {

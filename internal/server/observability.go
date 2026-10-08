@@ -57,14 +57,6 @@ func observabilityNoCache(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// The activity query and its count share the transaction owned by the catalog.
-// This adapter exposes only the authorization helper's query capability.
-type observabilityOwnedAuthorization struct{ tx library.OwnedTx }
-
-func (a observabilityOwnedAuthorization) QueryRow(_ context.Context, statement string, args ...any) pgx.Row {
-	return a.tx.QueryRow(statement, args...)
-}
-
 func observabilityPrincipal(r *http.Request) identity.Principal {
 	principal, _ := r.Context().Value(principalKey).(identity.Principal)
 	return principal
@@ -79,7 +71,7 @@ func (s *Server) checkObservabilityAdministrator(ctx context.Context, principal 
 	}
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
-	tx, err := s.db.BeginTx(ctx, pgx.TxOptions{})
+	tx, err := s.db.BeginTx(ctx, pgx.TxOptions{AccessMode: pgx.ReadOnly})
 	if err != nil {
 		return diagnostics.ErrUnavailable
 	}
@@ -88,9 +80,6 @@ func (s *Server) checkObservabilityAdministrator(ctx context.Context, principal 
 		defer done()
 		_ = tx.Rollback(cleanup)
 	}()
-	if err := identity.CheckAdministrator(ctx, tx, principal, audience, true); err != nil {
-		return err
-	}
 	if err := identity.CheckAdministrator(ctx, tx, principal, audience, false); err != nil {
 		return err
 	}
@@ -263,16 +252,15 @@ func nativeActivityRootBindingFactsValid(entry activity.Entry) bool {
 func (s *Server) adminActivity(w http.ResponseWriter, r *http.Request) {
 	principal := observabilityPrincipal(r)
 	var result nativeActivityPage
-	err := s.library.WithOwnedTx(r.Context(), func(tx library.OwnedTx) error {
-		adapter := observabilityOwnedAuthorization{tx: tx}
-		if err := identity.CheckAdministrator(context.Background(), adapter, principal, identity.AdministratorNative, true); err != nil {
+	err := s.library.WithReadTx(r.Context(), func(tx library.ReadTx) error {
+		if err := identity.CheckAdministrator(r.Context(), tx, principal, identity.AdministratorNative, true); err != nil {
 			return err
 		}
 		options, err := activityQueryOptions(r)
 		if err != nil {
 			return err
 		}
-		page, err := activity.QueryOwned(func(statement string, args ...any) activity.Row { return tx.QueryRow(statement, args...) }, options)
+		page, err := activity.QueryOwned(func(statement string, args ...any) activity.Row { return tx.QueryRow(r.Context(), statement, args...) }, options)
 		if err != nil {
 			if errors.Is(err, activity.ErrInvalidInput) {
 				return err
@@ -283,7 +271,7 @@ func (s *Server) adminActivity(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return err
 		}
-		return identity.CheckAdministrator(context.Background(), adapter, principal, identity.AdministratorNative, false)
+		return identity.CheckAdministrator(r.Context(), tx, principal, identity.AdministratorNative, false)
 	})
 	if err != nil {
 		s.observabilityError(w, r, err, false)

@@ -249,6 +249,28 @@ func TestAuxiliaryPublicationWitnessRetainsIndependentFilesAfterObservationTimeo
 		input:     &scannedMediaInput{file: file, info: info}, sourceRow: row}}
 	defer closeThemeFiles(files)
 	beforeOwners := originalMediaReadOwners.Stats().RegisteredOwners
+	operation, err := store.prepareScanOperationRootIO(ctx, task, []mediaSourceRootHint{{root: row.root, bindingRevision: row.revision}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	files[0].source = &auxiliaryPreparedSource{operation: operation}
+	if err := operation.Run(ctx, record.id, primaryio.Background, func(work context.Context) (resultErr error) {
+		lease, err := store.leaseScanOperationRoot(work, task, record)
+		if err != nil {
+			return err
+		}
+		defer func() { resultErr = errors.Join(resultErr, closeAuxiliaryRoot(lease.approved)) }()
+		opened, err := lease.Open()
+		if err != nil {
+			return err
+		}
+		defer func() { resultErr = errors.Join(resultErr, closeAuxiliaryRoot(opened)) }()
+		input := &primaryScanRead{row: row, namedAnchor: lease.approved, namedRoot: opened}
+		files[0].source.root, err = input.captureSourceRoot(work)
+		return err
+	}); err != nil {
+		t.Fatal("retain the original fixture source before publication", err)
+	}
 	witness, err := store.prepareAuxiliaryPublicationWitness(task, lib, files, map[string]bool{record.id: true},
 		map[string]*scanState{record.id: state}, themePublicationPlan{})
 	if err != nil {
@@ -272,8 +294,8 @@ func TestAuxiliaryPublicationWitnessRetainsIndependentFilesAfterObservationTimeo
 	go func() {
 		finished <- runStorageObservationWithLimit(ctx, slots, 25*time.Millisecond,
 			[]*storageObservationLifetime{&witness.observation}, func(proof context.Context) error {
-				return witness.operation.Run(proof, record.id, primaryio.Background, func(context.Context) error {
-					opened, err := witness.openFileRoot(witness.files[0].state)
+				return witness.operation.Run(proof, record.id, primaryio.Background, func(work context.Context) error {
+					opened, err := witness.openFileRoot(work, witness.files[0].state)
 					if err != nil {
 						return err
 					}
@@ -312,7 +334,7 @@ func TestAuxiliaryPublicationWitnessRetainsIndependentFilesAfterObservationTimeo
 	if _, err := held.Stat(); err != nil || len(slots) != 1 {
 		t.Fatal("retirement closed the active worker's independent descriptor or released its slot")
 	}
-	if _, err := witness.sources[record.id].lease.approved.Stat("."); err != nil || originalMediaReadOwners.Stats().RegisteredOwners != beforeOwners+1 {
+	if _, err := witness.sources[record.id].root.anchor.Stat("."); err != nil || originalMediaReadOwners.Stats().RegisteredOwners != beforeOwners+1 {
 		t.Fatal("retirement released the root lease or operation owner before the actual worker returned")
 	}
 	close(release)
@@ -336,7 +358,7 @@ func TestAuxiliaryPublicationWitnessRetainsIndependentFilesAfterObservationTimeo
 	if _, err := held.Stat(); !errors.Is(err, os.ErrClosed) {
 		t.Fatalf("the finished worker did not close its retired descriptor: %v", err)
 	}
-	if _, err := witness.sources[record.id].lease.approved.Stat("."); !errors.Is(err, os.ErrClosed) || originalMediaReadOwners.Stats().RegisteredOwners != beforeOwners {
+	if _, err := witness.sources[record.id].root.anchor.Stat("."); !errors.Is(err, os.ErrClosed) || originalMediaReadOwners.Stats().RegisteredOwners != beforeOwners {
 		t.Fatal("the finished observation did not retire its root lease and operation owner")
 	}
 }

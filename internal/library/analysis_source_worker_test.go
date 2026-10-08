@@ -149,7 +149,7 @@ func TestAnalysisSourceWorkerCancellationRetainsTaskAndSlotUntilCleanup(t *testi
 		}
 		t.Fatalf("cancelled worker exposed undelivered source state: %+v", result)
 	}
-	if _, err := file.Stat(); !errors.Is(err, os.ErrClosed) {
+	if err := file.Close(); !errors.Is(err, os.ErrClosed) {
 		t.Fatalf("undelivered descriptor outlived the source slot: %v", err)
 	}
 	mediaSourceAdmission.mu.Lock()
@@ -213,7 +213,7 @@ func TestAnalysisSourceWorkerFailureClosesReturnedDescriptor(t *testing.T) {
 	if opened != nil || !reflect.DeepEqual(source, MediaFile{}) || !errors.Is(err, cause) {
 		t.Fatalf("failed source operation returned partial state: %v", err)
 	}
-	if _, err := file.Stat(); !errors.Is(err, os.ErrClosed) {
+	if err := file.Close(); !errors.Is(err, os.ErrClosed) {
 		t.Fatalf("failed source descriptor was not closed: %v", err)
 	}
 }

@@ -145,7 +145,9 @@ func (r *Runtime) run() {
 			err = r.store.fanout(ctx)
 		}
 		cancel()
-		if err != nil {
+		// Backpressure must let committed deliveries drain, including a
+		// prefix committed by this fanout pass. Other failures still retry.
+		if err != nil && !errors.Is(err, ErrLimit) {
 			continue
 		}
 		for n := 0; n < 8; n++ {

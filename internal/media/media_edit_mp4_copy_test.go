@@ -228,16 +228,20 @@ func TestMediaEditMP4StructuralCopyRejectsInvalidDescriptors(t *testing.T) {
 				if _, err := candidate.WriteAt([]byte("existing candidate"), 0); err != nil {
 					t.Fatal(err)
 				}
-			case "closed source":
-				if err := input.Close(); err != nil {
+			case "closed source", "closed candidate":
+				closed := input
+				if name == "closed candidate" {
+					closed = candidate
+				}
+				if err := closed.Close(); err != nil {
 					t.Fatal(err)
 				}
-				underlying = os.ErrClosed
-			case "closed candidate":
-				if err := candidate.Close(); err != nil {
-					t.Fatal(err)
+				_, statErr := closed.Stat()
+				var pathErr *os.PathError
+				if !errors.As(statErr, &pathErr) || pathErr.Err == nil {
+					t.Fatalf("closed descriptor stat did not return a path error with a cause: %v", statErr)
 				}
-				underlying = os.ErrClosed
+				underlying = pathErr.Err
 			case "read-only candidate", "write-only candidate":
 				mode := os.O_RDONLY
 				if name == "write-only candidate" {

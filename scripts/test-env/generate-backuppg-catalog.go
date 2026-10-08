@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -16,7 +17,7 @@ import (
 )
 
 func main() {
-	if len(os.Args) != 2 || os.Getenv("GOBY_TEST_BACKUP_DISPOSABLE_DATABASES") != "1" {
+	if (len(os.Args) != 2 && len(os.Args) != 3) || os.Getenv("GOBY_TEST_BACKUP_DISPOSABLE_DATABASES") != "1" {
 		fail("invalid catalog generation invocation")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -30,14 +31,29 @@ func main() {
 	if pool.QueryRow(ctx, `SELECT count(*) FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname !~ '^pg_' AND n.nspname<>'information_schema'`).Scan(&tables) != nil || tables != 0 {
 		fail("catalog database is not empty")
 	}
-	if err := database.Migrate(ctx, pool); err != nil {
-		fail("apply trusted catalog migrations")
-	}
 	migrations, err := database.EmbeddedMigrations()
 	if err != nil || len(migrations) == 0 {
 		fail("read trusted migration metadata")
 	}
 	version := migrations[len(migrations)-1].Version
+	if len(os.Args) == 3 {
+		requested, err := strconv.ParseInt(os.Args[2], 10, 64)
+		if err != nil || requested < 1 || requested > version || strconv.FormatInt(requested, 10) != os.Args[2] {
+			fail("invalid trusted catalog version")
+		}
+		version = requested
+	}
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		fail("begin trusted catalog migrations")
+	}
+	defer tx.Rollback(ctx)
+	if err := database.RecoveryMigrateTo(ctx, tx, version); err != nil {
+		fail("apply trusted catalog migrations")
+	}
+	if err := tx.Commit(ctx); err != nil {
+		fail("commit trusted catalog migrations")
+	}
 	data, err := backuppg.ExportCatalog(ctx, pool, "public", version)
 	if err != nil {
 		var diagnostic string

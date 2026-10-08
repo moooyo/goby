@@ -3,6 +3,7 @@ package library
 import (
 	"context"
 	"errors"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -47,6 +48,20 @@ func directoryResolutionBudget(ctx context.Context) int {
 
 func closeDirectoryPrimaryResource(ctx context.Context, closer func() error) error {
 	err := closeStorageObservationResources(closer)
+	return recordDirectoryPrimaryClose(ctx, err)
+}
+
+// A concrete os.Root close cannot invoke an application callback. Keep its
+// retirement synchronous; an arbitrary close callback still uses the isolated
+// worker above so panic or Goexit cannot abandon the remaining cleanup.
+func closeDirectoryPrimaryRoot(ctx context.Context, root *os.Root) error {
+	if err := root.Close(); err != nil {
+		return recordDirectoryPrimaryClose(ctx, &storageObservationRetirementFailure{closer: root.Close, err: err})
+	}
+	return nil
+}
+
+func recordDirectoryPrimaryClose(ctx context.Context, err error) error {
 	if err != nil {
 		if operation := PrimaryRootIOFromContext(ctx); operation != nil {
 			_ = operation.MarkUnknown(err)

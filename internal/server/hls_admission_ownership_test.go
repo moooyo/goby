@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"runtime"
 	"testing"
 
 	"github.com/moooyo/goby/internal/library"
@@ -29,6 +30,9 @@ func hlsAdmissionTransportTwin(t *testing.T, h *hlsRuntime, original *hlsSession
 }
 
 func TestHLSAdmissionAbandonedReuseCannotCancelAnotherActiveOwner(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("HLS admission calls transcode.DuplicateInput, which requires Linux")
+	}
 	for _, cause := range []string{"request_cancel", "error_with_record"} {
 		t.Run(cause, func(t *testing.T) {
 			h, jobs := hlsAdmissionFixture(t)
@@ -86,6 +90,9 @@ func TestHLSAdmissionAbandonedReuseCannotCancelAnotherActiveOwner(t *testing.T) 
 }
 
 func TestHLSAdmissionSharedProducerRetiresOnlyWithLastOwner(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("HLS admission calls transcode.DuplicateInput, which requires Linux")
+	}
 	h, jobs := hlsAdmissionFixture(t)
 	first := hlsRuntimeTestSession(t, h, "shared-producer", false)
 	first.principal.User.Policy, first.principal.PeerIP = []byte("{}"), "127.0.0.1"
@@ -122,6 +129,9 @@ func TestHLSAdmissionSharedProducerRetiresOnlyWithLastOwner(t *testing.T) {
 }
 
 func TestHLSAdmissionReusedProducerRetiredBeforeAttachmentRetries(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("HLS admission calls transcode.DuplicateInput, which requires Linux")
+	}
 	h, jobs := hlsAdmissionFixture(t)
 	first := hlsRuntimeTestSession(t, h, "stale-reuse", false)
 	first.principal.User.Policy, first.principal.PeerIP = []byte("{}"), "127.0.0.1"
@@ -182,6 +192,9 @@ func TestHLSAdmissionProgressiveRegistrationsShareProducerOwnership(t *testing.T
 }
 
 func TestHLSAdmissionSnapshotHardFailureDoesNotRetryCreation(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("HLS admission calls transcode.DuplicateInput, which requires Linux")
+	}
 	cases := []struct {
 		name  string
 		err   error
@@ -247,6 +260,9 @@ func TestHLSAdmissionSnapshotHardFailureDoesNotRetryCreation(t *testing.T) {
 }
 
 func TestHLSAdmissionRepeatedStaleSnapshotHasBoundedRetry(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("HLS admission calls transcode.DuplicateInput, which requires Linux")
+	}
 	h, jobs := hlsAdmissionFixture(t)
 	session := hlsRuntimeTestSession(t, h, "repeated-stale-snapshot", false)
 	_, result := hlsAdmissionSegmentRequest(t, h, session, context.Background(), 0)
@@ -268,6 +284,9 @@ func TestHLSAdmissionRepeatedStaleSnapshotHasBoundedRetry(t *testing.T) {
 }
 
 func TestHLSAdmissionUnownedDescriptorCannotRevokeAttachedProducer(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("HLS admission calls transcode.DuplicateInput, which requires Linux")
+	}
 	h, jobs := hlsAdmissionFixture(t)
 	session := hlsRuntimeTestSession(t, h, "unowned-descriptor", false)
 	_, result := hlsAdmissionSegmentRequest(t, h, session, context.Background(), 0)

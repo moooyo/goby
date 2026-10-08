@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -160,9 +161,18 @@ func TestMeasureGeneratedSegmentBoundsDetectsSameSizeMutationWithRestoredMtime(t
 	if err := os.WriteFile(input.Name(), []byte(input.Name()+"\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
+	before, statErr := input.Stat()
+	if statErr != nil {
+		t.Fatal(statErr)
+	}
 	_, err := MeasureGeneratedSegmentBounds(context.Background(), generatedBoundsHelperExecutable(t, "mutate"), nil, input, true)
 	if !errors.Is(err, ErrInvalidInput) {
-		t.Fatalf("mutated input = %v", err)
+		after, statErr := input.Stat()
+		if statErr != nil {
+			t.Fatalf("mutated input = %v; final stat = %v", err, statErr)
+		}
+		t.Fatalf("mutated input = %v; size %d -> %d, mtime %v -> %v, ctime %v -> %v", err,
+			before.Size(), after.Size(), before.ModTime(), after.ModTime(), before.Sys().(*syscall.Stat_t).Ctim, after.Sys().(*syscall.Stat_t).Ctim)
 	}
 }
 
@@ -246,9 +256,33 @@ func runGeneratedBoundsHelper(mode string) int {
 			if err != nil || len(input) == 0 {
 				return 84
 			}
+			before, ok := info.Sys().(*syscall.Stat_t)
+			if !ok {
+				return 84
+			}
 			input[0] ^= 1
-			if os.WriteFile(path, input, 0600) != nil || os.Chtimes(path, info.ModTime(), info.ModTime()) != nil {
-				return 85
+			deadline := time.Now().Add(2 * time.Second)
+			for {
+				if os.WriteFile(path, input, 0600) != nil || os.Chtimes(path, info.ModTime(), info.ModTime()) != nil {
+					return 85
+				}
+				after, err := os.Stat(path)
+				if err != nil || !os.SameFile(info, after) || info.Size() != after.Size() || !info.ModTime().Equal(after.ModTime()) {
+					return 85
+				}
+				changed, ok := after.Sys().(*syscall.Stat_t)
+				if !ok {
+					return 85
+				}
+				if changed.Ctim != before.Ctim {
+					break
+				}
+				if time.Now().After(deadline) {
+					return 85
+				}
+				// Keep the mutation and restored mtime while waiting for the
+				// observable ctime transition this identity-fence test requires.
+				time.Sleep(time.Millisecond)
 			}
 		}
 		if mode == "parent" {

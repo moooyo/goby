@@ -345,7 +345,7 @@ func (s *Store) reconcileMissingScanItemsAttempt(task *scanTask, library Library
 	if err != nil {
 		return nil, err
 	}
-	defer operation.Close()
+	defer func() { resultErr = errors.Join(resultErr, operation.Close()) }()
 	observationCtx := operation.Context(task.ctx)
 	if err := evidence.requireComplete(task.ctx); err != nil {
 		return nil, err
@@ -726,7 +726,7 @@ func revalidateScanReconciliationNow(ctx context.Context, captures []*rootBindin
 			if err != nil || !scanReconciliationSameInfo(root.info, info) {
 				return scanReconciliationUnavailable("directory evidence belongs to a different approved root")
 			}
-			return nil
+			return work.Err()
 		}); err != nil {
 			return scanReconciliationObservation(ctx, err)
 		}

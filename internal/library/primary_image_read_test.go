@@ -55,7 +55,7 @@ func TestPrimaryImageContentBoundsReadsPreservesEOFAndJoinsDescriptor(t *testing
 		t.Fatal(err)
 	}
 	primaryRootIOTestWait(t, finished, "artwork descriptor and registration retirement")
-	if _, err := file.Stat(); !errors.Is(err, os.ErrClosed) {
+	if err := file.Close(); !errors.Is(err, os.ErrClosed) {
 		t.Fatalf("artwork retired without closing its exact descriptor: %v", err)
 	}
 	if stats := owners.Stats(); stats.RegisteredOwners != 0 {

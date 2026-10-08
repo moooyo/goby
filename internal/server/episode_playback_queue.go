@@ -44,7 +44,7 @@ func (s *Server) tryEpisodePlaybackQueue(w http.ResponseWriter, r *http.Request,
 			return false
 		}
 	}
-	result, err := s.library.EpisodePlaybackQueue(r.Context(), requestLibrarySubject(r, userID), seriesID)
+	result, err := s.library.EpisodePlaybackQueue(r.Context(), requestLibrarySubject(r, userID), seriesID, requestQueryProjection(r))
 	if errors.Is(err, library.ErrEpisodePlaybackQueueLimit) {
 		apiError(w, r, http.StatusUnprocessableEntity, "episode_queue_limit", "This series exceeds the complete playback queue limit; request an explicitly paginated episode list.")
 		return true

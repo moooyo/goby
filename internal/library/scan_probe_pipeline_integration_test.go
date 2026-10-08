@@ -541,6 +541,27 @@ func TestScanInputInspectionRejectionPreservesMixedFailures(t *testing.T) {
 	}
 }
 
+func TestScanSourceChangeWarningPreservesRetirementFailures(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{"source-only", errScanProbeSourceChanged, true},
+		{"wrapped-source", scanReadFailure(errScanProbeSourceChanged), true},
+		{"joined-source", errors.Join(scanReadFailure(errScanProbeSourceChanged)), true},
+		{"retirement-failure", errors.Join(errScanProbeSourceChanged, media.ErrProcessRetirementUnknown), false},
+		{"close-failure", errors.Join(scanReadFailure(errScanProbeSourceChanged), errors.New("actual close failed")), false},
+		{"cancellation", errors.Join(errScanProbeSourceChanged, context.Canceled), false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := scanProbeSourceChangedOnly(test.err); got != test.want {
+				t.Fatalf("source warning classification=%v want=%v error=%v", got, test.want, test.err)
+			}
+		})
+	}
+}
+
 func TestScanProbeReadyResultRejectsOversizedFactsBeforeHandoff(t *testing.T) {
 	ready := make(chan scanProbeResult, 1)
 	var calls atomic.Int64

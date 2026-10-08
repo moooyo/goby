@@ -32,7 +32,10 @@ func compatibilityMigrationSnapshot(t *testing.T, ctx context.Context, pool *pgx
 		projection += " - 'analysis_input' - 'analysis_config_fingerprint' - 'actor_application_key_id' - 'actor_client_session_id' - 'actor_peer_ip'"
 	}
 	if table == "play_sessions" {
-		projection += " - 'is_dynamic'"
+		projection += " - 'is_dynamic' - 'playback_revision'"
+	}
+	if table == "items" {
+		projection += " - 'media_operation_source_revision' - 'media_operation_source_binding_revision'"
 	}
 	if table == "item_entities" {
 		projection += " - 'credit_group'"
@@ -118,8 +121,11 @@ func compatibilityMigrationPhase3Defaults(t *testing.T, ctx context.Context, poo
 		AND NOT EXISTS(SELECT 1 FROM artwork_images)
 		AND NOT EXISTS(SELECT 1 FROM entity_user_data)
 		AND NOT EXISTS(SELECT 1 FROM task_triggers WHERE system_event IS NOT NULL OR last_event_sequence IS DISTINCT FROM 0)
-		AND (SELECT count(*) FROM task_system_events)=3
-		AND NOT EXISTS(SELECT 1 FROM task_system_events WHERE sequence IS DISTINCT FROM 0 OR lifecycle_key IS DISTINCT FROM '')
+		AND (SELECT count(*) FROM task_system_events)=9
+		AND NOT EXISTS(SELECT 1 FROM task_system_events WHERE name NOT IN
+			('ServerStarted','LibraryChanged','ConfigurationChanged','IntroAnalysisRequested','PreviewGenerationRequested',
+			 'BackgroundPreviewGenerationRequested','AudioWaveformGenerationRequested','CreditsAnalysisRequested','SubtitleTimelineGenerationRequested')
+			OR sequence IS DISTINCT FROM 0 OR lifecycle_key IS DISTINCT FROM '' OR occurred_at IS NULL)
 		AND NOT EXISTS(SELECT 1 FROM task_system_event_receipts)
 		AND NOT EXISTS(SELECT 1 FROM managed_settings WHERE runtime_overrides IS DISTINCT FROM
 			'{"Network":null,"Hardware":null,"Threads":null,"H264":null,"HEVC":null,"SoftwareToneMapping":null,"VulkanToneMapping":null}'::jsonb)
@@ -127,6 +133,8 @@ func compatibilityMigrationPhase3Defaults(t *testing.T, ctx context.Context, poo
 			OR local_credentials_revision<>1 OR local_password_failures<>0 OR local_password_blocked_until IS NOT NULL)
 		AND NOT EXISTS(SELECT 1 FROM sessions WHERE local_auth)
 		AND NOT EXISTS(SELECT 1 FROM item_intro_state)
+		AND NOT EXISTS(SELECT 1 FROM item_credits_state)
+		AND NOT EXISTS(SELECT 1 FROM item_bitmap_subtitles)
 		AND NOT EXISTS(SELECT 1 FROM media_operations) AND NOT EXISTS(SELECT 1 FROM media_operation_cues)
 		AND NOT EXISTS(SELECT 1 FROM item_owned_subtitles) AND NOT EXISTS(SELECT 1 FROM item_embedded_artwork)
 		AND NOT EXISTS(SELECT 1 FROM series_episode_rosters) AND NOT EXISTS(SELECT 1 FROM episode_roster_imports)
@@ -152,7 +160,8 @@ func compatibilityMigrationAnalysisDefaults(t *testing.T, ctx context.Context, p
 		AND EXISTS(SELECT 1 FROM analysis_settings WHERE id=1 AND revision=1 AND publication_epoch=1
 			AND auto_publish_intros IS NOT DISTINCT FROM true AND preview_interval_seconds=10 AND preview_quality=80
 			AND max_source_bytes=137438953472 AND max_item_runtime_seconds=1200
-			AND feature_cache_max_bytes=134217728 AND updated_at IS NOT NULL)
+			AND feature_cache_max_bytes=134217728 AND updated_at IS NOT NULL
+			AND intro_skipper_options='{"AnalysisPercent":25,"AnalysisLengthLimit":10,"MinimumIntroDuration":15,"MaximumIntroDuration":120,"MaximumFingerprintPointDifferences":6,"MaximumTimeSkip":3.5,"InvertedIndexShift":2}'::jsonb)
 		AND NOT EXISTS(SELECT 1 FROM task_runs WHERE analysis_input IS NOT NULL
 			OR analysis_config_fingerprint IS DISTINCT FROM '' OR actor_application_key_id IS DISTINCT FROM 0
 			OR actor_client_session_id IS DISTINCT FROM '' OR actor_peer_ip IS DISTINCT FROM '')
@@ -162,8 +171,32 @@ func compatibilityMigrationAnalysisDefaults(t *testing.T, ctx context.Context, p
 		AND NOT EXISTS(SELECT 1 FROM analysis_work_sources) AND NOT EXISTS(SELECT 1 FROM analysis_feature_cache)
 		AND NOT EXISTS(SELECT 1 FROM analysis_detections) AND NOT EXISTS(SELECT 1 FROM analysis_detection_sources)
 		AND NOT EXISTS(SELECT 1 FROM analysis_intro_decisions) AND NOT EXISTS(SELECT 1 FROM analysis_intro_audit)
-		AND NOT EXISTS(SELECT 1 FROM analysis_preview_state) AND NOT EXISTS(SELECT 1 FROM analysis_previews)`).Scan(&valid); err != nil || !valid {
+		AND NOT EXISTS(SELECT 1 FROM analysis_preview_state) AND NOT EXISTS(SELECT 1 FROM analysis_previews)
+		AND NOT EXISTS(SELECT 1 FROM analysis_credits_detections) AND NOT EXISTS(SELECT 1 FROM analysis_credits_detection_sources)
+		AND (SELECT count(*)=1 FROM background_preview_settings)
+		AND EXISTS(SELECT 1 FROM background_preview_settings WHERE id=1 AND revision=1 AND duration_seconds=25
+			AND max_width=1280 AND video_bitrate=1500000 AND max_item_runtime_seconds=1200 AND updated_at IS NOT NULL)
+		AND NOT EXISTS(SELECT 1 FROM item_background_preview_settings)
+		AND NOT EXISTS(SELECT 1 FROM background_preview_queue) AND NOT EXISTS(SELECT 1 FROM background_preview_requests)
+		AND NOT EXISTS(SELECT 1 FROM audio_waveform_queue) AND NOT EXISTS(SELECT 1 FROM audio_waveform_requests)
+		AND NOT EXISTS(SELECT 1 FROM subtitle_timeline_queue) AND NOT EXISTS(SELECT 1 FROM subtitle_timeline_requests)
+		AND NOT EXISTS(SELECT 1 FROM play_sessions WHERE playback_revision IS DISTINCT FROM 0)`).Scan(&valid); err != nil || !valid {
 		t.Fatalf("compatibility migration changed analysis defaults or inferred historical analysis work: %v", err)
+	}
+}
+
+// Schema 63 adds only derived source caches. Historical source facts remain in
+// the old-column snapshot, while this check proves each new cache independently.
+func compatibilityMigrationSourceCacheDefaults(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
+	t.Helper()
+	var valid bool
+	if err := pool.QueryRow(ctx, `SELECT NOT EXISTS(SELECT 1 FROM items item LEFT JOIN library_roots root ON root.id=item.root_id
+		WHERE CASE WHEN item.root_id IS NOT NULL AND item.media IS NOT NULL THEN
+			item.media_operation_source_binding_revision IS DISTINCT FROM root.binding_revision
+			OR item.media_operation_source_revision IS DISTINCT FROM 'media-operation-source-v1-' || md5(jsonb_build_array(
+				item.root_id,item.relative_path,item.file_identity,item.file_size,extract(epoch FROM item.modified_at),item.media,root.binding_revision)::text)
+		ELSE item.media_operation_source_revision IS NOT NULL OR item.media_operation_source_binding_revision IS NOT NULL END)`).Scan(&valid); err != nil || !valid {
+		t.Fatalf("compatibility migration did not initialize exact source caches: %v", err)
 	}
 }
 
@@ -267,7 +300,10 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 				"series_episode_rosters", "episode_roster_imports", "expected_episodes",
 				"notification_transport", "notification_journal_state", "notification_registrations", "notification_source_events", "notification_deliveries",
 				"analysis_settings", "analysis_run_profiles", "analysis_work", "analysis_work_sources", "analysis_feature_cache",
-				"analysis_detections", "analysis_detection_sources", "analysis_intro_decisions", "analysis_intro_audit", "analysis_preview_state", "analysis_previews")
+				"analysis_detections", "analysis_detection_sources", "analysis_intro_decisions", "analysis_intro_audit", "analysis_preview_state", "analysis_previews",
+				"item_credits_state", "background_preview_settings", "item_background_preview_settings", "background_preview_queue", "background_preview_requests",
+				"audio_waveform_queue", "audio_waveform_requests", "analysis_credits_detections", "analysis_credits_detection_sources",
+				"subtitle_timeline_queue", "subtitle_timeline_requests", "item_bitmap_subtitles")
 			sort.Strings(currentTables)
 			var migratedSettings, migratedHistory, migratedAnalysisSettings string
 			for attempt := 1; attempt <= 2; attempt++ {
@@ -281,6 +317,7 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 				compatibilityMigrationPhase3Defaults(t, ctx, pool)
 				compatibilityMigrationSortingDefaults(t, ctx, pool)
 				compatibilityMigrationAnalysisDefaults(t, ctx, pool)
+				compatibilityMigrationSourceCacheDefaults(t, ctx, pool)
 				var dynamicSessions int
 				if err := pool.QueryRow(ctx, `SELECT count(*) FROM play_sessions WHERE is_dynamic IS DISTINCT FROM false`).Scan(&dynamicSessions); err != nil || dynamicSessions != 0 {
 					t.Errorf("current migration marked historical playback sessions as dynamic: count=%d error=%v", dynamicSessions, err)
@@ -355,6 +392,7 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 				compatibilityMigrationBindingDefaults(t, ctx, pool)
 				compatibilityMigrationSortingDefaults(t, ctx, pool)
 				compatibilityMigrationAnalysisDefaults(t, ctx, pool)
+				compatibilityMigrationSourceCacheDefaults(t, ctx, pool)
 				if after := settingsMigrationSnapshot(t, ctx, pool, "managed_settings"); after != persisted {
 					t.Errorf("repeated compatibility migration changed persisted mode %s, width, or original settings", state.mode)
 				}

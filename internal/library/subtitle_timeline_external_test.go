@@ -1,6 +1,7 @@
 package library
 
 import (
+	"runtime"
 	"strings"
 	"testing"
 
@@ -72,9 +73,16 @@ func TestSubtitleTimelineExternalStampBindsEntireSetAndKeepsLegacyVersion(t *tes
 
 func TestSubtitleTimelineRawBitmapFactsFenceHiddenIndexAndParentBinding(t *testing.T) {
 	snapshot := subtitleTimelineTestSnapshot()
+	relative := "Movie/movie.en.sup"
+	if runtime.GOOS == "windows" {
+		// A root-level fixture keeps the catalog path valid without native
+		// separators, while retaining the hidden-index and parent checks.
+		snapshot.relativePath = "movie.mkv"
+		relative = "movie.en.sup"
+	}
 	legacy, _ := subtitleTimelineSourceStamp(snapshot)
 	track := subtitleTimelineExternalTestTrack(1)
-	snapshot.mediaFile.Item.bitmapSubtitleFacts = []storedBitmapSubtitle{{BitmapSubtitle: track, relativePath: "Movie/movie.en.sup", rootID: snapshot.root.id}}
+	snapshot.mediaFile.Item.bitmapSubtitleFacts = []storedBitmapSubtitle{{BitmapSubtitle: track, relativePath: relative, rootID: snapshot.root.id}}
 	stamp, err := subtitleTimelineSourceStamp(snapshot)
 	if err != nil || stamp == legacy || !strings.HasPrefix(stamp, "subtitle-timeline-source-v2-") {
 		t.Fatalf("invisible index collision lost the raw catalog set: %q %v", stamp, err)
@@ -83,7 +91,7 @@ func TestSubtitleTimelineRawBitmapFactsFenceHiddenIndexAndParentBinding(t *testi
 	if subtitleTimelineSummaryMatchesSource(summary, snapshot.mediaFile.Item.Media, subtitleTimelineSnapshotBitmap(snapshot)) {
 		t.Fatal("colliding external index could publish a timeline")
 	}
-	snapshot.mediaFile.Item.bitmapSubtitleFacts[0].relativePath = "Other/movie.en.sup"
+	snapshot.relativePath = "Other/movie.mkv"
 	if _, err := subtitleTimelineSourceStamp(snapshot); err == nil {
 		t.Fatal("another directory was accepted as the media sidecar parent")
 	}

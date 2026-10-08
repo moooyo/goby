@@ -177,7 +177,7 @@ func TestRecoveryLinuxDirectoriesAndExecutables(t *testing.T) {
 	for _, setting := range []string{"GOBY_RECOVERY_STATE_DIR", "GOBY_BACKUP_DIR", "GOBY_RECOVERY_OPERATIONS_DIR"} {
 		for index, value := range []string{
 			" ", ".", "relative/path", "/", "/owned/../other", "/owned/", "//owned", `C:\owned`,
-			`/owned\child`, "/owned\nchild", "/owned/" + string([]byte{0xff}), strings.Repeat("/a", 2049),
+			`/owned\child`, "/owned\nchild", strings.Repeat("/a", 2049),
 		} {
 			t.Run(fmt.Sprintf("%s/invalid/%d", setting, index), func(t *testing.T) {
 				t.Setenv(setting, value)
@@ -196,7 +196,7 @@ func TestRecoveryLinuxDirectoriesAndExecutables(t *testing.T) {
 		}
 	}
 	for _, setting := range []string{"GOBY_PG_DUMP", "GOBY_PG_RESTORE"} {
-		for index, value := range []string{" ", ".", "..", "/", "./pg_dump", "bin/pg_dump", "/bin/../pg_dump", "/bin/pg_dump/", `C:\pg_dump`, "pg\ndump", string([]byte{0xff}), strings.Repeat("p", 4097)} {
+		for index, value := range []string{" ", ".", "..", "/", "./pg_dump", "bin/pg_dump", "/bin/../pg_dump", "/bin/pg_dump/", `C:\pg_dump`, "pg\ndump", strings.Repeat("p", 4097)} {
 			t.Run(fmt.Sprintf("%s/invalid/%d", setting, index), func(t *testing.T) {
 				t.Setenv(setting, value)
 				if _, err := Load(); err == nil || !strings.Contains(err.Error(), setting) {
@@ -212,6 +212,30 @@ func TestRecoveryLinuxDirectoriesAndExecutables(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func TestRecoveryDirectPathPolicyRejectsInvalidUTF8(t *testing.T) {
+	// Windows environment variables convert invalid UTF-8 to replacement characters.
+	// Direct configurations preserve the original bytes for policy validation.
+	invalid := string([]byte{0xff})
+	for _, test := range []struct {
+		setting string
+		mutate  func(*RecoveryConfig)
+	}{
+		{"GOBY_RECOVERY_STATE_DIR", func(c *RecoveryConfig) { c.Directory = "/owned/" + invalid }},
+		{"GOBY_BACKUP_DIR", func(c *RecoveryConfig) { c.Backups.Directory = "/owned/" + invalid }},
+		{"GOBY_RECOVERY_OPERATIONS_DIR", func(c *RecoveryConfig) { c.OperationsDirectory = "/owned/" + invalid }},
+		{"GOBY_PG_DUMP", func(c *RecoveryConfig) { c.PGDumpPath = invalid }},
+		{"GOBY_PG_RESTORE", func(c *RecoveryConfig) { c.PGRestorePath = invalid }},
+	} {
+		t.Run(test.setting, func(t *testing.T) {
+			c := (RecoveryConfig{}).WithDefaults()
+			test.mutate(&c)
+			if err := c.Validate(""); err == nil || !strings.Contains(err.Error(), test.setting) {
+				t.Fatalf("a direct path containing invalid UTF-8 was accepted or misclassified: %v", err)
+			}
+		})
 	}
 }
 

@@ -128,7 +128,13 @@ func (state *scanState) scanEmbeddedArtworkAttempt(itemID, itemType, relative st
 	if err != nil {
 		return scanReadFailure(err)
 	}
-	defer func() { resultErr = errors.Join(resultErr, operation.Close()) }()
+	var sourceRoot *scanSourceRootWitness
+	defer func() {
+		if sourceRoot != nil {
+			resultErr = errors.Join(resultErr, sourceRoot.Close())
+		}
+		resultErr = errors.Join(resultErr, operation.Close())
+	}()
 	var result media.EmbeddedArtworkResult
 	var extractErr error
 	stable, cached := false, false
@@ -143,6 +149,10 @@ func (state *scanState) scanEmbeddedArtworkAttempt(itemID, itemType, relative st
 		if source == read.cachedSource && read.cachedVersion == media.EmbeddedArtworkVersion && (read.cachedStatus == "ready" || read.cachedStatus == "none") && !state.task.job.ForceProbe {
 			stable, cached = true, true
 			return nil
+		}
+		sourceRoot, err = state.captureScanSourceRoot(work, row)
+		if err != nil {
+			return err
 		}
 		// Extraction joins each exact FFprobe/FFmpeg reader and its cleanup.
 		// Unknown retirement keeps this operation and phase quarantined.
@@ -239,8 +249,14 @@ func (state *scanState) scanEmbeddedArtworkAttempt(itemID, itemType, relative st
 			return err
 		}
 	}
-	if err := operation.RunImmediate(ctx, state.root.id, primaryio.Background, func(context.Context) error {
-		return state.checkEmbeddedArtworkSource(relative, file, snapshot)
+	if err := operation.RunImmediate(ctx, state.root.id, primaryio.Background, func(proof context.Context) error {
+		if err := sourceRoot.Check(proof); err != nil {
+			return err
+		}
+		if err := state.checkEmbeddedArtworkSource(relative, file, snapshot); err != nil {
+			return err
+		}
+		return sourceRoot.Check(proof)
 	}); err != nil {
 		return scanReadFailure(err)
 	}

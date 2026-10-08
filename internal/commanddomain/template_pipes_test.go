@@ -215,7 +215,7 @@ func TestTemplatePipesKnownNoStartClosesEveryActualEnd(t *testing.T) {
 			}
 			for _, pipe := range pipes.pipes {
 				for _, file := range []*os.File{pipe.reader, pipe.writer} {
-					if _, err := file.Stat(); !errors.Is(err, os.ErrClosed) {
+					if err := file.Close(); !errors.Is(err, os.ErrClosed) {
 						t.Fatal("known rejection did not close an actual end")
 					}
 				}

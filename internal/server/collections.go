@@ -608,7 +608,7 @@ func (s *Server) collectionItems(w http.ResponseWriter, r *http.Request, kind st
 			return
 		}
 	}
-	result, err := s.library.CollectionItems(r.Context(), subject, r.PathValue("Id"), kind, start, max(limit, 1))
+	result, err := s.library.CollectionItems(r.Context(), subject, r.PathValue("Id"), kind, start, max(limit, 1), requestQueryProjection(r))
 	if err != nil {
 		s.libraryError(w, r, err)
 		return

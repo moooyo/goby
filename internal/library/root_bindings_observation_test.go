@@ -72,7 +72,7 @@ func occupyRootBindingObservationSlots(t *testing.T, store *Store, root libraryR
 			case <-time.After(5 * time.Second):
 				t.Error("actual observation owner did not complete retirement")
 			}
-			if _, err := worker.directory.Stat(); !errors.Is(err, os.ErrClosed) {
+			if err := worker.directory.Close(); !errors.Is(err, os.ErrClosed) {
 				t.Errorf("retired observation kept its actual descriptor: %v", err)
 			}
 		}
@@ -218,7 +218,7 @@ func TestRootBindingObservationCallerDeadlineRetainsWorkAndDeferredClose(t *test
 		t.Fatal("worker did not close its descriptor")
 	}
 	waitRootBindingObservationIdle(t)
-	if _, err := held.Stat(); !errors.Is(err, os.ErrClosed) {
+	if err := held.Close(); !errors.Is(err, os.ErrClosed) {
 		t.Fatal("finished worker retained the descriptor")
 	}
 }

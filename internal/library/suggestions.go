@@ -48,7 +48,7 @@ func (s *Store) QuerySuggestions(ctx context.Context, query Query) (ItemResult, 
 			i.created_at DESC, i.id ASC`, userParameter, userParameter)
 	}
 	args = append(args, query.Limit, query.StartIndex)
-	rows, err := tx.Query(ctx, prefix+"SELECT "+access.itemColumnsSQL()+" FROM items i WHERE "+filter+
+	rows, err := tx.Query(ctx, prefix+"SELECT "+access.scopeSQL(itemQueryColumns(query))+" FROM items i WHERE "+filter+
 		" ORDER BY "+access.scopeSQL(order)+fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)-1, len(args)), args...)
 	if err != nil {
 		return ItemResult{}, fmt.Errorf("query suggestions: %w", err)

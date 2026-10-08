@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"runtime"
 	"sort"
 	"sync"
 	"sync/atomic"
@@ -74,6 +75,9 @@ func TestDirectoryPrimaryImmediateBusyRetainsRetryWithoutQueueing(t *testing.T) 
 }
 
 func TestScanReconciliationCatalogCleanupFailureRetiresFilesystemOwner(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("reconciliation root evidence requires Linux file identity and change time")
+	}
 	operation, governor, owners, finished := primaryRootIOTestFixture(t, 1)
 	path := operation.handle.state.routes["root-0"].domain
 	if err := os.Mkdir(path, 0o700); err != nil {
@@ -107,6 +111,9 @@ func TestScanReconciliationCatalogCleanupFailureRetiresFilesystemOwner(t *testin
 }
 
 func TestReconciliationRevalidationCovers256SerialRootPhases(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("reconciliation root evidence requires Linux file identity and change time")
+	}
 	operation, governor, owners, _ := primaryRootIOTestFixture(t, 256)
 	evidence := newScanReconciliationEvidence()
 	t.Cleanup(func() { _ = evidence.Close() })

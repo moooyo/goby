@@ -168,8 +168,8 @@ func TestLocalNFOObservationJoinsActualCloseAndPreservesLifecycleFailures(t *tes
 			if file.closes != 1 {
 				t.Fatalf("descriptor close calls=%d, want one", file.closes)
 			}
-			if _, statErr := opened.Stat(); !errors.Is(statErr, os.ErrClosed) {
-				t.Fatalf("observation returned before actual descriptor close: %v", statErr)
+			if closeErr := opened.Close(); !errors.Is(closeErr, os.ErrClosed) {
+				t.Fatalf("observation returned before actual descriptor close: %v", closeErr)
 			}
 			if invalid || scenario == "success" && (err != nil || len(data) == 0) || scenario != "success" && err == nil {
 				t.Fatalf("unexpected observation result: bytes=%d invalid=%v error=%v", len(data), invalid, err)

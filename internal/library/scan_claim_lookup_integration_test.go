@@ -68,6 +68,14 @@ func scanClaimLookupState(t *testing.T, ctx context.Context, store *Store, libra
 		themes: &themeScan{claimed: make(map[string]string)}}
 }
 
+func scanClaimLookupAuthorize(t *testing.T, state *scanState) {
+	t.Helper()
+	state.task = imageScanTestTask(t, state.task.ctx, state.store.pool, state.store, state.library)
+	if err := state.store.prepareScanOperationAuthority(state.task.ctx, state.task, nil); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func scanClaimLookupInfo(t *testing.T, path string) os.FileInfo {
 	t.Helper()
 	info, err := os.Stat(path)
@@ -209,6 +217,8 @@ func TestScanClaimLookupPreservesRootAndPermanentRoleBoundaries(t *testing.T) {
 	extraItem := nfoCatalogItem(t, ctx, store, userID, library.ID, extraPath)
 	firstState := scanClaimLookupState(t, ctx, store, library, filepath.Dir(first))
 	secondState := scanClaimLookupState(t, ctx, store, library, filepath.Dir(second))
+	scanClaimLookupAuthorize(t, firstState)
+	scanClaimLookupAuthorize(t, secondState)
 	if firstItem.ID == secondItem.ID {
 		t.Fatal("two registered roots did not receive distinct item identities")
 	}
@@ -299,6 +309,7 @@ func TestScanClaimLookupRenameExcludesClaimsBeforeCandidateLimit(t *testing.T) {
 	library := libraryIntegrationCreate(t, ctx, store, "Filtered rename candidates", "movies", filepath.Dir(first))
 	libraryIntegrationScan(t, ctx, store, library.ID, "Completed")
 	state := scanClaimLookupState(t, ctx, store, library, filepath.Dir(first))
+	scanClaimLookupAuthorize(t, state)
 	state.themeLibrary = &themeLibraryScan{claimed: make(map[string]string)}
 	ids := make([]string, 9)
 	seen := make(map[string]bool, 9)

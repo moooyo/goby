@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -152,6 +153,9 @@ func hlsRuntimeInput(t *testing.T) *os.File {
 }
 
 func TestHLSRuntimeNearbyOutOfOrderRequestsShareOneProducer(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("HLS admission calls transcode.DuplicateInput, which requires Linux")
+	}
 	h, jobs := hlsRuntimeTestFixture(t)
 	session := hlsRuntimeTestSession(t, h, "out-of-order", false)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -326,7 +330,7 @@ func TestHLSRuntimeMaintenanceRetiresOnlyTheForbiddenSession(t *testing.T) {
 		h.sessions[first.id] != nil || h.byKey[first.key] != nil || h.sessions[second.id] != second || h.byKey[second.key] != second {
 		t.Error("permanent denial retired the wrong session or left its registry entry active")
 	}
-	if _, err := verifiedFile.Stat(); !errors.Is(err, os.ErrClosed) {
+	if err := verifiedFile.Close(); !errors.Is(err, os.ErrClosed) {
 		t.Errorf("maintenance retained the successfully verified source descriptor: %v", err)
 	}
 	jobs.mu.Lock()

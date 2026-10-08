@@ -177,6 +177,74 @@ func readCollageManifest(ctx context.Context, tx pgx.Tx, access libraryAccess, t
 	return manifest, nil
 }
 
+// Genre pages share one policy snapshot and select members in one query. The
+// final left join retains visible genres with no usable images, whose empty
+// manifests still produce a stable placeholder and cache identity.
+func readGenreCollageManifests(ctx context.Context, tx pgx.Tx, access libraryAccess, ids []int64) (map[int64]*collageManifest, error) {
+	manifests := make(map[int64]*collageManifest, len(ids))
+	if len(ids) == 0 {
+		return manifests, nil
+	}
+	rows, err := tx.Query(ctx, `WITH targets AS (
+		SELECT entity.id FROM catalog_entities entity WHERE entity.id=ANY($1::bigint[]) AND entity.kind='Genre'
+		AND EXISTS (SELECT 1 FROM item_entities association JOIN items i ON i.id=association.item_id
+			WHERE association.entity_id=entity.id AND i.type<>'CollectionFolder' AND `+access.ordinarySQL("i")+` AND `+validEntityAssociationSQL+`)
+		AND NOT EXISTS (SELECT 1 FROM artwork_state state WHERE state.entity_id=entity.id AND 'Primary'=ANY(state.managed_types))
+	), eligible AS (
+		SELECT target.id AS entity_id,i.id,lower(i.sort_name) COLLATE "C" AS sort_name,selected.source,selected.source_hash,
+			jsonb_build_array(i.updated_at,selected.version)::text AS version,selected.modified_at
+		FROM targets target JOIN item_entities association ON association.entity_id=target.id
+		JOIN items i ON i.id=association.item_id `+collageMemberImageSQL+`
+		WHERE i.type<>'CollectionFolder' AND `+access.ordinarySQL("i")+`
+	), representatives AS (
+		SELECT DISTINCT ON (entity_id,source_hash) * FROM eligible ORDER BY entity_id,source_hash,sort_name,id COLLATE "C"
+	), ranked AS (
+		SELECT *,row_number() OVER (PARTITION BY entity_id ORDER BY sort_name,id COLLATE "C") AS position FROM representatives
+	)
+	SELECT target.id,member.id,member.source,member.source_hash,member.version,member.modified_at
+	FROM targets target LEFT JOIN ranked member ON member.entity_id=target.id AND member.position<=4
+	ORDER BY target.id,member.position`, ids)
+	if err != nil {
+		return nil, fmt.Errorf("select authorized genre collage members: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int64
+		var itemID, source, tag, version *string
+		var modified *time.Time
+		if err := rows.Scan(&id, &itemID, &source, &tag, &version, &modified); err != nil {
+			return nil, err
+		}
+		manifest := manifests[id]
+		if manifest == nil {
+			manifest = &collageManifest{Version: collageManifestVersion, Kind: "entity", ID: strconv.FormatInt(id, 10), Members: []collageMember{}}
+			manifests[id] = manifest
+		}
+		if itemID == nil {
+			continue
+		}
+		digest := sha256.Sum256([]byte(*version))
+		manifest.Members = append(manifest.Members, collageMember{
+			ItemID: *itemID, Source: *source, Tag: *tag, Revision: hex.EncodeToString(digest[:]),
+		})
+		if modified.After(manifest.Changed) {
+			manifest.Changed = *modified
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	for _, manifest := range manifests {
+		encoded, err := json.Marshal(manifest)
+		if err != nil {
+			return nil, err
+		}
+		digest := sha256.Sum256(encoded)
+		manifest.Tag = hex.EncodeToString(digest[:])
+	}
+	return manifests, nil
+}
+
 func mergeCollageImageListing(ctx context.Context, tx pgx.Tx, access libraryAccess, ids []string, result map[string][]Image) error {
 	if len(ids) == 0 {
 		return nil
@@ -192,6 +260,7 @@ func mergeCollageImageListing(ctx context.Context, tx pgx.Tx, access libraryAcce
 		return err
 	}
 	var targets []ArtworkTarget
+	var genreIDs []int64
 	for rows.Next() {
 		var id, kind string
 		if err := rows.Scan(&id, &kind); err != nil {
@@ -208,7 +277,8 @@ func mergeCollageImageListing(ctx context.Context, tx pgx.Tx, access libraryAcce
 				rows.Close()
 				return err
 			}
-			target = ArtworkTarget{EntityID: entityID}
+			genreIDs = append(genreIDs, entityID)
+			continue
 		}
 		targets = append(targets, target)
 	}
@@ -216,6 +286,13 @@ func mergeCollageImageListing(ctx context.Context, tx pgx.Tx, access libraryAcce
 	rows.Close()
 	if err != nil {
 		return err
+	}
+	manifests, err := readGenreCollageManifests(ctx, tx, access, genreIDs)
+	if err != nil {
+		return err
+	}
+	for _, manifest := range manifests {
+		result[manifest.ID] = append([]Image{manifest.image()}, result[manifest.ID]...)
 	}
 	for _, target := range targets {
 		manifest, err := readCollageManifest(ctx, tx, access, target)

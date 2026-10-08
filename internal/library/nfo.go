@@ -264,7 +264,19 @@ func (state *scanState) episodeNumbering(local localMetadata, index, parent int,
 	return local, index, parent
 }
 
-func (state *scanState) folderLocalMetadata(relative, metadataPath, itemType string, index int) (localMetadata, error) {
+func (state *scanState) folderLocalMetadata(relative, metadataPath, itemType string, index int) (_ localMetadata, resultErr error) {
+	if metadataPath == "" {
+		return localMetadata{}, nil
+	}
+	source, err := state.prepareFolderSource(metadataPath)
+	if err != nil {
+		return localMetadata{}, scanReadFailure(err)
+	}
+	defer func() { resultErr = errors.Join(resultErr, source.Close()) }()
+	return state.folderLocalMetadataWithSource(relative, metadataPath, itemType, index, source)
+}
+
+func (state *scanState) folderLocalMetadataWithSource(relative, metadataPath, itemType string, index int, source *scanFolderSource) (localMetadata, error) {
 	if metadataPath == "" {
 		return localMetadata{}, nil
 	}
@@ -283,18 +295,10 @@ func (state *scanState) folderLocalMetadata(relative, metadataPath, itemType str
 	}
 	candidates, kind := folderNFOCandidate(metadataPath, itemType)
 	var observation localNFOObservation
-	if err := state.runPrimaryScanMetadata(state.task.ctx, func(ctx context.Context) error {
+	if err := source.readMetadata(state.task.ctx, state, func(ctx context.Context) error {
 		var err error
 		observation, err = state.observeLocalNFO(ctx, candidates, kind)
-		if err != nil {
-			return err
-		}
-		expected := state.directoryIdentities[filepath.Clean(metadataPath)]
-		current, statErr := state.opened.Lstat(metadataPath)
-		if expected == nil || statErr != nil || !current.IsDir() || !os.SameFile(expected, current) {
-			return fmt.Errorf("%w: media directory changed before metadata persistence", ErrUnavailable)
-		}
-		return ctx.Err()
+		return err
 	}); err != nil {
 		return localMetadata{}, scanReadFailure(err)
 	}

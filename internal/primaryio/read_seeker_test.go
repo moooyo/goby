@@ -176,6 +176,37 @@ func TestPrimaryIOReadSeekerBorrowsBoundedBufferAndReleasesBeforeNetworkWrite(t 
 	}
 }
 
+func TestPrimaryIOReadSeekerKeepsPreparedRoutePrivateAcrossChunks(t *testing.T) {
+	g, owners := primaryIOFixture(t, primaryIOLimits())
+	owner := primaryIOOwner(t, owners, context.Background())
+	root := RootKey{Catalog: "catalog", RootID: "source"}
+	route := Route{Roots: []RootKey{root, root}, Domains: []string{"disk", "disk"}}
+	source := &primaryIOReadSeekerTestSource{readFn: func(part []byte) (int, error) {
+		g.mu.Lock()
+		rootCount, domainCount := g.roots[root], g.domains["disk"]
+		rootKeys, domainKeys := len(g.roots), len(g.domains)
+		g.mu.Unlock()
+		if rootCount.active != 1 || domainCount.active != 1 || rootKeys != 1 || domainKeys != 1 {
+			t.Fatalf("source read used mutated or duplicate route keys: root=%+v domain=%+v keys=%d/%d", rootCount, domainCount, rootKeys, domainKeys)
+		}
+		return len(part), nil
+	}}
+	reader := primaryIOReadSeekerNew(t, owner, route, source, 8, nil)
+	t.Cleanup(func() {
+		if err := reader.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+	for chunk := range 3 {
+		route.Roots[0], route.Roots[1] = RootKey{}, RootKey{Catalog: "other", RootID: "root"}
+		route.Domains[0], route.Domains[1] = "", "other-disk"
+		if n, err := reader.Read(make([]byte, 8)); err != nil || n != 8 {
+			t.Fatalf("chunk %d: n=%d err=%v", chunk, n, err)
+		}
+		primaryIOAssertCounts(t, g, 0, 0, 0)
+	}
+}
+
 func TestPrimaryIOReadSeekerLogicalSeekDoesNotWaitForActualIOBudget(t *testing.T) {
 	limits := Limits{Owners: 1, RootOwners: 1, DomainOwners: 1, Queued: 2, RootQueued: 2, DomainQueued: 2}
 	g, owners := primaryIOFixture(t, limits)

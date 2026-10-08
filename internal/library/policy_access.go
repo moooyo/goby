@@ -71,12 +71,13 @@ func (access libraryAccess) itemPolicySQL(alias string) string {
 		FROM policy_ancestors child JOIN items parent ON parent.id=child.parent_id AND parent.library_id=child.library_id
 		WHERE NOT parent.id=ANY(child.visited)
 	) `
+	ancestorConditions := []string{}
 	if len(policy.ExcludedSubFolders) != 0 {
 		excluded := policySQLArray(policy.ExcludedSubFolders)
-		conditions = append(conditions, "NOT EXISTS ("+ancestry+"SELECT 1 FROM policy_ancestors WHERE id=ANY("+excluded+") OR path=ANY("+excluded+"))")
+		ancestorConditions = append(ancestorConditions, "NOT EXISTS (SELECT 1 FROM policy_ancestors WHERE id=ANY("+excluded+") OR path=ANY("+excluded+"))")
 	}
 	tagMatch := func(tags []string) string {
-		return "EXISTS (" + ancestry + `SELECT 1 FROM policy_ancestors ancestor
+		return `EXISTS (SELECT 1 FROM policy_ancestors ancestor
 			JOIN item_entities association ON association.item_id=ancestor.id
 			JOIN catalog_entities tag ON tag.id=association.entity_id AND tag.kind='Tag'
 			WHERE tag.normalized_name IN (SELECT lower(btrim(value)) FROM unnest(` + policySQLArray(tags) + ") AS allowed(value)))"
@@ -84,18 +85,25 @@ func (access libraryAccess) itemPolicySQL(alias string) string {
 	// Explicit block lists are denials. Inclusive mode changes BlockedTags into
 	// the allow list used by older clients; IncludeTags is the current allow list.
 	if len(policy.BlockedTags) != 0 && !policy.IsTagBlockingModeInclusive {
-		conditions = append(conditions, "NOT "+tagMatch(policy.BlockedTags))
+		ancestorConditions = append(ancestorConditions, "NOT "+tagMatch(policy.BlockedTags))
 	}
 	allowTags := append([]string{}, policy.IncludeTags...)
 	if policy.IsTagBlockingModeInclusive {
 		allowTags = append(allowTags, policy.BlockedTags...)
 	}
 	ratingConditions := []string{}
-	rating := "(" + ancestry + `SELECT upper(btrim(COALESCE(metadata.effective, item.local_metadata)->>'OfficialRating'))
-		FROM policy_ancestors ancestor JOIN items item ON item.id=ancestor.id
-		LEFT JOIN item_metadata_state metadata ON metadata.item_id=item.id
-		WHERE NULLIF(btrim(COALESCE(metadata.effective,item.local_metadata)->>'OfficialRating'),'') IS NOT NULL
-		ORDER BY ancestor.depth LIMIT 1)`
+	if policy.MaxParentalRating != nil || len(policy.BlockUnratedItems) != 0 {
+		// Materialize the nearest rating only when it is used. Multiple rating
+		// predicates then share its metadata lookup and the same ancestry walk.
+		ancestry = strings.TrimSpace(ancestry) + `, policy_rating AS MATERIALIZED (
+			SELECT upper(btrim(COALESCE(metadata.effective, item.local_metadata)->>'OfficialRating')) AS value
+			FROM policy_ancestors ancestor JOIN items item ON item.id=ancestor.id
+			LEFT JOIN item_metadata_state metadata ON metadata.item_id=item.id
+			WHERE NULLIF(btrim(COALESCE(metadata.effective,item.local_metadata)->>'OfficialRating'),'') IS NOT NULL
+			ORDER BY ancestor.depth LIMIT 1
+		) `
+	}
+	rating := "(SELECT value FROM policy_rating)"
 	if policy.MaxParentalRating != nil {
 		// Values are pinned by metadata-m5b-metadata-editor.json. Unknown rating
 		// vocabularies cannot silently bypass a configured parental ceiling.
@@ -125,8 +133,12 @@ func (access libraryAccess) itemPolicySQL(alias string) string {
 	if content != "" {
 		// Organizational folders stay navigable; their children are independently
 		// filtered. A Series or MusicAlbum is itself subject to content policy.
-		conditions = append(conditions, "("+alias+".type IN ('CollectionFolder','Folder','Playlist','BoxSet') OR ("+content+"))")
+		ancestorConditions = append(ancestorConditions, "("+alias+".type IN ('CollectionFolder','Folder','Playlist','BoxSet') OR ("+content+"))")
 	}
+	// Keep every ancestor-dependent rule in this one correlated SQL scope.
+	// Recursive CTE references reuse one visited walk for this item and snapshot;
+	// collection and library admission remain outside the content calculation.
+	conditions = append(conditions, "("+ancestry+"SELECT "+strings.Join(ancestorConditions, " AND ")+")")
 	return "(" + strings.Join(conditions, " AND ") + ")"
 }
 

@@ -97,6 +97,24 @@ func (lease *warmMediaSourceRoot) releaseChecked() error {
 	return nil
 }
 
+// Both typed release paths execute only internal pin accounting and os.Root
+// closure. The surrounding actual-I/O phase remains charged until they return.
+func (lease *warmMediaSourceRoot) releasePrimary(ctx context.Context) error {
+	if err := lease.releaseChecked(); err != nil {
+		return recordDirectoryPrimaryClose(ctx, &storageObservationRetirementFailure{closer: lease.releaseChecked, err: err})
+	}
+	return nil
+}
+
+func (s *Store) releasePrimaryRootAnchor(ctx context.Context, reference *rootAnchorReference) error {
+	if err := s.releaseRootAnchor(reference); err != nil {
+		return recordDirectoryPrimaryClose(ctx, &storageObservationRetirementFailure{
+			closer: func() error { return s.releaseRootAnchor(reference) }, err: err,
+		})
+	}
+	return nil
+}
+
 // This primitive performs only filesystem and memory-mapping validation. The
 // caller supplies fresh committed authority, publication and root-binding facts
 // and owns actual IO admission before entering it. No database query runs here.
@@ -114,7 +132,7 @@ func (lease *warmMediaSourceRoot) openMediaSource(ctx context.Context, snapshot 
 
 func (lease *warmMediaSourceRoot) openMediaSourceAndRelease(ctx context.Context, snapshot indexedMediaSource) (*os.File, error) {
 	return lease.store.runSourceMetadataOpen(ctx, snapshot, func(work context.Context) (file *os.File, resultErr error) {
-		defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryResource(work, lease.releaseChecked)) }()
+		defer func() { resultErr = errors.Join(resultErr, lease.releasePrimary(work)) }()
 		return lease.openMediaSourceFilesystem(work, snapshot)
 	})
 }
@@ -139,7 +157,7 @@ func (lease *warmMediaSourceRoot) openMediaSourceFilesystem(ctx context.Context,
 	s.rootOpens.Add(1)
 	s.mu.Unlock()
 	defer func() {
-		resultErr = errors.Join(resultErr, closeDirectoryPrimaryResource(ctx, func() error { return s.releaseRootAnchor(opening) }))
+		resultErr = errors.Join(resultErr, s.releasePrimaryRootAnchor(ctx, opening))
 		s.rootOpens.Done()
 	}()
 	openedAt := time.Now()
@@ -148,13 +166,13 @@ func (lease *warmMediaSourceRoot) openMediaSourceFilesystem(ctx context.Context,
 	if err != nil {
 		return nil, fmt.Errorf("%w: media directory cannot be opened safely", ErrUnavailable)
 	}
-	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryResource(ctx, root.Close)) }()
+	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryRoot(ctx, root)) }()
 	path := filepath.FromSlash(snapshot.relativePath)
 	parent, err := openRegisteredRoot(root, filepath.Dir(path))
 	if err != nil {
 		return nil, fmt.Errorf("%w: media parent directory cannot be opened safely", ErrUnavailable)
 	}
-	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryResource(ctx, parent.Close)) }()
+	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryRoot(ctx, parent)) }()
 	name := filepath.Base(path)
 	before, err := parent.Lstat(name)
 	if err != nil {
@@ -190,7 +208,7 @@ func (lease *warmMediaSourceRoot) openMediaSourceFilesystem(ctx context.Context,
 	if err != nil {
 		return nil, fmt.Errorf("%w: media directory cannot be opened safely", ErrUnavailable)
 	}
-	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryResource(ctx, currentRoot.Close)) }()
+	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryRoot(ctx, currentRoot)) }()
 	if !sameMediaSourceDirectory(root, currentRoot) {
 		return nil, fmt.Errorf("%w: registered media root changed while opening", ErrUnavailable)
 	}
@@ -198,7 +216,7 @@ func (lease *warmMediaSourceRoot) openMediaSourceFilesystem(ctx context.Context,
 	if err != nil {
 		return nil, fmt.Errorf("%w: media directory changed while opening", ErrUnavailable)
 	}
-	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryResource(ctx, currentParent.Close)) }()
+	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryRoot(ctx, currentParent)) }()
 	if !sameMediaSourceDirectory(parent, currentParent) {
 		return nil, fmt.Errorf("%w: media directory was replaced while opening", ErrUnavailable)
 	}

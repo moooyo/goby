@@ -302,7 +302,7 @@ func (s *Store) ResolveWithPeer(ctx context.Context, token, kind, peerIP string)
 	}
 	if kind == "emby" {
 		policy, err := ParseRuntimePolicy(principal.User.Policy)
-		if err != nil || !loginPolicyAllows(principal.User.Policy, principal.Client.DeviceID, observedAt) ||
+		if err != nil || !parsedLoginPolicyAllows(policy, principal.User.Policy, principal.Client.DeviceID, observedAt) ||
 			(!policy.EnableRemoteAccess && !IsLocalPeer(peerIP)) {
 			return Principal{}, ErrUnauthorized
 		}

@@ -110,7 +110,7 @@ func TestGeneratedAVPCMCaptureIndependentSameInodeArtifactIsStillConsumed(t *tes
 	if _, err := MeasureGeneratedAVPCMCaptureDiagnostic(nil, source, []*os.File{source}, GeneratedAVPCMCaptureOptions{Capture: artifact}); err == nil {
 		t.Fatal("invalid independent artifact was accepted")
 	}
-	if _, err := artifact.Stat(); !errors.Is(err, os.ErrClosed) {
+	if err := artifact.Close(); !errors.Is(err, os.ErrClosed) {
 		t.Fatal("a distinct supplied artifact lost failure-path Close ownership")
 	}
 	if _, err := source.Stat(); err != nil {

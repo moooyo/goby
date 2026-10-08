@@ -86,10 +86,10 @@ func seedAnalysisRecoveryUnavailableHistory(t *testing.T, f *engineRecoveryFixtu
 	t.Helper()
 	canonical := `{"Version":1,"Revision":1,"Epoch":1,"Profile":` + analysisRecoveryV1Profile + `,"Execution":` + analysisRecoveryV1Unavailable + `}`
 	digest := sha256.Sum256([]byte(canonical))
-	current := library.AnalysisExecutionProfile{Version: library.AnalysisExecutionProfileVersion, UnavailableReason: "not_configured"}
-	currentRaw, err := json.Marshal(current)
+	v5 := analysisRecoveryV5Execution{Version: 5, UnavailableReason: "not_configured"}
+	v5Raw, err := json.Marshal(v5)
 	if err != nil {
-		t.Fatal("encode the current unavailable execution profile")
+		t.Fatal("encode the frozen v5 unavailable execution profile")
 	}
 	v2Unavailable, v2Fingerprint := analysisRecoveryV2Admission(t, "unavailable")
 	v3Unavailable, v3Fingerprint := analysisRecoveryV3Admission(t, "unavailable")
@@ -99,7 +99,7 @@ func seedAnalysisRecoveryUnavailableHistory(t *testing.T, f *engineRecoveryFixtu
 		{"v2", strings.Repeat("e", 32), "analysis:" + strings.Repeat("8", 64), v2Unavailable, v2Fingerprint},
 		{"v3", strings.Repeat("b", 32), "analysis:" + strings.Repeat("6", 64), v3Unavailable, v3Fingerprint},
 		{"v4", strings.Repeat("3", 32), "analysis:" + strings.Repeat("9", 64), v4Unavailable, v4Fingerprint},
-		{"v5", strings.Repeat("4", 32), "analysis:" + strings.Repeat("d", 64), string(currentRaw), analysisRecoveryFingerprint(library.DefaultAnalysisProfile(), current)},
+		{"v5", strings.Repeat("4", 32), "analysis:" + strings.Repeat("d", 64), string(v5Raw), analysisRecoveryV5Fingerprint(t, v5)},
 	} {
 		item, source := "analysis-restore-unavailable-"+entry.version, "unavailable-source-"+entry.version
 		result := strings.ReplaceAll(analysisRecoveryV1Abstention, "v1", entry.version)
@@ -161,14 +161,14 @@ func analysisRecoveryV1AdmissionFingerprint(execution string) string {
 
 func assertUnavailableProfilesRejectQualifiedHistory(t *testing.T, f *engineRecoveryFixture, includeV2 bool, includeLater ...bool) {
 	t.Helper()
-	current := library.AnalysisExecutionProfile{Version: library.AnalysisExecutionProfileVersion, UnavailableReason: "not_configured"}
-	currentRaw, err := json.Marshal(current)
+	v5 := analysisRecoveryV5Execution{Version: 5, UnavailableReason: "not_configured"}
+	v5Raw, err := json.Marshal(v5)
 	if err != nil {
-		t.Fatal("encode the unavailable current profile")
+		t.Fatal("encode the unavailable frozen v5 profile")
 	}
 	entries := []struct{ version, run, item, execution, fingerprint string }{
 		{"v1", strings.Repeat("9", 32), "analysis-restore-two", analysisRecoveryV1Unavailable, analysisRecoveryV1AdmissionFingerprint(analysisRecoveryV1Unavailable)},
-		{"v5", strings.Repeat("5", 32), "analysis-restore-one", string(currentRaw), analysisRecoveryFingerprint(library.DefaultAnalysisProfile(), current)},
+		{"v5", strings.Repeat("5", 32), "analysis-restore-one", string(v5Raw), analysisRecoveryV5Fingerprint(t, v5)},
 	}
 	if includeV2 {
 		execution, fingerprint := analysisRecoveryV2Admission(t, "unavailable")

@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -239,6 +240,9 @@ func TestHLSProductionWindowBoundsLookaheadAndPreservesLongCopiedGOP(t *testing.
 }
 
 func TestHLSUnsequencedFarGETWaitsWithoutCancellingCurrentAdmission(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("HLS admission calls transcode.DuplicateInput, which requires Linux")
+	}
 	h, jobs := hlsAdmissionFixture(t)
 	session := hlsRuntimeTestSession(t, h, "late-get", false)
 	const ticks = int64(60_000_000)
@@ -278,6 +282,9 @@ func TestHLSUnsequencedFarGETWaitsWithoutCancellingCurrentAdmission(t *testing.T
 }
 
 func TestHLSUnsequencedFarGETRetainsActiveProducerAndCreatesBoundedFallback(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("HLS admission calls transcode.DuplicateInput, which requires Linux")
+	}
 	h, jobs := hlsRuntimeTestFixture(t)
 	session := hlsRuntimeTestSession(t, h, "active-late-get", false)
 	const ticks = int64(60_000_000)

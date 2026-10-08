@@ -79,7 +79,7 @@ func TestMediaPublicationRetirementDuringRegistrationCannotReturnAnActiveSession
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("retired registration returned: %v", err)
 	}
-	if _, err := verified.Stat(); !errors.Is(err, os.ErrClosed) {
+	if err := verified.Close(); !errors.Is(err, os.ErrClosed) {
 		t.Fatal("verification descriptor was retained")
 	}
 }

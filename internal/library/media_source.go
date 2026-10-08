@@ -338,13 +338,13 @@ func (s *Store) openMediaSourceFilesystem(ctx context.Context, snapshot indexedM
 	if err != nil {
 		return nil, err
 	}
-	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryResource(ctx, root.Close)) }()
+	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryRoot(ctx, root)) }()
 	path := filepath.FromSlash(snapshot.relativePath)
 	parent, err := openRegisteredRoot(root, filepath.Dir(path))
 	if err != nil {
 		return nil, fmt.Errorf("%w: media parent directory cannot be opened safely", ErrUnavailable)
 	}
-	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryResource(ctx, parent.Close)) }()
+	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryRoot(ctx, parent)) }()
 	name := filepath.Base(path)
 	before, err := parent.Lstat(name)
 	if err != nil {
@@ -376,7 +376,7 @@ func (s *Store) openMediaSourceFilesystem(ctx context.Context, snapshot indexedM
 	if err != nil {
 		return nil, err
 	}
-	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryResource(ctx, currentRoot.Close)) }()
+	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryRoot(ctx, currentRoot)) }()
 	if !sameMediaSourceDirectory(root, currentRoot) {
 		return nil, fmt.Errorf("%w: registered media root changed while opening", ErrUnavailable)
 	}
@@ -384,7 +384,7 @@ func (s *Store) openMediaSourceFilesystem(ctx context.Context, snapshot indexedM
 	if err != nil {
 		return nil, fmt.Errorf("%w: media directory changed while opening", ErrUnavailable)
 	}
-	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryResource(ctx, currentParent.Close)) }()
+	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryRoot(ctx, currentParent)) }()
 	if !sameMediaSourceDirectory(parent, currentParent) {
 		return nil, fmt.Errorf("%w: media directory was replaced while opening", ErrUnavailable)
 	}

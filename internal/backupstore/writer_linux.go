@@ -120,18 +120,23 @@ func (w *Writer) Write(p []byte) (int, error) {
 		}
 		s := w.store
 		s.mu.Lock()
-		if err := s.healthy(w.ctx); err != nil {
+		if err := s.healthyForWrite(w.ctx); err != nil {
 			s.mu.Unlock()
 			w.sticky = err
 			return written, err
 		}
 		i := s.index(w.id)
-		if i < 0 {
+		if i < 0 || s.writers[w.id] != w {
 			s.mu.Unlock()
 			w.sticky = ErrUnavailable
 			return written, w.sticky
 		}
 		rec := &s.registry.Entries[i]
+		if rec.Phase != "writing" || rec.Metadata.State != StateWriting || rec.Deleting || rec.FinalName {
+			s.mu.Unlock()
+			w.sticky = ErrUnavailable
+			return written, w.sticky
+		}
 		if int64(len(chunk)) > s.cfg.MaxObjectBytes-rec.Metadata.Size {
 			s.mu.Unlock()
 			w.sticky = ErrQuota
@@ -152,6 +157,7 @@ func (w *Writer) Write(p []byte) (int, error) {
 		n, err := w.file.Write(chunk)
 		if n > 0 && n <= len(chunk) {
 			rec.Metadata.Size += int64(n)
+			s.inventoryBytes += int64(n)
 			rec.Metadata.UpdatedAt = s.now().UTC()
 			_, _ = w.hash.Write(chunk[:n])
 			written += n

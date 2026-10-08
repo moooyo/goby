@@ -225,6 +225,16 @@ func (o *Owner) TryAcquireContext(ctx context.Context, route Route, class Class)
 }
 
 func (o *Owner) acquire(ctx context.Context, route Route, class Class, immediate, phaseContext bool) (*PrimaryReadLease, error) {
+	return o.acquireRoute(ctx, route, nil, class, immediate, phaseContext)
+}
+
+// acquirePrepared is used only by readers that already own immutable keys.
+// Retained ownership and actual-I/O admission are rechecked on every call.
+func (o *Owner) acquirePrepared(route preparedRoute, class Class) (*PrimaryReadLease, error) {
+	return o.acquireRoute(o.Context(), Route{}, &route, class, false, false)
+}
+
+func (o *Owner) acquireRoute(ctx context.Context, route Route, prepared *preparedRoute, class Class, immediate, phaseContext bool) (*PrimaryReadLease, error) {
 	if o == nil || o.state == nil || ctx == nil {
 		return nil, ErrInvalid
 	}
@@ -255,11 +265,15 @@ func (o *Owner) acquire(ctx context.Context, route Route, class Class, immediate
 		}
 		ctx = phase
 	}
-	acquire := state.runtime.governor.acquire
-	if immediate {
-		acquire = state.runtime.governor.tryAcquire
+	var request *request
+	var err error
+	if prepared != nil {
+		request, err = state.runtime.governor.acquirePrepared(ctx, *prepared, class)
+	} else if immediate {
+		request, err = state.runtime.governor.tryAcquire(ctx, route, class)
+	} else {
+		request, err = state.runtime.governor.acquire(ctx, route, class)
 	}
-	request, err := acquire(ctx, route, class)
 	if err == nil && phaseContext {
 		// Owner cancellation may race the merge callback and a grant. No I/O
 		// has been handed to the caller yet, so retire that construction charge.

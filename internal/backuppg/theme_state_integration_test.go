@@ -50,13 +50,15 @@ func seedThemeSnapshotWitness(t *testing.T, ctx context.Context, pool *pgxpool.P
 
 func themeSnapshotState(t *testing.T, ctx context.Context, pool *pgxpool.Pool, sourceVersion ...int64) string {
 	t.Helper()
+	items := `(SELECT jsonb_agg(to_jsonb(i) ORDER BY id) FROM items i)`
 	userData := `(SELECT jsonb_agg(to_jsonb(d) ORDER BY user_id,item_id) FROM user_item_data d)`
 	if len(sourceVersion) > 1 {
 		t.Fatal("a theme snapshot supplied multiple historical source versions")
 	}
 	if len(sourceVersion) == 1 {
-		// The published source catalog retains every original user-data column.
+		// The published source catalog retains every original item/user column.
 		// Same-schema and refused-operation witnesses keep the full row above.
+		items = `((` + historicalArchiveRowsStatement(t, "items", sourceVersion[0]) + `)::jsonb)`
 		userData = `((` + historicalArchiveRowsStatement(t, "user_item_data", sourceVersion[0]) + `)::jsonb)`
 	}
 	var state string
@@ -64,7 +66,7 @@ func themeSnapshotState(t *testing.T, ctx context.Context, pool *pgxpool.Pool, s
 		'owners',(SELECT jsonb_agg(to_jsonb(o) ORDER BY id) FROM theme_owner_ids o),
 		'paths',(SELECT jsonb_agg(to_jsonb(p) ORDER BY root_id,relative_path) FROM theme_reserved_paths p),
 		'resources',(SELECT jsonb_agg(to_jsonb(r) ORDER BY resource_item_id) FROM item_theme_resources r),
-		'items',(SELECT jsonb_agg(to_jsonb(i) ORDER BY id) FROM items i),
+		'items',`+items+`,
 		'userdata',`+userData+`)::text`).Scan(&state); err != nil {
 		t.Fatal("capture complete private theme source rows")
 	}
@@ -118,6 +120,7 @@ func TestPostgreSQLThemeRestorePreservesInactiveClassificationAndRetriesSemantic
 	if themeSnapshotState(t, ctx, target, facts.SchemaVersion) != want {
 		t.Fatal("restore rotated owner IDs, lost inactive classification, reparented an item, or changed user data")
 	}
+	assertMigratedMediaOperationSourceCache(t, ctx, target)
 	assertHistoricalArchiveBindingDefaults(t, ctx, target)
 	assertPhase3HistoricalPreferenceDefaults(t, ctx, target)
 	for _, test := range []struct {
@@ -213,6 +216,7 @@ func TestPostgreSQLThemeInactiveHistorySurvivesOwnerRootAndRoleChanges(t *testin
 			if themeSnapshotState(t, ctx, target, facts.SchemaVersion) != before {
 				t.Fatal("inactive restoration changed historical owner identity, classification, ancestry, or user data")
 			}
+			assertMigratedMediaOperationSourceCache(t, ctx, target)
 			assertHistoricalArchiveBindingDefaults(t, ctx, target)
 			assertPhase3HistoricalPreferenceDefaults(t, ctx, target)
 			var active, ordinary, direct int

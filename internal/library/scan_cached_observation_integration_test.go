@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/moooyo/goby/internal/primaryio"
 )
 
 // Cached source work reuses operation authority and releases its I/O leases
@@ -595,7 +596,7 @@ func TestCachedScanObservationRetainsLateSourceReplacement(t *testing.T) {
 		t.Fatal(err)
 	}
 	cachedObservationRefreshDirectory(t, state)
-	operation, err := input.primary.preparePublicationIO()
+	operation, preparedRow, err := state.prepareSidecarScanIO()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -611,7 +612,10 @@ func TestCachedScanObservationRetainsLateSourceReplacement(t *testing.T) {
 	var nfo localNFOObservation
 	var injectErr error
 	reads := 0
-	err = input.primary.runPublicationMetadata(operation, func(work context.Context) error {
+	err = operation.Run(state.task.ctx, preparedRow.root.id, primaryio.Background, func(work context.Context) error {
+		if err := state.checkSidecarScanAuthority(work, preparedRow); err != nil {
+			return err
+		}
 		var err error
 		nfo, err = state.observeLocalNFO(work, []string{"Film.nfo"}, "movie")
 		if err != nil {

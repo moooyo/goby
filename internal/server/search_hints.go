@@ -16,7 +16,7 @@ func (s *Server) registerSearchHintRoutes(mux *http.ServeMux) {
 }
 
 func parseSearchHintsQuery(values url.Values) (library.SearchHintsQuery, error) {
-	query := library.SearchHintsQuery{Limit: 20}
+	query := library.SearchHintsQuery{Limit: 20, Projection: library.QueryProjection{Browse: true}}
 	term, supplied := values["SearchTerm"]
 	if !supplied || len(term) != 1 {
 		return query, library.ErrInvalidInput
@@ -88,9 +88,11 @@ func parseSearchHintsQuery(values url.Values) (library.SearchHintsQuery, error) 
 				return query, library.ErrInvalidInput
 			}
 			if name == "EnableImages" {
-				if _, err := strconv.ParseBool(entries[0]); err != nil {
+				enabled, err := strconv.ParseBool(entries[0])
+				if err != nil {
 					return query, library.ErrInvalidInput
 				}
+				query.Projection.ImagesDisabled = !enabled
 			}
 		}
 	}
@@ -107,15 +109,13 @@ func (s *Server) embySearchHints(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	query.Projection = requestQueryProjection(r)
 	result, err := s.library.SearchHints(r.Context(), requestLibrarySubject(r, userID), query)
 	if err != nil {
 		s.libraryError(w, r, err)
 		return
 	}
-	images := true
-	if raw := r.URL.Query().Get("EnableImages"); raw != "" {
-		images, _ = strconv.ParseBool(raw)
-	}
+	images := !query.Projection.ImagesDisabled
 	hints := make([]map[string]any, 0, len(result.SearchHints))
 	for _, hint := range result.SearchHints {
 		hints = append(hints, s.searchHintDTO(hint, userID, images))
@@ -133,7 +133,7 @@ func (s *Server) embySearchEntity(w http.ResponseWriter, r *http.Request) {
 		apiError(w, r, http.StatusBadRequest, "invalid_input", "An entity reference requires a canonical positive decimal ID.")
 		return
 	}
-	entity, err := s.library.GetEntityByIDFor(r.Context(), requestLibrarySubject(r, userID), id)
+	entity, err := s.library.GetEntityByIDFor(r.Context(), requestLibrarySubject(r, userID), id, requestQueryProjection(r))
 	if err != nil {
 		s.libraryError(w, r, err)
 		return

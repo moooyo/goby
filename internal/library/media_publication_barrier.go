@@ -28,7 +28,7 @@ func readMediaPublicationRevision(ctx context.Context, query mediaOperationQueri
 			return "", err
 		}
 		sourceRevision = strings.ReplaceAll(sourceRevision,
-			"(SELECT ir.binding_revision FROM library_roots ir WHERE ir.id=i.root_id)", "$4::bigint")
+			mediaOperationRootBindingRevisionSQL, "$4::bigint")
 		args = append(args, hint.bindingRevision)
 	}
 	err := query.QueryRow(ctx, `SELECT `+sourceRevision+`,EXISTS (

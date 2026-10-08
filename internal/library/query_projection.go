@@ -2,6 +2,18 @@ package library
 
 import "strings"
 
+// QueryProjection opts browse callers into narrower response-only data. Its
+// zero value preserves complete domain items and entity image projections.
+type QueryProjection struct {
+	Browse         bool
+	ImagesDisabled bool
+}
+
+// Playback restart evidence is never part of a public item DTO. Preserve SQL
+// NULL, JSON null, and invalid non-object snapshots for the normal scan decoder.
+const browseItemMediaColumn = `CASE WHEN jsonb_typeof(i.media) = 'object'
+	THEN i.media - 'VideoSeekIndexes' ELSE i.media END`
+
 var movieQueryItemColumns = strings.NewReplacer(
 	itemAlbumChildCountColumn, "NULL::bigint",
 	itemAlbumColumn, "NULL::jsonb",
@@ -13,10 +25,18 @@ var movieQueryItemColumns = strings.NewReplacer(
 // retaining their types and positions preserves scanItem and every other field.
 // Apply scopeSQL afterwards so all remaining nested authorization is unchanged.
 func itemQueryColumns(query Query) string {
-	if query.expectedEpisodePopulation || len(query.IncludeItemTypes) != 1 || query.IncludeItemTypes[0] != "Movie" {
-		return itemColumns
+	columns := itemColumns
+	if !query.expectedEpisodePopulation && len(query.IncludeItemTypes) == 1 && query.IncludeItemTypes[0] == "Movie" {
+		columns = movieQueryItemColumns
 	}
-	return movieQueryItemColumns
+	return projectBrowseMediaSQL(columns, query.Projection)
+}
+
+func projectBrowseMediaSQL(statement string, projection QueryProjection) string {
+	if !projection.Browse {
+		return statement
+	}
+	return strings.Replace(statement, "i.created_at, i.media,", "i.created_at, "+browseItemMediaColumn+",", 1)
 }
 
 // itemPageQuerySQL keeps result-only subqueries behind the pagination boundary.

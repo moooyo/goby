@@ -276,7 +276,7 @@ func TestMetadataDuplicateBookkeepingLateGateCloseKeepsFailedCloseOwner(t *testi
 			if !errors.Is(err, ErrClosed) || scope.metadata[0] != nil || owner.file != nil {
 				t.Fatal("known successful late Close did not return its metadata operation slot")
 			}
-			if _, err := file.Stat(); !errors.Is(err, os.ErrClosed) {
+			if err := file.Close(); !errors.Is(err, os.ErrClosed) {
 				t.Fatal("late metadata rejection did not actually close its FD")
 			}
 		}

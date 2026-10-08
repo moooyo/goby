@@ -156,35 +156,195 @@ func (pass *scanReconciliationPass) Close() error {
 }
 
 func (pass *scanReconciliationPass) openRoot(s *Store, root libraryRoot) (*os.Root, error) {
+	opened, _, err := pass.openRootSource(s, root, false)
+	return opened, err
+}
+
+// The scan worker owns the returned lightweight source proof for this walk.
+// Collection work may retain it separately without retaining individual full
+// topology captures or allocating another governor owner for the proof.
+func (pass *scanReconciliationPass) openSourceRoot(s *Store, root libraryRoot) (*os.Root, *scanSourceRootWitness, error) {
+	return pass.openRootSource(s, root, true)
+}
+
+func (pass *scanReconciliationPass) openRootSource(s *Store, root libraryRoot, sourceProof bool) (*os.Root, *scanSourceRootWitness, error) {
 	if pass.individual {
 		capture, err := s.prepareRootBindingScan(pass.task, root)
 		if err != nil {
-			_ = capture.Close()
-			return nil, &scanReconciliationPreparationFailure{err}
+			return nil, nil, &scanReconciliationPreparationFailure{errors.Join(err, capture.Close())}
 		}
-		defer capture.Close()
 		if capture != nil && capture.status == RootBindingVerified {
-			var opened *os.Root
-			err := capture.primaryIO.Run(pass.task.ctx, root.id, primaryio.Background, func(context.Context) error {
-				var err error
-				opened, err = capture.opened.OpenRoot(".")
-				return err
-			})
-			return opened, err
+			return openScanReconciliationSource(pass.task.ctx, capture.primaryIO, root.id,
+				func(ctx context.Context) (*os.Root, *scanSourceRootWitness, error) {
+					return cloneScanReconciliationSource(ctx, capture, false, sourceProof)
+				}, capture.Close)
 		}
-		return s.openScanOperationRoot(pass.task.ctx, pass.task, root)
+		return pass.openFallbackSourceRoot(s, root, sourceProof, capture.Close)
 	}
 	if capture := pass.byRoot[root.id]; capture != nil && capture.status == RootBindingVerified {
 		// Keep the binding capture alive after the walker releases its own root.
-		var opened *os.Root
-		err := pass.primaryIO.Run(pass.task.ctx, root.id, primaryio.Background, func(context.Context) error {
-			var err error
-			opened, err = capture.opened.OpenRoot(".")
-			return err
-		})
-		return opened, err
+		return openScanReconciliationSource(pass.task.ctx, pass.primaryIO, root.id,
+			func(ctx context.Context) (*os.Root, *scanSourceRootWitness, error) {
+				return cloneScanReconciliationSource(ctx, capture, true, sourceProof)
+			}, nil)
 	}
-	return s.openScanOperationRoot(pass.task.ctx, pass.task, root)
+	return pass.openFallbackSourceRoot(s, root, sourceProof, nil)
+}
+
+// Unbound and unavailable captures permit ordinary reads, but grant no
+// destructive evidence and no exemption from actual root I/O admission.
+func (pass *scanReconciliationPass) openFallbackSourceRoot(s *Store, root libraryRoot, sourceProof bool, retireCapture func() error) (opened *os.Root, witness *scanSourceRootWitness, resultErr error) {
+	retireInHandoff := false
+	defer func() {
+		if !retireInHandoff && retireCapture != nil {
+			resultErr = errors.Join(resultErr, retireCapture())
+		}
+	}()
+	row, err := s.readScanOperationAuthority(pass.task.ctx, pass.task, root)
+	if err != nil {
+		return nil, nil, err
+	}
+	operation := pass.primaryIO
+	owned := operation == nil
+	if owned {
+		operation, err = s.prepareScanOperationRootIO(pass.task.ctx, pass.task,
+			[]mediaSourceRootHint{{root: row.root, bindingRevision: row.revision}})
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	retire := func() error {
+		var err error
+		if retireCapture != nil {
+			err = retireCapture()
+			if err != nil {
+				_ = operation.MarkUnknown(err)
+			}
+		}
+		if owned {
+			err = errors.Join(err, operation.Close())
+		}
+		return err
+	}
+	retireInHandoff = true
+	return openScanReconciliationSource(pass.task.ctx, operation, row.root.id, func(work context.Context) (*os.Root, *scanSourceRootWitness, error) {
+		if !sourceProof {
+			opened, err := s.openScanOperationRoot(work, pass.task, row.root)
+			return opened, nil, err
+		}
+		lease, err := s.leaseScanOperationRoot(work, pass.task, row.root)
+		if err != nil {
+			return nil, nil, err
+		}
+		proof := &scanSourceRootWitness{row: row, anchor: lease.approved, ownedAnchor: true,
+			cleanup: context.WithoutCancel(work)}
+		opened, err := lease.Open()
+		if err == nil {
+			proof.root, err = opened.OpenRoot(".")
+			proof.ownedRoot = proof.root != nil
+		}
+		if err == nil {
+			err = proof.Check(work)
+		}
+		return opened, proof, err
+	}, retire)
+}
+
+// A normal pass already retains its full capture. Individual mode instead
+// clones just the original anchor and registered root before closing topology.
+func cloneScanReconciliationSource(ctx context.Context, capture *rootBindingScanCapture,
+	retainCapture, sourceProof bool) (opened *os.Root, witness *scanSourceRootWitness, resultErr error) {
+	if !sourceProof {
+		opened, resultErr = capture.opened.OpenRoot(".")
+		return opened, nil, resultErr
+	}
+	witness = &scanSourceRootWitness{row: capture.row, cleanup: context.WithoutCancel(ctx)}
+	if retainCapture {
+		if !capture.observation.retain() {
+			return nil, witness, ErrUnavailable
+		}
+		witness.capture, witness.root = capture, capture.opened
+		if named, ok := capture.capture.(*rootBindingNamedCapture); ok && named.lease != nil {
+			witness.anchor = named.lease.approved
+		}
+	} else {
+		witness.root, resultErr = capture.opened.OpenRoot(".")
+		witness.ownedRoot = witness.root != nil
+		if resultErr != nil {
+			return nil, witness, resultErr
+		}
+	}
+	if witness.anchor == nil {
+		witness.anchor, resultErr = capture.capture.CloneApprovedAnchor()
+		witness.ownedAnchor = witness.anchor != nil
+		if resultErr != nil {
+			return nil, witness, resultErr
+		}
+	}
+	opened, resultErr = capture.opened.OpenRoot(".")
+	if resultErr == nil {
+		resultErr = witness.Check(ctx)
+	}
+	return opened, witness, resultErr
+}
+
+// A successful clone is not handed off until the admitted callback and its
+// branch-specific retirement succeed. Run may add cancellation after cloning.
+func openScanReconciliationRoot(ctx context.Context, operation *PrimaryRootIO, rootID string,
+	open func(context.Context) (*os.Root, error), retire func() error) (opened *os.Root, resultErr error) {
+	opened, _, resultErr = openScanReconciliationSource(ctx, operation, rootID,
+		func(work context.Context) (*os.Root, *scanSourceRootWitness, error) {
+			root, err := open(work)
+			return root, nil, err
+		}, retire)
+	return opened, resultErr
+}
+
+func openScanReconciliationSource(ctx context.Context, operation *PrimaryRootIO, rootID string,
+	open func(context.Context) (*os.Root, *scanSourceRootWitness, error), retire func() error) (opened *os.Root, witness *scanSourceRootWitness, resultErr error) {
+	returned := false
+	defer func() {
+		if !returned {
+			resultErr = errors.Join(resultErr, errSidecarRetirementUnknown)
+			_ = operation.MarkUnknown(resultErr)
+		}
+		discard := func() {
+			var closeErr error
+			if opened != nil {
+				closeErr = closeDirectoryPrimaryRoot(operation.Context(), opened)
+				opened = nil
+			}
+			if witness != nil {
+				closeErr = errors.Join(closeErr, witness.Close())
+				witness = nil
+			}
+			if closeErr != nil {
+				_ = operation.MarkUnknown(closeErr)
+				resultErr = errors.Join(resultErr, &scanReconciliationPreparationFailure{
+					errors.Join(errSidecarRetirementUnknown, closeErr),
+				})
+			}
+		}
+		if resultErr != nil {
+			discard()
+		}
+		if retire != nil {
+			if err := retire(); err != nil {
+				_ = operation.MarkUnknown(err)
+				resultErr = errors.Join(resultErr, &scanReconciliationPreparationFailure{
+					errors.Join(errSidecarRetirementUnknown, err),
+				})
+				discard()
+			}
+		}
+	}()
+	resultErr = operation.Run(ctx, rootID, primaryio.Background, func(work context.Context) error {
+		var err error
+		opened, witness, err = open(work)
+		return err
+	})
+	returned = true
+	return opened, witness, resultErr
 }
 
 type scanReconciliationPreparationFailure struct{ err error }

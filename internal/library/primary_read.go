@@ -211,7 +211,14 @@ func (s *Store) openOriginalMediaFor(ctx context.Context, subject Subject, itemI
 // purpose. Every snapshot and cancellation recheck uses the same purpose reader;
 // sharing actual-read budgets must never grant playback or download authority.
 func (s *Store) openOriginalReadFor(ctx context.Context, subject Subject, itemID, sourceID, expectedETag string, readSnapshot func(context.Context, Subject, string, string) (indexedMediaSource, error), opener func(context.Context, indexedMediaSource) (*os.File, error)) (file *os.File, source MediaFile, content *primaryio.ReadSeeker, resultErr error) {
-	if ctx == nil || strings.TrimSpace(itemID) == "" || strings.ContainsRune(itemID, '\x00') ||
+	return s.openPreparedOriginalReadFor(ctx, ctx, subject, itemID, sourceID, expectedETag, readSnapshot, opener)
+}
+
+// Preparation has its own deadline; a handed-off reader retains only the actual
+// response lifetime. A cancelled source worker still owns its admission and
+// Store registration until its syscall and descriptor cleanup have retired.
+func (s *Store) openPreparedOriginalReadFor(prepare, ctx context.Context, subject Subject, itemID, sourceID, expectedETag string, readSnapshot func(context.Context, Subject, string, string) (indexedMediaSource, error), opener func(context.Context, indexedMediaSource) (*os.File, error)) (file *os.File, source MediaFile, content *primaryio.ReadSeeker, resultErr error) {
+	if prepare == nil || ctx == nil || strings.TrimSpace(itemID) == "" || strings.ContainsRune(itemID, '\x00') ||
 		strings.ContainsRune(sourceID, '\x00') || expectedETag == "" || strings.ContainsRune(expectedETag, '\x00') || readSnapshot == nil || opener == nil {
 		return nil, MediaFile{}, nil, ErrInvalidInput
 	}
@@ -221,6 +228,15 @@ func (s *Store) openOriginalReadFor(ctx context.Context, subject Subject, itemID
 	work, finish, err := s.beginMediaSourceLifetime(ctx)
 	if err != nil {
 		return nil, MediaFile{}, nil, err
+	}
+	opening, cancelOpening := context.WithCancel(prepare)
+	stopOpening := context.AfterFunc(work, cancelOpening)
+	defer func() {
+		stopOpening()
+		cancelOpening()
+	}()
+	if work.Err() != nil {
+		cancelOpening()
 	}
 	owner, err := originalMediaReadOwners.Register(work)
 	if err != nil {
@@ -261,7 +277,7 @@ func (s *Store) openOriginalReadFor(ctx context.Context, subject Subject, itemID
 		finish()
 	}()
 	var route primaryio.Route
-	file, source, err = s.runPreparedMediaSourceWorker(work, false, func(ctx context.Context) (mediaSourceRootHint, error) {
+	file, source, err = s.runPreparedMediaSourceWorker(opening, false, func(ctx context.Context) (mediaSourceRootHint, error) {
 		hint, err := s.readMediaSourceRootHint(ctx, itemID)
 		if err != nil {
 			return mediaSourceRootHint{}, err
@@ -296,6 +312,9 @@ func (s *Store) openOriginalReadFor(ctx context.Context, subject Subject, itemID
 	})
 	ownedFile = file
 	if err != nil {
+		return nil, MediaFile{}, nil, err
+	}
+	if err := opening.Err(); err != nil {
 		return nil, MediaFile{}, nil, err
 	}
 	logicalSource := &originalMediaReadSource{reader: io.NewSectionReader(file, 0, source.Size), file: file}

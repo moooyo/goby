@@ -165,6 +165,16 @@ timestamp, not SQL checksums. Baseline and archive checksum lists identify the
 compiled SQL independently. No archive or live migration history is trusted to
 supply executable DDL.
 
+Schema 62 changes the notification source-recording function while preserving
+its durable tables. Its distinct catalog authenticates the updated function
+body. Schema 63 adds an optional media-operation source stamp and its sampled
+root-binding revision. A non-null stamp must match the original v1 expression
+over its retained source facts and sampled binding. A later root rebind is a
+valid cache miss, and a null stamp uses the ordinary read-time fallback.
+Recovery validates cached values without refreshing them before fingerprint
+comparison. Trusted migration from an older archive may populate the new
+columns only after its original data has been verified.
+
 All external commands have time and byte limits, a private process group,
 Linux parent-death signaling, and a pinned creating thread. The child leader is
 kept waitable until the group has been retired to avoid signalling a recycled

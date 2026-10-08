@@ -13,6 +13,11 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+const (
+	streamInventoryBytes    = 64 << 20
+	streamInventoryInterval = time.Second
+)
+
 type Store struct {
 	mu                          sync.Mutex
 	cfg                         Config
@@ -29,6 +34,8 @@ type Store struct {
 	closed, degraded            bool
 	closeDone                   chan struct{}
 	closeErr                    error
+	inventoryAt                 time.Time
+	inventoryBytes              int64
 	now                         func() time.Time
 	syncFile                    func(*os.File) error
 	freeBytes                   func(int) (uint64, error)
@@ -93,6 +100,18 @@ func (s *Store) markDegraded()             { s.mu.Lock(); s.degraded = true; s.m
 func (s *Store) unhealthy(err error) error { s.degraded = true; return err }
 
 func (s *Store) healthy(ctx context.Context) error {
+	if err := s.healthyIdentity(ctx); err != nil {
+		return err
+	}
+	if err := s.checkInventory(); err != nil {
+		return s.unhealthy(err)
+	}
+	return nil
+}
+
+// healthyIdentity checks only the pinned root and fixed metadata roles. Keep
+// directory enumeration out of the ordinary streaming chunk path.
+func (s *Store) healthyIdentity(ctx context.Context) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -103,8 +122,22 @@ func (s *Store) healthy(ctx context.Context) error {
 	if unix.Fstat(int(s.directory.Fd()), &st) != nil || st.Mode&07777 != 0700 || st.Uid != uint32(os.Geteuid()) || s.checkIdentity(markerName, s.markerID) != nil || s.checkIdentity(lockName, s.lockID) != nil || s.checkIdentity(catalogName, s.catalogID) != nil {
 		return s.unhealthy(ErrUnavailable)
 	}
-	if err := s.checkInventory(); err != nil {
-		return s.unhealthy(err)
+	return nil
+}
+
+// healthyForWrite keeps identity checks on every chunk. Inventory audits are
+// shared by all writers and run before the next chunk after either budget is
+// reached. Unknown names can remain undetected until that checkpoint, including
+// at most one chunk beyond the byte budget. Idle stores wait for the next
+// operation; lifecycle, publication, and management boundaries audit in full.
+func (s *Store) healthyForWrite(ctx context.Context) error {
+	if err := s.healthyIdentity(ctx); err != nil {
+		return err
+	}
+	if s.inventoryBytes >= streamInventoryBytes || !s.now().Before(s.inventoryAt.Add(streamInventoryInterval)) {
+		if err := s.checkInventory(); err != nil {
+			return s.unhealthy(err)
+		}
 	}
 	return nil
 }
@@ -194,6 +227,8 @@ func (s *Store) checkInventory() error {
 			return ErrUnavailable
 		}
 	}
+	s.inventoryAt = s.now()
+	s.inventoryBytes = 0
 	return nil
 }
 

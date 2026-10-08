@@ -16,6 +16,9 @@ type NextUpQuery struct {
 	UserID, SeriesID, ParentID string
 	ApplicationCredentialID    string
 	StartIndex, Limit          int
+	Projection                 QueryProjection
+	// CountOnly returns totals without changing the default Limit=0 page behavior.
+	CountOnly bool
 }
 
 // The general Item representation uses integer zero for absent indexes. Preserve
@@ -55,15 +58,39 @@ func (s *Store) NextUp(ctx context.Context, query NextUpQuery) (ItemResult, erro
 	args := []any{query.UserID, access.all, access.folders, query.SeriesID, query.ParentID}
 	prefix := nextUpScopeSQL(access) + nextUpCandidateSQL()
 	result := ItemResult{Items: make([]Item, 0)}
-	if err := tx.QueryRow(ctx, prefix+"SELECT count(*) FROM next_up WHERE candidate_rank = 1", args...).Scan(&result.TotalRecordCount); err != nil {
-		return ItemResult{}, fmt.Errorf("count next-up episodes: %w", err)
+	if query.CountOnly {
+		if err := tx.QueryRow(ctx, prefix+"SELECT count(*) FROM next_up WHERE candidate_rank = 1", args...).Scan(&result.TotalRecordCount); err != nil {
+			return ItemResult{}, fmt.Errorf("count next-up episodes: %w", err)
+		}
+		if err := tx.Commit(ctx); err != nil {
+			return ItemResult{}, fmt.Errorf("complete next-up count: %w", err)
+		}
+		return result, nil
 	}
 	args = append(args, query.Limit, query.StartIndex)
-	rows, err := tx.Query(ctx, prefix+"SELECT "+access.scopeSQL(nextUpItemColumns)+` FROM next_up candidate
-		JOIN items i ON i.id = candidate.id AND i.library_id = candidate.library_id
-		WHERE candidate.candidate_rank = 1
-		ORDER BY candidate.last_activity DESC NULLS LAST, lower(candidate.series_sort_name), candidate.series_id, candidate.episode_order, i.id
-		LIMIT $6 OFFSET $7`, args...)
+	// Materialize only the candidate keys and ordering facts. Count and page
+	// selection share this evaluation; full item projections remain behind the
+	// page boundary in the same repeatable-read authorization snapshot.
+	var ids []string
+	if err := tx.QueryRow(ctx, prefix+`, selected_next_up AS MATERIALIZED (
+		SELECT id, last_activity, series_sort_name, series_id, episode_order
+		FROM next_up WHERE candidate_rank = 1
+	) SELECT (SELECT count(*) FROM selected_next_up), ARRAY(
+		SELECT id FROM selected_next_up
+		ORDER BY last_activity DESC NULLS LAST, lower(series_sort_name), series_id, episode_order, id
+		LIMIT $6 OFFSET $7
+	)`, args...).Scan(&result.TotalRecordCount, &ids); err != nil {
+		return ItemResult{}, fmt.Errorf("select next-up episodes: %w", err)
+	}
+	if len(ids) == 0 {
+		if err := tx.Commit(ctx); err != nil {
+			return ItemResult{}, fmt.Errorf("complete empty next-up page: %w", err)
+		}
+		return result, nil
+	}
+	rows, err := tx.Query(ctx, "SELECT "+access.scopeSQL(projectBrowseMediaSQL(nextUpItemColumns, query.Projection))+`
+		FROM unnest($1::text[]) WITH ORDINALITY AS page(id, ordinal)
+		JOIN items i ON i.id = page.id ORDER BY page.ordinal`, ids)
 	if err != nil {
 		return ItemResult{}, fmt.Errorf("query next-up episodes: %w", err)
 	}

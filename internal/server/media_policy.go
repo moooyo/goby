@@ -26,6 +26,15 @@ type mediaPolicyKey struct {
 	owner, auth, client, device, play, item, source string
 }
 
+type mediaPolicyOwnerKey struct {
+	application bool
+	owner       string
+}
+
+func (key mediaPolicyKey) ownerKey() mediaPolicyOwnerKey {
+	return mediaPolicyOwnerKey{application: key.application, owner: key.owner}
+}
+
 type mediaPolicyLease struct {
 	key       mediaPolicyKey
 	scope     transcode.Scope
@@ -44,6 +53,7 @@ type mediaPolicyLease struct {
 type mediaPolicyRuntime struct {
 	mu       sync.Mutex
 	leases   map[mediaPolicyKey]*mediaPolicyLease
+	owners   map[mediaPolicyOwnerKey]map[mediaPolicyKey]*mediaPolicyLease
 	sequence uint64
 	closed   bool
 	now      func() time.Time
@@ -53,7 +63,12 @@ type mediaPolicyRuntime struct {
 type mediaPolicyLeaseContextKey struct{}
 
 func newMediaPolicyRuntime(onRetire func(transcode.Scope)) *mediaPolicyRuntime {
-	return &mediaPolicyRuntime{leases: make(map[mediaPolicyKey]*mediaPolicyLease), now: time.Now, onRetire: onRetire}
+	return &mediaPolicyRuntime{
+		leases:   make(map[mediaPolicyKey]*mediaPolicyLease),
+		owners:   make(map[mediaPolicyOwnerKey]map[mediaPolicyKey]*mediaPolicyLease),
+		now:      time.Now,
+		onRetire: onRetire,
+	}
 }
 
 func mediaPolicyIdentity(principal identity.Principal, scope transcode.Scope) (mediaPolicyKey, int, error) {
@@ -78,12 +93,13 @@ func mediaPolicyIdentity(principal identity.Principal, scope transcode.Scope) (m
 	return key, policy.SimultaneousStreamLimit, nil
 }
 
-func mediaPolicySameOwner(a, b mediaPolicyKey) bool {
-	return a.application == b.application && a.owner == b.owner
-}
-
 func (runtime *mediaPolicyRuntime) retireLocked(lease *mediaPolicyLease) transcode.Scope {
 	delete(runtime.leases, lease.key)
+	owner := lease.key.ownerKey()
+	delete(runtime.owners[owner], lease.key)
+	if len(runtime.owners[owner]) == 0 {
+		delete(runtime.owners, owner)
+	}
 	if lease.timer != nil {
 		lease.timer.Stop()
 	}
@@ -105,19 +121,32 @@ func (runtime *mediaPolicyRuntime) notify(scopes []transcode.Scope) {
 func (runtime *mediaPolicyRuntime) reconcileLocked(key mediaPolicyKey, limit int) []transcode.Scope {
 	var retired []transcode.Scope
 	now := runtime.now()
-	var owned []*mediaPolicyLease
-	for _, lease := range runtime.leases {
+	ownerLeases := runtime.owners[key.ownerKey()]
+	for _, lease := range ownerLeases {
 		if lease.refs == 0 && now.Sub(lease.last) >= mediaPolicyIdleTTL {
 			retired = append(retired, runtime.retireLocked(lease))
-			continue
-		}
-		if mediaPolicySameOwner(lease.key, key) {
-			owned = append(owned, lease)
 		}
 	}
-	if limit > 0 && len(owned) > limit {
+	if limit > 0 && len(ownerLeases) > limit {
+		owned := make([]*mediaPolicyLease, 0, len(ownerLeases))
+		for _, lease := range ownerLeases {
+			owned = append(owned, lease)
+		}
 		sort.Slice(owned, func(i, j int) bool { return owned[i].order < owned[j].order })
 		for _, lease := range owned[limit:] {
+			retired = append(retired, runtime.retireLocked(lease))
+		}
+	}
+	return retired
+}
+
+// Timers normally retire idle leases. At the global capacity limit, reclaim
+// expired entries whose timer callbacks have not run before rejecting a play.
+func (runtime *mediaPolicyRuntime) expireIdleLocked() []transcode.Scope {
+	var retired []transcode.Scope
+	now := runtime.now()
+	for _, lease := range runtime.leases {
+		if lease.refs == 0 && now.Sub(lease.last) >= mediaPolicyIdleTTL {
 			retired = append(retired, runtime.retireLocked(lease))
 		}
 	}
@@ -140,13 +169,12 @@ func (runtime *mediaPolicyRuntime) acquire(ctx context.Context, principal identi
 	retired := runtime.reconcileLocked(key, limit)
 	lease := runtime.leases[key]
 	if lease == nil {
-		count := 0
-		for _, active := range runtime.leases {
-			if mediaPolicySameOwner(active.key, key) {
-				count++
-			}
+		owner := key.ownerKey()
+		ownerFull := limit > 0 && len(runtime.owners[owner]) >= limit
+		if !ownerFull && len(runtime.leases) >= maxMediaPolicyLeases {
+			retired = append(retired, runtime.expireIdleLocked()...)
 		}
-		if len(runtime.leases) >= maxMediaPolicyLeases || limit > 0 && count >= limit {
+		if ownerFull || len(runtime.leases) >= maxMediaPolicyLeases {
 			runtime.mu.Unlock()
 			runtime.notify(retired)
 			return nil, nil, transcode.ErrBusy
@@ -155,6 +183,10 @@ func (runtime *mediaPolicyRuntime) acquire(ctx context.Context, principal identi
 		runtime.sequence++
 		lease = &mediaPolicyLease{key: key, scope: scope, ctx: lifetime, cancel: cancel, order: runtime.sequence}
 		runtime.leases[key] = lease
+		if runtime.owners[owner] == nil {
+			runtime.owners[owner] = make(map[mediaPolicyKey]*mediaPolicyLease)
+		}
+		runtime.owners[owner][key] = lease
 	}
 	lease.refs++
 	lease.last, lease.complete, lease.failed = runtime.now(), false, false
@@ -261,13 +293,14 @@ func (runtime *mediaPolicyRuntime) release(scope transcode.Scope) {
 }
 
 func (runtime *mediaPolicyRuntime) complete(scope transcode.Scope, expected *mediaPolicyLease) {
+	if expected == nil {
+		return
+	}
 	runtime.mu.Lock()
-	for _, lease := range runtime.leases {
-		if lease == expected && lease.scope == scope {
-			lease.complete, lease.failed = true, false
-			if lease.refs == 0 {
-				runtime.retireLocked(lease)
-			}
+	if lease := runtime.leases[expected.key]; lease == expected && lease.scope == scope {
+		lease.complete, lease.failed = true, false
+		if lease.refs == 0 {
+			runtime.retireLocked(lease)
 		}
 	}
 	runtime.mu.Unlock()
@@ -277,14 +310,15 @@ func (runtime *mediaPolicyRuntime) complete(scope transcode.Scope, expected *med
 // media. Failure of an obsolete segment after a seek must not complete another
 // reader's playback or cancel a replacement producer.
 func (runtime *mediaPolicyRuntime) fail(scope transcode.Scope, expected *mediaPolicyLease) {
+	if expected == nil {
+		return
+	}
 	runtime.mu.Lock()
 	var retired []transcode.Scope
-	for _, lease := range runtime.leases {
-		if lease == expected && lease.scope == scope && !lease.delivered && lease.refs <= 1 {
-			lease.complete, lease.failed = true, true
-			if lease.refs == 0 {
-				retired = append(retired, runtime.retireLocked(lease))
-			}
+	if lease := runtime.leases[expected.key]; lease == expected && lease.scope == scope && !lease.delivered && lease.refs <= 1 {
+		lease.complete, lease.failed = true, true
+		if lease.refs == 0 {
+			retired = append(retired, runtime.retireLocked(lease))
 		}
 	}
 	runtime.mu.Unlock()

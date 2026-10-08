@@ -115,7 +115,7 @@ func (s *Store) QueryInstantMix(ctx context.Context, seed MusicMixSeed, query In
 		SELECT i.id,row_number() OVER (ORDER BY ` + order + `) AS ordinal
 		FROM mix_scores ranked JOIN items i ON i.id=ranked.id
 		ORDER BY ordinal` + fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)-1, len(args)) + ") "
-	rows, err := tx.Query(ctx, prefix+`SELECT `+access.itemColumnsSQL()+` FROM mix_page page JOIN items i ON i.id=page.id ORDER BY page.ordinal`, args...)
+	rows, err := tx.Query(ctx, prefix+`SELECT `+access.scopeSQL(itemQueryColumns(query.Query))+` FROM mix_page page JOIN items i ON i.id=page.id ORDER BY page.ordinal`, args...)
 	if err != nil {
 		return ItemResult{}, fmt.Errorf("query instant mix: %w", err)
 	}

@@ -54,6 +54,7 @@ func (s *Store) QueryLatest(ctx context.Context, query Query, group bool, prefer
 	if group {
 		statement = latestGroupedSQL(prefix, filter, access) + pagination
 	}
+	statement = projectBrowseMediaSQL(statement, query.Projection)
 	rows, err := tx.Query(ctx, statement, args...)
 	if err != nil {
 		return nil, fmt.Errorf("query latest library items: %w", err)

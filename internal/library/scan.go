@@ -50,6 +50,7 @@ type scanState struct {
 	extras              *extraScan
 	reconciliation      *scanReconciliationEvidence
 	reconciliationPass  *scanReconciliationPass
+	sourceRoot          *scanSourceRootWitness
 	walkIO              *PrimaryRootIO
 	walkRow             rootBindingRow
 	primaryReadMu       sync.Mutex
@@ -113,6 +114,7 @@ func (s *Store) scanLibrary(task *scanTask) (message string, resultErr error) {
 	warnings, failedRoots, numberingConflicts := 0, 0, 0
 	themeOwners := &themeLibraryScan{roots: make(map[string]*scanState), expected: roots,
 		claimed: make(map[string]string), issues: make(map[string]int)}
+	defer func() { resultErr = errors.Join(resultErr, themeOwners.Close()) }()
 	musicParents := make(map[string]bool)
 	completeRoots := make(map[string]bool)
 	// Reuse validated content metadata across this Store's scans. Each inspection
@@ -122,7 +124,7 @@ func (s *Store) scanLibrary(task *scanTask) (message string, resultErr error) {
 		if err := task.ctx.Err(); err != nil {
 			return "Scan cancelled", err
 		}
-		opened, err := reconciliation.openRoot(s, root)
+		opened, sourceRoot, err := reconciliation.openSourceRoot(s, root)
 		if err != nil {
 			var preparationFailure *scanReconciliationPreparationFailure
 			if errors.As(err, &preparationFailure) {
@@ -131,7 +133,7 @@ func (s *Store) scanLibrary(task *scanTask) (message string, resultErr error) {
 			failedRoots++
 			continue
 		}
-		state := &scanState{store: s, task: task, library: library, root: root, opened: opened,
+		state := &scanState{store: s, task: task, library: library, root: root, opened: opened, sourceRoot: sourceRoot,
 			themeLibrary: themeOwners, reconciliation: reconciliation.collector(), reconciliationPass: reconciliation,
 			imageInspection: imageInspection}
 		err = state.startThemeScan()
@@ -150,9 +152,10 @@ func (s *Store) scanLibrary(task *scanTask) (message string, resultErr error) {
 		if err == nil && state.warnings == 0 {
 			err = state.finishThemeScan()
 		}
-		closeErr := opened.Close()
+		closeErr := errors.Join(opened.Close(), sourceRoot.Close())
 		err = errors.Join(err, state.primaryScanReadError(), closeErr)
 		state.opened = nil
+		state.sourceRoot = nil
 		for parentID := range state.musicParents {
 			musicParents[parentID] = true
 		}
@@ -443,6 +446,10 @@ func (state *scanState) publishScannedMedia(path, kind string, current hierarchy
 			}()
 			return state.publishScannedMediaAttempt(path, kind, current, input, &committed)
 		}()
+		if !committed && scanProbeSourceChangedOnly(err) {
+			state.warnings++
+			return state.store.persistProgress(state.task)
+		}
 		if committed || !sidecarAdmissionRetryable(err) {
 			return err
 		}
@@ -468,11 +475,6 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 			}
 		}
 	}()
-	if input.authority != nil {
-		if err := state.checkScanProbeFile(path, input); err != nil {
-			return err
-		}
-	}
 	info, stored, probe := input.info, input.stored, input.probe
 	var err error
 	unchanged := input.unchanged
@@ -543,6 +545,9 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 		currentInfo, pathErr = state.opened.Lstat(path)
 		return ctx.Err()
 	}); err != nil {
+		if scanProbeSourceChangedOnly(err) {
+			return err
+		}
 		return scanReadFailure(err)
 	}
 	if sidecarObservation.sourceChanged || pathErr != nil || !currentInfo.Mode().IsRegular() || !sameMediaSourceFile(info, currentInfo) {
@@ -820,6 +825,8 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 		if state.store.closing.Load() {
 			return ErrUnavailable
 		}
+	} else if err := input.primary.revalidatePublicationSource(tx); err != nil {
+		return err
 	}
 	if err := state.task.ctx.Err(); err != nil {
 		return err
@@ -868,10 +875,33 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 		return err
 	}
 	completionChecked = true
+	if publicationProgress != nil {
+		// A committed primary followed by sidecars has a distinct final task
+		// fence. Keep accepted counters atomic and repair a later cancellation.
+		return state.store.checkCachedTaskScanProgress(state.task)
+	}
 	return state.store.maybePersistProgress(state.task)
 }
 
 func (state *scanState) folder(relative, path, name, itemType, parentID string, indexNumber int, nfoRelative ...string) (string, error) {
+	for {
+		warnings, conflicts := state.warnings, state.numberingConflicts
+		committed := false
+		id, err := state.folderAttempt(relative, path, name, itemType, parentID, indexNumber, &committed, nfoRelative...)
+		if committed || !sidecarAdmissionRetryable(err) {
+			return id, err
+		}
+		// The failed attempt has rolled back and retired its source witnesses.
+		// Capacity waiting never retains catalog ownership or a transaction.
+		state.warnings, state.numberingConflicts = warnings, conflicts
+		if err := state.waitSidecarScanAdmission(); err != nil {
+			return "", scanReadFailure(err)
+		}
+	}
+}
+
+func (state *scanState) folderAttempt(relative, path, name, itemType, parentID string, indexNumber int, committed *bool,
+	nfoRelative ...string) (_ string, resultErr error) {
 	if !strings.HasPrefix(relative, "//") && (state.themePathReserved(filepath.ToSlash(relative)) || state.extraPathReserved(filepath.ToSlash(relative))) {
 		return "", fmt.Errorf("%w: a permanently reserved auxiliary path cannot become an ordinary folder", ErrUnavailable)
 	}
@@ -897,7 +927,16 @@ func (state *scanState) folder(relative, path, name, itemType, parentID string, 
 	// A source-backed visit or different input supersedes an earlier virtual
 	// publication at this path, even if the old input appears again later.
 	delete(state.virtualFolders, relative)
-	local, err := state.folderLocalMetadata(relative, metadataPath, itemType, indexNumber)
+	var source *scanFolderSource
+	if metadataPath != "" {
+		var err error
+		source, err = state.prepareFolderSource(metadataPath)
+		if err != nil {
+			return "", scanReadFailure(err)
+		}
+		defer func() { resultErr = errors.Join(resultErr, source.Close()) }()
+	}
+	local, err := state.folderLocalMetadataWithSource(relative, metadataPath, itemType, indexNumber, source)
 	if err != nil {
 		return "", err
 	}
@@ -919,7 +958,11 @@ func (state *scanState) folder(relative, path, name, itemType, parentID string, 
 	if err != nil {
 		return "", err
 	}
-	defer rollback(tx)
+	defer func() {
+		if !*committed {
+			resultErr = errors.Join(resultErr, rollbackSidecarTransaction(tx, resultErr))
+		}
+	}()
 	if _, err := lockScanPublicationProgress(scanProbeAuthorityTx{ctx: state.task.ctx, tx: tx}, state.task); err != nil {
 		return "", err
 	}
@@ -999,6 +1042,11 @@ func (state *scanState) folder(relative, path, name, itemType, parentID string, 
 	if err := beforeAuxiliary.record(state.task.ctx, tx, nil); err != nil {
 		return "", err
 	}
+	if source != nil {
+		if err := source.final(state.task.ctx, tx); err != nil {
+			return "", scanReadFailure(err)
+		}
+	}
 	if err := state.task.ctx.Err(); err != nil {
 		return "", err
 	}
@@ -1008,6 +1056,7 @@ func (state *scanState) folder(relative, path, name, itemType, parentID string, 
 	if err := tx.Commit(state.task.ctx); err != nil {
 		return "", err
 	}
+	*committed = true
 	if itemType == "MusicAlbum" {
 		state.queueMusicParent(id)
 	}
@@ -1147,29 +1196,66 @@ func (state *scanState) findStoredFileForRole(relative string, info os.FileInfo,
 		return storedFile{}, err
 	}
 	for _, candidate := range candidates {
-		oldRoot := state.opened
-		if candidate.rootID != state.root.id {
-			granted, err := state.store.readScanOperationRoot(state.task.ctx, state.task, candidate.rootID)
-			if err != nil {
-				if errors.Is(err, ErrRootBindingConflict) {
-					continue
-				}
-				return storedFile{}, err
-			}
-			oldRoot, err = state.store.openScanOperationRoot(state.task.ctx, state.task, granted.root)
-			if err != nil {
-				continue
-			}
+		absent, err := state.scannedRenameCandidateAbsent(candidate)
+		if err != nil {
+			return storedFile{}, err
 		}
-		_, err := oldRoot.Lstat(filepath.FromSlash(candidate.relativePath))
-		if oldRoot != state.opened {
-			_ = oldRoot.Close()
-		}
-		if errors.Is(err, os.ErrNotExist) {
+		if absent {
 			return candidate, nil
 		}
 	}
 	return storedFile{}, nil
+}
+
+// Catalog lookup has completed before this source observation acquires I/O.
+// An inaccessible old path is not absence and cannot transfer its item ID.
+func (state *scanState) scannedRenameCandidateAbsent(candidate storedFile) (_ bool, resultErr error) {
+	granted, err := state.store.readScanOperationRoot(state.task.ctx, state.task, candidate.rootID)
+	if errors.Is(err, ErrRootBindingConflict) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	operation := state.walkIO
+	if candidate.rootID != state.root.id || operation == nil {
+		operation, err = state.store.prepareScanOperationRootIO(state.task.ctx, state.task,
+			[]mediaSourceRootHint{{root: granted.root, bindingRevision: granted.revision}})
+		if err != nil {
+			return false, err
+		}
+		defer func() { resultErr = errors.Join(resultErr, scanReadFailure(operation.Close())) }()
+	} else if !state.walkRow.same(granted) {
+		return false, ErrRootBindingConflict
+	}
+	absent := false
+	err = operation.Run(state.task.ctx, candidate.rootID, primaryio.Background, func(work context.Context) (resultErr error) {
+		current, err := state.store.readScanOperationAuthority(work, state.task, granted.root)
+		if err != nil {
+			return err
+		}
+		if !granted.same(current) {
+			return ErrRootBindingConflict
+		}
+		oldRoot := state.opened
+		if candidate.rootID != state.root.id {
+			oldRoot, err = state.store.openScanOperationRoot(work, state.task, granted.root)
+			if err != nil {
+				if !state.store.Available() || errors.Is(err, ErrTaskScanInactive) {
+					return err
+				}
+				if work.Err() != nil || errors.Is(err, errSidecarRetirementUnknown) {
+					return errors.Join(err, work.Err())
+				}
+				return nil
+			}
+			defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryRoot(work, oldRoot)) }()
+		}
+		_, err = oldRoot.Lstat(filepath.FromSlash(candidate.relativePath))
+		absent = errors.Is(err, os.ErrNotExist)
+		return work.Err()
+	})
+	return absent, err
 }
 
 func ignoredName(name string) bool {

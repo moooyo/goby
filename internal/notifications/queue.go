@@ -33,27 +33,24 @@ type target struct {
 func (t target) principal() identity.Principal {
 	return identity.Principal{Kind: "emby", SessionID: t.session, User: identity.User{ID: t.user}, PeerIP: t.peer}
 }
-func readTarget(ctx context.Context, tx pgx.Tx, id string) (target, error) {
+
+type targetQuerier interface {
+	QueryRow(context.Context, string, ...any) pgx.Row
+}
+
+func readTarget(ctx context.Context, query targetQuerier, id string) (target, error) {
 	var t target
-	err := tx.QueryRow(ctx, `SELECT r.id,r.session_id,r.user_id,r.device_id,r.peer_ip,r.revision,c.revision,r.token_generation,c.credential_generation,c.endpoint,c.allowed_networks,r.token_ciphertext,c.credential_ciphertext
+	err := query.QueryRow(ctx, `SELECT r.id,r.session_id,r.user_id,r.device_id,r.peer_ip,r.revision,c.revision,r.token_generation,c.credential_generation,c.endpoint,c.allowed_networks,r.token_ciphertext,c.credential_ciphertext
 	FROM notification_registrations r CROSS JOIN notification_transport c JOIN sessions s ON true JOIN users u ON u.id=s.user_id
 	WHERE r.id=$1 AND c.id=1 AND r.enabled AND c.enabled AND s.id=r.session_id AND s.user_id=r.user_id AND s.device_id=r.device_id AND s.kind='emby' AND s.revoked_at IS NULL AND s.expires_at>clock_timestamp() AND NOT u.is_disabled`, id).Scan(&t.id, &t.session, &t.user, &t.device, &t.peer, &t.regRevision, &t.configRevision, &t.tokenGeneration, &t.credentialGeneration, &t.endpoint, &t.networks, &t.token, &t.credential)
 	return t, err
 }
 func (s *Store) currentTarget(ctx context.Context, id string) (target, error) {
-	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
-	if err != nil {
-		return target{}, ErrUnavailable
-	}
-	defer tx.Rollback(ctx)
-	t, err := readTarget(ctx, tx, id)
+	t, err := readTarget(ctx, s.pool, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return target{}, identity.ErrUnauthorized
 		}
-		return target{}, ErrUnavailable
-	}
-	if tx.Commit(ctx) != nil {
 		return target{}, ErrUnavailable
 	}
 	return t, nil
@@ -87,12 +84,15 @@ func (s *Store) fanout(ctx context.Context) error {
 	if err != nil {
 		return ErrUnavailable
 	}
+	var capacityErr error
 	for _, id := range ids {
-		if err := s.fanoutRegistration(ctx, id); err != nil && !errors.Is(err, identity.ErrUnauthorized) {
+		if err := s.fanoutRegistration(ctx, id); errors.Is(err, ErrLimit) {
+			capacityErr = err
+		} else if err != nil && !errors.Is(err, identity.ErrUnauthorized) {
 			return err
 		}
 	}
-	return nil
+	return capacityErr
 }
 func (s *Store) fanoutRegistration(ctx context.Context, id string) error {
 	tx, err := s.pool.Begin(ctx)
@@ -145,15 +145,19 @@ func (s *Store) fanoutRegistration(ctx context.Context, id string) error {
 	if err = tx.Commit(ctx); err != nil {
 		return ErrUnavailable
 	}
+	if len(sources) == 0 {
+		return nil
+	}
 	beforeCursor := cursor
 	type projected struct {
-		sequence  int64
-		kind      string
-		refs      []notificationjournal.Reference
-		recursive bool
+		beforeSequence, sequence int64
+		kind                     string
+		refs                     []notificationjournal.Reference
+		recursive                bool
 	}
 	ready := []projected{}
 	for _, v := range sources {
+		previous := cursor
 		cursor = v.seq
 		selected := false
 		for _, e := range events {
@@ -180,7 +184,7 @@ func (s *Store) fanoutRegistration(ctx context.Context, id string) error {
 		if v.resync {
 			kind = "ResyncRequired"
 		}
-		ready = append(ready, projected{v.seq, kind, refs, v.recursive})
+		ready = append(ready, projected{previous, v.seq, kind, refs, v.recursive})
 	}
 	tx, err = s.pool.Begin(ctx)
 	if err != nil {
@@ -198,15 +202,36 @@ func (s *Store) fanoutRegistration(ctx context.Context, id string) error {
 	if err != nil || current.configRevision != t.configRevision {
 		return nil
 	}
+	var capacityErr error
 	for _, item := range ready {
-		if err = s.enqueue(ctx, tx, t, item.sequence, item.kind, item.refs, item.recursive); err != nil {
-			return err
+		// Coalescing can cancel pending rows before a later capacity check.
+		// Keep those mutations inside the attempted source's savepoint.
+		step, err := tx.Begin(ctx)
+		if err != nil {
+			return ErrUnavailable
+		}
+		if err = s.enqueue(ctx, step, t, item.sequence, item.kind, item.refs, item.recursive); err != nil {
+			if step.Rollback(ctx) != nil {
+				return ErrUnavailable
+			}
+			if !errors.Is(err, ErrLimit) {
+				return err
+			}
+			capacityErr = err
+			cursor = item.beforeSequence
+			break
+		}
+		if step.Commit(ctx) != nil {
+			return ErrUnavailable
 		}
 	}
 	if _, err = tx.Exec(ctx, `UPDATE notification_registrations SET source_cursor=$2 WHERE id=$1`, id, cursor); err != nil {
 		return ErrUnavailable
 	}
-	return tx.Commit(ctx)
+	if err = tx.Commit(ctx); err != nil {
+		return err
+	}
+	return capacityErr
 }
 func (s *Store) enqueue(ctx context.Context, tx pgx.Tx, t target, sequence int64, kind string, refs []notificationjournal.Reference, recursive bool) error {
 	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock($1)`, queueLock); err != nil {

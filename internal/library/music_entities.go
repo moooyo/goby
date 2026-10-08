@@ -157,7 +157,7 @@ func (s *Store) listMusicEntities(ctx context.Context, family string, query Quer
 		return EntityResult{}, fmt.Errorf("finish music entities: %w", err)
 	}
 	subject := Subject{UserID: query.UserID, ApplicationCredentialID: query.ApplicationCredentialID, Actor: actor}
-	if err := populateEntityProjections(ctx, tx, subject, access, result.Items); err != nil {
+	if err := populateEntityProjections(ctx, tx, subject, access, result.Items, query.Projection); err != nil {
 		return EntityResult{}, err
 	}
 	if actor != nil {
@@ -171,7 +171,7 @@ func (s *Store) listMusicEntities(ctx context.Context, family string, query Quer
 	return result, nil
 }
 
-func (s *Store) GetMusicEntityFor(ctx context.Context, subject Subject, family, name string) (Entity, error) {
+func (s *Store) GetMusicEntityFor(ctx context.Context, subject Subject, family, name string, projections ...QueryProjection) (Entity, error) {
 	if strings.TrimSpace(name) == "" || len(name) > 1024 || !utf8.ValidString(name) || strings.ContainsRune(name, '\x00') {
 		return Entity{}, ErrInvalidInput
 	}
@@ -203,7 +203,11 @@ func (s *Store) GetMusicEntityFor(ctx context.Context, subject Subject, family, 
 		return Entity{}, fmt.Errorf("read music entity by name: %w", err)
 	}
 	entities := []Entity{entity}
-	if err := populateEntityProjections(ctx, tx, subject, access, entities); err != nil {
+	projection := QueryProjection{}
+	if len(projections) != 0 {
+		projection = projections[0]
+	}
+	if err := populateEntityProjections(ctx, tx, subject, access, entities, projection); err != nil {
 		return Entity{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {

@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -106,6 +107,9 @@ func TestBitmapSubtitlePacketArrayRejectsExcessCountDuringDecoding(t *testing.T)
 }
 
 func TestPinnedSubtitleToolUsesHeldDescriptorAndRejectsChangedIdentity(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("pinned subtitle tools require the Linux local media opener")
+	}
 	path := filepath.Join(t.TempDir(), "tool")
 	content := []byte("owned fixture executable bytes")
 	if err := os.WriteFile(path, content, 0600); err != nil {

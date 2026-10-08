@@ -56,13 +56,14 @@ func (s *Store) issueLogin(ctx context.Context, issue loginIssue) (Credentials, 
 	if err != nil {
 		return Credentials{}, fmt.Errorf("revalidate authentication account: %w", err)
 	}
+	var policy ManagedPolicy
 	if issue.kind == "emby" {
 		var observedAt time.Time
 		if err := tx.QueryRow(ctx, "SELECT clock_timestamp()").Scan(&observedAt); err != nil {
 			return Credentials{}, fmt.Errorf("read authentication policy clock: %w", err)
 		}
-		policy, err := ParseRuntimePolicy(user.Policy)
-		if err != nil || !loginPolicyAllows(user.Policy, issue.client.DeviceID, observedAt) ||
+		policy, err = ParseRuntimePolicy(user.Policy)
+		if err != nil || !parsedLoginPolicyAllows(policy, user.Policy, issue.client.DeviceID, observedAt) ||
 			(!policy.EnableRemoteAccess && !IsLocalPeer(issue.peerIP)) {
 			return Credentials{}, ErrInvalidCredentials
 		}
@@ -113,7 +114,7 @@ func (s *Store) issueLogin(ctx context.Context, issue loginIssue) (Credentials, 
 		if err := tx.QueryRow(ctx, "SELECT clock_timestamp()").Scan(&observedAt); err != nil {
 			return Credentials{}, fmt.Errorf("recheck authentication policy clock: %w", err)
 		}
-		if !loginPolicyAllows(user.Policy, issue.client.DeviceID, observedAt) {
+		if !parsedLoginPolicyAllows(policy, user.Policy, issue.client.DeviceID, observedAt) {
 			return Credentials{}, ErrInvalidCredentials
 		}
 	}

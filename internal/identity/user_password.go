@@ -74,7 +74,7 @@ func (s *Store) ChangeUserPassword(ctx context.Context, actor Principal, userID,
 		return ManagedUserMutation{}, fmt.Errorf("authorize password change: %w", err)
 	}
 	policy, policyErr := ParseRuntimePolicy(current.User.Policy)
-	if !authorized || policyErr != nil || !loginPolicyAllows(current.User.Policy, deviceID, observedAt) ||
+	if !authorized || policyErr != nil || !parsedLoginPolicyAllows(policy, current.User.Policy, deviceID, observedAt) ||
 		(!policy.EnableRemoteAccess && !IsLocalPeer(actor.PeerIP)) {
 		return ManagedUserMutation{}, ErrUnauthorized
 	}
@@ -110,7 +110,7 @@ func (s *Store) ChangeUserPassword(ctx context.Context, actor Principal, userID,
 	if err := tx.QueryRow(ctx, "SELECT $1::timestamptz > clock_timestamp(), clock_timestamp()", expiresAt).Scan(&authorized, &observedAt); err != nil {
 		return ManagedUserMutation{}, fmt.Errorf("recheck password change expiry: %w", err)
 	}
-	if !authorized || !loginPolicyAllows(current.User.Policy, deviceID, observedAt) {
+	if !authorized || !parsedLoginPolicyAllows(policy, current.User.Policy, deviceID, observedAt) {
 		return ManagedUserMutation{}, ErrUnauthorized
 	}
 	if err := tx.Commit(ctx); err != nil {

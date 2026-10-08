@@ -37,7 +37,15 @@ func TestStoreExplicitExtraIDsUseDirectValidityAndPublicTypeWithoutThemeVisibili
 			for _, item := range result.Items {
 				direct, err := store.GetItem(ctx, "restricted", item.ID)
 				if err != nil || !reflect.DeepEqual(item, direct) {
-					t.Fatalf("known-ID extra projection escaped the direct contract: %v", err)
+					var changed []string
+					listedValue, directValue := reflect.ValueOf(item), reflect.ValueOf(direct)
+					for index := range listedValue.NumField() {
+						field := listedValue.Type().Field(index)
+						if field.IsExported() && !reflect.DeepEqual(listedValue.Field(index).Interface(), directValue.Field(index).Interface()) {
+							changed = append(changed, field.Name)
+						}
+					}
+					t.Fatalf("known-ID extra projection escaped the direct contract: id=%s type=%s changed=%v error=%v", item.ID, item.Type, changed, err)
 				}
 			}
 		})
