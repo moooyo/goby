@@ -1,3 +1,49 @@
+# Stop/GET accepted and final scan comparison completed, 2026-10-08
+
+Code main `82dbcd0540017852fac39747b5b1caa80e89fe00` accepts two narrow changes:
+the original Stop item-lock/visibility queries are batched, and eligible
+CacheDescribe playback reads retain a bounded plan for the complex source query.
+Authority, fresh snapshots, final time checks, complete decoding and business
+commit semantics remain. The rejected read-only identity completion experiment
+`063736d` is not included. All six delivered code/test hashes match the tested
+freeze, and all original 200 WIP paths remain intact.
+
+Remote functional verification passes 27 top-level tests/72 subtests with zero
+skips. All twelve new BC/CB/BC HTTP products qualify. GET p99 paired medians
+improve 23.570368% for normal1 and 12.560201% for key8; Stop response medians
+improve 7.410005% and 5.933187%. Key8 block3 Stop still increases 5.480468ms;
+the 262.430422ms normal1 baseline observation is retained. This is a combined
+bounded result, not a stable-tail or complete historical-cause repair claim.
+
+Test-only request ordinals now associate client tails with retained server
+details. Close records retain all original guard operands and outer HTTP
+activity without waiting or changing the first failure. Four diagnostics and
+twelve formal runs close with zero observed loans, slots, FDs and outer handlers.
+The older failed close was not reproduced and its specific cause remains unknown.
+
+The direct old08ed/runtime6386 versus final82db comparison completes four fixed
+ABBA processes/twenty phases using two byte-identical common scan drivers and the
+original ext4 corpus. Nine of ten job contrasts improve. Warm changes are
+-14.8641%/-33.3634%; first cold is +1.8691%/+62.800ms. Every phase has 96 fewer
+observed SQL statements and 32 fewer explicit BEGIN/COMMIT pairs with matching
+work, image outcomes, traversal and argument sequences. Terminal/GC reversals
+remain; historical stage percentages are not added or multiplied.
+
+All three builds and twenty-two native products complete without product failure
+or retry. Actual closeout removes only task-owned temporary resources; source,
+all evidence/binaries, shared caches and the original ext4 corpus remain. The
+single selected shared-cache maintenance and its post-check/unknown-exit metadata
+gap are separately retained. Prepared-plan retained memory remains unmeasured,
+broader client/GPU/mixed-capacity acceptance remains separate, and NVMe attribution
+remains stopped. No push or PR was performed.
+
+Details: [Stop/GET follow-up](stop-get-followup-20261008.md) and
+[direct final scan comparison](final-scan-version-comparison-20261008.md).
+Evidence: `.artifacts/stop-get-followup-20261008`; final resource closure SHA256
+`3897f568e6b40b508103c579d27b03b7185cccb1da2b9b9f01547d970ee68c68`.
+
+---
+
 # Unchanged-image query plan reuse accepted, 2026-10-08
 
 The image_catalog_unchanged read now reuses the existing reserved owner's
