@@ -89,10 +89,19 @@ func findApplicationKeyDeviceGeneration(ctx context.Context, tx pgx.Tx, referenc
 	return id, nil
 }
 
-// Management locks precede every account, credential, sidecar, and device lock.
-// In particular, a key deleting its own shared device never holds its client
-// sidecar while waiting for a different key credential in the same generation.
-func (s *Store) beginApplicationKeyDeviceOperation(ctx context.Context, actor Principal, reference deviceReference, mutate bool) (pgx.Tx, int64, *time.Time, error) {
+type applicationKeyDeviceOperation uint8
+
+const (
+	applicationKeyDeviceLookup applicationKeyDeviceOperation = iota
+	applicationKeyDeviceOptions
+	applicationKeyDeviceDelete
+)
+
+// Mutations take the management lock before account, credential, sidecar, and
+// device locks. Only deletion locks the entire credential generation: a key
+// deleting its own shared device must not hold its client sidecar while waiting
+// for a different key credential. Lookup and options retain actor SHARE locks.
+func (s *Store) beginApplicationKeyDeviceOperation(ctx context.Context, actor Principal, reference deviceReference, operation applicationKeyDeviceOperation) (pgx.Tx, int64, *time.Time, error) {
 	if !validDeviceActor(actor, false) {
 		return nil, 0, nil, ErrUnauthorized
 	}
@@ -109,11 +118,13 @@ func (s *Store) beginApplicationKeyDeviceOperation(ctx context.Context, actor Pr
 	if err := authorizeDeviceActor(ctx, tx, actor, false, nil); err != nil {
 		return nil, 0, nil, err
 	}
-	if _, err := tx.Exec(ctx, "SELECT pg_advisory_xact_lock($1)", managedUsersLockID); err != nil {
-		return nil, 0, nil, fmt.Errorf("lock application server device management: %w", err)
-	}
-	if err := authorizeDeviceActor(ctx, tx, actor, false, nil); err != nil {
-		return nil, 0, nil, err
+	if operation != applicationKeyDeviceLookup {
+		if _, err := tx.Exec(ctx, "SELECT pg_advisory_xact_lock($1)", managedUsersLockID); err != nil {
+			return nil, 0, nil, fmt.Errorf("lock application server device management: %w", err)
+		}
+		if err := authorizeDeviceActor(ctx, tx, actor, false, nil); err != nil {
+			return nil, 0, nil, err
+		}
 	}
 	if actor.User.ID != "" {
 		var account string
@@ -128,18 +139,25 @@ func (s *Store) beginApplicationKeyDeviceOperation(ctx context.Context, actor Pr
 	if err != nil {
 		return nil, 0, nil, err
 	}
-	locking := " FOR SHARE"
-	if mutate {
-		locking = " FOR UPDATE"
-	}
-	if err := lockApplicationKeyDeviceRows(ctx, tx, `SELECT id FROM sessions
+	if operation == applicationKeyDeviceDelete {
+		if err := lockApplicationKeyDeviceRows(ctx, tx, `SELECT id FROM sessions
 		WHERE id = $1 OR id IN (SELECT credential_id FROM application_keys WHERE reported_device_numeric_id = $2)
-		ORDER BY id`+locking, actor.SessionID, id); err != nil {
-		return nil, 0, nil, err
-	}
-	if err := lockApplicationKeyDeviceRows(ctx, tx, `SELECT credential_id FROM application_keys
-		WHERE credential_id = $1 OR reported_device_numeric_id = $2 ORDER BY credential_id`+locking, actor.SessionID, id); err != nil {
-		return nil, 0, nil, err
+		ORDER BY id FOR UPDATE`, actor.SessionID, id); err != nil {
+			return nil, 0, nil, err
+		}
+		if err := lockApplicationKeyDeviceRows(ctx, tx, `SELECT credential_id FROM application_keys
+		WHERE credential_id = $1 OR reported_device_numeric_id = $2 ORDER BY credential_id FOR UPDATE`, actor.SessionID, id); err != nil {
+			return nil, 0, nil, err
+		}
+	} else {
+		if err := lockApplicationKeyDeviceRows(ctx, tx, "SELECT id FROM sessions WHERE id = $1 FOR SHARE", actor.SessionID); err != nil {
+			return nil, 0, nil, err
+		}
+		if actor.IsApplicationKey() {
+			if err := lockApplicationKeyDeviceRows(ctx, tx, "SELECT credential_id FROM application_keys WHERE credential_id = $1 FOR SHARE", actor.SessionID); err != nil {
+				return nil, 0, nil, err
+			}
+		}
 	}
 	if actor.IsApplicationKey() {
 		var clientID string
@@ -152,6 +170,10 @@ func (s *Store) beginApplicationKeyDeviceOperation(ctx context.Context, actor Pr
 		}
 	}
 	var deletedAt *time.Time
+	locking := " FOR SHARE"
+	if operation != applicationKeyDeviceLookup {
+		locking = " FOR UPDATE"
+	}
 	if err := tx.QueryRow(ctx, "SELECT deleted_at FROM application_key_devices WHERE id = $1"+locking, id).Scan(&deletedAt); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, 0, nil, ErrDeviceNotFound
@@ -208,7 +230,7 @@ func (s *Store) LookupApplicationKeyDevice(ctx context.Context, actor Principal,
 	if err != nil {
 		return ManagedDevice{}, err
 	}
-	tx, id, deletedAt, err := s.beginApplicationKeyDeviceOperation(ctx, actor, reference, false)
+	tx, id, deletedAt, err := s.beginApplicationKeyDeviceOperation(ctx, actor, reference, applicationKeyDeviceLookup)
 	if err != nil {
 		return ManagedDevice{}, err
 	}
@@ -240,7 +262,7 @@ func (s *Store) UpdateApplicationKeyDeviceOptions(ctx context.Context, actor Pri
 	if err != nil {
 		return ManagedDevice{}, err
 	}
-	tx, id, deletedAt, err := s.beginApplicationKeyDeviceOperation(ctx, actor, reference, true)
+	tx, id, deletedAt, err := s.beginApplicationKeyDeviceOperation(ctx, actor, reference, applicationKeyDeviceOptions)
 	if err != nil {
 		return ManagedDevice{}, err
 	}
@@ -287,7 +309,7 @@ func (s *Store) DeleteApplicationKeyDevice(ctx context.Context, actor Principal,
 	if err != nil {
 		return DeviceDeletion{}, err
 	}
-	tx, id, deletedAt, err := s.beginApplicationKeyDeviceOperation(ctx, actor, reference, true)
+	tx, id, deletedAt, err := s.beginApplicationKeyDeviceOperation(ctx, actor, reference, applicationKeyDeviceDelete)
 	if err != nil {
 		return DeviceDeletion{}, err
 	}

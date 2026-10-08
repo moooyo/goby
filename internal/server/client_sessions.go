@@ -206,12 +206,11 @@ func (s *Server) clientSessionSnapshot(ctx context.Context, principal identity.P
 	}
 	items, itemDTOs := map[string]map[string]any{}, []map[string]any{}
 	if len(ids) > 0 {
-		result, err := s.library.GetItemsByIDFor(ctx, subject, ids)
+		result, err := s.library.GetNowPlayingItemsByIDFor(ctx, subject, ids)
 		if err != nil {
 			return nil, nil, err
 		}
 		for _, item := range result {
-			item.UserData = nil
 			dto := s.itemDTO(item, nil, false)
 			items[item.ID], itemDTOs = dto, append(itemDTOs, dto)
 		}

@@ -248,7 +248,8 @@ func defaultDisplayPreferences(id, client string) DisplayPreferences {
 	return DisplayPreferences{ID: id, Client: client, SortBy: "SortName", SortOrder: "Ascending", CustomPrefs: map[string]string{}}
 }
 
-func validDisplayScope(id, client string) bool {
+// ValidDisplayPreferencesScope validates a display scope without reading stored preferences.
+func ValidDisplayPreferencesScope(id, client string) bool {
 	return id != "" && client != "" && validPreferenceText(id, 256) && validPreferenceText(client, 256)
 }
 
@@ -354,7 +355,7 @@ func readDisplayPreferences(ctx context.Context, tx pgx.Tx, userID, id, client s
 }
 
 func (s *Store) GetDisplayPreferences(ctx context.Context, actor Principal, userID, id, client string) (DisplayPreferences, error) {
-	if !validDisplayScope(id, client) {
+	if !ValidDisplayPreferencesScope(id, client) {
 		return DisplayPreferences{}, ErrInvalidInput
 	}
 	tx, err := s.pool.Begin(ctx)
@@ -379,7 +380,7 @@ func (s *Store) GetDisplayPreferences(ctx context.Context, actor Principal, user
 }
 
 func (s *Store) UpdateDisplayPreferences(ctx context.Context, actor Principal, userID, id, client string, revision *int64, patch DisplayPreferencesPatch) (DisplayPreferences, error) {
-	if !validDisplayScope(id, client) || revision != nil && *revision < 0 {
+	if !ValidDisplayPreferencesScope(id, client) || revision != nil && *revision < 0 {
 		return DisplayPreferences{}, ErrInvalidInput
 	}
 	tx, err := s.pool.Begin(ctx)

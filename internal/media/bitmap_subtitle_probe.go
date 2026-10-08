@@ -11,7 +11,6 @@ import (
 	"io"
 	"math/big"
 	"os"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -50,7 +49,7 @@ func DecodeBitmapSubtitles(ctx context.Context, config BitmapSubtitleConfig, inp
 // decoder working set. The synchronous consumer must release the raster before
 // returning; production OCR keeps its bounded compressed PNG evidence instead.
 func walkBitmapSubtitles(ctx context.Context, config BitmapSubtitleConfig, input *os.File, stream Stream, source Info, emit func(BitmapSubtitleCue) error) ([]string, error) {
-	if runtime.GOOS != "linux" || input == nil || stream.Index < 0 || stream.Index > 4095 ||
+	if input == nil || stream.Index < 0 || stream.Index > 4095 ||
 		stream.CodecType != "subtitle" || stream.IsExternal ||
 		(stream.Codec != "hdmv_pgs_subtitle" && stream.Codec != "dvd_subtitle") ||
 		source.DurationTicks <= 0 || source.DurationTicks > 7*24*60*60*TicksPerSecond || emit == nil {

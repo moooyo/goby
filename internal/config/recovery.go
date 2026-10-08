@@ -125,8 +125,8 @@ func (c RecoveryConfig) Validate(primaryDatabaseURL string) error {
 			}
 		}
 	}
-	// Keep these bounds aligned with backupstore.Config.Validate without using
-	// its host-dependent filepath validation on a compilation-only Windows host.
+	// Keep these bounds aligned with backupstore.Config.Validate. Directory
+	// syntax and overlap policy are checked above before resource budgets.
 	if c.Backups.MaxObjectBytes < 1 || c.Backups.MaxObjectBytes > 1<<40 {
 		return fmt.Errorf("GOBY_BACKUP_MAX_OBJECT_BYTES must be between 1 and 1099511627776")
 	}

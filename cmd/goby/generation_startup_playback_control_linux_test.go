@@ -89,9 +89,11 @@ func TestGenerationStartupPublishesReservedPairAndDrainsLeaseLast(t *testing.T) 
 	default:
 	}
 	borrowed.Release()
-	if err := f.owner.close(g, true); err != nil || g.lease.Protects(g.pool) || g.pool.Stat().TotalConns() != 0 || g.playbackControlPool.Stat().TotalConns() != 0 {
+	if err := f.owner.close(g, true); err != nil || g.lease.Protects(g.pool) {
 		t.Fatal("the actual prepared generation did not drain both application pools before ownership release")
 	}
+	assertGenerationPoolClosed(t, "prepared generation data", g.pool)
+	assertGenerationPoolClosed(t, "prepared generation control", g.playbackControlPool)
 }
 
 func TestGenerationStartupControlOpenFailureKeepsLeaseDuringActualCleanup(t *testing.T) {
@@ -166,9 +168,10 @@ func TestGenerationStartupControlOpenFailureKeepsLeaseDuringActualCleanup(t *tes
 	default:
 	}
 	join()
-	if joined.err == nil || lease.Protects(pool) || pool.Stat().TotalConns() != 0 {
+	if joined.err == nil || lease.Protects(pool) {
 		t.Fatal("failed reserved connection startup did not finish actual resource cleanup")
 	}
+	assertGenerationPoolClosed(t, "failed startup data", pool)
 	if joined.generation != nil {
 		if joined.generation.app != nil || joined.generation.listener != nil || joined.generation.ctx.Err() == nil {
 			t.Fatal("failed startup exposed an application or an uncancelled cleanup handle")
@@ -199,9 +202,10 @@ func TestGenerationStartupFailureAfterControlOpenClosesBothPools(t *testing.T) {
 			t.Fatal("join the post-reservation failed preparation")
 		}
 	}
-	if lease.Protects(pool) || pool.Stat().TotalConns() != 0 {
+	if lease.Protects(pool) {
 		t.Fatal("the post-reservation application failure retained its Data pool or lease")
 	}
+	assertGenerationPoolClosed(t, "post-reservation startup data", pool)
 	var present bool
 	deadline := time.Now().Add(3 * time.Second)
 	for {
@@ -237,9 +241,10 @@ func TestGenerationStartupPendingSourceAndActivatedCandidateUseRealRecovery(t *t
 	if err != nil || input == nil || input.pool == nil || input.lease == nil || input.state.DatabaseSlot != lifecycle.DatabaseRecovery || input.state.Revision != 1 {
 		t.Fatalf("transfer the actual prepared recovery candidate: error_type=%T", err)
 	}
-	if pending.lease.Protects(pending.pool) || pending.pool.Stat().TotalConns() != 0 {
+	if pending.lease.Protects(pending.pool) {
 		t.Fatal("the real recovery coordinator retained source resources while preparing its target application")
 	}
+	assertGenerationPoolClosed(t, "pending source data", pending.pool)
 	target := f.prepare(t, input)
 	if target.pendingSwitch != plan.Id || !target.switchActivated || target.state.DatabaseSlot != lifecycle.DatabaseRecovery || target.started || target.serveResult != nil {
 		t.Fatal("the actual activated candidate lost its unaccepted publication fence")
@@ -326,9 +331,10 @@ func TestGenerationStartupFailedActivatedCandidateDrainsAndReturnsRetainedSource
 			t.Fatal("join the actual failed activated candidate cleanup")
 		}
 	}
-	if data.Stat().TotalConns() != 0 || lease.Protects(data) {
+	if lease.Protects(data) {
 		t.Fatal("the failed activated candidate retained its supplied pool or deployment lease")
 	}
+	assertGenerationPoolClosed(t, "failed activated candidate data", data)
 	restore()
 	if err := f.runtime.ReturnUnaccepted(f.ctx); err != nil {
 		t.Fatalf("return the actual unaccepted target to its retained source: error_type=%T", err)

@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"runtime"
 	"strings"
 	"time"
 )
@@ -105,7 +104,7 @@ func RemuxSubtitleRemoval(ctx context.Context, input, candidate *os.File, option
 	if err := ctx.Err(); err != nil {
 		return evidence, err
 	}
-	if runtime.GOOS != "linux" || input == nil || candidate == nil || options.StreamIndex < 0 || options.StreamIndex > 4095 {
+	if input == nil || candidate == nil || options.StreamIndex < 0 || options.StreamIndex > 4095 {
 		return evidence, ErrSubtitleRemovalUnsupported
 	}
 	for _, executable := range []string{options.FFmpegPath, options.FFprobePath} {

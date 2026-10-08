@@ -102,8 +102,8 @@ func loadTranscoding() (TranscodingConfig, error) {
 }
 
 // Validate checks configuration without creating a cache, probing a device, or
-// starting FFmpeg. Cache paths use Linux semantics even in a compilation-only
-// Windows environment; filesystem ownership is checked by the Linux manager.
+// starting FFmpeg. Cache paths use Linux semantics; filesystem ownership is
+// checked by the Linux manager.
 func (c TranscodingConfig) Validate() error {
 	if c == (TranscodingConfig{}) {
 		return nil

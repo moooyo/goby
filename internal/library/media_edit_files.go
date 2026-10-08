@@ -92,7 +92,7 @@ type mediaEditCapture struct {
 }
 
 func (s *Store) openMediaEditCapture(ctx context.Context, spec fileDeletionSpec, stageName, stageIdentity string, candidate *mediaEditFile) (_ *mediaEditCapture, resultErr error) {
-	if ctx == nil || s == nil || !fileDeletionSupported() || !validMediaEditStageName(stageName) {
+	if ctx == nil || s == nil || !validMediaEditStageName(stageName) {
 		return nil, ErrInvalidInput
 	}
 	// Validate the shared source grammar without giving deletion access to the

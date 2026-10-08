@@ -23,7 +23,7 @@ func (m *Manager) Create(ctx context.Context, actor identity.Principal, request 
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if err := m.healthyLocked(); err != nil {
+	if err := m.healthyLocked(ctx); err != nil {
 		return OperationView{}, err
 	}
 	if m.engine == nil {
@@ -150,7 +150,7 @@ func (m *Manager) Import(ctx context.Context, actor identity.Principal, requestI
 		return OperationView{}, err
 	}
 	m.mu.Lock()
-	if err := m.healthyLocked(); err != nil {
+	if err := m.healthyLocked(ctx); err != nil {
 		m.mu.Unlock()
 		return OperationView{}, err
 	}
@@ -278,7 +278,7 @@ func (m *Manager) Delete(ctx context.Context, actor identity.Principal, id strin
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if err := m.healthyLocked(); err != nil {
+	if err := m.healthyLocked(ctx); err != nil {
 		return OperationView{}, err
 	}
 	fingerprint := requestFingerprint(struct{ Kind, Id, Digest, Generation string }{"delete", id, request.SHA256, m.current.Digest})
@@ -355,7 +355,7 @@ func (m *Manager) Cancel(ctx context.Context, actor identity.Principal, id, revi
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if err := m.healthyLocked(); err != nil {
+	if err := m.healthyLocked(ctx); err != nil {
 		return OperationView{}, err
 	}
 	op := m.operationLocked(id)

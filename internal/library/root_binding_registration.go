@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strconv"
 
 	"github.com/moooyo/goby/internal/primaryio"
@@ -40,12 +39,6 @@ type rootBindingRegistrationTopology interface {
 func captureRootBindingRegistrationTopology(ctx context.Context, lease *libraryRootLease, mapping RootTopologyMapping, registered *os.Root) (rootBindingRegistrationTopology, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
-	}
-	// Persisted topology mappings use Linux path syntax. Ordinary authorization
-	// has already validated this host's paths before an unsupported platform is
-	// classified; Windows paths must not be mistaken for corrupt Linux mappings.
-	if runtime.GOOS != "linux" {
-		return nil, ErrRootStorageIdentityUnsupported
 	}
 	capture, err := lease.CaptureTopology(ctx, mapping, registered)
 	if err != nil {

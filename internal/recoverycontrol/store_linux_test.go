@@ -51,15 +51,31 @@ func TestControlCASPersistsDeploymentBoundRevisionAndIndependentPayload(t *testi
 	ctx := context.Background()
 	directory := controlDirectory(t)
 	store := openControl(t, directory)
+	assertPublishedDigest := func(snapshot Snapshot) {
+		t.Helper()
+		data, err := os.ReadFile(filepath.Join(directory, currentName))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if snapshot.Digest != hash(data) {
+			t.Fatal("snapshot digest does not match the exact published record")
+		}
+	}
 	initial := readControl(t, store)
+	assertPublishedDigest(initial)
 	if initial.Revision != 0 || len(initial.Payload) != 0 || !validHex(initial.Digest, 64) {
 		t.Fatal("invalid initial snapshot")
 	}
 	input := []byte(` { "phase": "prepared", "number": 9007199254740993 } `)
 	first := writeControl(t, store, initial.Digest, input)
+	assertPublishedDigest(first)
+	if observed := readControl(t, store); observed.Digest != first.Digest || !bytes.Equal(observed.Payload, first.Payload) {
+		t.Fatal("read changed the published CAS snapshot")
+	}
 	input[3] = 'x'
 	first.Payload[0] = 'x'
 	first = readControl(t, store)
+	assertPublishedDigest(first)
 	if first.Revision != 1 || first.Digest == initial.Digest || string(first.Payload) != `{"phase":"prepared","number":9007199254740993}` {
 		t.Fatal("published payload lost precision or retained caller storage")
 	}
@@ -67,6 +83,7 @@ func TestControlCASPersistsDeploymentBoundRevisionAndIndependentPayload(t *testi
 		t.Fatalf("stale CAS did not conflict: %v", err)
 	}
 	second := writeControl(t, store, first.Digest, first.Payload)
+	assertPublishedDigest(second)
 	if second.Revision != 2 || second.Digest == first.Digest {
 		t.Fatal("equal-payload CAS did not advance revision")
 	}

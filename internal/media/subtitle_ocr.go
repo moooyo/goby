@@ -46,9 +46,6 @@ func RecognizeBitmapSubtitles(ctx context.Context, config SubtitleOCRConfig, inp
 	if err := ctx.Err(); err != nil {
 		return SubtitleOCRResult{}, err
 	}
-	if runtime.GOOS != "linux" {
-		return SubtitleOCRResult{}, fmt.Errorf("%w: Linux is required", ErrSubtitleOCR)
-	}
 	models, err := selectSubtitleOCRModels(config.Models, modelIDs)
 	if err != nil {
 		return SubtitleOCRResult{}, err

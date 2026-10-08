@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/notificationjournal"
@@ -284,6 +285,9 @@ func (s *Store) enqueue(ctx context.Context, tx pgx.Tx, t target, sequence int64
 		if _, err = tx.Exec(ctx, `UPDATE notification_deliveries SET state='cancelled',outcome='coalesced',refs='[]',updated_at=clock_timestamp() WHERE registration_id=$1 AND state='pending'`, t.id); err != nil {
 			return ErrUnavailable
 		}
+		if err = pruneRegistrationHistory(ctx, tx, []string{t.id}); err != nil {
+			return ErrUnavailable
+		}
 		if tx.QueryRow(ctx, `SELECT count(*),COALESCE(sum(octet_length(refs::text)),0) FROM notification_deliveries WHERE state IN ('pending','sending')`).Scan(&total, &bytes) != nil {
 			return ErrUnavailable
 		}
@@ -347,6 +351,7 @@ func (s *Store) EnqueueTest(ctx context.Context, actor identity.Principal) error
 
 type delivery struct {
 	id, registration, kind, lease string
+	session, user                 string
 	regRevision, configRevision   int64
 	refs                          []notificationjournal.Reference
 	recursive                     bool
@@ -354,12 +359,12 @@ type delivery struct {
 	created                       time.Time
 }
 
-func (s *Store) claim(ctx context.Context) (delivery, error) {
+func (s *Store) claim(ctx context.Context, occupied []string) (delivery, error) {
 	var d delivery
 	var raw []byte
 	d.lease = notificationjournal.NewID()
-	err := s.pool.QueryRow(ctx, `WITH chosen AS(SELECT d.id FROM notification_deliveries d JOIN notification_registrations r ON r.id=d.registration_id JOIN notification_transport c ON c.id=1 WHERE d.state='pending' AND d.due_at<=clock_timestamp() AND r.enabled AND c.enabled AND d.registration_revision=r.revision AND d.transport_revision=c.revision AND NOT EXISTS(SELECT 1 FROM notification_deliveries earlier WHERE earlier.registration_id=d.registration_id AND earlier.state IN ('pending','sending') AND (earlier.source_sequence,earlier.id)<(d.source_sequence,d.id)) ORDER BY d.source_sequence,d.id LIMIT 1 FOR UPDATE OF d SKIP LOCKED)
-	UPDATE notification_deliveries d SET state='sending',attempts=attempts+1,lease_id=$1,lease_until=clock_timestamp()+interval '30 seconds',updated_at=clock_timestamp() FROM chosen WHERE d.id=chosen.id AND d.attempts<5 RETURNING d.id,d.registration_id,d.kind,d.registration_revision,d.transport_revision,d.refs,d.recursive,d.attempts,d.created_at`, d.lease).Scan(&d.id, &d.registration, &d.kind, &d.regRevision, &d.configRevision, &raw, &d.recursive, &d.attempt, &d.created)
+	err := s.pool.QueryRow(ctx, `WITH chosen AS(SELECT d.id,r.session_id,r.user_id FROM notification_deliveries d JOIN notification_registrations r ON r.id=d.registration_id JOIN notification_transport c ON c.id=1 WHERE d.state='pending' AND d.due_at<=clock_timestamp() AND NOT (d.registration_id=ANY(COALESCE($2::text[],'{}'::text[]))) AND r.enabled AND c.enabled AND d.registration_revision=r.revision AND d.transport_revision=c.revision AND NOT EXISTS(SELECT 1 FROM notification_deliveries earlier WHERE earlier.registration_id=d.registration_id AND earlier.state IN ('pending','sending') AND (earlier.source_sequence,earlier.id)<(d.source_sequence,d.id)) ORDER BY d.source_sequence,d.id LIMIT 1 FOR UPDATE OF d SKIP LOCKED)
+	UPDATE notification_deliveries d SET state='sending',attempts=attempts+1,lease_id=$1,lease_until=clock_timestamp()+interval '30 seconds',updated_at=clock_timestamp() FROM chosen WHERE d.id=chosen.id AND d.attempts<5 RETURNING d.id,d.registration_id,d.kind,d.registration_revision,d.transport_revision,d.refs,d.recursive,d.attempts,d.created_at,chosen.session_id,chosen.user_id`, d.lease, occupied).Scan(&d.id, &d.registration, &d.kind, &d.regRevision, &d.configRevision, &raw, &d.recursive, &d.attempt, &d.created, &d.session, &d.user)
 	if err != nil {
 		return d, err
 	}
@@ -399,16 +404,95 @@ func (s *Store) finish(ctx context.Context, d delivery, state, code string, dela
 			return err
 		}
 	}
+	if state != "pending" || code == "target_invalid" {
+		if err = pruneRegistrationHistory(ctx, tx, []string{d.registration}); err != nil {
+			return err
+		}
+	}
 	return tx.Commit(ctx)
 }
 func (s *Store) maintain(ctx context.Context) error {
-	_, err := s.pool.Exec(ctx, `UPDATE notification_registrations r SET enabled=false WHERE r.enabled AND NOT EXISTS(SELECT 1 FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.id=r.session_id AND s.kind='emby' AND s.user_id=r.user_id AND s.device_id=r.device_id AND s.revoked_at IS NULL AND s.expires_at>clock_timestamp() AND NOT u.is_disabled);
-	UPDATE notification_deliveries d SET state='cancelled',lease_id='',lease_until=NULL,refs='[]',outcome='authority_revoked',updated_at=clock_timestamp() WHERE state IN ('pending','sending') AND NOT EXISTS(SELECT 1 FROM notification_registrations r CROSS JOIN notification_transport c WHERE r.id=d.registration_id AND r.enabled AND c.enabled AND r.revision=d.registration_revision AND c.revision=d.transport_revision);
-	UPDATE notification_deliveries SET state='failed',lease_id='',lease_until=NULL,refs='[]',outcome='retry_exhausted',updated_at=clock_timestamp() WHERE (state='pending' AND (attempts>=5 OR created_at<clock_timestamp()-interval '24 hours')) OR (state='sending' AND lease_until<clock_timestamp() AND (attempts>=5 OR created_at<clock_timestamp()-interval '24 hours'));
-	UPDATE notification_deliveries SET state='pending',lease_id='',lease_until=NULL WHERE state='sending' AND lease_until<clock_timestamp();
-	DELETE FROM notification_deliveries WHERE id IN(SELECT id FROM(SELECT id,row_number() OVER(PARTITION BY registration_id ORDER BY created_at DESC,id DESC) AS ordinal FROM notification_deliveries WHERE state NOT IN('pending','sending')) history WHERE ordinal>32);
-	DELETE FROM notification_registrations WHERE NOT enabled AND updated_at<clock_timestamp()-interval '7 days';
-	DELETE FROM notification_source_events WHERE sequence<=COALESCE((SELECT min(source_cursor) FROM notification_registrations WHERE enabled),9223372036854775807)`)
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+	batch := &pgx.Batch{}
+	batch.Queue(`UPDATE notification_registrations r SET enabled=false WHERE r.enabled AND NOT EXISTS(SELECT 1 FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.id=r.session_id AND s.kind='emby' AND s.user_id=r.user_id AND s.device_id=r.device_id AND s.revoked_at IS NULL AND s.expires_at>clock_timestamp() AND NOT u.is_disabled)`)
+	batch.Queue(`UPDATE notification_deliveries d SET state='cancelled',lease_id='',lease_until=NULL,refs='[]',outcome='authority_revoked',updated_at=clock_timestamp() WHERE state IN ('pending','sending') AND NOT EXISTS(SELECT 1 FROM notification_registrations r CROSS JOIN notification_transport c WHERE r.id=d.registration_id AND r.enabled AND c.enabled AND r.revision=d.registration_revision AND c.revision=d.transport_revision) RETURNING registration_id`)
+	batch.Queue(`UPDATE notification_deliveries SET state='failed',lease_id='',lease_until=NULL,refs='[]',outcome='retry_exhausted',updated_at=clock_timestamp() WHERE (state='pending' AND (attempts>=5 OR created_at<clock_timestamp()-interval '24 hours')) OR (state='sending' AND lease_until<clock_timestamp() AND (attempts>=5 OR created_at<clock_timestamp()-interval '24 hours')) RETURNING registration_id`)
+	batch.Queue(`UPDATE notification_deliveries SET state='pending',lease_id='',lease_until=NULL WHERE state='sending' AND lease_until<clock_timestamp()`)
+	batch.Queue(`DELETE FROM notification_source_events WHERE sequence<=COALESCE((SELECT min(source_cursor) FROM notification_registrations WHERE enabled),9223372036854775807)`)
+	results := tx.SendBatch(ctx, batch)
+	defer results.Close()
+	if _, err := results.Exec(); err != nil {
+		return err
+	}
+	changed := make(map[string]struct{})
+	for range 2 {
+		rows, err := results.Query()
+		if err != nil {
+			return err
+		}
+		ids, err := pgx.CollectRows(rows, pgx.RowTo[string])
+		if err != nil {
+			return err
+		}
+		for _, id := range ids {
+			changed[id] = struct{}{}
+		}
+	}
+	for range 2 {
+		if _, err := results.Exec(); err != nil {
+			return err
+		}
+	}
+	if err := results.Close(); err != nil {
+		return err
+	}
+	ids := make([]string, 0, len(changed))
+	for id := range changed {
+		ids = append(ids, id)
+	}
+	// Keep the changed registrations recoverable when pruning fails. Rolling
+	// back also restores their active rows for the next maintenance pass.
+	if err := pruneRegistrationHistory(ctx, tx, ids); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
+type historyExecutor interface {
+	Exec(context.Context, string, ...any) (pgconn.CommandTag, error)
+}
+
+func pruneRegistrationHistory(ctx context.Context, query historyExecutor, ids []string) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	_, err := query.Exec(ctx, `DELETE FROM notification_deliveries WHERE id IN(SELECT id FROM(SELECT id,row_number() OVER(PARTITION BY registration_id ORDER BY created_at DESC,id DESC) AS ordinal FROM notification_deliveries WHERE registration_id=ANY($1::text[]) AND state NOT IN('pending','sending')) history WHERE ordinal>32)`, ids)
+	return err
+}
+
+// cancelDeliveries prunes only the registrations whose terminal history changed.
+// Both operations remain inside the caller's mutation transaction.
+func cancelDeliveries(ctx context.Context, tx pgx.Tx, statement string, args ...any) error {
+	rows, err := tx.Query(ctx, statement+` RETURNING registration_id`, args...)
+	if err != nil {
+		return err
+	}
+	ids, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	if err != nil {
+		return err
+	}
+	return pruneRegistrationHistory(ctx, tx, ids)
+}
+
+// pruneHistory is a startup and low-frequency fallback for terminal mutations
+// outside this store, such as account revocation and restored database state.
+func (s *Store) pruneHistory(ctx context.Context) error {
+	_, err := s.pool.Exec(ctx, `DELETE FROM notification_deliveries WHERE id IN(SELECT id FROM(SELECT id,row_number() OVER(PARTITION BY registration_id ORDER BY created_at DESC,id DESC) AS ordinal FROM notification_deliveries WHERE state NOT IN('pending','sending')) history WHERE ordinal>32);
+	DELETE FROM notification_registrations WHERE NOT enabled AND updated_at<clock_timestamp()-interval '7 days'`)
 	return err
 }
 

@@ -11,7 +11,7 @@ import (
 // ProbeFileOwnershipAvailable is a static dispatch gate only. A true result
 // still requires the actual opaque callback/child retirement receipt.
 func ProbeFileOwnershipAvailable(ctx context.Context) bool {
-	if ctx == nil || !conventionalRetirementSupported() {
+	if ctx == nil {
 		return false
 	}
 	_, required := commanddomain.CommandScopeFromContext(ctx)
@@ -29,9 +29,6 @@ func ProbeFileJoinedCallbacks(ctx context.Context, file *os.File, callback func(
 	}
 	if err := ctx.Err(); err != nil {
 		return probeWithRetirement(ctx, file, func(context.Context) (Info, error) { return Info{}, err })
-	}
-	if !conventionalRetirementSupported() {
-		return Info{}, nil, commanddomain.ErrUnavailable
 	}
 	if _, required := commanddomain.CommandScopeFromContext(ctx); required && !nativeProbeRetirementCohortReady() {
 		return Info{}, nil, commanddomain.ErrUnavailable

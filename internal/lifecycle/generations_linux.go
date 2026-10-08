@@ -127,8 +127,7 @@ func (s *Store) StageGeneration(ctx context.Context, id string, config, master [
 		return Generation{}, ErrInvalid
 	}
 	index := len(s.registry.Generations)
-	s.registry.Generations = append(s.registry.Generations, entry)
-	if err := s.persistRegistry(ctx); err != nil {
+	if err := s.registerStageIntent(ctx, entry); err != nil {
 		return Generation{}, err
 	}
 	if err := ctx.Err(); err != nil {
@@ -185,6 +184,31 @@ func (s *Store) StageGeneration(ctx context.Context, id string, config, master [
 		return publicGeneration(entry), err
 	}
 	return publicGeneration(entry), nil
+}
+
+// registerStageIntent is only the first stage write, before any generation
+// directory exists. A cancelled write with no rename leaves the old registry
+// authoritative, so its uncommitted in-memory entry can safely be discarded.
+// Later registry writes follow filesystem mutations and retain their barriers.
+func (s *Store) registerStageIntent(ctx context.Context, entry registeredGeneration) error {
+	previous := s.registry.Generations
+	s.registry.Generations = append(s.registry.Generations, entry)
+	data, err := encode(s.registry)
+	if err != nil {
+		s.registry.Generations = previous
+		return err
+	}
+	file, err := s.atomicWrite(ctx, registryName, data, s.registryFile)
+	if err != nil {
+		if !file.Present && (errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)) {
+			s.registry.Generations = previous
+		} else {
+			s.degraded = true
+		}
+		return err
+	}
+	s.registryFile = file
+	return nil
 }
 
 func (s *Store) writeGenerationFile(ctx context.Context, directory *os.File, entry registeredGeneration, descriptor registeredFile, data []byte) (registeredFile, error) {

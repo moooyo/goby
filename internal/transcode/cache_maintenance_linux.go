@@ -377,18 +377,14 @@ func (c *cacheRoot) inspectInventoryName(s *cacheInventory, name string) (bool, 
 	if !s.validName(name) {
 		return false, fmt.Errorf("%w: unrecognized or mixed output name", ErrCacheUnsafe)
 	}
-	file, err := cacheOpenRegular(s.directory, name, syscall.O_RDONLY, 0)
+	file, info, err := cacheOpenRegularInfo(s.directory, name, syscall.O_RDONLY, 0)
 	if errors.Is(err, os.ErrNotExist) && !s.frozen && s.plan.OutputMode == "" {
 		return true, c.replaceFact(s, name, nil)
 	}
 	if err != nil {
 		return false, err
 	}
-	info, err := file.Stat()
 	_ = file.Close()
-	if err != nil {
-		return false, err
-	}
 	fact, err := cacheFact(info, name)
 	if err != nil {
 		return false, err

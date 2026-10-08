@@ -612,7 +612,7 @@ func cacheInspectJobMode(dir *os.File, tolerateRename bool, mode cacheInspection
 		if mode == cacheInspectHLS && name == "stream.bin" || mode == cacheInspectProgressive && name != "stream.bin" && !privateCacheAssetName(name) {
 			return nil, 0, false, fmt.Errorf("%w: file does not belong to the planned output mode", ErrCacheUnsafe)
 		}
-		file, err := cacheOpenRegular(dir, name, syscall.O_RDONLY, 0)
+		file, info, err := cacheOpenRegularInfo(dir, name, syscall.O_RDONLY, 0)
 		if tolerateRename && errors.Is(err, os.ErrNotExist) {
 			// FFmpeg publishes its temporary outputs with an atomic rename.
 			// A later scan sees the final name if this directory read did not.
@@ -621,11 +621,7 @@ func cacheInspectJobMode(dir *os.File, tolerateRename bool, mode cacheInspection
 		if err != nil {
 			return nil, 0, false, err
 		}
-		info, statErr := file.Stat()
 		_ = file.Close()
-		if statErr != nil {
-			return nil, 0, false, statErr
-		}
 		stat, ok := info.Sys().(*syscall.Stat_t)
 		if !ok || info.Size() < 0 {
 			return nil, 0, false, ErrCacheUnsafe

@@ -244,9 +244,6 @@ func (p Prober) ProbeFileOwned(ctx context.Context, file *os.File) (Info, *Probe
 	if ctx == nil || file == nil {
 		return Info{}, nil, ErrProcessRetirementUnknown
 	}
-	if !conventionalRetirementSupported() {
-		return Info{}, nil, commanddomain.ErrUnavailable
-	}
 	if _, required := commanddomain.CommandScopeFromContext(ctx); required && !nativeProbeRetirementCohortReady() {
 		return Info{}, nil, commanddomain.ErrUnavailable
 	}

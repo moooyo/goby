@@ -520,14 +520,16 @@ func (s *Store) pruneProviderCacheBatch(ctx context.Context, cutoff time.Time, m
 	if err != nil {
 		return 0, err
 	}
+	orderedChanges := make([]CatalogChange, 0, len(uniqueIDs))
 	for _, itemID := range uniqueIDs {
 		change := changes[itemID]
 		if item, exists := before.items[itemID]; exists && !item.ordinary {
 			change.ParentID = ""
 		}
-		if err := recordCatalogChanges(tx, change); err != nil {
-			return 0, err
-		}
+		orderedChanges = append(orderedChanges, change)
+	}
+	if err := recordCatalogChanges(tx, orderedChanges...); err != nil {
+		return 0, err
 	}
 	if err := before.record(ctx, tx, nil); err != nil {
 		return 0, err

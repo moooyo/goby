@@ -3,12 +3,119 @@
 package lifecycle
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"os"
 	"path/filepath"
 	"testing"
 )
+
+func TestLifecycleCancelledUnpublishedStageRestoresRegistry(t *testing.T) {
+	directory := lifecycleDirectory(t)
+	store := openLifecycle(t, directory)
+	before, err := store.CurrentContext(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	registryPath := filepath.Join(directory, registryName)
+	registryBefore, err := os.ReadFile(registryPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	store.syncFile = func(file *os.File) error {
+		if err := file.Sync(); err != nil {
+			return err
+		}
+		cancel()
+		return nil
+	}
+	if _, err := store.StageGeneration(ctx, generationOne, []byte("{}"), nil); !errors.Is(err, context.Canceled) {
+		t.Fatalf("unpublished stage cancellation: %v", err)
+	}
+	store.syncFile = func(file *os.File) error { return file.Sync() }
+	if _, err := os.Stat(filepath.Join(directory, generationName(generationOne))); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("cancelled initial registration created a generation directory: %v", err)
+	}
+	registryAfter, err := os.ReadFile(registryPath)
+	if err != nil || !bytes.Equal(registryAfter, registryBefore) {
+		t.Fatalf("cancelled initial registration changed registry authority: %v", err)
+	}
+	if state, err := store.CurrentContext(context.Background()); err != nil || state != before {
+		t.Fatalf("unpublished cancellation poisoned healthy state: %v", err)
+	}
+	if generations, err := store.Generations(context.Background()); err != nil || len(generations) != 0 {
+		t.Fatalf("unpublished intention remained in memory: %v", err)
+	}
+	stageLifecycle(t, store, generationOne, nil)
+	if err := store.Close(); err != nil {
+		t.Fatal(err)
+	}
+	store = openLifecycle(t, directory)
+	if state, err := store.CurrentContext(context.Background()); err != nil || state != before {
+		t.Fatalf("reopen disagreed with unpublished recovery: %v", err)
+	}
+	stageLifecycle(t, store, generationOne, nil)
+}
+
+func TestLifecycleStageFailureAfterMutationRetainsRecoveryBarrier(t *testing.T) {
+	for _, point := range []string{"after mkdir cancellation", "after registry rename sync failure"} {
+		t.Run(point, func(t *testing.T) {
+			directory := lifecycleDirectory(t)
+			store := openLifecycle(t, directory)
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			generationPath := filepath.Join(directory, generationName(generationOne))
+			store.syncDirectory = func(file *os.File) error {
+				if point == "after registry rename sync failure" {
+					return errors.New("injected registry publication fsync failure")
+				}
+				if err := file.Sync(); err != nil {
+					return err
+				}
+				if _, err := os.Stat(generationPath); err == nil {
+					cancel()
+				}
+				return nil
+			}
+			_, err := store.StageGeneration(ctx, generationOne, []byte("{}"), nil)
+			want := ErrRecoveryRequired
+			if point == "after mkdir cancellation" {
+				want = context.Canceled
+			}
+			if !errors.Is(err, want) {
+				t.Fatalf("stage failure returned %v, want %v", err, want)
+			}
+			if _, err := store.CurrentContext(context.Background()); !errors.Is(err, ErrRecoveryRequired) {
+				t.Fatalf("mutated stage did not require reopen: %v", err)
+			}
+			if err := store.Close(); err != nil {
+				t.Fatal(err)
+			}
+			if point == "after mkdir cancellation" {
+				if reopened, err := Open(context.Background(), directory); !errors.Is(err, ErrRecoveryRequired) {
+					if reopened != nil {
+						reopened.Close()
+					}
+					t.Fatalf("reopen adopted an unregistered directory: %v", err)
+				}
+				if _, err := os.Stat(generationPath); err != nil {
+					t.Fatal("unregistered directory evidence was removed")
+				}
+				return
+			}
+			store = openLifecycle(t, directory)
+			if generations, err := store.Generations(context.Background()); err != nil || len(generations) != 1 || generations[0].Complete {
+				t.Fatalf("published intention was discarded after reopen: %v", err)
+			}
+			if _, err := store.StageGeneration(context.Background(), generationOne, []byte("{}"), nil); !errors.Is(err, ErrIncomplete) {
+				t.Fatalf("published incomplete intention was reused: %v", err)
+			}
+		})
+	}
+}
 
 func TestLifecycleInterruptedManifestPublicationRetainsDeterministicOutcome(t *testing.T) {
 	ctx := context.Background()

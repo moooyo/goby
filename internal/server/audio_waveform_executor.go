@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io"
 	"os"
-	"runtime"
 	"time"
 
 	"github.com/moooyo/goby/internal/library"
@@ -20,10 +19,7 @@ type audioWaveformRuntime struct {
 }
 
 func newAudioWaveformRuntime(ctx context.Context, s *Server) (*audioWaveformRuntime, error) {
-	r := &audioWaveformRuntime{reason: "unsupported_platform"}
-	if runtime.GOOS != "linux" {
-		return r, nil
-	}
+	r := &audioWaveformRuntime{}
 	r.extractor = media.AnalysisExtractor{FFmpegPath: s.cfg.FFmpegPath, FFprobePath: s.cfg.FFprobePath}
 	capability, err := r.extractor.AudioWaveformAvailability(ctx)
 	if ctx.Err() != nil {

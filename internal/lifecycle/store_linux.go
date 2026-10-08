@@ -325,8 +325,11 @@ func (s *Store) verify(ctx context.Context) error {
 			continue
 		}
 		if temporaryName(name) {
-			_, file, err := readRegular(ctx, s.directory, name, maxMetadataBytes)
-			if err != nil || !file.Present {
+			present, err := inspectInertRegular(ctx, s.directory, name, maxMetadataBytes)
+			if err != nil {
+				return err
+			}
+			if !present {
 				return ErrUnavailable
 			}
 			continue
@@ -402,7 +405,12 @@ func (s *Store) findGeneration(id string) (registeredGeneration, bool) {
 }
 
 func (s *Store) Current() (State, error) {
-	ctx := context.Background()
+	return s.CurrentContext(context.Background())
+}
+
+// CurrentContext verifies all lifecycle authority and retained generations,
+// returning only the current state without exposing generation contents.
+func (s *Store) CurrentContext(ctx context.Context) (State, error) {
 	if err := s.enter(ctx); err != nil {
 		return State{}, err
 	}

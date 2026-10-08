@@ -54,7 +54,7 @@ func Open(ctx context.Context, deployment config.Config) (*Runtime, error) {
 		_ = control.Close()
 		return nil, err
 	}
-	state, err := control.Current()
+	state, err := control.CurrentContext(ctx)
 	if err != nil {
 		_ = backups.Close()
 		_ = control.Close()

@@ -296,6 +296,17 @@ func (s *Store) getItemForOnPool(ctx context.Context, subject Subject, id string
 // authorization snapshot. Missing or inaccessible IDs are omitted. This is an
 // internal direct-read path for playback projections, not a browse switch.
 func (s *Store) GetItemsByIDFor(ctx context.Context, subject Subject, ids []string) ([]Item, error) {
+	return s.getItemsByIDFor(ctx, subject, ids, false)
+}
+
+// GetNowPlayingItemsByIDFor retains the direct-item visibility and presentation
+// fields used by session DTOs without private seek indexes or unused user data.
+// The default GetItemsByIDFor contract continues to return complete items.
+func (s *Store) GetNowPlayingItemsByIDFor(ctx context.Context, subject Subject, ids []string) ([]Item, error) {
+	return s.getItemsByIDFor(ctx, subject, ids, true)
+}
+
+func (s *Store) getItemsByIDFor(ctx context.Context, subject Subject, ids []string, nowPlaying bool) ([]Item, error) {
 	if len(ids) > 1000 {
 		return nil, ErrInvalidInput
 	}
@@ -312,7 +323,11 @@ func (s *Store) GetItemsByIDFor(ctx context.Context, subject Subject, ids []stri
 		return nil, err
 	}
 	defer rollback(tx)
-	rows, err := tx.Query(ctx, "SELECT "+access.itemColumnsSQL()+` FROM items i
+	columns := access.itemColumnsSQL()
+	if nowPlaying {
+		columns = projectBrowseMediaSQL(columns, QueryProjection{Browse: true})
+	}
+	rows, err := tx.Query(ctx, "SELECT "+columns+` FROM items i
 		WHERE i.id = ANY($1::text[]) AND ($2::boolean OR i.library_id = ANY($3::text[]) OR i.library_id = `+policySQLString(collectionLibraryID)+`) AND `+access.directSQL("i")+`
 		ORDER BY array_position($1::text[], i.id)`, ids, access.all, access.folders)
 	if err != nil {
@@ -338,8 +353,10 @@ func (s *Store) GetItemsByIDFor(ctx context.Context, subject Subject, ids []stri
 	if err := attachExtraItemAttributes(ctx, tx, items, access); err != nil {
 		return nil, err
 	}
-	if err := attachUserData(ctx, tx, subject.UserID, items, access); err != nil {
-		return nil, err
+	if !nowPlaying {
+		if err := attachUserData(ctx, tx, subject.UserID, items, access); err != nil {
+			return nil, err
+		}
 	}
 	if err := attachSubtitles(ctx, tx, items); err != nil {
 		return nil, err

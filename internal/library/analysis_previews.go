@@ -435,58 +435,74 @@ func (s *Store) ClearAnalysisPreviews(ctx context.Context, actor identity.Princi
 }
 
 func (s *Store) GetAnalysisPreviewsFor(ctx context.Context, subject Subject, itemID, sourceID string) ([]AnalysisPreview, error) {
+	_, previews, err := s.analysisSourceAndPreviewsFor(ctx, subject, itemID, sourceID, nil)
+	return previews, err
+}
+
+// GetCurrentAnalysisSourceAndPreviewsFor proves the physical source once and
+// reads its current preview references in a later subject snapshot. The expected
+// revision is checked before reading references, preserving a lease's source
+// failure even when stored preview data is invalid.
+func (s *Store) GetCurrentAnalysisSourceAndPreviewsFor(ctx context.Context, subject Subject, itemID, sourceID, expectedRevision string) (AnalysisSource, []AnalysisPreview, error) {
+	return s.analysisSourceAndPreviewsFor(ctx, subject, itemID, sourceID, &expectedRevision)
+}
+
+func (s *Store) analysisSourceAndPreviewsFor(ctx context.Context, subject Subject, itemID, sourceID string, expectedRevision *string) (AnalysisSource, []AnalysisPreview, error) {
 	if err := analysisContext(ctx); err != nil {
-		return nil, err
+		return AnalysisSource{}, nil, err
 	}
 	if s == nil || s.pool == nil {
-		return nil, ErrUnavailable
+		return AnalysisSource{}, nil, ErrUnavailable
 	}
 	opened, err := s.analysisCurrentSourceFor(ctx, subject, itemID, sourceID)
 	if err != nil {
-		return nil, err
+		return AnalysisSource{}, nil, err
+	}
+	if expectedRevision != nil && (opened.SourceRevision != *expectedRevision || opened.MediaSourceID != sourceID) {
+		return AnalysisSource{}, nil, ErrAnalysisSourceChanged
 	}
 	tx, access, err := s.beginSubjectRead(ctx, subject)
 	if err != nil {
-		return nil, err
+		return AnalysisSource{}, nil, err
 	}
 	defer rollback(tx)
 	if !access.canPlay {
-		return nil, ErrForbidden
+		return AnalysisSource{}, nil, ErrForbidden
 	}
 	current, err := readAnalysisSourceUsing(ctx, tx, access, itemID, false)
 	if err != nil {
-		return nil, err
+		return AnalysisSource{}, nil, err
 	}
 	if current.SourceRevision != opened.SourceRevision || current.MediaSourceID != opened.MediaSourceID {
-		return nil, ErrAnalysisSourceChanged
+		return AnalysisSource{}, nil, ErrAnalysisSourceChanged
 	}
 	rows, err := tx.Query(ctx, `SELECT `+analysisPreviewColumns+` FROM analysis_previews p CROSS JOIN analysis_settings settings
 		WHERE settings.id=1 AND p.item_id=$1 AND p.source_revision=$2 AND p.profile_revision=settings.revision
 		AND p.publication_epoch=settings.publication_epoch ORDER BY p.width LIMIT 4`, itemID, current.SourceRevision)
 	if err != nil {
-		return nil, err
+		return AnalysisSource{}, nil, err
 	}
 	result := make([]AnalysisPreview, 0, 3)
 	for rows.Next() {
 		preview, err := scanAnalysisPreview(rows, current.DurationTicks)
 		if err != nil {
 			rows.Close()
-			return nil, err
+			return AnalysisSource{}, nil, err
 		}
 		result = append(result, preview)
 	}
 	err = rows.Err()
 	rows.Close()
 	if err != nil {
-		return nil, err
+		return AnalysisSource{}, nil, err
 	}
 	if len(result) > 3 {
-		return nil, ErrUnavailable
+		return AnalysisSource{}, nil, ErrUnavailable
 	}
 	if err := tx.Commit(ctx); err != nil {
-		return nil, err
+		return AnalysisSource{}, nil, err
 	}
-	return result, nil
+	return current, result, nil
 }
 
 // CurrentAnalysisPreviewCacheKeys returns the complete currently effective set.

@@ -10,9 +10,9 @@ import type { AnalysisItem } from '../src/mediaAnalysis';
 const stamp = '2026-09-30T08:00:00Z';
 const csrf = 'synthetic-dashboard-v2-csrf';
 const administrator = { Id: 'a'.repeat(32), Name: 'Dashboard administrator', IsAdministrator: true, IsDisabled: false, HasPassword: true, CreatedAt: stamp };
-const library = { Id: 'b'.repeat(32), Name: 'Feature films', CollectionType: 'movies', Paths: ['D:\\Media\\Movies'], CreatedAt: stamp, LastScanAt: stamp,
+const library = { Id: 'b'.repeat(32), Name: 'Feature films', CollectionType: 'movies', Paths: ['/media/movies'], CreatedAt: stamp, LastScanAt: stamp,
   LibraryOptions: { EnableLocalMetadata: true, EnableLocalImages: true, EnableEmbeddedArtwork: true, EnableIntroDetection: false } };
-const seriesLibrary = { ...library, Id: 'c'.repeat(32), Name: 'TV series', CollectionType: 'tvshows', Paths: ['D:\\Media\\Series'], LibraryOptions: { ...library.LibraryOptions, EnableIntroDetection: true } };
+const seriesLibrary = { ...library, Id: 'c'.repeat(32), Name: 'TV series', CollectionType: 'tvshows', Paths: ['/media/series'], LibraryOptions: { ...library.LibraryOptions, EnableIntroDetection: true } };
 const analysisItem: AnalysisItem = {
   Id: 'episode-one', Name: 'Opening episode', Type: 'Episode', LibraryId: seriesLibrary.Id, MediaSourceId: 'source-one', SourceRevision: 'source-revision-one',
   Detection: { ItemId: 'episode-one', Revision: '1', ManualRevision: '0', SourceRevision: 'source-revision-one', Status: 'qualified', Reasons: [],
@@ -53,10 +53,10 @@ function settings(): ServerSettings {
 
 function status(): SystemStatus {
   return {
-    Timestamp: stamp, UptimeSeconds: 184200, Host: { OS: 'windows', Architecture: 'amd64', CPUCount: 8 },
+    Timestamp: stamp, UptimeSeconds: 184200, Host: { OS: 'linux', Architecture: 'amd64', CPUCount: 8 },
     CPU: { UsagePercent: 28, Load1: 0.6, Load5: 0.8, Load15: 1.2 },
     Memory: { TotalBytes: 16 * 2 ** 30, UsedBytes: 6 * 2 ** 30, CachedBytes: 2 * 2 ** 30, SwapUsedBytes: 0 },
-    Storage: { TotalBytes: 2 ** 40, UsedBytes: 420 * 2 ** 30, Complete: true, Volumes: [{ Path: 'D:\\Media', TotalBytes: 2 ** 40, UsedBytes: 420 * 2 ** 30, Available: true }] },
+    Storage: { TotalBytes: 2 ** 40, UsedBytes: 420 * 2 ** 30, Complete: true, Volumes: [{ Path: '/media', TotalBytes: 2 ** 40, UsedBytes: 420 * 2 ** 30, Available: true }] },
     Transcoding: { Available: true, Active: 2, Limit: 4, HardwareActive: 1, SoftwareActive: 1 },
   };
 }

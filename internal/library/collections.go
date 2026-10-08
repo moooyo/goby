@@ -528,22 +528,42 @@ func (s *Store) UpdateCollection(ctx context.Context, subject Subject, id, kind 
 	if patch.Shares != nil {
 		// Recipient account locks precede touching share rows. User deletion
 		// takes the account lock before cascading those same share rows.
+		recipients := make(map[string]bool, len(recipientIDs))
+		if len(recipientIDs) != 0 {
+			rows, err := tx.Query(protected, `SELECT id FROM users WHERE id=ANY($1::text[]) AND NOT is_disabled ORDER BY id FOR SHARE`, recipientIDs)
+			if err != nil {
+				return CollectionInfo{}, err
+			}
+			for rows.Next() {
+				var recipientID string
+				if err := rows.Scan(&recipientID); err != nil {
+					rows.Close()
+					return CollectionInfo{}, err
+				}
+				recipients[recipientID] = true
+			}
+			err = rows.Err()
+			rows.Close()
+			if err != nil {
+				return CollectionInfo{}, err
+			}
+		}
+		canEdit := make([]bool, 0, len(recipientIDs))
 		for _, share := range *patch.Shares {
 			if share.UserID == result.OwnerID {
 				return CollectionInfo{}, ErrInvalidInput
 			}
-			var target string
-			if err := tx.QueryRow(protected, `SELECT id FROM users WHERE id=$1 AND NOT is_disabled FOR SHARE`, share.UserID).Scan(&target); errors.Is(err, pgx.ErrNoRows) {
+			if !recipients[share.UserID] {
 				return CollectionInfo{}, ErrNotFound
-			} else if err != nil {
-				return CollectionInfo{}, err
 			}
+			canEdit = append(canEdit, share.CanEdit)
 		}
 		if _, err := tx.Exec(protected, `DELETE FROM media_collection_shares WHERE collection_id=$1`, id); err != nil {
 			return CollectionInfo{}, err
 		}
-		for _, share := range *patch.Shares {
-			if _, err := tx.Exec(protected, `INSERT INTO media_collection_shares (collection_id,user_id,can_edit) VALUES ($1,$2,$3)`, id, share.UserID, share.CanEdit); err != nil {
+		if len(recipientIDs) != 0 {
+			if _, err := tx.Exec(protected, `INSERT INTO media_collection_shares (collection_id,user_id,can_edit)
+				SELECT $1,recipient.user_id,recipient.can_edit FROM unnest($2::text[],$3::boolean[]) AS recipient(user_id,can_edit)`, id, recipientIDs, canEdit); err != nil {
 				return CollectionInfo{}, err
 			}
 		}

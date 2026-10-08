@@ -8,7 +8,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -43,7 +42,7 @@ func VerifyVideoCopySeekCandidate(ctx context.Context, executable string, file *
 		}
 	}()
 	candidate, err := ValidateVideoCopySeekCandidate(encoded)
-	if err != nil || runtime.GOOS != "linux" {
+	if err != nil {
 		return verification, nil
 	}
 	args, err := BuildVideoCopySeekCommandArgs(encoded, threads)

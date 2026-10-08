@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
 project(goby_intro_fingerprint VERSION 1.0.0 LANGUAGES C CXX)
 
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  message(FATAL_ERROR "goby-intro-fingerprint supports Linux targets only")
+endif()
+
 # This target intentionally does not run Chromaprint's dependency discovery.
 # Every compiled source is pinned below; no system Chromaprint, FFmpeg, FFTW,
 # resampler, fpcalc, or alternative FFT backend can be selected.
@@ -54,19 +58,13 @@ target_include_directories(intro_chromaprint PRIVATE "${core}" "${kiss}" "${CMAK
 target_compile_definitions(intro_chromaprint PRIVATE
   HAVE_CONFIG_H CHROMAPRINT_NODLL NDEBUG _USE_MATH_DEFINES
   __STDC_LIMIT_MACROS __STDC_CONSTANT_MACROS)
-if(UNIX)
-  target_link_libraries(intro_chromaprint PUBLIC m)
-endif()
+target_link_libraries(intro_chromaprint PUBLIC m)
 
 add_executable(goby-intro-fingerprint src/main.cpp)
 target_include_directories(goby-intro-fingerprint PRIVATE "${core}")
 target_compile_definitions(goby-intro-fingerprint PRIVATE CHROMAPRINT_NODLL)
 target_link_libraries(goby-intro-fingerprint PRIVATE intro_chromaprint)
-if(MSVC)
-  target_compile_options(goby-intro-fingerprint PRIVATE /W4)
-else()
-  target_compile_options(goby-intro-fingerprint PRIVATE -Wall -Wextra -Wpedantic)
-endif()
+target_compile_options(goby-intro-fingerprint PRIVATE -Wall -Wextra -Wpedantic)
 
 install(TARGETS goby-intro-fingerprint RUNTIME DESTINATION bin)
 install(FILES README.md PROTOCOL.md EXTRACTION.md GEOMETRY.md THIRD_PARTY_NOTICES.md

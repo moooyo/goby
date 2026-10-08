@@ -10,7 +10,6 @@ import (
 	"io"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/moooyo/goby/internal/artwork"
 	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/primaryio"
 )
@@ -90,7 +89,7 @@ type embeddedArtworkContent struct {
 
 // readEmbeddedArtworkContent is internal: callers must authorize the item in
 // this transaction before using it. It never broadens a subject's item set.
-func readEmbeddedArtworkContent(ctx context.Context, tx pgx.Tx, itemID string) (embeddedArtworkContent, error) {
+func (s *Store) readEmbeddedArtworkContent(ctx context.Context, tx pgx.Tx, itemID string) (embeddedArtworkContent, error) {
 	var result embeddedArtworkContent
 	image, err := scanEmbeddedArtworkImage(tx.QueryRow(ctx, `SELECT e.content,`+embeddedArtworkColumns+`
 		FROM item_embedded_artwork e JOIN items i ON i.id=e.item_id WHERE i.id=$1 AND `+embeddedArtworkCurrentSQL, itemID), &result.data)
@@ -103,11 +102,9 @@ func readEmbeddedArtworkContent(ctx context.Context, tx pgx.Tx, itemID string) (
 	if int64(len(result.data)) != image.Size {
 		return result, ErrUnavailable
 	}
-	digest := sha256.Sum256(result.data)
-	if hex.EncodeToString(digest[:]) != image.Tag {
-		return result, ErrUnavailable
-	}
-	validated, err := artwork.InspectContext(ctx, bytes.NewReader(result.data))
+	// The shared cache hashes the complete current bytes before reusing only
+	// successful decode metadata. Stored tags and metadata never authorize a hit.
+	validated, err := s.imageInspection.InspectJoined(ctx, bytes.NewReader(result.data))
 	if err != nil || validated.Tag != image.Tag || validated.Width != image.Width || validated.Height != image.Height || validated.MIMEType != image.MIMEType {
 		return result, ErrUnavailable
 	}
@@ -163,7 +160,7 @@ func (s *Store) OpenEmbeddedImageFor(ctx context.Context, subject Subject, itemI
 	if _, err := readQueryParent(ctx, tx, itemID, access); err != nil {
 		return nil, Image{}, err
 	}
-	result, err := readEmbeddedArtworkContent(ctx, tx, itemID)
+	result, err := s.readEmbeddedArtworkContent(ctx, tx, itemID)
 	if err != nil {
 		return nil, Image{}, err
 	}

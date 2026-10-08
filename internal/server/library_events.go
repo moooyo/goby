@@ -137,12 +137,12 @@ func (s *Server) libraryChangedSocketPayload(ctx context.Context, principal iden
 	allowedItems := make(map[string]bool, len(candidates))
 	for start := 0; start < len(candidates); start += 1000 {
 		end := min(start+1000, len(candidates))
-		items, err := s.library.GetItemsByIDFor(ctx, librarySubject(principal, principal.User.ID), candidates[start:end])
+		items, err := s.library.StoredItemPermissionsFor(ctx, librarySubject(principal, principal.User.ID), candidates[start:end])
 		if err != nil {
 			return nil, err
 		}
-		for _, item := range items {
-			allowedItems[item.ID] = true
+		for id := range items {
+			allowedItems[id] = true
 		}
 	}
 	// Removal notices have no surviving policy facts. A visible parent's change

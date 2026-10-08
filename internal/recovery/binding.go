@@ -12,8 +12,8 @@ import (
 	"github.com/moooyo/goby/internal/recoverydb"
 )
 
-func (r *Runtime) databaseBinding(cfg config.Config, pool *pgxpool.Pool, lease *database.Lease) (*recoverydb.Store, lifecycle.State, error) {
-	state, err := r.lifecycle.Current()
+func (r *Runtime) databaseBinding(ctx context.Context, cfg config.Config, pool *pgxpool.Pool, lease *database.Lease) (*recoverydb.Store, lifecycle.State, error) {
+	state, err := r.lifecycle.CurrentContext(ctx)
 	if err != nil {
 		return nil, lifecycle.State{}, err
 	}
@@ -31,7 +31,7 @@ func (r *Runtime) databaseBinding(cfg config.Config, pool *pgxpool.Pool, lease *
 // CheckDatabase runs before migration. An existing foreign or inactive marker
 // is not permission to migrate that database, even with a new local directory.
 func (r *Runtime) CheckDatabase(ctx context.Context, cfg config.Config, pool *pgxpool.Pool, lease *database.Lease) error {
-	store, state, err := r.databaseBinding(cfg, pool, lease)
+	store, state, err := r.databaseBinding(ctx, cfg, pool, lease)
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func (r *Runtime) CheckDatabase(ctx context.Context, cfg config.Config, pool *pg
 // migration succeeds. Every subsequent generation must already carry the exact
 // binding written atomically with its staged database.
 func (r *Runtime) BindDatabase(ctx context.Context, cfg config.Config, pool *pgxpool.Pool, lease *database.Lease) error {
-	store, state, err := r.databaseBinding(cfg, pool, lease)
+	store, state, err := r.databaseBinding(ctx, cfg, pool, lease)
 	if err != nil {
 		return err
 	}

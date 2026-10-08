@@ -15,7 +15,6 @@ import (
 var (
 	ErrUnsafe       = errors.New("analysis cache filesystem is unsafe or changed")
 	ErrOwned        = errors.New("analysis cache already has a writer")
-	ErrUnsupported  = errors.New("analysis cache requires Linux")
 	ErrClosed       = errors.New("analysis cache is closing or closed")
 	ErrNotFound     = errors.New("analysis cache entry not found")
 	ErrBusy         = errors.New("analysis cache entry is in use")

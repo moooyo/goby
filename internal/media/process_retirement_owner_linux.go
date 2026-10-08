@@ -20,8 +20,6 @@ import (
 const conventionalRetirementTimeout = 5 * time.Second
 const conventionalProcessCensusLimit = 32768
 
-func conventionalRetirementSupported() bool { return true }
-
 type conventionalProcessIdentity struct {
 	pid, group, session, parent int
 	start                       uint64

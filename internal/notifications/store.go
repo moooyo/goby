@@ -186,7 +186,10 @@ func (s *Store) UpdateConfig(ctx context.Context, actor identity.Principal, upda
 	if _, err = tx.Exec(ctx, `UPDATE notification_transport SET revision=revision+1,enabled=$1,endpoint=$2,allowed_networks=$3,credential_ciphertext=$4,credential_generation=$5 WHERE id=1`, update.Enabled, update.Endpoint, networks, sealed, generation); err != nil {
 		return Config{}, ErrUnavailable
 	}
-	if _, err = tx.Exec(ctx, `UPDATE notification_deliveries SET state='cancelled',refs='[]',outcome='configuration_changed',lease_id='',lease_until=NULL,updated_at=clock_timestamp() WHERE state IN ('pending','sending'); UPDATE notification_registrations SET source_cursor=(SELECT sequence FROM notification_journal_state WHERE id=1)`); err != nil {
+	if err = cancelDeliveries(ctx, tx, `UPDATE notification_deliveries SET state='cancelled',refs='[]',outcome='configuration_changed',lease_id='',lease_until=NULL,updated_at=clock_timestamp() WHERE state IN ('pending','sending')`); err != nil {
+		return Config{}, ErrUnavailable
+	}
+	if _, err = tx.Exec(ctx, `UPDATE notification_registrations SET source_cursor=(SELECT sequence FROM notification_journal_state WHERE id=1)`); err != nil {
 		return Config{}, ErrUnavailable
 	}
 	result, err := readConfig(ctx, tx)
@@ -304,7 +307,7 @@ func (s *Store) PutRegistration(ctx context.Context, actor identity.Principal, i
 	ON CONFLICT(session_id) DO UPDATE SET revision=EXCLUDED.revision,enabled=true,event_ids=EXCLUDED.event_ids,token_ciphertext=EXCLUDED.token_ciphertext,token_generation=EXCLUDED.token_generation,source_cursor=EXCLUDED.source_cursor,peer_ip=EXCLUDED.peer_ip,last_outcome='',updated_at=clock_timestamp()`, id, actor.SessionID, actor.User.ID, device, actor.PeerIP, current+1, events, sealed, generation); err != nil {
 		return Registration{}, ErrUnavailable
 	}
-	if _, err = tx.Exec(ctx, `UPDATE notification_deliveries SET state='cancelled',refs='[]',outcome='registration_changed',lease_id='',lease_until=NULL,updated_at=clock_timestamp() WHERE registration_id=$1 AND state IN ('pending','sending')`, id); err != nil {
+	if err = cancelDeliveries(ctx, tx, `UPDATE notification_deliveries SET state='cancelled',refs='[]',outcome='registration_changed',lease_id='',lease_until=NULL,updated_at=clock_timestamp() WHERE registration_id=$1 AND state IN ('pending','sending')`, id); err != nil {
 		return Registration{}, ErrUnavailable
 	}
 	result, err := readRegistration(ctx, tx, actor.SessionID)
@@ -340,7 +343,7 @@ func (s *Store) DeleteRegistration(ctx context.Context, actor identity.Principal
 	if err != nil {
 		return Registration{}, ErrUnavailable
 	}
-	if _, err = tx.Exec(ctx, `UPDATE notification_deliveries SET state='cancelled',refs='[]',outcome='revoked',lease_id='',lease_until=NULL,updated_at=clock_timestamp() WHERE registration_id=$1 AND state IN ('pending','sending')`, id); err != nil {
+	if err = cancelDeliveries(ctx, tx, `UPDATE notification_deliveries SET state='cancelled',refs='[]',outcome='revoked',lease_id='',lease_until=NULL,updated_at=clock_timestamp() WHERE registration_id=$1 AND state IN ('pending','sending')`, id); err != nil {
 		return Registration{}, ErrUnavailable
 	}
 	result, err := readRegistration(ctx, tx, actor.SessionID)

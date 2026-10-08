@@ -81,7 +81,7 @@ operators must not be replayed after normal cache or dependency use resumes.
 
 The source uses pgx/v5 with bounded pooling, parameterized SQL, and transactional migrations. There is no SQLite driver or SQLite storage mode.
 
-## Build invocation from Windows
+## Linux backend build
 
 Choose the compilation and formatting environment from the active `AGENTS.md`
 instructions and current task authorization. The commands below describe the
@@ -93,6 +93,11 @@ npm --prefix web/admin ci
 npm --prefix web/admin run build
 go build ./...
 ```
+
+The Goby server and command launcher build only for Linux. Windows remains a
+development host for source editing and remote orchestration; it is not a
+backend compilation or runtime target. The independent notification receiver
+and supported Windows playback clients are outside this server boundary.
 
 Tests, validators, runtime probes, browser acceptance and FFmpeg checks default
 to `ssh test-env`. Permission to compile locally does not authorize local tests

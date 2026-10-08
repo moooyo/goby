@@ -119,9 +119,6 @@ func dynamicServerFixture(t *testing.T) (*Server, identity.Principal, dynamicsou
 	if err != nil {
 		cancel()
 		_ = manager.Close(context.Background())
-		if errors.Is(err, timeshift.ErrUnsupported) {
-			t.Skip("dynamic retained-media fixture requires Linux")
-		}
 		t.Fatal(err)
 	}
 	server := &Server{cfg: config.Config{Timeshift: timeshiftConfig, Transcoding: config.TranscodingConfig{Enabled: true, MaxBitrate: 20_000_000, MaxWidth: 1920, MaxHeight: 1080, MaxAudioChannels: 8}},

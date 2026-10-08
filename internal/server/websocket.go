@@ -397,7 +397,7 @@ func (s *Server) maintainSocket(ctx context.Context, conn *websocket.Conn, princ
 			return
 		case <-revalidate.C:
 			checkCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
-			fresh, err := s.identity.RevalidateSession(checkCtx, principal)
+			fresh, err := s.identity.RevalidateSessionAuthority(checkCtx, principal)
 			if err == nil && time.Since(fresh.LastSeenAt) >= identity.ClientSessionTouchInterval {
 				err = s.identity.TouchClientSessionFromAddress(checkCtx, fresh, peerIP)
 			}

@@ -342,8 +342,7 @@ func (s *Server) applicationKeyError(w http.ResponseWriter, r *http.Request, err
 	case errors.Is(err, identity.ErrNotFound):
 		apiError(w, r, 404, "not_found", "The application key was not found.")
 	case errors.Is(err, identity.ErrApplicationKeyVaultUnavailable), errors.Is(err, identity.ErrApplicationKeyVaultMissing),
-		errors.Is(err, identity.ErrApplicationKeyVaultUnsafe), errors.Is(err, identity.ErrApplicationKeyVaultCiphertext),
-		errors.Is(err, identity.ErrApplicationKeyVaultUnsupported):
+		errors.Is(err, identity.ErrApplicationKeyVaultUnsafe), errors.Is(err, identity.ErrApplicationKeyVaultCiphertext):
 		apiError(w, r, 503, "key_vault_unavailable", "The application key secret store is unavailable. Check its persistent key file and permissions.")
 	default:
 		s.identityError(w, r, err)

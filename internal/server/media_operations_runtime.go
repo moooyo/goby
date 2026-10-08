@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"slices"
 	"sync"
 	"time"
@@ -81,7 +80,7 @@ func newMediaOperationsRuntime(ctx context.Context, s *Server) (*mediaOperations
 	lifetime, cancel := context.WithCancel(context.Background())
 	r := &mediaOperationsRuntime{server: s, store: s.library, configuration: s.cfg.MediaOperations, ctx: lifetime, cancel: cancel, wake: make(chan struct{}, 1), done: make(chan struct{}), workers: map[string]*mediaOperationExecution{}, executors: map[string]mediaOperationExecutor{}}
 	r.inventory.Configuration = s.cfg.MediaOperations
-	if s.cfg.MediaOperations.Enabled && runtime.GOOS == "linux" {
+	if s.cfg.MediaOperations.Enabled {
 		probe, probeHash, probeErr := mediaOperationToolIdentity(ctx, s.cfg.FFprobePath)
 		ffmpeg, ffmpegHash, ffmpegErr := mediaOperationToolIdentity(ctx, s.cfg.FFmpegPath)
 		r.inventory.FFprobePath, r.inventory.FFprobeSHA256 = probe, probeHash
@@ -180,8 +179,6 @@ func (r *mediaOperationsRuntime) Capabilities(ctx context.Context, actor identit
 	result.MaxQueued = r.configuration.MaxQueued
 	if !result.Enabled {
 		result.UnavailableReason = "disabled"
-	} else if runtime.GOOS != "linux" {
-		result.UnavailableReason = "linux_required"
 	} else if !result.Available {
 		result.UnavailableReason = "execution_inventory_unavailable"
 	}
@@ -398,24 +395,24 @@ func (r *mediaOperationsRuntime) reconcile(ctx context.Context) bool {
 		limit = 16
 	}
 	limit = min(limit, 128)
-	var pending []library.MediaOperation
+	var pending []string
 	var err error
 	if r.processingEnabled {
-		pending, err = r.store.PendingMediaOperations(ctx, limit)
+		pending, err = r.store.PendingMediaOperationIDs(ctx, limit)
 	} else {
-		pending, err = r.store.PendingMediaOperationCancellations(ctx, limit)
+		pending, err = r.store.PendingMediaOperationCancellationIDs(ctx, limit)
 	}
 	if err != nil {
 		return true
 	}
-	for _, op := range pending {
+	for _, id := range pending {
 		if len(r.workers) >= concurrency {
 			return retryNeeded
 		}
-		if _, exists := r.workers[op.ID]; exists {
+		if _, exists := r.workers[id]; exists {
 			continue
 		}
-		work, err := r.store.ClaimMediaOperation(ctx, op.ID)
+		work, err := r.store.ClaimMediaOperation(ctx, id)
 		if err != nil {
 			if !errors.Is(err, library.ErrMediaOperationConflict) && !errors.Is(err, library.ErrMediaOperationState) && !errors.Is(err, library.ErrMediaOperationRecovery) && !errors.Is(err, library.ErrSourceChanged) && !errors.Is(err, library.ErrForbidden) {
 				retryNeeded = true
@@ -433,7 +430,7 @@ func (r *mediaOperationsRuntime) reconcile(ctx context.Context) bool {
 				// a failed SQL write must not detach an already-owned token.
 				execution := &mediaOperationExecution{work: work, cancel: func() {}, done: make(chan struct{}), err: decodeErr}
 				close(execution.done)
-				r.workers[op.ID] = execution
+				r.workers[id] = execution
 				r.Wake()
 				continue
 			}
@@ -441,7 +438,7 @@ func (r *mediaOperationsRuntime) reconcile(ctx context.Context) bool {
 		}
 		workCtx, cancel := context.WithTimeout(r.ctx, deadline)
 		execution := &mediaOperationExecution{work: work, cancel: cancel, done: make(chan struct{})}
-		r.workers[op.ID] = execution
+		r.workers[id] = execution
 		go func() {
 			defer func() { close(execution.done); r.Wake() }()
 			defer func() {
@@ -483,7 +480,7 @@ func (r *mediaOperationsRuntime) execute(ctx context.Context, work library.Media
 		if applyErr != nil && work.Operation.Kind == library.MediaOperationRemoveSubtitle {
 			cleanup, stop := context.WithTimeout(context.Background(), 20*time.Second)
 			defer stop()
-			current, _ := r.store.MediaOperationWorkStatus(cleanup, work)
+			current, _ := r.store.ReadMediaOperationWork(cleanup, work)
 			if current.WorkerToken == work.Token && current.CancelRequestedAt != nil && current.PublicationPhase == "none" {
 				work.Operation = current
 				work.Discard = true

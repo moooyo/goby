@@ -782,6 +782,7 @@ func TestSnapshotConcurrentCloseWaitsForReaderRelease(t *testing.T) {
 		if got := f.store.Status(); got.Readers != 1 {
 			t.Fatalf("reader released before close barrier: %+v", got)
 		}
+		requireError(t, f.store.Delete(context.Background(), metadata.ID, metadata.Digest), ErrBusy)
 		unblockRelease()
 		synctest.Wait()
 		if err := <-first; err != nil {

@@ -224,7 +224,7 @@ func beginManagerReceiptFixture(t *testing.T, f *managerIntegrationFixture, kind
 	m := f.manager
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if err := m.healthyLocked(); err != nil {
+	if err := m.healthyLocked(context.Background()); err != nil {
 		t.Fatal("receipt fixture manager is unavailable")
 	}
 	fingerprint := requestFingerprint(struct{ Kind, Generation string }{kind, m.current.Digest})

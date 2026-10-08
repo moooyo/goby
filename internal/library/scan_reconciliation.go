@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io"
 	"os"
-	"runtime"
 	"time"
 
 	"github.com/moooyo/goby/internal/primaryio"
@@ -28,8 +27,7 @@ type scanReconciliationPass struct {
 
 func (s *Store) prepareScanReconciliation(task *scanTask, roots []libraryRoot) (*scanReconciliationPass, error) {
 	pass := &scanReconciliationPass{byRoot: make(map[string]*rootBindingScanCapture), task: task}
-	// Unsupported platforms retain ordinary scanning without deletion authority.
-	if runtime.GOOS != "linux" || len(roots) == 0 {
+	if len(roots) == 0 {
 		return pass, nil
 	}
 	if len(roots) > scanReconciliationMaxRoots {

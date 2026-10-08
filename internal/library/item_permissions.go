@@ -18,6 +18,18 @@ type ItemPermission struct {
 // snapshot. Callers must check coverage of every requested ID; missing entries
 // are indistinguishable from inaccessible items.
 func (s *Store) ItemPermissionsFor(ctx context.Context, subject Subject, ids []string) (map[string]ItemPermission, error) {
+	return s.itemPermissionsFor(ctx, subject, ids, true)
+}
+
+// StoredItemPermissionsFor applies the same direct-item predicate as
+// GetItemsByIDFor without loading presentation fields. It queries only stored
+// items, so a notification cannot turn a virtual expected episode into a
+// currently existing catalog item. Expected-looking stored IDs remain literal.
+func (s *Store) StoredItemPermissionsFor(ctx context.Context, subject Subject, ids []string) (map[string]ItemPermission, error) {
+	return s.itemPermissionsFor(ctx, subject, ids, false)
+}
+
+func (s *Store) itemPermissionsFor(ctx context.Context, subject Subject, ids []string, includeExpected bool) (map[string]ItemPermission, error) {
 	if len(ids) == 0 || len(ids) > 1000 {
 		return nil, ErrInvalidInput
 	}
@@ -31,7 +43,7 @@ func (s *Store) ItemPermissionsFor(ctx context.Context, subject Subject, ids []s
 			continue
 		}
 		seen[id] = true
-		if IsExpectedEpisodeID(id) {
+		if includeExpected && IsExpectedEpisodeID(id) {
 			expected = append(expected, id)
 		} else {
 			physical = append(physical, id)

@@ -150,10 +150,7 @@ func runProcessWithRetirement(ctx context.Context, command *exec.Cmd, retireProc
 	}
 	process.probeChild.started()
 	owned = true
-	var captureErr error
-	if conventionalRetirementSupported() {
-		captureErr = process.ensureConventionalOwner()
-	}
+	captureErr := process.ensureConventionalOwner()
 	joined := false
 	defer func() {
 		if !joined {

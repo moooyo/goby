@@ -45,3 +45,27 @@ func TestMetadataEncodingRejectsAmbiguousAndForeignFields(t *testing.T) {
 		}
 	}
 }
+
+func TestRecordSnapshotCopiesPayloadStorage(t *testing.T) {
+	value := record{Revision: 1, Payload: []byte(`{"phase":"prepared"}`)}
+	data, err := encode(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	digest := hash(data)
+	snapshot := recordSnapshot(value, digest)
+	if snapshot.Revision != value.Revision || snapshot.Digest != digest || !bytes.Equal(snapshot.Payload, value.Payload) {
+		t.Fatal("snapshot changed its verified record")
+	}
+	value.Payload[0] = 'x'
+	if snapshot.Payload[0] != '{' {
+		t.Fatal("snapshot retained the record payload storage")
+	}
+	snapshot.Payload[1] = 'x'
+	if value.Payload[1] != '"' {
+		t.Fatal("record retained the snapshot payload storage")
+	}
+	if initial := recordSnapshot(record{Payload: []byte("null")}, digest); initial.Payload != nil {
+		t.Fatal("initial snapshot exposed the null record payload")
+	}
+}

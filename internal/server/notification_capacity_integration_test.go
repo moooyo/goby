@@ -34,8 +34,10 @@ func TestNotificationCapacityCommitsPrefixAndDrainsAcrossRestart(t *testing.T) {
 		longIDs    bool
 		restart    bool
 	}{
-		{name: "reference count", references: 512, restart: true},
-		{name: "serialized bytes after coalescing", references: 110, longIDs: true},
+		// Coalescing must remain over capacity even after a concurrent sender
+		// owns the first row and only seven pending rows can be combined.
+		{name: "reference count", references: 585, restart: true},
+		{name: "serialized bytes after coalescing", references: 128, longIDs: true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			f, cookie, csrf, headers, _ := notificationHTTPFixture(t)

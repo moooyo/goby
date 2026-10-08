@@ -325,7 +325,7 @@ func (s *Store) openCollageInSnapshot(ctx context.Context, tx pgx.Tx, access lib
 	}
 	prepared := make([]preparedCollageMember, 0, len(manifest.Members))
 	for _, member := range manifest.Members {
-		content, err := prepareCollageMember(ctx, tx, member)
+		content, err := s.prepareCollageMember(ctx, tx, member)
 		if err != nil {
 			return nil, Image{}, err
 		}
@@ -353,7 +353,7 @@ func (s *Store) openCollageInSnapshot(ctx context.Context, tx pgx.Tx, access lib
 	return io.NopCloser(bytes.NewReader(rendered.Bytes)), image, nil
 }
 
-func prepareCollageMember(ctx context.Context, tx pgx.Tx, member collageMember) (preparedCollageMember, error) {
+func (s *Store) prepareCollageMember(ctx context.Context, tx pgx.Tx, member collageMember) (preparedCollageMember, error) {
 	prepared := preparedCollageMember{member: member}
 	switch member.Source {
 	case "managed":
@@ -366,7 +366,7 @@ func prepareCollageMember(ctx context.Context, tx pgx.Tx, member collageMember) 
 		}
 		prepared.data, prepared.image = image.Content, imageFromManaged(image)
 	case "embedded":
-		content, err := readEmbeddedArtworkContent(ctx, tx, member.ItemID)
+		content, err := s.readEmbeddedArtworkContent(ctx, tx, member.ItemID)
 		if err != nil {
 			return preparedCollageMember{}, err
 		}

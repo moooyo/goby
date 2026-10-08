@@ -191,7 +191,7 @@ An ownership marker identifies the cache namespace. A nonblocking kernel file
 lock enforces one writer until all owned operations and leases have ended.
 The root path, lock inode and marker identity/content are rechecked during
 operations; replacing a root pathname does not redirect existing authority to
-another directory. Other platforms return `ErrUnsupported`.
+another directory. The package is built only for Linux.
 
 Each workspace has a durable owner record before artifact writes begin. A ready
 manifest records every final filename, byte count, SHA-256 and filesystem

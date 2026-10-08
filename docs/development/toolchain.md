@@ -211,7 +211,13 @@ synthetic/licensed media fixtures. If the designated environment is unavailable
 and local verification is not authorized, record the affected checks as blocked
 and continue independent work; do not silently execute those checks locally.
 
-Linux is the production platform. Local compilation success is evidence of build correctness only and does not prove Linux runtime behavior, PostgreSQL persistence, FFmpeg availability, or client playback.
+Linux is the only backend build and production platform. Do not maintain
+Windows server binaries, platform substitutes, or Windows backend verification
+matrices. A Windows development host can edit sources and orchestrate Linux
+builds. The independent notification receiver and Windows playback clients
+retain their separate platform scope. Compilation success is evidence of build
+correctness only and does not prove Linux runtime behavior, PostgreSQL
+persistence, FFmpeg availability, or client playback.
 
 ## PostgreSQL integration
 

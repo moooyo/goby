@@ -62,7 +62,7 @@ func NewManager(ctx context.Context, runtime *Runtime, cfg config.Config, pool *
 	if runtime == nil || pool == nil || vault == nil || !lease.Protects(pool) {
 		return nil, ErrInvalid
 	}
-	current, err := runtime.lifecycle.Current()
+	current, err := runtime.lifecycle.CurrentContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -124,15 +124,28 @@ func (m *Manager) Close(ctx context.Context) error {
 
 func (m *Manager) SwitchRequests() <-chan string { return m.switches }
 
-func (m *Manager) healthyLocked() error {
-	if m.closed || m.fault || m.ctx.Err() != nil || !m.operator && !m.lease.Protects(m.pool) {
+func (m *Manager) healthyLocked(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if m.closed || m.fault || !m.operator && !m.lease.Protects(m.pool) {
 		return ErrUnavailable
 	}
-	state, err := m.runtime.lifecycle.Current()
+	if err := m.ctx.Err(); err != nil {
+		return err
+	}
+	state, err := m.runtime.lifecycle.CurrentContext(ctx)
 	if err != nil || state != m.current {
-		return ErrConflict
+		return preserveContextError(err, ErrConflict)
 	}
 	return nil
+}
+
+func preserveContextError(err, fallback error) error {
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return err
+	}
+	return fallback
 }
 
 func (m *Manager) persistLocked(ctx context.Context) error {
@@ -143,7 +156,7 @@ func (m *Manager) persistLocked(ctx context.Context) error {
 			return ErrCapacity
 		}
 		m.fault = true
-		return ErrUnavailable
+		return preserveContextError(err, ErrUnavailable)
 	}
 	m.control = updated
 	return nil
@@ -296,7 +309,7 @@ func (m *Manager) authorize(ctx context.Context, actor identity.Principal) error
 		}
 		m.mu.Lock()
 		defer m.mu.Unlock()
-		return m.healthyLocked()
+		return m.healthyLocked(ctx)
 	}
 	if m == nil || m.pool == nil || !m.lease.Protects(m.pool) {
 		return ErrUnavailable

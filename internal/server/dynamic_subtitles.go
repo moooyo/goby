@@ -332,7 +332,7 @@ func (runtime *dynamicSubtitleRuntime) readyClockLocked(streamIndex int, sequenc
 
 // retain binds opaque media IDs and only discards old coordinates when Store
 // confirms that their advertised grace resource is no longer readable.
-func (runtime *dynamicSubtitleRuntime) retain(snapshot timeshift.WindowSnapshot, readable func(string) bool) error {
+func (runtime *dynamicSubtitleRuntime) retain(snapshot timeshift.WindowSnapshot, readable func([]string) (map[string]bool, error)) error {
 	runtime.mu.Lock()
 	defer runtime.mu.Unlock()
 	current := make(map[uint64]bool, len(snapshot.Segments))
@@ -348,6 +348,8 @@ func (runtime *dynamicSubtitleRuntime) retain(snapshot timeshift.WindowSnapshot,
 		runtime.media[segment.Sequence] = clock
 		current[segment.Sequence] = true
 	}
+	var oldSequences []uint64
+	var oldIDs []string
 	for sequence, clock := range runtime.media {
 		if current[sequence] {
 			continue
@@ -357,10 +359,23 @@ func (runtime *dynamicSubtitleRuntime) retain(snapshot timeshift.WindowSnapshot,
 			len(snapshot.Segments) == 0 && sequence >= snapshot.NextSequence {
 			continue
 		}
-		if clock.artifactID != "" && readable(clock.artifactID) {
+		if clock.artifactID != "" {
+			oldSequences = append(oldSequences, sequence)
+			oldIDs = append(oldIDs, clock.artifactID)
 			continue
 		}
 		delete(runtime.media, sequence)
+	}
+	if len(oldIDs) != 0 {
+		retained, err := readable(oldIDs)
+		// Cancellation/storage failure is not proof that an advertised resource
+		// expired. Preserve its bounded metadata until a conclusive lookup.
+		inconclusive := err != nil && !errors.Is(err, timeshift.ErrNotFound) && !errors.Is(err, timeshift.ErrClosed)
+		for index, sequence := range oldSequences {
+			if !inconclusive && !retained[oldIDs[index]] {
+				delete(runtime.media, sequence)
+			}
+		}
 	}
 	minimum, earliest := runtime.current, int64(0)
 	found := false
@@ -820,11 +835,8 @@ func (s *Server) pruneDynamicSubtitles(ctx context.Context, session *dynamicStre
 	if session.subtitles == nil {
 		return nil
 	}
-	return session.subtitles.retain(snapshot, func(id string) bool {
-		retained, err := s.dynamicStreams.store.RetainsArtifact(ctx, timeshiftScope(session.scope), session.windowID, id)
-		// Cancellation/storage failure is not proof that an advertised resource
-		// expired. Preserve its bounded metadata until a conclusive lookup.
-		return retained || err != nil && !errors.Is(err, timeshift.ErrNotFound) && !errors.Is(err, timeshift.ErrClosed)
+	return session.subtitles.retain(snapshot, func(ids []string) (map[string]bool, error) {
+		return s.dynamicStreams.store.RetainsArtifacts(ctx, timeshiftScope(session.scope), session.windowID, ids)
 	})
 }
 

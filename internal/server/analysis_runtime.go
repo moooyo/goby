@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"errors"
-	"runtime"
 	"sync"
 
 	"github.com/moooyo/goby/internal/analysiscache"
@@ -57,10 +56,6 @@ func newMediaAnalysisRuntime(ctx context.Context, server *Server) (*mediaAnalysi
 		profiles: make(map[string]library.AnalysisExecutionProfile, 3)}
 	r.setUnavailableProfiles("not_configured")
 	if !r.configuration.Enabled {
-		return r, nil
-	}
-	if runtime.GOOS != "linux" {
-		r.setUnavailableProfiles("unsupported_platform")
 		return r, nil
 	}
 	cache, err := analysiscache.Open(ctx, r.configuration.CacheOptions())

@@ -238,8 +238,8 @@ Each invocation has its own Linux process group. Cancellation sends SIGTERM,
 then SIGKILL after two seconds. On exit, `waitid(WEXITED|WNOWAIT)` retains the
 leader's PID while the group and kill timer are retired, before `cmd.Wait` reaps
 the leader and drains pipes. This also reclaims surviving children after a
-successful parent exit. Non-Linux execution returns an unsupported error; the
-Windows build remains useful only for compilation checks.
+successful parent exit. The backend and its process runner are built and run
+only on Linux; Windows is not a backend compilation or runtime target.
 
 ## Hardware decode and encode
 

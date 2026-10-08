@@ -129,7 +129,7 @@ func TestDynamicSubtitleRetentionUsesActualArtifactGraceAndKeepsOldEpoch(t *test
 		t.Fatal(err)
 	}
 	old := dynamicSubtitleTestSnapshot(0, 1, 0, 2*second, "retained-old-media")
-	if err := runtime.retain(old, func(string) bool { return false }); err != nil {
+	if err := runtime.retain(old, func([]string) (map[string]bool, error) { return nil, nil }); err != nil {
 		t.Fatal(err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -147,14 +147,16 @@ func TestDynamicSubtitleRetentionUsesActualArtifactGraceAndKeepsOldEpoch(t *test
 		t.Fatal(err)
 	}
 	current := dynamicSubtitleTestSnapshot(1, 2, 2*second, 2*second, "current-media")
-	if err := runtime.retain(current, func(id string) bool { return id == "retained-old-media" }); err != nil {
+	if err := runtime.retain(current, func([]string) (map[string]bool, error) {
+		return map[string]bool{"retained-old-media": true}, nil
+	}); err != nil {
 		t.Fatal(err)
 	}
 	result, _, err := runtime.render(3, 0, 0)
 	if err != nil || !strings.Contains(string(result.Data), "old generation") {
 		t.Fatal("rolling the media window prematurely discarded advertised subtitle grace")
 	}
-	if err := runtime.retain(current, func(string) bool { return false }); err != nil {
+	if err := runtime.retain(current, func([]string) (map[string]bool, error) { return nil, nil }); err != nil {
 		t.Fatal(err)
 	}
 	if _, _, err := runtime.render(3, 0, 0); !errors.Is(err, subtitle.ErrLiveWindowExpired) {
@@ -394,12 +396,12 @@ func TestDynamicSubtitlePositiveOffsetDropsOnlyExpiredLeadingIntervals(t *testin
 	if err := runtime.CompleteTrack(1, 3, 14*second); err != nil {
 		t.Fatal(err)
 	}
-	if err := runtime.retain(snapshot, func(string) bool { return false }); err != nil {
+	if err := runtime.retain(snapshot, func([]string) (map[string]bool, error) { return nil, nil }); err != nil {
 		t.Fatal(err)
 	}
 	snapshot.Segments = snapshot.Segments[2:]
 	snapshot.EarliestTicks, snapshot.LiveEdgeTicks = 4*second, 14*second
-	if err := runtime.retain(snapshot, func(string) bool { return false }); err != nil {
+	if err := runtime.retain(snapshot, func([]string) (map[string]bool, error) { return nil, nil }); err != nil {
 		t.Fatal(err)
 	}
 	ready, err := runtime.readyWindow(snapshot, 3, 2*second)

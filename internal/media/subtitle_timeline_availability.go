@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
-	"runtime"
 	"time"
 )
 
@@ -23,10 +22,6 @@ func SubtitleTimelineAvailability(ctx context.Context, config BitmapSubtitleConf
 	}
 	if err := ctx.Err(); err != nil {
 		return result, err
-	}
-	if runtime.GOOS != "linux" {
-		result.Reason = "platform_unavailable"
-		return result, nil
 	}
 	bounded, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()

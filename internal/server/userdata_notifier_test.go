@@ -108,6 +108,119 @@ func TestUserDataNotifierPagesInOrderWithSharedIDsAndUserIsolation(t *testing.T)
 	}
 }
 
+func TestUserDataNotifierYieldsBetweenPagesAndPreservesPerUserOrder(t *testing.T) {
+	notifier, store, hub := newTestUserDataNotifier(t)
+	first := subscribeNotifierUser(t, hub, "user-a", "first")
+	second := subscribeNotifierUser(t, hub, "user-b", "second")
+	notifier.Enqueue("user-a", "root-a", true)
+	pageOne := nextNotificationRequest(t, store)
+	notifier.Enqueue("user-a", "later-a", false)
+	notifier.Enqueue("user-b", "root-b", true)
+	notifier.Enqueue("user-b", "later-b", false)
+	pageOne.reply <- notificationStoreResult{page: library.UserDataNotificationResult{
+		Items: []library.UserData{{ItemID: "item-a1"}}, NextAfterID: "item-a1",
+	}}
+	if got := nextNotificationEvent(t, first); got.UserDataList[0].ItemID != "item-a1" {
+		t.Fatalf("first user's first page = %+v", got)
+	}
+
+	otherPageOne := nextNotificationRequest(t, store)
+	if otherPageOne.query.UserID != "user-b" || otherPageOne.query.ItemID != "root-b" || otherPageOne.query.AfterID != "" {
+		t.Fatalf("another user did not progress after the first page: %+v", otherPageOne.query)
+	}
+	otherPageOne.reply <- notificationStoreResult{page: library.UserDataNotificationResult{
+		Items: []library.UserData{{ItemID: "item-b1"}}, NextAfterID: "item-b1",
+	}}
+	_ = nextNotificationEvent(t, second)
+
+	pageTwo := nextNotificationRequest(t, store)
+	if pageTwo.query.UserID != "user-a" || pageTwo.query.ItemID != "root-a" || pageTwo.query.AfterID != "item-a1" {
+		t.Fatalf("first user's unfinished marker lost its position: %+v", pageTwo.query)
+	}
+	if pageTwo.ctx != pageOne.ctx {
+		t.Fatal("page yield replaced the traversal context")
+	}
+	pageTwo.reply <- notificationStoreResult{page: library.UserDataNotificationResult{Items: []library.UserData{{ItemID: "item-a2"}}}}
+	if got := nextNotificationEvent(t, first); got.UserDataList[0].ItemID != "item-a2" {
+		t.Fatalf("first user's second page = %+v", got)
+	}
+
+	otherPageTwo := nextNotificationRequest(t, store)
+	if otherPageTwo.query.UserID != "user-b" || otherPageTwo.query.ItemID != "root-b" || otherPageTwo.query.AfterID != "item-b1" {
+		t.Fatalf("second user's unfinished marker lost its position: %+v", otherPageTwo.query)
+	}
+	otherPageTwo.reply <- notificationStoreResult{}
+	for _, expected := range []struct {
+		userID string
+		itemID string
+		sub    *events.Subscription
+	}{
+		{userID: "user-a", itemID: "later-a", sub: first},
+		{userID: "user-b", itemID: "later-b", sub: second},
+	} {
+		request := nextNotificationRequest(t, store)
+		if request.query.UserID != expected.userID || request.query.ItemID != expected.itemID || request.query.AfterID != "" {
+			t.Fatalf("next marker for %s = %+v", expected.userID, request.query)
+		}
+		request.reply <- notificationStoreResult{page: library.UserDataNotificationResult{Items: []library.UserData{{ItemID: expected.itemID}}}}
+		if got := nextNotificationEvent(t, expected.sub); got.UserDataList[0].ItemID != expected.itemID {
+			t.Fatalf("next publication for %s = %+v", expected.userID, got)
+		}
+	}
+}
+
+func TestUserDataNotifierRetainsDirtyChangesAcrossPageYields(t *testing.T) {
+	notifier, store, hub := newTestUserDataNotifier(t)
+	sub := subscribeNotifierUser(t, hub, "user", "session")
+	_ = subscribeNotifierUser(t, hub, "other", "other-session")
+	notifier.Enqueue("user", "root", false)
+	pageOne := nextNotificationRequest(t, store)
+	notifier.Enqueue("user", "later", false)
+	notifier.Enqueue("other", "first", false)
+	notifier.Enqueue("other", "second", false)
+	pageOne.reply <- notificationStoreResult{page: library.UserDataNotificationResult{
+		Items: []library.UserData{{ItemID: "item-a", PlayCount: 1}}, NextAfterID: "item-a",
+	}}
+	_ = nextNotificationEvent(t, sub)
+	other := nextNotificationRequest(t, store)
+	if other.query.UserID != "other" || other.query.ItemID != "first" {
+		t.Fatalf("first page did not yield: %+v", other.query)
+	}
+	// This commit changes an item before the saved cursor while the marker is
+	// yielded. Its recursive upgrade must apply to the next complete traversal.
+	notifier.Enqueue("user", "root", true)
+	notifier.Enqueue("user", "root", false)
+	other.reply <- notificationStoreResult{}
+	pageTwo := nextNotificationRequest(t, store)
+	if pageTwo.query.UserID != "user" || pageTwo.query.ItemID != "root" || pageTwo.query.AfterID != "item-a" || pageTwo.query.Recursive {
+		t.Fatalf("yield changed the current traversal: %+v", pageTwo.query)
+	}
+	pageTwo.reply <- notificationStoreResult{page: library.UserDataNotificationResult{NextAfterID: "item-b"}}
+	other = nextNotificationRequest(t, store)
+	if other.query.UserID != "other" || other.query.ItemID != "second" {
+		t.Fatalf("second page did not yield: %+v", other.query)
+	}
+	other.reply <- notificationStoreResult{}
+	pageThree := nextNotificationRequest(t, store)
+	if pageThree.query.UserID != "user" || pageThree.query.ItemID != "root" || pageThree.query.AfterID != "item-b" || pageThree.query.Recursive {
+		t.Fatalf("dirty marker did not finish its original traversal: %+v", pageThree.query)
+	}
+	pageThree.reply <- notificationStoreResult{}
+	refresh := nextNotificationRequest(t, store)
+	if refresh.query.UserID != "user" || refresh.query.ItemID != "root" || refresh.query.AfterID != "" || !refresh.query.Recursive {
+		t.Fatalf("yielded dirty marker was not reread from the beginning: %+v", refresh.query)
+	}
+	refresh.reply <- notificationStoreResult{page: library.UserDataNotificationResult{Items: []library.UserData{{ItemID: "item-a", PlayCount: 2}}}}
+	if got := nextNotificationEvent(t, sub); got.UserDataList[0].ItemID != "item-a" || got.UserDataList[0].PlayCount != 2 {
+		t.Fatalf("updated state before the old cursor = %+v", got)
+	}
+	later := nextNotificationRequest(t, store)
+	if later.query.UserID != "user" || later.query.ItemID != "later" {
+		t.Fatalf("dirty rereads were not coalesced before the next marker: %+v", later.query)
+	}
+	later.reply <- notificationStoreResult{}
+}
+
 func TestUserDataNotifierSkipsUsersWithoutSubscribers(t *testing.T) {
 	notifier, store, hub := newTestUserDataNotifier(t)
 	_ = subscribeNotifierUser(t, hub, "active", "active-session")
@@ -174,6 +287,43 @@ func TestUserDataNotifierPerUserOverflowCancelsAndReleasesCapacity(t *testing.T)
 	_ = nextNotificationEvent(t, healthy)
 	if healthy.Reason() != nil {
 		t.Fatalf("overflow affected another user: %v", healthy.Reason())
+	}
+}
+
+func TestUserDataNotifierOverflowRetiresYieldedMarkersWithoutCancelingOtherUsers(t *testing.T) {
+	notifier, store, hub := newTestUserDataNotifier(t)
+	overflowed := subscribeNotifierUser(t, hub, "overflow", "overflow-session")
+	healthy := subscribeNotifierUser(t, hub, "healthy", "healthy-session")
+	notifier.Enqueue("overflow", "root", true)
+	pageOne := nextNotificationRequest(t, store)
+	for index := 1; index < userDataNotificationPerUser; index++ {
+		notifier.Enqueue("overflow", fmt.Sprintf("item-%d", index), false)
+	}
+	notifier.Enqueue("healthy", "target", false)
+	pageOne.reply <- notificationStoreResult{page: library.UserDataNotificationResult{NextAfterID: "item-a"}}
+	active := nextNotificationRequest(t, store)
+	if active.query.UserID != "healthy" || overflowed.Reason() != nil || pageOne.ctx.Err() != nil {
+		t.Fatalf("full yielded user did not retain its active traversal: query=%+v, reason=%v, context=%v", active.query, overflowed.Reason(), pageOne.ctx.Err())
+	}
+	notifier.Enqueue("overflow", "one-too-many", false)
+	assertNotificationClosed(t, overflowed)
+	if !errors.Is(pageOne.ctx.Err(), context.Canceled) {
+		t.Fatalf("overflow did not cancel the yielded traversal: %v", pageOne.ctx.Err())
+	}
+	if active.ctx.Err() != nil || healthy.Reason() != nil {
+		t.Fatalf("overflow interrupted another user: context=%v, reason=%v", active.ctx.Err(), healthy.Reason())
+	}
+	reconnected := subscribeNotifierUser(t, hub, "overflow", "reconnected-session")
+	notifier.Enqueue("overflow", "root", true)
+	active.reply <- notificationStoreResult{page: library.UserDataNotificationResult{Items: []library.UserData{{ItemID: "target"}}}}
+	_ = nextNotificationEvent(t, healthy)
+	refresh := nextNotificationRequest(t, store)
+	if refresh.query.UserID != "overflow" || refresh.query.ItemID != "root" || refresh.query.AfterID != "" {
+		t.Fatalf("overflowed traversal survived reconnection: %+v", refresh.query)
+	}
+	refresh.reply <- notificationStoreResult{page: library.UserDataNotificationResult{Items: []library.UserData{{ItemID: "root", PlayCount: 2}}}}
+	if got := nextNotificationEvent(t, reconnected); got.UserDataList[0].PlayCount != 2 {
+		t.Fatalf("reconnected user's current state = %+v", got)
 	}
 }
 
@@ -255,6 +405,70 @@ func TestUserDataNotifierCloseCancelsWaitsAndIsIdempotent(t *testing.T) {
 	}
 	if sub.Reason() != nil {
 		t.Fatalf("notifier Close took ownership of the Hub: %v", sub.Reason())
+	}
+}
+
+func TestUserDataNotifierCloseCancelsYieldedWorkAndJoinsRetiringRead(t *testing.T) {
+	hub, err := events.New(events.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	store := &notificationTestStore{requests: make(chan notificationStoreRequest, 1)}
+	retiring := make(chan struct{})
+	release := make(chan struct{})
+	retiringStore := notificationStoreFunc(func(ctx context.Context, query library.UserDataNotificationQuery) (library.UserDataNotificationResult, error) {
+		page, err := store.UserDataNotificationPage(ctx, query)
+		if errors.Is(ctx.Err(), context.Canceled) {
+			close(retiring)
+			<-release
+		}
+		return page, err
+	})
+	notifier := newUserDataNotifier(retiringStore, hub)
+	var releaseOnce sync.Once
+	t.Cleanup(func() {
+		releaseOnce.Do(func() { close(release) })
+		notifier.Close()
+		_ = hub.Close()
+	})
+	_ = subscribeNotifierUser(t, hub, "yielded", "yielded-session")
+	_ = subscribeNotifierUser(t, hub, "active", "active-session")
+	notifier.Enqueue("yielded", "root", true)
+	pageOne := nextNotificationRequest(t, store)
+	notifier.Enqueue("active", "target", false)
+	pageOne.reply <- notificationStoreResult{page: library.UserDataNotificationResult{NextAfterID: "item-a"}}
+	active := nextNotificationRequest(t, store)
+	if active.query.UserID != "active" {
+		t.Fatalf("unfinished traversal did not yield before Close: %+v", active.query)
+	}
+	closed := make(chan struct{})
+	go func() {
+		notifier.Close()
+		close(closed)
+	}()
+	select {
+	case <-retiring:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Close did not cancel the active read")
+	}
+	if !errors.Is(pageOne.ctx.Err(), context.Canceled) || !errors.Is(active.ctx.Err(), context.Canceled) {
+		t.Fatalf("Close left live traversal contexts: yielded=%v, active=%v", pageOne.ctx.Err(), active.ctx.Err())
+	}
+	select {
+	case <-closed:
+		t.Fatal("Close returned while the canceled read was still retiring")
+	case <-time.After(20 * time.Millisecond):
+	}
+	releaseOnce.Do(func() { close(release) })
+	select {
+	case <-closed:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Close did not join the retired worker")
+	}
+	select {
+	case request := <-store.requests:
+		t.Fatalf("Close resumed a yielded traversal: %+v", request.query)
+	default:
 	}
 }
 

@@ -11,8 +11,6 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func scanEvidencePlatformSupported() bool { return true }
-
 func scanEvidencePrivateInfo(info os.FileInfo, directory bool) error {
 	value, ok := info.Sys().(*syscall.Stat_t)
 	if !ok || value.Uid != uint32(os.Geteuid()) || info.Mode()&os.ModeSymlink != 0 ||

@@ -174,17 +174,17 @@ func (lease *publishedAnalysisPreview) Revalidate(ctx context.Context) error {
 		return err
 	}
 	subject := librarySubject(fresh, fresh.User.ID)
-	current, err := s.library.GetCurrentAnalysisSourceFor(ctx, subject, lease.metadata.ItemID, lease.metadata.MediaSourceID)
-	if err != nil {
-		return err
-	}
-	if current.SourceRevision != lease.metadata.SourceRevision || current.MediaSourceID != lease.metadata.MediaSourceID {
-		return library.ErrAnalysisSourceChanged
-	}
 	if !lease.metadata.Ready {
+		current, err := s.library.GetCurrentAnalysisSourceFor(ctx, subject, lease.metadata.ItemID, lease.metadata.MediaSourceID)
+		if err != nil {
+			return err
+		}
+		if current.SourceRevision != lease.metadata.SourceRevision || current.MediaSourceID != lease.metadata.MediaSourceID {
+			return library.ErrAnalysisSourceChanged
+		}
 		return lease.finishAuthorization(ctx)
 	}
-	refs, err := s.library.GetAnalysisPreviewsFor(ctx, subject, current.ItemID, current.MediaSourceID)
+	_, refs, err := s.library.GetCurrentAnalysisSourceAndPreviewsFor(ctx, subject, lease.metadata.ItemID, lease.metadata.MediaSourceID, lease.metadata.SourceRevision)
 	if err != nil {
 		return err
 	}
@@ -213,7 +213,7 @@ func (lease *publishedAnalysisPreview) Revalidate(ctx context.Context) error {
 }
 
 func (lease *publishedAnalysisPreview) currentCredential(ctx context.Context) (identity.Principal, error) {
-	fresh, err := lease.runtime.server.identity.RevalidateSession(ctx, lease.principal)
+	fresh, err := lease.runtime.server.identity.RevalidateSessionAuthority(ctx, lease.principal)
 	if err != nil {
 		return identity.Principal{}, err
 	}

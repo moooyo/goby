@@ -24,7 +24,6 @@ var (
 	ErrStorage         = errors.New("timeshift storage operation failed")
 	ErrUnsafe          = errors.New("unsafe timeshift storage")
 	ErrLocked          = errors.New("timeshift storage is already locked")
-	ErrUnsupported     = errors.New("timeshift storage requires Linux")
 )
 
 // Scope contains ownership, not credentials. A matching scope does not replace

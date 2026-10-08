@@ -139,6 +139,34 @@ type mediaProcess struct {
 	probeChild       *probeRetirementChild
 }
 
+// Cleanup can retry indefinitely while the real kernel owner is still live.
+// Keep only the first and latest failed signal attempts, never a growing join.
+type mediaProcessCancelErrors struct {
+	first, latest error
+	attempts      uint64
+}
+
+func (summary *mediaProcessCancelErrors) observe(err error) {
+	if summary.attempts < ^uint64(0) {
+		summary.attempts++
+	}
+	if err == nil {
+		return
+	}
+	if summary.first == nil {
+		summary.first = err
+	} else {
+		summary.latest = err
+	}
+}
+
+func (summary *mediaProcessCancelErrors) err() error {
+	if summary.first == nil {
+		return nil
+	}
+	return fmt.Errorf("media process cleanup cancellation after %d attempts: %w", summary.attempts, errors.Join(summary.first, summary.latest))
+}
+
 func startMediaProcess(ctx context.Context, command *exec.Cmd) (*mediaProcess, error) {
 	return startMediaProcessWithAdmission(ctx, command, mediaProcessAdmission, false)
 }
@@ -153,7 +181,7 @@ func startMediaProcessWithAdmission(ctx context.Context, command *exec.Cmd, gove
 	if scope, required := commanddomain.CommandScopeFromContext(ctx); required {
 		return startNativeMediaProcess(ctx, command, governor, scope)
 	}
-	return startConventionalMediaProcessWithCapability(ctx, command, governor, retainForCleanup, conventionalRetirementSupported())
+	return startConventionalMediaProcessWithCapability(ctx, command, governor, retainForCleanup, true)
 }
 
 func startConventionalMediaProcessWithCapability(ctx context.Context, command *exec.Cmd, governor *mediaProcessGovernor, retainForCleanup, supported bool) (*mediaProcess, error) {
@@ -214,15 +242,6 @@ func (process *mediaProcess) Retire() error {
 func (process *mediaProcess) Wait() error {
 	if process.native != nil {
 		return process.native.wait()
-	}
-	if !conventionalRetirementSupported() {
-		process.waitOnce.Do(func() {
-			if !process.retainForCleanup {
-				defer process.release()
-			}
-			process.waitErr = errors.Join(process.Retire(), process.command.Wait())
-		})
-		return process.waitErr
 	}
 	process.waitOnce.Do(func() {
 		completed := false
@@ -290,14 +309,6 @@ func (process *mediaProcess) Close() error {
 	if process.native != nil {
 		return process.native.close()
 	}
-	if !conventionalRetirementSupported() {
-		if process.command.Cancel != nil {
-			_ = process.command.Cancel()
-		} else if process.command.Process != nil {
-			_ = process.command.Process.Kill()
-		}
-		return process.Wait()
-	}
 	process.closeOnce.Do(func() {
 		if err := process.ensureConventionalOwner(); err != nil {
 			process.closeErr = errors.Join(ErrProcessRetirementUnknown, err)
@@ -312,34 +323,36 @@ func (process *mediaProcess) Close() error {
 			// Join it before the independent cleanup proof permits actual Wait.
 			process.closeErr = errors.Join(process.closeErr, process.Retire())
 		}
-		cancelErr := process.conventional.cancel()
+		var cancelErrors mediaProcessCancelErrors
+		cancelErrors.observe(process.conventional.cancel())
 		waitErr := process.Wait()
 		if process.command.ProcessState == nil {
 			// A failed callback did not authorize Wait. Explicit cleanup uses a
 			// fresh actual kernel fence while the original leader is still pinned.
+			var fenceErr error
 			for {
 				if err := process.conventional.fence(); err == nil {
 					break
 				} else {
 					process.conventional.markUnknown()
-					process.closeErr = errors.Join(cancelErr, waitErr, err, ErrProcessRetirementUnknown)
+					fenceErr = errors.Join(err, ErrProcessRetirementUnknown)
 				}
 				// Actual cleanup retains bounded owners and the original strong
 				// identity while a kernel reader is still live. Receipt.Close's
 				// caller deadline does not terminate this owner or free capacity.
 				time.Sleep(time.Second)
-				cancelErr = errors.Join(cancelErr, process.conventional.cancel())
+				cancelErrors.observe(process.conventional.cancel())
 			}
 			joinErr := process.command.Wait()
 			if process.command.ProcessState == nil {
 				process.conventional.markUnknown()
-				process.closeErr = errors.Join(cancelErr, waitErr, joinErr, ErrProcessRetirementUnknown)
+				process.closeErr = errors.Join(process.closeErr, cancelErrors.err(), waitErr, fenceErr, joinErr, ErrProcessRetirementUnknown)
 				return
 			}
 			process.conventional.joinedKnown()
-			process.closeErr = errors.Join(process.closeErr, cancelErr, waitErr, joinErr)
+			process.closeErr = errors.Join(process.closeErr, cancelErrors.err(), waitErr, fenceErr, joinErr)
 		} else {
-			process.closeErr = errors.Join(cancelErr, waitErr)
+			process.closeErr = errors.Join(process.closeErr, cancelErrors.err(), waitErr)
 		}
 		if !process.retainForCleanup {
 			process.conventional.returnKnownCapacity()
@@ -355,11 +368,6 @@ func (process *mediaProcess) completeCleanup() {
 	if process != nil {
 		if process.native != nil {
 			_ = process.native.wait()
-			return
-		}
-		if !conventionalRetirementSupported() {
-			_ = process.Wait()
-			process.release()
 			return
 		}
 		_ = process.Wait()

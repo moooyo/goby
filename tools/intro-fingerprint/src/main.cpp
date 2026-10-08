@@ -12,11 +12,6 @@
 #include <memory>
 #include <new>
 
-#ifdef _WIN32
-#include <fcntl.h>
-#include <io.h>
-#endif
-
 namespace {
 
 constexpr int kAlgorithm = CHROMAPRINT_ALGORITHM_TEST2;
@@ -182,11 +177,6 @@ void append_metadata(JSON &output, const Metadata &data, bool describe) {
 
 int run(int argc, char **argv) {
     const bool describe = arguments(argc, argv);
-#ifdef _WIN32
-    if (!describe && _setmode(_fileno(stdin), _O_BINARY) == -1) {
-        throw Failure{5, "binary_stdio_failed"};
-    }
-#endif
     std::unique_ptr<ChromaprintContext, decltype(&chromaprint_free)> context(
         chromaprint_new(kAlgorithm), &chromaprint_free);
     if (!context) {
@@ -240,15 +230,7 @@ int run(int argc, char **argv) {
 } // namespace
 
 int main(int argc, char **argv) {
-#ifdef SIGPIPE
     std::signal(SIGPIPE, SIG_IGN);
-#endif
-#ifdef _WIN32
-    if (_setmode(_fileno(stdout), _O_BINARY) == -1) {
-        std::fputs("goby-intro-fingerprint: binary_stdio_failed\n", stderr);
-        return 5;
-    }
-#endif
     try {
         return run(argc, argv);
     } catch (const Failure &failure) {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"runtime"
 	"time"
 )
 
@@ -17,7 +16,7 @@ func (p Prober) ProbeStreamPrefix(ctx context.Context, file *os.File) (Info, err
 	if err := ctx.Err(); err != nil {
 		return Info{}, err
 	}
-	if runtime.GOOS != "linux" || file == nil {
+	if file == nil {
 		return Info{}, fmt.Errorf("stream prefix probing requires a Linux regular file")
 	}
 	before, err := file.Stat()

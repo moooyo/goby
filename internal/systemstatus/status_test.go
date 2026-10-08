@@ -337,9 +337,6 @@ func TestUnavailableObservationsSerializeAsNull(t *testing.T) {
 }
 
 func TestNativeSnapshotReportsMemoryAndMediaVolume(t *testing.T) {
-	if runtime.GOOS != "windows" && runtime.GOOS != "linux" {
-		t.Skip("native telemetry is implemented for Windows and Linux")
-	}
 	c := New([]string{t.TempDir()})
 	t.Cleanup(c.Close)
 	waitForSample(t, c)
@@ -351,8 +348,5 @@ func TestNativeSnapshotReportsMemoryAndMediaVolume(t *testing.T) {
 	if !got.Storage.Complete || got.Storage.TotalBytes == nil || *got.Storage.TotalBytes == 0 || len(got.Storage.Volumes) != 1 ||
 		!got.Storage.Volumes[0].Available || *got.Storage.UsedBytes > *got.Storage.TotalBytes {
 		t.Fatalf("native temporary directory volume was unavailable or inconsistent: %+v", got.Storage)
-	}
-	if runtime.GOOS == "windows" && (got.CPU.Load1 != nil || got.Memory.SwapUsedBytes != nil) {
-		t.Fatal("Windows fabricated Linux-only observations")
 	}
 }

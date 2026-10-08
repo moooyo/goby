@@ -59,7 +59,7 @@ func (j *switchJournal) save(ctx context.Context) error {
 			return ErrCapacity
 		}
 		j.fault = true
-		return ErrUnavailable
+		return preserveContextError(err, ErrUnavailable)
 	}
 	j.snapshot = snapshot
 	return nil
@@ -97,7 +97,7 @@ func (m *Manager) adoptSwitchJournal(j *switchJournal) {
 func (m *Manager) PendingSwitch(ctx context.Context) (string, bool, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if err := m.healthyLocked(); err != nil {
+	if err := m.healthyLocked(ctx); err != nil {
 		return "", false, err
 	}
 	j, err := loadSwitchJournal(ctx, m.runtime)
@@ -139,7 +139,7 @@ func (j *switchJournal) inspect(ctx context.Context) (string, bool, error) {
 			return "", false, err
 		}
 	}
-	current, err := j.runtime.lifecycle.Current()
+	current, err := j.runtime.lifecycle.CurrentContext(ctx)
 	if err != nil {
 		return "", false, err
 	}
@@ -234,7 +234,7 @@ func (m *Manager) PrepareSwitch(ctx context.Context, id string) (_ *SwitchCandid
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if err := m.healthyLocked(); err != nil {
+	if err := m.healthyLocked(ctx); err != nil {
 		return nil, err
 	}
 	if len(m.jobs) != 0 || m.engine == nil {
@@ -247,7 +247,7 @@ func (m *Manager) PrepareSwitch(ctx context.Context, id string) (_ *SwitchCandid
 	defer m.adoptSwitchJournal(j)
 	pendingID, activated, err := j.inspect(ctx)
 	if err != nil || pendingID != id || activated {
-		return nil, ErrConflict
+		return nil, preserveContextError(err, ErrConflict)
 	}
 	t, op := j.data.Transition, j.operation()
 	if op == nil || t.Before != m.current {
@@ -351,7 +351,7 @@ func (m *Manager) PrepareSwitch(ctx context.Context, id string) (_ *SwitchCandid
 		return nil, ErrConflict
 	}
 	if t.CanReturn {
-		binding, _, err := m.runtime.databaseBinding(m.cfg, m.pool, m.lease)
+		binding, _, err := m.runtime.databaseBinding(bound, m.cfg, m.pool, m.lease)
 		if err != nil {
 			return nil, err
 		}
@@ -392,7 +392,7 @@ func (m *Manager) captureRetiring(ctx context.Context) (recoverydb.Retained, []b
 	if m.operator || m.engine == nil || m.vault == nil || !m.lease.Protects(m.pool) {
 		return recoverydb.Retained{}, nil, "", ErrUnavailable
 	}
-	binding, _, err := m.runtime.databaseBinding(m.cfg, m.pool, m.lease)
+	binding, _, err := m.runtime.databaseBinding(ctx, m.cfg, m.pool, m.lease)
 	if err != nil {
 		return recoverydb.Retained{}, nil, "", err
 	}
@@ -564,8 +564,8 @@ func validateSwitchData(ctx context.Context, tx pgx.Tx, master []byte, cfg confi
 func (m *Manager) ValidateSwitch(ctx context.Context) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if err := m.healthyLocked(); err != nil || m.operator {
-		return ErrUnavailable
+	if err := m.healthyLocked(ctx); err != nil || m.operator {
+		return preserveContextError(err, ErrUnavailable)
 	}
 	j, err := loadSwitchJournal(ctx, m.runtime)
 	if err != nil {
@@ -574,7 +574,7 @@ func (m *Manager) ValidateSwitch(ctx context.Context) error {
 	defer m.adoptSwitchJournal(j)
 	id, activated, err := j.inspect(ctx)
 	if err != nil || id == "" || !activated {
-		return ErrConflict
+		return preserveContextError(err, ErrConflict)
 	}
 	t := j.data.Transition
 	if t.After != m.current || t.Phase != "activated" && t.Phase != "initializing" && t.Phase != "accepting" && t.Phase != "accepted" {
@@ -585,7 +585,7 @@ func (m *Manager) ValidateSwitch(ctx context.Context) error {
 		return err
 	}
 	defer clear(master)
-	binding, _, err := m.runtime.databaseBinding(m.cfg, m.pool, m.lease)
+	binding, _, err := m.runtime.databaseBinding(ctx, m.cfg, m.pool, m.lease)
 	if err != nil {
 		return err
 	}
@@ -632,8 +632,8 @@ func (m *Manager) ValidateSwitch(ctx context.Context) error {
 func (m *Manager) AcceptSwitch(ctx context.Context) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if err := m.healthyLocked(); err != nil || m.operator {
-		return ErrUnavailable
+	if err := m.healthyLocked(ctx); err != nil || m.operator {
+		return preserveContextError(err, ErrUnavailable)
 	}
 	work, cancel := context.WithCancel(ctx)
 	stop := context.AfterFunc(m.ctx, cancel)
@@ -700,9 +700,9 @@ func (j *switchJournal) abortBeforePublication(ctx context.Context) error {
 	if t == nil || j.fault || returningPhase(t.Phase) || t.Phase == "accepting" || t.Phase == "accepted" {
 		return ErrConflict
 	}
-	current, err := j.runtime.lifecycle.Current()
+	current, err := j.runtime.lifecycle.CurrentContext(ctx)
 	if err != nil || current != t.Before {
-		return ErrConflict
+		return preserveContextError(err, ErrConflict)
 	}
 	pending, err := j.runtime.lifecycle.Pending(ctx)
 	if err != nil {
@@ -805,7 +805,7 @@ func (r *Runtime) openTransitionSlot(ctx context.Context, cfg config.Config, slo
 		pool.Close()
 		return nil, nil, nil, err
 	}
-	state, err := r.lifecycle.Current()
+	state, err := r.lifecycle.CurrentContext(ctx)
 	if err != nil {
 		pool.Close()
 		_ = lease.Close()
@@ -862,7 +862,7 @@ func (j *switchJournal) returnUnaccepted(ctx context.Context, suppliedPool *pgxp
 		t.Phase != "activated" && t.Phase != "initializing" && !returningPhase(t.Phase) || op.ActivationAccepted {
 		return ErrConflict
 	}
-	current, err := j.runtime.lifecycle.Current()
+	current, err := j.runtime.lifecycle.CurrentContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -871,7 +871,7 @@ func (j *switchJournal) returnUnaccepted(ctx context.Context, suppliedPool *pgxp
 		// the exact local return plan is inspected below before any action.
 		pending, err := j.runtime.lifecycle.Pending(ctx)
 		if err != nil || pending == nil || !j.matchesReturnPlan(pending) || pending.Status != lifecycle.PlanActivated || pending.After != current {
-			return ErrConflict
+			return preserveContextError(err, ErrConflict)
 		}
 		t.ReturnPlanID, t.ReturnState = pending.ID, pending.After
 		if err := j.save(ctx); err != nil {
@@ -990,7 +990,7 @@ func (j *switchJournal) returnUnaccepted(ctx context.Context, suppliedPool *pgxp
 		}
 		after, err := j.runtime.lifecycle.Activate(bound, pending.ID)
 		if err != nil || after != t.ReturnState {
-			return ErrUnavailable
+			return preserveContextError(err, ErrUnavailable)
 		}
 		t.Phase = "returned"
 		if err := j.save(bound); err != nil {

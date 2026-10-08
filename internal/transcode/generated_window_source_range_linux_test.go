@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -78,17 +79,48 @@ func runGeneratedSourceRangeHelper(mode string) int {
 		if err != nil || len(data) == 0 {
 			return 75
 		}
+		beforeStat, ok := before.Sys().(*syscall.Stat_t)
+		if !ok {
+			return 75
+		}
 		file, err := os.OpenFile(string(data), os.O_WRONLY, 0)
 		if err != nil {
 			return 75
 		}
+		defer file.Close()
 		// Keep size and restore mtime so only the independent ctime fence
 		// distinguishes this changed source from its borrowed snapshot.
 		changed := append([]byte(nil), data...)
 		changed[0] ^= 1
-		_, writeErr := file.WriteAt(changed, 0)
-		closeErr := file.Close()
-		if writeErr != nil || closeErr != nil || os.Chtimes(string(data), before.ModTime(), before.ModTime()) != nil {
+		deadline := time.Now().Add(2 * time.Second)
+		for {
+			if _, err := file.WriteAt(changed, 0); err != nil {
+				return 76
+			}
+			if err := os.Chtimes(string(data), before.ModTime(), before.ModTime()); err != nil {
+				return 76
+			}
+			after, err := os.Stat(string(data))
+			if err != nil || !os.SameFile(before, after) || before.Size() != after.Size() || !before.ModTime().Equal(after.ModTime()) {
+				return 76
+			}
+			afterStat, ok := after.Sys().(*syscall.Stat_t)
+			if !ok {
+				return 76
+			}
+			if afterStat.Ctim != beforeStat.Ctim {
+				break
+			}
+			if time.Now().After(deadline) {
+				// Exit 80 identifies a fixture that could not produce the ctime
+				// transition required by this test, rather than valid evidence.
+				return 80
+			}
+			// Filesystems can expose coarse clock quanta. Retry only until this
+			// controlled same-size mutation has an observable ctime transition.
+			time.Sleep(time.Millisecond)
+		}
+		if err := file.Close(); err != nil {
 			return 76
 		}
 		fmt.Fprint(os.Stdout, document)
@@ -142,13 +174,39 @@ func TestMeasureGeneratedSourceRangeRejectsFailedEvidenceAndChangedInput(t *test
 	for mode, want := range map[string]error{"failure": ErrTimelineProbe, "stderr": ErrTimelineProbe, "bytes": ErrTimelineLimit, "frames": ErrTimelineLimit, "mutation": ErrInvalidInput} {
 		t.Run(mode, func(t *testing.T) {
 			input := hlsClockTestFile(t, []byte("authorized source"))
+			var mutationBefore, mutationAfter os.FileInfo
 			if mode == "mutation" {
 				if err := os.WriteFile(input.Name(), []byte(input.Name()), 0600); err != nil {
 					t.Fatal(err)
 				}
+				var err error
+				mutationBefore, err = input.Stat()
+				if err != nil {
+					t.Fatal(err)
+				}
 			}
 			got, err := MeasureGeneratedSourceRange(context.Background(), generatedSourceRangeHelper(t, mode), input, generatedSourceRangeTestPlan(), 2*ticksPerSecond)
+			if mode == "mutation" {
+				var statErr error
+				mutationAfter, statErr = input.Stat()
+				if statErr != nil {
+					t.Logf("mutation fixture before: size=%d mtime=%v stat=%+v", mutationBefore.Size(), mutationBefore.ModTime(), mutationBefore.Sys())
+					t.Fatalf("mutation fixture final stat failed: %v; evidence=%+v probe_error=%v", statErr, got, err)
+				}
+				beforeStat, beforeOK := mutationBefore.Sys().(*syscall.Stat_t)
+				afterStat, afterOK := mutationAfter.Sys().(*syscall.Stat_t)
+				if !beforeOK || !afterOK || !os.SameFile(mutationBefore, mutationAfter) || mutationBefore.Size() != mutationAfter.Size() ||
+					!mutationBefore.ModTime().Equal(mutationAfter.ModTime()) || beforeStat.Ctim == afterStat.Ctim {
+					t.Logf("mutation fixture before: size=%d mtime=%v stat=%+v", mutationBefore.Size(), mutationBefore.ModTime(), mutationBefore.Sys())
+					t.Logf("mutation fixture after: size=%d mtime=%v stat=%+v", mutationAfter.Size(), mutationAfter.ModTime(), mutationAfter.Sys())
+					t.Fatalf("mutation fixture did not establish an isolated ctime change: evidence=%+v probe_error=%v", got, err)
+				}
+			}
 			if got != (GeneratedSourceRange{}) || !errors.Is(err, want) {
+				if mode == "mutation" {
+					t.Logf("mutation fixture before: size=%d mtime=%v stat=%+v", mutationBefore.Size(), mutationBefore.ModTime(), mutationBefore.Sys())
+					t.Logf("mutation fixture after: size=%d mtime=%v stat=%+v", mutationAfter.Size(), mutationAfter.ModTime(), mutationAfter.Sys())
+				}
 				t.Fatalf("failed source evidence escaped its fence: %+v, %v", got, err)
 			}
 			hlsClockAssertOffset(t, input, 0)

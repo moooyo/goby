@@ -28,7 +28,7 @@ func (m *Manager) Plan(ctx context.Context, actor identity.Principal, request Pl
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if err := m.healthyLocked(); err != nil {
+	if err := m.healthyLocked(ctx); err != nil {
 		return OperationView{}, err
 	}
 	if m.engine == nil || m.cfg.Recovery.DatabaseURL == "" {
@@ -313,7 +313,7 @@ func (m *Manager) Apply(ctx context.Context, actor identity.Principal, id string
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if err := m.healthyLocked(); err != nil {
+	if err := m.healthyLocked(ctx); err != nil {
 		return OperationView{}, err
 	}
 	op := m.operationLocked(id)
@@ -356,7 +356,7 @@ func (m *Manager) Rollback(ctx context.Context, actor identity.Principal, reques
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if err := m.healthyLocked(); err != nil {
+	if err := m.healthyLocked(ctx); err != nil {
 		return OperationView{}, err
 	}
 	if generation != m.current.Revision || m.engine == nil {

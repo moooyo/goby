@@ -23,7 +23,7 @@ func NewOfflineManager(ctx context.Context, runtime *Runtime, cfg config.Config,
 	if runtime == nil {
 		return nil, ErrInvalid
 	}
-	current, err := runtime.lifecycle.Current()
+	current, err := runtime.lifecycle.CurrentContext(ctx)
 	if err != nil {
 		return nil, err
 	}

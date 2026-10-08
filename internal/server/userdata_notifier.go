@@ -37,11 +37,14 @@ type userDataNotificationMarker struct {
 	recursive bool
 	running   bool
 	dirty     bool
+	query     library.UserDataNotificationQuery
+	ctx       context.Context
 	cancel    context.CancelFunc
 }
 
 // userDataNotifier retains only post-commit identifiers, never an HTTP response
-// snapshot. One worker reads current state and preserves read/publication order.
+// snapshot. One worker reads a page at a time, rotating users while preserving
+// each user's marker and publication order.
 // Capacity includes the active marker. Repeated active markers request another
 // read, so a commit that races an existing read cannot lose its final update.
 type userDataNotifier struct {
@@ -52,25 +55,25 @@ type userDataNotifier struct {
 	done  chan struct{}
 	ready chan struct{}
 
-	mu        sync.Mutex
-	closed    bool
-	pending   map[userDataNotificationKey]*userDataNotificationMarker
-	userCount map[string]int
-	queue     []*userDataNotificationMarker
+	mu         sync.Mutex
+	closed     bool
+	pending    map[userDataNotificationKey]*userDataNotificationMarker
+	userQueues map[string][]*userDataNotificationMarker
+	queue      []string
 }
 
 func newUserDataNotifier(store userDataNotificationStore, hub *events.Hub) *userDataNotifier {
 	ctx, stop := context.WithCancel(context.Background())
 	notifier := &userDataNotifier{
-		store:     store,
-		hub:       hub,
-		ctx:       ctx,
-		stop:      stop,
-		done:      make(chan struct{}),
-		ready:     make(chan struct{}, 1),
-		pending:   make(map[userDataNotificationKey]*userDataNotificationMarker),
-		userCount: make(map[string]int),
-		queue:     make([]*userDataNotificationMarker, 0, userDataNotificationCapacity),
+		store:      store,
+		hub:        hub,
+		ctx:        ctx,
+		stop:       stop,
+		done:       make(chan struct{}),
+		ready:      make(chan struct{}, 1),
+		pending:    make(map[userDataNotificationKey]*userDataNotificationMarker),
+		userQueues: make(map[string][]*userDataNotificationMarker),
+		queue:      make([]string, 0, userDataNotificationCapacity),
 	}
 	go notifier.run()
 	return notifier
@@ -101,7 +104,7 @@ func (n *userDataNotifier) Enqueue(userID, itemID string, recursive bool) {
 		}
 		return
 	}
-	if len(n.pending) >= userDataNotificationCapacity || n.userCount[userID] >= userDataNotificationPerUser {
+	if len(n.pending) >= userDataNotificationCapacity || len(n.userQueues[userID]) >= userDataNotificationPerUser {
 		n.resyncUserLocked(userID)
 		return
 	}
@@ -111,8 +114,10 @@ func (n *userDataNotifier) Enqueue(userID, itemID string, recursive bool) {
 	key.itemID = strings.Clone(key.itemID)
 	marker := &userDataNotificationMarker{key: key, recursive: recursive}
 	n.pending[key] = marker
-	n.userCount[key.userID]++
-	n.queue = append(n.queue, marker)
+	if len(n.userQueues[key.userID]) == 0 {
+		n.queue = append(n.queue, key.userID)
+	}
+	n.userQueues[key.userID] = append(n.userQueues[key.userID], marker)
 	n.signal()
 }
 
@@ -128,7 +133,7 @@ func (n *userDataNotifier) Close() {
 		n.closed = true
 		n.stop()
 		clear(n.pending)
-		clear(n.userCount)
+		clear(n.userQueues)
 		n.queue = nil
 	}
 	n.mu.Unlock()
@@ -152,124 +157,134 @@ func (n *userDataNotifier) run() {
 			}
 			continue
 		}
-		marker := n.queue[0]
+		userID := n.queue[0]
 		copy(n.queue, n.queue[1:])
-		n.queue[len(n.queue)-1] = nil
+		n.queue[len(n.queue)-1] = ""
 		n.queue = n.queue[:len(n.queue)-1]
-		marker.running = true
-		marker.dirty = false
-		ctx, cancel := context.WithTimeout(n.ctx, userDataNotificationTimeout)
-		marker.cancel = cancel
-		recursive := marker.recursive
+		marker := n.userQueues[userID][0]
+		if marker.ctx == nil {
+			// A new traversal reads the latest committed state. Page yields keep
+			// this context, cursor, and dirty flag until the traversal finishes.
+			marker.running = true
+			marker.dirty = false
+			marker.ctx, marker.cancel = context.WithTimeout(n.ctx, userDataNotificationTimeout)
+			marker.query = library.UserDataNotificationQuery{
+				UserID: marker.key.userID, ItemID: marker.key.itemID,
+				Recursive: marker.recursive, Limit: userDataNotificationPageSize,
+			}
+		}
+		ctx, query := marker.ctx, marker.query
 		n.mu.Unlock()
 
-		err := n.notify(ctx, marker, recursive)
-		cancel()
-		n.finish(marker, err)
+		nextAfterID, err := n.notifyPage(ctx, marker, query)
+		n.finishPage(marker, nextAfterID, err)
 	}
 }
 
-func (n *userDataNotifier) notify(ctx context.Context, marker *userDataNotificationMarker, recursive bool) error {
-	query := library.UserDataNotificationQuery{
-		UserID: marker.key.userID, ItemID: marker.key.itemID,
-		Recursive: recursive, Limit: userDataNotificationPageSize,
+func (n *userDataNotifier) notifyPage(ctx context.Context, marker *userDataNotificationMarker, query library.UserDataNotificationQuery) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
 	}
-	for {
-		if err := ctx.Err(); err != nil {
-			return err
+	if n.hub.CountForUser(query.UserID) == 0 {
+		return "", nil
+	}
+	page, err := n.store.UserDataNotificationPage(ctx, query)
+	if err != nil {
+		return "", err
+	}
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	if len(page.Items) > userDataNotificationPageSize ||
+		(page.NextAfterID != "" && (!validNotificationID(page.NextAfterID) || page.NextAfterID <= query.AfterID)) {
+		return "", errors.New("invalid user data notification page")
+	}
+	if len(page.Items) > 0 {
+		data := struct {
+			UserID       string           `json:"UserId"`
+			UserDataList []map[string]any `json:"UserDataList"`
+		}{UserID: query.UserID, UserDataList: make([]map[string]any, 0, len(page.Items))}
+		for _, item := range page.Items {
+			if !validNotificationID(item.ItemID) {
+				return "", errors.New("invalid user data notification item identifier")
+			}
+			data.UserDataList = append(data.UserDataList, userDataDTO(item, true))
 		}
-		if n.hub.CountForUser(query.UserID) == 0 {
-			return nil
-		}
-		page, err := n.store.UserDataNotificationPage(ctx, query)
+		encoded, err := json.Marshal(data)
 		if err != nil {
-			return err
+			return "", err
 		}
-		if err := ctx.Err(); err != nil {
-			return err
-		}
-		if len(page.Items) > userDataNotificationPageSize ||
-			(page.NextAfterID != "" && (!validNotificationID(page.NextAfterID) || page.NextAfterID <= query.AfterID)) {
-			return errors.New("invalid user data notification page")
-		}
-		if len(page.Items) > 0 {
-			data := struct {
-				UserID       string           `json:"UserId"`
-				UserDataList []map[string]any `json:"UserDataList"`
-			}{UserID: query.UserID, UserDataList: make([]map[string]any, 0, len(page.Items))}
-			for _, item := range page.Items {
-				if !validNotificationID(item.ItemID) {
-					return errors.New("invalid user data notification item identifier")
-				}
-				data.UserDataList = append(data.UserDataList, userDataDTO(item, true))
-			}
-			encoded, err := json.Marshal(data)
-			if err != nil {
-				return err
-			}
-			// Serialize the final activity check with overflow and Close. A
-			// canceled old task must not publish to a newly reconnected socket.
-			n.mu.Lock()
-			if n.closed || n.pending[marker.key] != marker || ctx.Err() != nil {
-				n.mu.Unlock()
-				return context.Canceled
-			}
-			_, err = n.hub.PublishUser(query.UserID, events.Envelope{MessageType: "UserDataChanged", Data: encoded})
+		// Serialize the final activity check with overflow and Close. A
+		// canceled old task must not publish to a newly reconnected socket.
+		n.mu.Lock()
+		if n.closed || n.pending[marker.key] != marker || ctx.Err() != nil {
 			n.mu.Unlock()
-			if err != nil {
-				return err
-			}
+			return "", context.Canceled
 		}
-		if page.NextAfterID == "" {
-			return nil
+		_, err = n.hub.PublishUser(query.UserID, events.Envelope{MessageType: "UserDataChanged", Data: encoded})
+		n.mu.Unlock()
+		if err != nil {
+			return "", err
 		}
-		query.AfterID = page.NextAfterID
 	}
+	return page.NextAfterID, nil
 }
 
-func (n *userDataNotifier) finish(marker *userDataNotificationMarker, err error) {
+func (n *userDataNotifier) finishPage(marker *userDataNotificationMarker, nextAfterID string, err error) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
 	if n.closed || n.pending[marker.key] != marker {
 		return
 	}
-	marker.cancel = nil
 	if err != nil {
 		// Database, encoding, and publication failures use the same explicit
 		// resynchronization policy as overflow rather than silently dropping.
 		n.resyncUserLocked(marker.key.userID)
 		return
 	}
-	if marker.dirty {
-		marker.running = false
-		n.queue = append(n.queue, marker)
+	userID := marker.key.userID
+	if nextAfterID != "" {
+		marker.query.AfterID = nextAfterID
+	} else {
+		marker.cancel()
+		marker.cancel = nil
+		marker.ctx = nil
+	}
+	if nextAfterID != "" || marker.dirty {
+		// Keep the unfinished marker at its user's head, including dirty
+		// rereads, but give every other queued user a turn before continuing.
+		n.queue = append(n.queue, userID)
 		n.signal()
 		return
 	}
 	delete(n.pending, marker.key)
-	if n.userCount[marker.key.userID] <= 1 {
-		delete(n.userCount, marker.key.userID)
+	markers := n.userQueues[userID]
+	copy(markers, markers[1:])
+	markers[len(markers)-1] = nil
+	markers = markers[:len(markers)-1]
+	if len(markers) == 0 {
+		delete(n.userQueues, userID)
 	} else {
-		n.userCount[marker.key.userID]--
+		n.userQueues[userID] = markers
+		n.queue = append(n.queue, userID)
+		n.signal()
 	}
 }
 
 // resyncUserLocked requires n.mu. Hub methods never call into this notifier, so
 // taking the Hub lock while holding n.mu cannot invert the lock order.
 func (n *userDataNotifier) resyncUserLocked(userID string) {
-	for key, marker := range n.pending {
-		if key.userID == userID {
-			if marker.cancel != nil {
-				marker.cancel()
-			}
-			delete(n.pending, key)
+	for _, marker := range n.userQueues[userID] {
+		if marker.cancel != nil {
+			marker.cancel()
 		}
+		delete(n.pending, marker.key)
 	}
-	delete(n.userCount, userID)
+	delete(n.userQueues, userID)
 	retained := n.queue[:0]
-	for _, marker := range n.queue {
-		if marker.key.userID != userID {
-			retained = append(retained, marker)
+	for _, queuedUserID := range n.queue {
+		if queuedUserID != userID {
+			retained = append(retained, queuedUserID)
 		}
 	}
 	clear(n.queue[len(retained):])

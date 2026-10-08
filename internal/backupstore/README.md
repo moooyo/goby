@@ -16,8 +16,8 @@ provided by common local ext4, XFS, Btrfs, and tmpfs deployments. A dedicated
 local directory is required; there is no unsafe fallback for filesystems that
 lack these operations. Unprivileged linking uses the standard
 `/proc/self/fd/<owned descriptor>` fallback when `AT_EMPTY_PATH` is unavailable.
-This follows only the service's already-open anonymous descriptor. Other
-platforms provide compile-only stubs and return `ErrUnavailable`.
+This follows only the service's already-open anonymous descriptor. The package
+is built only for Linux.
 
 ## Publication contract
 
@@ -79,10 +79,15 @@ store degrades and retains recovery evidence; close and reopen it before
 reconciling that result. The catalog may already show `ready` after reopening.
 
 `Delete` requires the expected digest and rejects an active writer, snapshot, or
-`Protect` reference. Empty failed jobs use an empty expected digest. It persists
-a deletion intention before unlinking the exact registered file, then removes
-the catalog entry. Both sides of an interrupted deletion are recoverable. It
-never traverses or recursively removes directories and cannot address media,
+`Protect` reference. No-op NotFound, digest Conflict, and Busy outcomes check
+the pinned root and fixed metadata identities without opening the payload or
+enumerating the directory; a found record also checks its expected digest.
+An unknown directory entry may remain undiscovered until a later full audit.
+Once references retire, deletion audits the complete inventory
+under the same lock before persisting a deletion intention. Empty failed jobs
+use an empty expected digest. It then unlinks the exact registered file and
+removes the catalog entry. Both sides of an interrupted deletion are recoverable.
+It never traverses or recursively removes directories and cannot address media,
 database files, current encryption keys, or lifecycle generations.
 
 `Protect` is an in-process reference only. Before deletion, the coordinator must

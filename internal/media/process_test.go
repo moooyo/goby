@@ -72,3 +72,41 @@ func TestRunLimitedEnforcesBudgetsAndArguments(t *testing.T) {
 		t.Fatalf("canceled process returned %v", err)
 	}
 }
+
+func TestMediaProcessCancelErrorsRetainsBoundedFirstAndLatestFailures(t *testing.T) {
+	first := errors.New("first cancellation failure")
+	discarded := errors.New("intermediate cancellation failure")
+	latest := errors.New("latest cancellation failure")
+	var summary mediaProcessCancelErrors
+	summary.observe(first)
+	for attempt := 0; attempt < 100000; attempt++ {
+		summary.observe(discarded)
+	}
+	summary.observe(latest)
+	for attempt := 0; attempt < 100000; attempt++ {
+		summary.observe(nil)
+	}
+	err := summary.err()
+	if !errors.Is(err, first) || !errors.Is(err, latest) || errors.Is(err, discarded) {
+		t.Fatalf("cleanup did not retain only its first and latest failures: %v", err)
+	}
+	if !strings.Contains(err.Error(), "200002 attempts") || len(err.Error()) > 256 {
+		t.Fatalf("cleanup diagnostics grew with retry history or lost the attempt count: %v", err)
+	}
+	// Later retry observations cannot mutate a diagnostic already returned to
+	// an observer, and a successful signal does not erase an earlier failure.
+	summary.observe(errors.New("later cancellation failure"))
+	if !errors.Is(err, latest) || !strings.Contains(err.Error(), "200002 attempts") {
+		t.Fatalf("an observed cleanup result changed after another attempt: %v", err)
+	}
+}
+
+func TestMediaProcessCancelErrorsNilAttemptsRemainSuccessful(t *testing.T) {
+	var summary mediaProcessCancelErrors
+	for attempt := 0; attempt < 100000; attempt++ {
+		summary.observe(nil)
+	}
+	if err := summary.err(); err != nil {
+		t.Fatalf("successful cancellation attempts invented an error: %v", err)
+	}
+}

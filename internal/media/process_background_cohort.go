@@ -7,7 +7,7 @@ package media
 func (process *mediaProcess) detachBackgroundKernelOwnerAfterJoin() bool {
 	owner := process.conventional
 	if owner == nil {
-		return !conventionalRetirementSupported() && process.command.ProcessState != nil
+		return false
 	}
 	conventionalMediaOwners.mu.Lock()
 	defer conventionalMediaOwners.mu.Unlock()

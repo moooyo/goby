@@ -30,15 +30,20 @@ type activeAttempt struct {
 	cancel context.CancelFunc
 	done   chan struct{}
 }
+
+const notificationSenderLimit = 4
+
 type Runtime struct {
-	store   *Store
-	ctx     context.Context
-	cancel  context.CancelFunc
-	done    chan struct{}
-	mu      sync.Mutex
-	closed  bool
-	active  map[string]*activeAttempt
-	options RuntimeOptions
+	store    *Store
+	ctx      context.Context
+	cancel   context.CancelFunc
+	done     chan struct{}
+	ready    chan struct{}
+	mu       sync.Mutex
+	closed   bool
+	active   map[string]*activeAttempt
+	claiming chan struct{}
+	options  RuntimeOptions
 }
 
 // RootCAs is explicit deployment trust. Nil uses system roots; custom roots
@@ -47,7 +52,7 @@ type RuntimeOptions struct{ RootCAs *x509.CertPool }
 
 func NewRuntime(store *Store, options ...RuntimeOptions) *Runtime {
 	ctx, cancel := context.WithCancel(context.Background())
-	r := &Runtime{store: store, ctx: ctx, cancel: cancel, done: make(chan struct{}), active: map[string]*activeAttempt{}}
+	r := &Runtime{store: store, ctx: ctx, cancel: cancel, done: make(chan struct{}), ready: make(chan struct{}, 1), active: map[string]*activeAttempt{}}
 	if len(options) > 0 && options[0].RootCAs != nil {
 		r.options.RootCAs = options[0].RootCAs.Clone()
 	}
@@ -84,6 +89,7 @@ func (r *Runtime) fence(ctx context.Context, match func(target) bool) error {
 	}
 	r.mu.Lock()
 	waiting := []<-chan struct{}{}
+	claiming := r.claiming
 	for _, a := range r.active {
 		if match(a.target) {
 			a.cancel()
@@ -91,6 +97,23 @@ func (r *Runtime) fence(ctx context.Context, match func(target) bool) error {
 		}
 	}
 	r.mu.Unlock()
+	if claiming != nil {
+		select {
+		case <-claiming:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+		// A claim already in flight may not have exposed its owner when the
+		// fence began. Admission publishes ownership before closing this gate.
+		r.mu.Lock()
+		for _, a := range r.active {
+			if match(a.target) {
+				a.cancel()
+				waiting = append(waiting, a.done)
+			}
+		}
+		r.mu.Unlock()
+	}
 	for _, done := range waiting {
 		select {
 		case <-done:
@@ -131,8 +154,18 @@ func (r *Runtime) FenceConfig(ctx context.Context, current int64) error {
 }
 func (r *Runtime) run() {
 	defer close(r.done)
+	senderDone := make(chan struct{})
+	go func() {
+		defer close(senderDone)
+		r.send()
+	}()
+	defer func() {
+		r.cancel()
+		<-senderDone
+	}()
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
+	var nextHistory time.Time
 	for {
 		select {
 		case <-r.ctx.Done():
@@ -144,47 +177,118 @@ func (r *Runtime) run() {
 		if err == nil {
 			err = r.store.fanout(ctx)
 		}
+		if time.Now().After(nextHistory) {
+			if r.store.pruneHistory(ctx) == nil {
+				nextHistory = time.Now().Add(time.Hour)
+			}
+		}
 		cancel()
 		// Backpressure must let committed deliveries drain, including a
 		// prefix committed by this fanout pass. Other failures still retry.
 		if err != nil && !errors.Is(err, ErrLimit) {
 			continue
 		}
-		for n := 0; n < 8; n++ {
+		r.signal()
+	}
+}
+
+// send owns admission while each attempt owns its transport and observers. A
+// database lease can expire before transport workers retire, so the occupied
+// registration set, rather than lease state, limits real sender ownership.
+func (r *Runtime) send() {
+	var workers sync.WaitGroup
+	defer workers.Wait()
+	ticker := time.NewTicker(500 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-r.ctx.Done():
+			return
+		case <-r.ready:
+		case <-ticker.C:
+		}
+		for {
+			r.mu.Lock()
+			if r.closed || len(r.active) >= notificationSenderLimit {
+				r.mu.Unlock()
+				break
+			}
+			occupied := make([]string, 0, len(r.active))
+			for id := range r.active {
+				occupied = append(occupied, id)
+			}
+			r.claiming = make(chan struct{})
+			r.mu.Unlock()
 			ctx, cancel := context.WithTimeout(r.ctx, 3*time.Second)
-			d, err := r.store.claim(ctx)
+			d, err := r.store.claim(ctx, occupied)
 			cancel()
 			if errors.Is(err, pgx.ErrNoRows) {
+				r.endClaim()
 				break
 			}
 			if err != nil {
+				r.endClaim()
 				break
 			}
-			r.deliver(d)
-			if r.ctx.Err() != nil {
-				return
+			ctx, attempt, ok := r.beginAttempt(d)
+			r.endClaim()
+			if !ok {
+				r.finish(d, "pending", "interrupted", time.Second)
+				break
 			}
+			workers.Add(1)
+			go func() {
+				defer workers.Done()
+				defer r.endAttempt(d.registration, attempt)
+				r.deliver(ctx, d, attempt.cancel)
+			}()
 		}
 	}
 }
-func (r *Runtime) deliver(d delivery) {
+
+func (r *Runtime) endClaim() {
+	r.mu.Lock()
+	close(r.claiming)
+	r.claiming = nil
+	r.mu.Unlock()
+}
+
+func (r *Runtime) beginAttempt(d delivery) (context.Context, *activeAttempt, bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.closed || len(r.active) >= notificationSenderLimit || r.active[d.registration] != nil {
+		return nil, nil, false
+	}
 	ctx, cancel := context.WithTimeout(r.ctx, 10*time.Second)
-	defer cancel()
+	// The claim returns the immutable registration owner and both generations.
+	// Fences can therefore match this worker even during its first target read.
+	a := &activeAttempt{target: target{id: d.registration, session: d.session, user: d.user, regRevision: d.regRevision, configRevision: d.configRevision}, cancel: cancel, done: make(chan struct{})}
+	r.active[d.registration] = a
+	return ctx, a, true
+}
+
+func (r *Runtime) endAttempt(registration string, attempt *activeAttempt) {
+	attempt.cancel()
+	r.mu.Lock()
+	delete(r.active, registration)
+	close(attempt.done)
+	r.mu.Unlock()
+	r.signal()
+}
+
+func (r *Runtime) signal() {
+	select {
+	case r.ready <- struct{}{}:
+	default:
+	}
+}
+
+func (r *Runtime) deliver(ctx context.Context, d delivery, cancel context.CancelFunc) {
 	t, err := r.store.currentTarget(ctx, d.registration)
 	if err != nil {
 		r.fail(d, err)
 		return
 	}
-	a := &activeAttempt{target: t, cancel: cancel, done: make(chan struct{})}
-	r.mu.Lock()
-	if r.closed {
-		r.mu.Unlock()
-		r.finish(d, "pending", "interrupted", time.Second)
-		return
-	}
-	r.active[d.id] = a
-	r.mu.Unlock()
-	defer func() { cancel(); r.mu.Lock(); delete(r.active, d.id); close(a.done); r.mu.Unlock() }()
 	if t.regRevision != d.regRevision || t.configRevision != d.configRevision {
 		r.finish(d, "cancelled", "generation_changed", 0)
 		return
@@ -319,7 +423,7 @@ func (r *Runtime) checkDelivery(ctx context.Context, t target, expected []notifi
 	if fresh.regRevision != t.regRevision || fresh.configRevision != t.configRevision {
 		return identity.ErrUnauthorized
 	}
-	actor, err := r.store.users.RevalidateSession(ctx, t.principal())
+	actor, err := r.store.users.RevalidateSessionAuthority(ctx, t.principal())
 	if err != nil {
 		return err
 	}

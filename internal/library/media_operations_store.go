@@ -22,10 +22,12 @@ type mediaOperationQuerier interface {
 	QueryRow(context.Context, string, ...any) pgx.Row
 }
 
-const mediaOperationColumns = `o.id,o.kind,o.state,o.revision,o.source_item_id,o.source_library_id,o.source_root_id,
+const mediaOperationPublicColumns = `o.id,o.kind,o.state,o.revision,o.source_item_id,o.source_library_id,o.source_root_id,
 	o.media_source_id,o.source_revision,o.stream_index,o.parameters,o.progress_stage,o.processed,o.total,
 	o.result_summary,o.result_hash,o.publication_phase,o.cancel_requested_at,o.created_at,o.updated_at,o.started_at,o.finished_at,
-	o.error_code,o.error_message,(o.item_id=o.source_item_id AND o.library_id=o.source_library_id AND o.root_id=o.source_root_id) IS TRUE,
+	o.error_code,o.error_message,(o.item_id=o.source_item_id AND o.library_id=o.source_library_id AND o.root_id=o.source_root_id) IS TRUE`
+
+const mediaOperationColumns = mediaOperationPublicColumns + `,
 	o.source_snapshot,o.execution_snapshot,o.journal,o.worker_token,o.request_actor_id,o.request_credential_id,
 	o.apply_actor_id,o.apply_credential_id,o.request_id,o.request_fingerprint,o.apply_request_id,o.apply_fingerprint,o.apply_revision`
 
@@ -404,6 +406,16 @@ func (s *Store) StartMediaOperation(ctx context.Context, actor identity.Principa
 }
 
 func (s *Store) GetMediaOperation(ctx context.Context, actor identity.Principal, id string) (MediaOperation, error) {
+	return s.getMediaOperation(ctx, actor, id, false)
+}
+
+// GetMediaOperationSummary retains public status and capabilities without
+// loading execution documents, actor credentials, or request receipts.
+func (s *Store) GetMediaOperationSummary(ctx context.Context, actor identity.Principal, id string) (MediaOperation, error) {
+	return s.getMediaOperation(ctx, actor, id, true)
+}
+
+func (s *Store) getMediaOperation(ctx context.Context, actor identity.Principal, id string, summary bool) (MediaOperation, error) {
 	if !metadataIdentifier(id) {
 		return MediaOperation{}, ErrInvalidInput
 	}
@@ -412,7 +424,7 @@ func (s *Store) GetMediaOperation(ctx context.Context, actor identity.Principal,
 		return MediaOperation{}, err
 	}
 	defer rollback(tx)
-	op, err := readMediaOperation(ctx, tx, id, false)
+	op, err := readMediaOperationProjection(ctx, tx, id, summary)
 	if err != nil {
 		return op, err
 	}
@@ -444,6 +456,16 @@ func normalizeMediaOperationPage(options MediaOperationPageOptions) (MediaOperat
 }
 
 func (s *Store) ListMediaOperations(ctx context.Context, actor identity.Principal, options MediaOperationPageOptions) (MediaOperationPage, error) {
+	return s.listMediaOperations(ctx, actor, options, false)
+}
+
+// ListMediaOperationSummaries uses the same snapshot, ordering, validation,
+// and authority boundaries as the full-record list.
+func (s *Store) ListMediaOperationSummaries(ctx context.Context, actor identity.Principal, options MediaOperationPageOptions) (MediaOperationPage, error) {
+	return s.listMediaOperations(ctx, actor, options, true)
+}
+
+func (s *Store) listMediaOperations(ctx context.Context, actor identity.Principal, options MediaOperationPageOptions, summary bool) (MediaOperationPage, error) {
 	options, err := normalizeMediaOperationPage(options)
 	result := MediaOperationPage{Items: []MediaOperation{}, StartIndex: options.StartIndex, Limit: options.Limit}
 	if err != nil {
@@ -458,12 +480,13 @@ func (s *Store) ListMediaOperations(ctx context.Context, actor identity.Principa
 	if err = tx.QueryRow(ctx, `SELECT count(*) FROM media_operations WHERE `+predicate, options.ItemID, options.Kind, options.State).Scan(&result.TotalRecordCount); err != nil {
 		return result, err
 	}
-	rows, err := tx.Query(ctx, "SELECT "+mediaOperationColumns+` FROM media_operations o WHERE `+predicate+` ORDER BY created_at DESC,id DESC LIMIT $4 OFFSET $5`, options.ItemID, options.Kind, options.State, options.Limit, options.StartIndex)
+	columns, scan := mediaOperationReadProjection(summary)
+	rows, err := tx.Query(ctx, "SELECT "+columns+` FROM media_operations o WHERE `+predicate+` ORDER BY created_at DESC,id DESC LIMIT $4 OFFSET $5`, options.ItemID, options.Kind, options.State, options.Limit, options.StartIndex)
 	if err != nil {
 		return result, err
 	}
 	for rows.Next() {
-		op, e := scanMediaOperation(rows)
+		op, e := scan(rows)
 		if e != nil {
 			rows.Close()
 			return result, e
@@ -499,8 +522,7 @@ func (s *Store) pendingMediaOperations(ctx context.Context, limit int, cancellat
 	if limit < 1 || limit > 128 {
 		return nil, ErrInvalidInput
 	}
-	rows, err := s.pool.Query(ctx, "SELECT "+mediaOperationColumns+` FROM media_operations o WHERE worker_token='' AND (state IN ('queued','applying') OR (state IN ('ready','interrupted') AND cancel_requested_at IS NOT NULL))
-		AND (NOT $2::boolean OR (cancel_requested_at IS NOT NULL AND publication_phase='none'))
+	rows, err := s.pool.Query(ctx, "SELECT "+mediaOperationColumns+` FROM media_operations o WHERE `+mediaOperationPendingPredicate+`
 		ORDER BY (cancel_requested_at IS NOT NULL) DESC,created_at,id LIMIT $1`, limit, cancellationOnly)
 	if err != nil {
 		return nil, err
@@ -696,15 +718,32 @@ func mediaOperationFailure(cause error) (string, string) {
 	}
 }
 
-// MediaOperationWorkStatus lets the owner coordinator observe cancellation and
-// current authority without exporting private execution witnesses over HTTP.
-func (s *Store) MediaOperationWorkStatus(ctx context.Context, work MediaOperationWork) (MediaOperation, error) {
+// ReadMediaOperationWork retains the current journal for cancellation
+// compensation as well as verifying worker ownership and current authority.
+func (s *Store) ReadMediaOperationWork(ctx context.Context, work MediaOperationWork) (MediaOperation, error) {
+	return s.readMediaOperationWork(ctx, work, false)
+}
+
+// MediaOperationWorkStatus polls ownership, cancellation, and current authority
+// without loading private execution documents or request receipts.
+func (s *Store) MediaOperationWorkStatus(ctx context.Context, work MediaOperationWork) (MediaOperationStatus, error) {
+	op, err := s.readMediaOperationWork(ctx, work, true)
+	return MediaOperationStatus{ID: op.ID, State: op.State, WorkerToken: op.WorkerToken,
+		CancelRequestedAt: op.CancelRequestedAt, PublicationPhase: op.PublicationPhase}, err
+}
+
+func (s *Store) readMediaOperationWork(ctx context.Context, work MediaOperationWork, status bool) (MediaOperation, error) {
 	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{AccessMode: pgx.ReadOnly})
 	if err != nil {
 		return MediaOperation{}, err
 	}
 	defer rollback(tx)
-	op, err := readMediaOperation(ctx, tx, work.Operation.ID, false)
+	var op MediaOperation
+	if status {
+		op, err = scanMediaOperationStatus(tx.QueryRow(ctx, "SELECT "+mediaOperationStatusColumns+" FROM media_operations o WHERE o.id=$1", work.Operation.ID))
+	} else {
+		op, err = readMediaOperation(ctx, tx, work.Operation.ID, false)
+	}
 	if err != nil {
 		return op, err
 	}

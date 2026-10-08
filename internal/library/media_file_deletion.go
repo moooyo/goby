@@ -57,8 +57,8 @@ func (s *Store) prepareFileDeletion(ctx context.Context, spec fileDeletionSpec) 
 	if ctx == nil || !validFileDeletionSpec(spec) {
 		return nil, ErrInvalidInput
 	}
-	if s == nil || !fileDeletionSupported() {
-		return nil, fmt.Errorf("%w: safe file deletion requires Linux", ErrUnavailable)
+	if s == nil {
+		return nil, ErrUnavailable
 	}
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -216,7 +216,7 @@ func (s *Store) deletionStageIsEmpty(ctx context.Context, spec fileDeletionSpec)
 	if ctx == nil || !validFileDeletionSpec(spec) {
 		return false, ErrInvalidInput
 	}
-	if s == nil || !fileDeletionSupported() {
+	if s == nil {
 		return false, ErrUnavailable
 	}
 	if err := ctx.Err(); err != nil {

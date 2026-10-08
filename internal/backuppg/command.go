@@ -246,9 +246,6 @@ func decodeCommand(ctx context.Context, options Options, archive io.Reader, cons
 	if err := ownedCommandReader(archive, limit); err != nil {
 		return err
 	}
-	if runtime.GOOS != "linux" {
-		return ErrUnsupported
-	}
 	if err := checkBackupExecutable(options.PGRestore); err != nil {
 		return err
 	}

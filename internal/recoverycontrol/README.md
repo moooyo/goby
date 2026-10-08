@@ -121,6 +121,5 @@ proof also does not prevent an external actor from restoring an old disk image
 or the exact previous inode and bytes. It provides crash-consistent local CAS,
 not anti-rollback storage or proof that a business recovery operation succeeded.
 
-Non-Linux builds expose the same API and return `ErrUnavailable` for compilation
-compatibility. Linux operation needs no capability or privileged system call
-beyond normal ownership of the configured directory.
+The package is built only for Linux. Operation needs no capability or privileged
+system call beyond normal ownership of the configured directory.

@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"runtime"
 	"time"
 )
 
@@ -16,7 +15,7 @@ import (
 // same process governor, source-read phase, resource limiter, retirement, and
 // child/pipe join contract. Diagnostic bytes are counted, never accumulated.
 func runAudioWaveformProcess(ctx context.Context, source *os.File, tool *analysisTool, args []string, timeout time.Duration, stdoutLimit int64, stderr analysisStderrSink, parse func(io.Reader) error) error {
-	if ctx == nil || runtime.GOOS != "linux" || source == nil || tool == nil || tool.file == nil || stderr == nil || parse == nil || timeout <= 0 || timeout > 2*time.Hour || stdoutLimit < 1 || stdoutLimit > 4<<40 {
+	if ctx == nil || source == nil || tool == nil || tool.file == nil || stderr == nil || parse == nil || timeout <= 0 || timeout > 2*time.Hour || stdoutLimit < 1 || stdoutLimit > 4<<40 {
 		return ErrAnalysisUnavailable
 	}
 	err := RunSourceReadPhase(ctx, func(work context.Context) error {

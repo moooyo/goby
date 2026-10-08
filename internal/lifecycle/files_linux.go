@@ -114,6 +114,9 @@ func readRegular(ctx context.Context, directory *os.File, name string, limit int
 			return nil, trackedFile{}, ErrUnavailable
 		}
 	}
+	if err := ctx.Err(); err != nil {
+		return nil, trackedFile{}, err
+	}
 	var extra [1]byte
 	if n, err := file.Read(extra[:]); n != 0 || err != io.EOF {
 		return nil, trackedFile{}, ErrUnavailable
@@ -126,6 +129,37 @@ func readRegular(ctx context.Context, directory *os.File, name string, limit int
 		return nil, trackedFile{}, err
 	}
 	return data, trackedFile{Present: true, Identity: fileIdentity(stat), Digest: digest(data)}, nil
+}
+
+// inspectInertRegular checks an unused temporary file without reading bytes
+// that can never become lifecycle authority. It must not be used for a
+// publication candidate or an authoritative file.
+func inspectInertRegular(ctx context.Context, directory *os.File, name string, limit int64) (bool, error) {
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+	file, stat, err := openRegular(directory, name, unix.O_RDONLY)
+	if errors.Is(err, unix.ENOENT) {
+		return false, nil
+	}
+	if err != nil {
+		return false, ErrUnavailable
+	}
+	defer file.Close()
+	if stat.Size < 0 || stat.Size > limit {
+		return false, ErrUnavailable
+	}
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+	var after unix.Stat_t
+	if err := unix.Fstat(int(file.Fd()), &after); err != nil || !ownedRegular(after) || fileIdentity(after) != fileIdentity(stat) || after.Size != stat.Size || after.Mtim != stat.Mtim || after.Ctim != stat.Ctim {
+		return false, ErrUnavailable
+	}
+	if err := checkNamed(directory, name, fileIdentity(stat), false); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func checkNamed(directory *os.File, name string, expected identity, isDirectory bool) error {
@@ -193,6 +227,7 @@ func (s *Store) writeBytes(ctx context.Context, file *os.File, data []byte) erro
 
 // atomicWrite preserves both the candidate and the journal on uncertain
 // publication. A failed directory fsync poisons this Store until it is reopened.
+// The returned file is Present exactly when rename succeeded, even on error.
 func (s *Store) atomicWrite(ctx context.Context, name string, data []byte, expected trackedFile) (trackedFile, error) {
 	if err := s.checkTracked(ctx, name, expected); err != nil {
 		return trackedFile{}, err

@@ -19,8 +19,7 @@ func (s *Server) registerLocalCredentialRoutes(mux *http.ServeMux) {
 func (s *Server) localCredentialError(w http.ResponseWriter, r *http.Request, err error) {
 	switch {
 	case errors.Is(err, identity.ErrApplicationKeyVaultUnavailable), errors.Is(err, identity.ErrApplicationKeyVaultMissing),
-		errors.Is(err, identity.ErrApplicationKeyVaultUnsafe), errors.Is(err, identity.ErrApplicationKeyVaultCiphertext),
-		errors.Is(err, identity.ErrApplicationKeyVaultUnsupported):
+		errors.Is(err, identity.ErrApplicationKeyVaultUnsafe), errors.Is(err, identity.ErrApplicationKeyVaultCiphertext):
 		apiError(w, r, http.StatusServiceUnavailable, "credential_storage_unavailable", "Protected credential storage is unavailable.")
 	default:
 		s.preferenceError(w, r, err)

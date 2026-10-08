@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -98,7 +97,7 @@ func ExtractFontAttachment(ctx context.Context, executable string, input *os.Fil
 }
 
 func extractSubtitleBytes(ctx context.Context, executable string, input *os.File, index, limit int, args []string) ([]byte, error) {
-	if runtime.GOOS != "linux" || input == nil || index < 0 || index > 4095 || strings.TrimSpace(executable) == "" || strings.ContainsAny(executable, "\x00\r\n") {
+	if input == nil || index < 0 || index > 4095 || strings.TrimSpace(executable) == "" || strings.ContainsAny(executable, "\x00\r\n") {
 		return nil, ErrSubtitleExtraction
 	}
 	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)

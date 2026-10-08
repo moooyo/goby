@@ -113,7 +113,7 @@ func (s *Server) adminMediaOperations(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	result, err := s.library.ListMediaOperations(r.Context(), adminMediaOperationActor(r), page)
+	result, err := s.library.ListMediaOperationSummaries(r.Context(), adminMediaOperationActor(r), page)
 	if err != nil {
 		s.mediaOperationError(w, r, err)
 		return
@@ -132,7 +132,7 @@ func (s *Server) adminMediaOperation(w http.ResponseWriter, r *http.Request) {
 	if !ok || !adminMediaOperationNoQuery(w, r) {
 		return
 	}
-	operation, err := s.library.GetMediaOperation(r.Context(), adminMediaOperationActor(r), id)
+	operation, err := s.library.GetMediaOperationSummary(r.Context(), adminMediaOperationActor(r), id)
 	if err != nil {
 		s.mediaOperationError(w, r, err)
 		return
@@ -149,7 +149,7 @@ func (s *Server) adminMediaOperationReview(w http.ResponseWriter, r *http.Reques
 	if !ok {
 		return
 	}
-	result, err := s.library.GetMediaOperationReview(r.Context(), adminMediaOperationActor(r), id, page)
+	result, err := s.library.GetMediaOperationReviewSummary(r.Context(), adminMediaOperationActor(r), id, page)
 	if err != nil {
 		s.mediaOperationError(w, r, err)
 		return

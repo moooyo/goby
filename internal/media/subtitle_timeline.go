@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"runtime"
 	"sort"
 	"time"
 )
@@ -126,9 +125,6 @@ func GenerateSubtitleTimelinesWithExternal(ctx context.Context, config BitmapSub
 				return summary, fmt.Errorf("%w: duplicated external track or inconsistent companion", ErrBitmapSubtitle)
 			}
 		}
-	}
-	if runtime.GOOS != "linux" {
-		return summary, fmt.Errorf("%w: Linux is required", ErrSubtitleTimelineUnsupported)
 	}
 	if input == nil || info.DurationTicks <= 0 || info.DurationTicks > subtitleTimelineDurationLimit ||
 		info.FormatStartTicks < -subtitleTimelineDurationLimit || info.FormatStartTicks > subtitleTimelineDurationLimit ||

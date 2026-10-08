@@ -11,7 +11,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -71,9 +70,6 @@ func (p Prober) Probe(ctx context.Context, path string) (Info, error) {
 func (p Prober) ProbeFile(ctx context.Context, file *os.File) (Info, error) {
 	if err := ctx.Err(); err != nil {
 		return Info{}, err
-	}
-	if runtime.GOOS != "linux" {
-		return Info{}, fmt.Errorf("media probing requires Linux")
 	}
 	timeout := p.Timeout
 	if timeout <= 0 {

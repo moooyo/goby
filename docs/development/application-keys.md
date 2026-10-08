@@ -51,8 +51,7 @@ Do not encode its contents as hex or base64. Every path component is opened
 without following symlinks. Readers and creators take an exclusive directory
 `flock` with bounded waiting. First creation uses exclusive file creation,
 cryptographic randomness, explicit permissions, and file and directory `fsync`.
-Non-Linux secret operations fail as unsupported rather than creating a weaker
-file. Parent-directory privacy is an operator deployment requirement.
+Parent-directory privacy is an operator deployment requirement.
 
 Tokens use AES-256-GCM with a fresh 12-byte nonce and a versioned envelope.
 Additional authenticated data includes the credential ID and a fixed purpose

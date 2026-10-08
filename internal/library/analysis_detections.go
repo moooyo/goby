@@ -7,6 +7,7 @@ import (
 	"math"
 	"reflect"
 	"strconv"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/identity"
@@ -393,6 +394,65 @@ type analysisDetectionProof struct {
 	active                  bool
 }
 
+type analysisDetectionRecord struct {
+	revision int64
+	proof    analysisDetectionProof
+	status   string
+	raw      []byte
+	start    *int64
+	end      *int64
+	updated  time.Time
+}
+
+// Both inventory and playback interpret the same persisted result contract.
+// When current is true, the caller must check current settings and indexed
+// support facts. Retired algorithms remain visible without current authority.
+func projectAnalysisDetectionRecord(result *AnalysisDetection, decisionRevision int64, record analysisDetectionRecord) (current, allowEmpty bool, err error) {
+	result.Revision = strconv.FormatInt(max(record.revision, decisionRevision), 10)
+	result.Status, result.UpdatedAt = record.status, record.updated
+	facts, decoded, decodeErr := decodeAnalysisStoredResult(record.raw)
+	if decodeErr != nil || !analysisStoredFactsMatch(facts, result.Status, record.start, record.end) {
+		return false, false, ErrUnavailable
+	}
+	result.Reasons = []string{}
+	for _, reason := range facts.Episode.Reasons {
+		result.Reasons = append(result.Reasons, reason)
+	}
+	if facts.Reason != "" {
+		result.Reasons = append(result.Reasons, facts.Reason)
+	}
+	if decoded == nil && facts.Version != introskipper.Version {
+		result.Status = "stale"
+		result.Reasons = append(result.Reasons, "algorithm_changed")
+		return false, false, nil
+	}
+	if facts.Version == introskipper.Version {
+		var native AnalysisStoredIntroSkipperResult
+		if analysisStrictJSON(record.raw, &native) != nil {
+			return false, false, ErrUnavailable
+		}
+		result.IntroSkipperCandidate = native.Episode.Candidate
+	} else if len(decoded.Episode.Candidates) > 0 {
+		candidate := decoded.Episode.Candidates[0]
+		result.Candidate = &candidate
+	}
+	return true, facts.Reason != "", nil
+}
+
+func analysisDetectionStaleReason(source AnalysisSource, proof analysisDetectionProof, revision, epoch int64) string {
+	if proof.revision != revision || proof.epoch != epoch {
+		return "profile_changed"
+	}
+	if proof.source != source.SourceRevision {
+		return "source_changed"
+	}
+	return ""
+}
+
+func analysisDetectionCanPublish(result AnalysisDetection, record analysisDetectionRecord) bool {
+	return record.proof.active && result.Status == "qualified" && !result.Suppressed && result.Effective == nil && record.start != nil && record.end != nil
+}
+
 func readAnalysisDetection(ctx context.Context, tx pgx.Tx, access libraryAccess, source AnalysisSource) (AnalysisDetection, error) {
 	result := AnalysisDetection{ItemID: source.ItemID, Revision: "0", ManualRevision: source.ManualRevision, SourceRevision: source.SourceRevision, Status: "not_analyzed", Reasons: []string{"not_analyzed"}}
 	if source.ItemType == "Movie" || source.ItemType == "Episode" {
@@ -410,60 +470,26 @@ func readAnalysisDetection(ctx context.Context, tx pgx.Tx, access libraryAccess,
 	}
 	result.Suppressed = result.Suppressed && decisionSource == source.SourceRevision
 	result.Revision = strconv.FormatInt(decisionRevision, 10)
-	var proof analysisDetectionProof
-	var raw []byte
-	var start, end *int64
-	var revision int64
-	err = tx.QueryRow(ctx, `SELECT revision,source_revision,profile_fingerprint,profile_revision,publication_epoch,cohort_revision,status,result,start_ticks,end_ticks,auto_published,updated_at FROM analysis_detections WHERE item_id=$1`, source.ItemID).Scan(&revision, &proof.source, &proof.profile, &proof.revision, &proof.epoch, &proof.cohort, &result.Status, &raw, &start, &end, &proof.active, &result.UpdatedAt)
+	var record analysisDetectionRecord
+	err = tx.QueryRow(ctx, `SELECT revision,source_revision,profile_fingerprint,profile_revision,publication_epoch,cohort_revision,status,result,start_ticks,end_ticks,auto_published,updated_at FROM analysis_detections WHERE item_id=$1`, source.ItemID).Scan(&record.revision, &record.proof.source, &record.proof.profile, &record.proof.revision, &record.proof.epoch, &record.proof.cohort, &record.status, &record.raw, &record.start, &record.end, &record.proof.active, &record.updated)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return result, nil
 	}
 	if err != nil {
 		return result, err
 	}
-	result.Revision = strconv.FormatInt(max(revision, decisionRevision), 10)
-	facts, current, decodeErr := decodeAnalysisStoredResult(raw)
-	if decodeErr != nil || !analysisStoredFactsMatch(facts, result.Status, start, end) {
-		return result, ErrUnavailable
-	}
-	result.Reasons = []string{}
-	for _, reason := range facts.Episode.Reasons {
-		result.Reasons = append(result.Reasons, reason)
-	}
-	if facts.Reason != "" {
-		result.Reasons = append(result.Reasons, facts.Reason)
-	}
-	// Retired algorithm claims remain auditable without inventing current metrics
-	// or making old qualification effective under unchanged settings and sources.
-	if current == nil && facts.Version != introskipper.Version {
-		result.Status = "stale"
-		result.Reasons = append(result.Reasons, "algorithm_changed")
-		return result, nil
-	}
-	if facts.Version == introskipper.Version {
-		var native AnalysisStoredIntroSkipperResult
-		if analysisStrictJSON(raw, &native) != nil {
-			return result, ErrUnavailable
-		}
-		result.IntroSkipperCandidate = native.Episode.Candidate
-	} else if len(current.Episode.Candidates) > 0 {
-		candidate := current.Episode.Candidates[0]
-		result.Candidate = &candidate
-	}
-	stale := ""
-	if proof.source != source.SourceRevision {
-		stale = "source_changed"
+	current, allowEmpty, err := projectAnalysisDetectionRecord(&result, decisionRevision, record)
+	if err != nil || !current {
+		return result, err
 	}
 	var currentRevision, currentEpoch int64
 	var maxBytes int64
 	if err := tx.QueryRow(ctx, `SELECT revision,publication_epoch,max_source_bytes FROM analysis_settings WHERE id=1`).Scan(&currentRevision, &currentEpoch, &maxBytes); err != nil {
 		return result, err
 	}
-	if proof.revision != currentRevision || proof.epoch != currentEpoch {
-		stale = "profile_changed"
-	}
+	stale := analysisDetectionStaleReason(source, record.proof, currentRevision, currentEpoch)
 	if stale == "" {
-		valid, err := analysisDetectionReferencesCurrent(ctx, tx, access, source, proof.cohort, maxBytes, facts.Reason != "")
+		valid, err := analysisDetectionReferencesCurrent(ctx, tx, access, source, record.proof.cohort, maxBytes, allowEmpty)
 		if err != nil {
 			return result, err
 		}
@@ -474,13 +500,13 @@ func readAnalysisDetection(ctx context.Context, tx pgx.Tx, access libraryAccess,
 	if stale != "" {
 		result.Status = "stale"
 		result.Reasons = append(result.Reasons, stale)
-	} else if proof.active && result.Status == "qualified" && !result.Suppressed && result.Effective == nil && start != nil && end != nil {
+	} else if analysisDetectionCanPublish(result, record) {
 		var libraryEnabled bool
 		if err := tx.QueryRow(ctx, analysisIntroLibraryPolicySQL, source.LibraryID).Scan(&libraryEnabled); err != nil {
 			return result, err
 		}
 		if libraryEnabled {
-			result.Effective = &IntroInterval{StartTicks: *start, EndTicks: *end, Provenance: "Detected"}
+			result.Effective = &IntroInterval{StartTicks: *record.start, EndTicks: *record.end, Provenance: "Detected"}
 		}
 	}
 	return result, nil

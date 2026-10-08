@@ -112,7 +112,7 @@ func TestManagedHardwareInventoryRejectsChangedStartupIdentity(t *testing.T) {
 }
 
 func TestManagedHardwareInventoryDoesNotAdoptDeviceMissingAtStartup(t *testing.T) {
-	for _, startupCode := range []string{managedHardwareMissing, managedHardwareNotAMD, managedHardwareInvalid, managedHardwarePlatformMissing} {
+	for _, startupCode := range []string{managedHardwareMissing, managedHardwareNotAMD, managedHardwareInvalid} {
 		t.Run(startupCode, func(t *testing.T) {
 			calls := 0
 			inventory := newManagedHardwareInventoryWithInspector(config.TranscodingConfig{Hardware: transcode.Hardware{Decode: "vaapi"}},

@@ -104,7 +104,7 @@ func readControl(ctx context.Context, runtime *Runtime) (controlData, recoveryco
 	if err != nil {
 		return controlData{}, snapshot, err
 	}
-	current, err := runtime.lifecycle.Current()
+	current, err := runtime.lifecycle.CurrentContext(ctx)
 	if err != nil {
 		return controlData{}, snapshot, err
 	}

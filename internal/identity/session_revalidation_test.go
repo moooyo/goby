@@ -36,9 +36,13 @@ func TestRevalidateSessionRejectsInvalidTrustedIdentifiersBeforeDatabaseAccess(t
 	}
 	for name, principal := range tests {
 		t.Run(name, func(t *testing.T) {
-			refreshed, err := store.RevalidateSession(context.Background(), principal)
-			if !errors.Is(err, identity.ErrUnauthorized) || !reflect.DeepEqual(refreshed, identity.Principal{}) {
-				t.Errorf("invalid prior authentication returned principal = %+v, error = %v", refreshed, err)
+			for _, revalidate := range []func(context.Context, identity.Principal) (identity.Principal, error){
+				store.RevalidateSession, store.RevalidateSessionAuthority,
+			} {
+				refreshed, err := revalidate(context.Background(), principal)
+				if !errors.Is(err, identity.ErrUnauthorized) || !reflect.DeepEqual(refreshed, identity.Principal{}) {
+					t.Errorf("invalid prior authentication returned principal = %+v, error = %v", refreshed, err)
+				}
 			}
 		})
 	}

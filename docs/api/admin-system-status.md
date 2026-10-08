@@ -58,24 +58,18 @@ The response uses this shape (numbers below are illustrative):
   expressed from 0 to 100. It is `null` until two valid counter observations
   at least one second apart exist. Counter failures and resets invalidate the
   interval. Linux includes I/O wait in idle time and excludes double-counted
-  guest time. Load values are Linux one-, five-, and fifteen-minute averages;
-  Windows has no matching native values and returns `null` for them. On Windows
-  with multiple processor groups, the partial `GetSystemTimes` counters cannot
-  establish host-wide utilization and `UsagePercent` stays `null`.
+  guest time. Load values are Linux one-, five-, and fifteen-minute averages.
 - Memory describes the OS host, not the Goby process or a container resource
   limit. Linux reads `/proc/meminfo`: used is `MemTotal - MemAvailable`, cached
   is `Cached + SReclaimable - Shmem`, and swap used is `SwapTotal - SwapFree`.
-  Windows uses `GlobalMemoryStatusEx` physical memory and `GetPerformanceInfo`
-  system cache. Windows swap use is `null`; commit charge is not reported as
-  swap. Missing fields remain `null`.
+  Missing fields remain `null`.
 - `Storage.Volumes` contains one entry per distinct configured media directory,
   including unavailable directories. Each entry describes its backing
   filesystem, not the bytes occupied by that directory. Aggregate capacity
   counts a backing filesystem once even if several directories use it. Linux
-  identifies the filesystem by device ID, including bind mounts; Windows uses
-  its volume GUID when available and its mount/share path otherwise. Windows
-  capacity honors the service account's quota. Linux reports filesystem blocks
-  and free blocks, including space reserved from ordinary users.
+  identifies the filesystem by device ID, including bind mounts, and reports
+  filesystem blocks and free blocks, including space reserved from ordinary
+  users.
 - If any configured directory cannot be read, `Storage.Complete` is false and
   aggregate `TotalBytes` and `UsedBytes` are `null`; readable per-directory
   observations remain available. An empty directory configuration has an empty
@@ -92,8 +86,7 @@ The response uses this shape (numbers below are illustrative):
 - A disabled conversion engine has `Available: false` and all four counts zero.
   An enabled engine that cannot report metrics has `Available: false` and all
   four counts `null`. Unavailable host metrics also remain `null` rather than
-  becoming zero-valued success. Unsupported OS platforms return the host identity
-  and explicit missing observations.
+  becoming zero-valued success.
 
 The endpoint is operational telemetry, not a readiness decision or a hardware
 capability proof. Partial host observations still produce HTTP 200; an absent

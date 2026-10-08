@@ -391,18 +391,14 @@ func (o *liveObserver) scratchBudget() error {
 		if !validLiveScratchName(name, o.plan) {
 			return ErrCacheUnsafe
 		}
-		file, err := cacheOpenRegular(o.directory, name, syscall.O_RDONLY, 0)
+		file, info, err := cacheOpenRegularInfo(o.directory, name, syscall.O_RDONLY, 0)
 		if os.IsNotExist(err) {
 			continue
 		}
 		if err != nil {
 			return err
 		}
-		info, err := file.Stat()
 		_ = file.Close()
-		if err != nil {
-			return err
-		}
 		if info.Size() < 0 || info.Size() > o.live.maxBytes-bytes {
 			return ErrQuota
 		}

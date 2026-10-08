@@ -68,7 +68,11 @@ and refuses subsequent operations until closed and reopened. Reopening accepts
 only a coherent old or candidate state. Losing an active manifest after a
 completed publication cannot silently select the primary database again.
 
-An interrupted stage stays incomplete and is never exposed or activated. A
+An interrupted stage stays incomplete and is never exposed or activated. If
+cancellation occurs before the first registry rename and before directory
+creation, its unpublished in-memory intention is discarded and the store
+remains usable. Registry-write failures after generation-directory creation
+retain the recovery barrier. A
 complete, identical stage retry is idempotent; an incomplete ID cannot be
 reused. If a crash occurs between creating a directory and persisting its inode
 registration, the existing directory is not claimed on restart. This narrow
@@ -81,8 +85,13 @@ finish empty initialization on the next open.
 
 Temporary metadata files left after an interrupted atomic write are inert;
 they are neither adopted as manifests nor automatically deleted. The package
-has no generation cleanup API. Recovery tooling must not delete incomplete or
-unregistered paths based only on a basename. The registry admits at most 4096
+checks their bounded size, file type, ownership, permissions, link count, and
+descriptor/name identity without reading or hashing their unused contents.
+Unreadable payload blocks in inert debris do not affect current authority.
+These metadata checks never replace authoritative-file reads or the publication
+protocol. The package has no generation cleanup API. Recovery tooling must not
+delete incomplete or unregistered paths based only on a basename. The registry
+admits at most 4096
 generations and directory enumeration is also bounded. Sufficient accumulated
 incomplete generations or temporary debris therefore requires explicit operator
 maintenance before new work can be admitted; it is not permission for automatic
@@ -92,8 +101,10 @@ Public context-taking operations use a cancellable serialization gate and
 check cancellation between bounded reads and writes. A kernel filesystem call,
 including `fsync`, already in progress cannot be interrupted by Go context
 cancellation. Publication past rename is completed or reported uncertain; it
-is never undone because cancellation arrived late. `Current` uses an internal
-background context; `Close` waits for an operation already in progress.
+is never undone because cancellation arrived late. `CurrentContext` returns
+only State with the caller's cancellation budget; `Current` retains its internal
+background-context compatibility behavior. `Close` waits for an operation
+already in progress.
 
 The same UID is a trusted boundary. Descriptor-relative operations, inode
 checks, and flock fence cooperative deployment processes and reject observed
@@ -101,5 +112,4 @@ replacement. They cannot provide adversarial isolation from another process
 with the same UID that ignores locks and deliberately races kernel pathname
 operations. The directory must stay private to the deployment service UID.
 
-Non-Linux builds expose the same API and return `ErrUnavailable`; this is only
-for cross-platform compilation, not a second supported runtime.
+The package is built only for Linux.

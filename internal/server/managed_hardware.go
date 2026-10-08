@@ -19,7 +19,6 @@ const (
 	managedHardwareIdentityChanged = "hardware_device_identity_changed"
 	managedHardwareNotAuthorized   = "hardware_device_not_authorized"
 	managedHardwareUnsupported     = "hardware_selection_unsupported"
-	managedHardwarePlatformMissing = "hardware_device_unsupported_platform"
 )
 
 // managedHardwareDevice is the entire management projection. Device paths and

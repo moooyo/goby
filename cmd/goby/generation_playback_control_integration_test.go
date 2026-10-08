@@ -7,8 +7,26 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/puddle/v2"
 	"github.com/moooyo/goby/internal/database"
 )
+
+func assertGenerationPoolClosed(t *testing.T, name string, pool *pgxpool.Pool) {
+	t.Helper()
+	// A spent fixture context would mask ErrClosedPool with its own deadline.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	connection, err := pool.Acquire(ctx)
+	if connection != nil {
+		connection.Release()
+	}
+	if !errors.Is(err, puddle.ErrClosedPool) {
+		stats := pool.Stat()
+		t.Fatalf("closed %s pool returned %v instead of ErrClosedPool: total=%d idle=%d acquired=%d",
+			name, err, stats.TotalConns(), stats.IdleConns(), stats.AcquiredConns())
+	}
+}
 
 func TestGenerationCloseRetainsLeaseUntilReservedControlCapacityDrains(t *testing.T) {
 	url := os.Getenv("GOBY_TEST_DATABASE_URL")
@@ -56,11 +74,25 @@ func TestGenerationCloseRetainsLeaseUntilReservedControlCapacityDrains(t *testin
 		t.Fatal("generation cleanup completed while reserved capacity remained borrowed")
 	default:
 	}
+	controlConn := borrowed.Conn()
+	controlCleanupDone := controlConn.PgConn().CleanupDone()
+	controlPID := controlConn.PgConn().PID()
 	borrowed.Release()
 	if err := g.Close(ctx); err != nil || lease.Protects(data) {
 		t.Fatal("generation cleanup did not join both pool drains before releasing ownership")
 	}
-	if data.Stat().TotalConns() != 0 || control.Stat().TotalConns() != 0 {
-		t.Fatal("generation cleanup retained application database backends")
+	// Closed pool counts can retain bookkeeping entries; check the concrete
+	// resource and admission boundary instead of aggregate post-close counts.
+	if !controlConn.IsClosed() {
+		t.Fatalf("generation cleanup retained control connection PID %d: data_total=%d control_total=%d control_idle=%d",
+			controlPID, data.Stat().TotalConns(), control.Stat().TotalConns(), control.Stat().IdleConns())
 	}
+	select {
+	case <-controlCleanupDone:
+	default:
+		t.Fatalf("generation cleanup did not finish control connection PID %d cleanup: data_total=%d control_total=%d control_idle=%d",
+			controlPID, data.Stat().TotalConns(), control.Stat().TotalConns(), control.Stat().IdleConns())
+	}
+	assertGenerationPoolClosed(t, "data", data)
+	assertGenerationPoolClosed(t, "control", control)
 }

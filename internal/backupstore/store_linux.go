@@ -408,7 +408,7 @@ func (s *Store) Delete(ctx context.Context, id, expectedDigest string) error {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if err := s.healthy(ctx); err != nil {
+	if err := s.healthyIdentity(ctx); err != nil {
 		return err
 	}
 	i := s.index(id)
@@ -426,6 +426,11 @@ func (s *Store) Delete(ctx context.Context, id, expectedDigest string) error {
 		if readerID == id {
 			return ErrBusy
 		}
+	}
+	// Busy retries only inspect fixed identities. Audit the complete inventory
+	// under the same lock before publishing any deletion intent.
+	if err := s.checkInventory(); err != nil {
+		return s.unhealthy(err)
 	}
 	next := s.clone()
 	next.Entries[i].Deleting = true

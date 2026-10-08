@@ -329,7 +329,7 @@ func (s *Store) readCurrent(ctx context.Context) (Snapshot, recordReference, err
 	if err := s.checkRoot(ctx); err != nil {
 		return Snapshot{}, recordReference{}, err
 	}
-	return recordSnapshot(current, data), actual, nil
+	return recordSnapshot(current, file.Digest), actual, nil
 }
 
 func (s *Store) Read(ctx context.Context) (Snapshot, error) {
@@ -395,7 +395,7 @@ func (s *Store) CompareAndSwap(ctx context.Context, expectedDigest string, paylo
 		return Snapshot{}, err
 	}
 	s.currentFile = file
-	return recordSnapshot(candidate, data), nil
+	return recordSnapshot(candidate, file.Digest), nil
 }
 
 // Close waits for the current bounded operation and then releases both locks.

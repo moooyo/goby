@@ -3,11 +3,15 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"reflect"
 	"testing"
+
+	"github.com/moooyo/goby/internal/library"
 )
 
 func updateConfigurationHTTP(t *testing.T, p *playbackHTTPFixture, patch map[string]any) {
@@ -116,22 +120,49 @@ func TestHTTPDisplayPreferencesApplyScopedDefaultsWithoutBlockingBrowsing(t *tes
 	}
 	assertOrder(list+"&Client=web", p.secondItemID, p.s.video.id)
 	assertOrder(list+"&Client=tv", p.s.video.id, p.secondItemID)
+	assertOrder(list+"&Client=web&SortBy=SortName", p.secondItemID, p.s.video.id)
+	assertOrder(list+"&Client=web&SortOrder=Ascending", p.s.video.id, p.secondItemID)
 	assertOrder(list+"&Client=web&SortBy=SortName&SortOrder=Ascending", p.s.video.id, p.secondItemID)
 	assertOrder(list+"&Client=web&DisplayPreferencesId="+p.s.video.libraryID, p.secondItemID, p.s.video.id)
 	expectStatus(t, p.s.f.request(t, http.MethodPost, path, map[string]any{"SortBy": "Unsupported"}, p.headers), http.StatusBadRequest)
 	expectStatus(t, p.s.f.request(t, http.MethodGet, path+"&client=tv", nil, p.headers), http.StatusBadRequest)
 	expectStatus(t, p.s.f.request(t, http.MethodGet, list+"&Client=web&client=tv", nil, p.headers), http.StatusBadRequest)
+	if _, err := p.s.f.pool.Exec(p.s.f.ctx, `UPDATE display_preferences SET preferences=preferences || '{"SortOrder":"Unsupported"}'::jsonb
+		WHERE user_id=$1 AND client='web' AND preferences_id=$2`, p.s.viewerID, p.s.video.libraryID); err != nil {
+		t.Fatal(err)
+	}
+	assertOrder(list+"&Client=web&SortBy=SortName&SortOrder=Ascending", p.s.video.id, p.secondItemID)
+	assertOrder(list+"&Client=web&SortBy=&SortOrder=", p.s.video.id, p.secondItemID)
+	actor, err := p.s.f.users.ResolveEmby(p.s.f.ctx, p.s.token)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, sortQuery := range []string{"", "&SortBy=SortName", "&SortOrder=Ascending"} {
+		r := httptest.NewRequest(http.MethodGet, list+"&Client=web"+sortQuery, nil)
+		r = r.WithContext(context.WithValue(p.s.f.ctx, principalKey, actor))
+		// Populated query defaults must not count as explicit URL parameters.
+		query := library.Query{UserID: p.s.viewerID, ParentID: p.s.video.libraryID, SortBy: "SortName", SortOrder: "Ascending"}
+		response := httptest.NewRecorder()
+		if p.s.f.app.applyDisplayPreferenceDefaults(response, r, &query) || response.Code != http.StatusServiceUnavailable {
+			t.Fatalf("partial URL sort %q bypassed corrupt stored defaults: status %d", sortQuery, response.Code)
+		}
+	}
 	if _, err := p.s.f.pool.Exec(p.s.f.ctx, `UPDATE users SET policy=policy || '{"EnableUserPreferenceAccess":false}'::jsonb WHERE id=$1`, p.s.viewerID); err != nil {
 		t.Fatal(err)
 	}
 	// Denied implicit preference access skips defaults; it must not deny a
 	// separately authorized catalog read or disclose saved settings.
 	assertOrder(list+"&Client=web", p.s.video.id, p.secondItemID)
+	assertOrder(list+"&Client=web&SortBy=SortName&SortOrder=Ascending", p.s.video.id, p.secondItemID)
 	expectStatus(t, p.s.f.request(t, http.MethodGet, path, nil, p.headers), http.StatusForbidden)
+	if _, err := p.s.f.pool.Exec(p.s.f.ctx, `UPDATE users SET policy=policy || '{"EnabledFolders":[]}'::jsonb WHERE id=$1`, p.s.viewerID); err != nil {
+		t.Fatal(err)
+	}
+	expectStatus(t, p.s.f.request(t, http.MethodGet, list+"&Client=web&SortBy=SortName&SortOrder=Ascending", nil, p.headers), http.StatusNotFound)
 	if _, err := p.s.f.pool.Exec(p.s.f.ctx, `UPDATE sessions SET revoked_at=clock_timestamp() WHERE id=$1`, p.authSessionID); err != nil {
 		t.Fatal(err)
 	}
-	expectStatus(t, p.s.f.request(t, http.MethodGet, list+"&Client=web", nil, p.headers), http.StatusUnauthorized)
+	expectStatus(t, p.s.f.request(t, http.MethodGet, list+"&Client=web&SortBy=SortName&SortOrder=Ascending", nil, p.headers), http.StatusUnauthorized)
 }
 
 func TestHTTPConfigurationChangesViewsAndLatestWithoutGrantingLibraryAccess(t *testing.T) {

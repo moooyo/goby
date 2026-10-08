@@ -177,8 +177,8 @@ func validReference(reference recordReference) bool {
 		(reference.Revision == 0 && reference.PreviousDigest == "" || reference.Revision > 0 && validHex(reference.PreviousDigest, 64))
 }
 
-func recordSnapshot(value record, data []byte) Snapshot {
-	result := Snapshot{Revision: value.Revision, Digest: hash(data)}
+func recordSnapshot(value record, verifiedDigest string) Snapshot {
+	result := Snapshot{Revision: value.Revision, Digest: verifiedDigest}
 	if value.Revision > 0 {
 		result.Payload = append([]byte(nil), value.Payload...)
 	}

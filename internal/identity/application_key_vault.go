@@ -23,7 +23,6 @@ var (
 	ErrApplicationKeyVaultUnsafe      = errors.New("application key vault master key is unsafe")
 	ErrApplicationKeyVaultMissing     = errors.New("application key vault master key is missing")
 	ErrApplicationKeyVaultCiphertext  = errors.New("invalid application key ciphertext")
-	ErrApplicationKeyVaultUnsupported = errors.New("application key vault is unsupported on this platform")
 )
 
 // ApplicationKeyVault seals recoverable application credentials with a Linux
@@ -44,7 +43,7 @@ type applicationKeyFileIdentity struct {
 }
 
 // NewApplicationKeyVault configures an absolute, clean master-key path without
-// reading or creating files. Unsupported platforms fail only when it is used.
+// reading or creating files. The first operation checks the Linux file boundary.
 func NewApplicationKeyVault(path string) *ApplicationKeyVault {
 	return &ApplicationKeyVault{path: path}
 }

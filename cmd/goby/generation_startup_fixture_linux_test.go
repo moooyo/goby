@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -434,26 +435,83 @@ func (f *generationStartupFixture) administrator(t *testing.T, g *generation) id
 
 func (f *generationStartupFixture) assertReady(t *testing.T, g *generation) {
 	t.Helper()
+	ctx, cancel := context.WithTimeout(f.ctx, 5*time.Second)
+	defer cancel()
 	result := g.Start()
-	select {
-	case err := <-result:
-		t.Fatalf("the actual prepared generation did not serve: error_type=%T", err)
-	default:
-	}
-	request, err := http.NewRequestWithContext(f.ctx, http.MethodGet, "http://"+g.listener.Addr().String()+"/readyz", nil)
-	if err != nil {
-		t.Fatal("create the actual readiness request")
-	}
 	transport := &http.Transport{DisableKeepAlives: true}
 	defer transport.CloseIdleConnections()
-	response, err := (&http.Client{Transport: transport, Timeout: 5 * time.Second}).Do(request)
-	if err != nil {
-		t.Fatalf("read the actual prepared listener: error_type=%T", err)
+	client := &http.Client{Transport: transport, Timeout: 5 * time.Second}
+	status, code, decoded := 0, "unrecognized", false
+	assertActive := func() {
+		t.Helper()
+		select {
+		case err := <-result:
+			t.Fatalf("the actual prepared generation stopped before readiness: error_type=%T last_status=%d error_code=%s error_decoded=%t", err, status, code, decoded)
+		default:
+		}
+		if err := ctx.Err(); err != nil {
+			t.Fatalf("prepared generation readiness budget ended: error_type=%T last_status=%d error_code=%s error_decoded=%t", err, status, code, decoded)
+		}
+		if g.lease == nil || !g.lease.Protects(g.pool) {
+			t.Fatalf("prepared generation lost its lease before readiness: last_status=%d error_code=%s error_decoded=%t", status, code, decoded)
+		}
 	}
-	defer response.Body.Close()
-	_, _ = io.Copy(io.Discard, io.LimitReader(response.Body, 4096))
-	if response.StatusCode != http.StatusOK {
-		t.Fatalf("prepared generation readiness status=%d", response.StatusCode)
+	pending := false
+	for attempts := 1; ; attempts++ {
+		assertActive()
+		request, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+g.listener.Addr().String()+"/readyz", nil)
+		if err != nil {
+			t.Fatal("create the actual readiness request")
+		}
+		response, err := client.Do(request)
+		if err != nil {
+			if response != nil {
+				_ = response.Body.Close()
+			}
+			assertActive()
+			t.Fatalf("read the actual prepared listener: error_type=%T last_status=%d error_code=%s error_decoded=%t", err, status, code, decoded)
+		}
+		body, readErr := io.ReadAll(io.LimitReader(response.Body, 4096))
+		closeErr := response.Body.Close()
+		status, code, decoded = response.StatusCode, "unrecognized", false
+		if status != http.StatusOK {
+			var diagnostic struct {
+				Error struct {
+					Code string
+				}
+			}
+			decoded = readErr == nil && json.Unmarshal(body, &diagnostic) == nil
+			if decoded {
+				switch diagnostic.Error.Code {
+				case "not_ready", "catalog_not_ready", "tasks_not_ready", "diagnostics_not_ready":
+					code = diagnostic.Error.Code
+				}
+			}
+		}
+		assertActive()
+		if readErr != nil || closeErr != nil {
+			t.Fatalf("prepared generation readiness response failed: read_error_type=%T close_error_type=%T last_status=%d error_code=%s error_decoded=%t", readErr, closeErr, status, code, decoded)
+		}
+		if status == http.StatusOK {
+			if pending {
+				t.Logf("prepared_generation_readiness tasks_pending_observed=true attempts=%d", attempts)
+			}
+			return
+		}
+		if status != http.StatusServiceUnavailable || !decoded || code != "tasks_not_ready" {
+			t.Fatalf("prepared generation readiness status=%d error_code=%s error_decoded=%t", status, code, decoded)
+		}
+		pending = true
+		timer := time.NewTimer(25 * time.Millisecond)
+		select {
+		case <-timer.C:
+		case <-ctx.Done():
+			timer.Stop()
+			assertActive()
+		case err := <-result:
+			timer.Stop()
+			t.Fatalf("the actual prepared generation stopped before readiness: error_type=%T last_status=%d error_code=%s error_decoded=%t", err, status, code, decoded)
+		}
 	}
 }
 

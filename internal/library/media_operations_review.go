@@ -59,6 +59,10 @@ func readMediaOperationCues(ctx context.Context, tx pgx.Tx, id string) ([]MediaO
 }
 
 func (s *Store) ListMediaOperationCues(ctx context.Context, actor identity.Principal, id string, options MediaOperationPageOptions) (MediaOperationCuePage, error) {
+	return s.listMediaOperationCues(ctx, actor, id, options, false)
+}
+
+func (s *Store) listMediaOperationCues(ctx context.Context, actor identity.Principal, id string, options MediaOperationPageOptions, summary bool) (MediaOperationCuePage, error) {
 	options, err := normalizeMediaOperationPage(options)
 	result := MediaOperationCuePage{Items: []MediaOperationCue{}, StartIndex: options.StartIndex, Limit: options.Limit}
 	if err != nil || !metadataIdentifier(id) {
@@ -69,7 +73,7 @@ func (s *Store) ListMediaOperationCues(ctx context.Context, actor identity.Princ
 		return result, err
 	}
 	defer rollback(tx)
-	result.Operation, err = readMediaOperation(ctx, tx, id, false)
+	result.Operation, err = readMediaOperationProjection(ctx, tx, id, summary)
 	if err != nil {
 		return result, err
 	}
@@ -103,6 +107,12 @@ func (s *Store) ListMediaOperationCues(ctx context.Context, actor identity.Princ
 
 func (s *Store) GetMediaOperationReview(ctx context.Context, actor identity.Principal, id string, options MediaOperationPageOptions) (MediaOperationCuePage, error) {
 	return s.ListMediaOperationCues(ctx, actor, id, options)
+}
+
+// GetMediaOperationReviewSummary returns review cues with public operation
+// status, leaving private execution documents and receipts unread.
+func (s *Store) GetMediaOperationReviewSummary(ctx context.Context, actor identity.Principal, id string, options MediaOperationPageOptions) (MediaOperationCuePage, error) {
+	return s.listMediaOperationCues(ctx, actor, id, options, true)
 }
 
 func (s *Store) GetMediaOperationCueImage(ctx context.Context, actor identity.Principal, id string, ordinal int) ([]byte, error) {
@@ -208,11 +218,23 @@ func (s *Store) UpdateMediaOperationReview(ctx context.Context, actor identity.P
 	if err != nil {
 		return result, err
 	}
-	for _, edit := range edits {
-		_, err = tx.Exec(protected, `UPDATE media_operation_cues SET start_ticks=$3,end_ticks=$4,text=$5,included=$6 WHERE operation_id=$1 AND ordinal=$2`, id, edit.Ordinal, edit.StartTicks, edit.EndTicks, edit.Text, edit.Included)
-		if err != nil {
-			return result, err
-		}
+	ordinals := make([]int32, len(edits))
+	starts, ends := make([]int64, len(edits)), make([]int64, len(edits))
+	texts, included := make([]string, len(edits)), make([]bool, len(edits))
+	for index, edit := range edits {
+		ordinals[index], starts[index], ends[index] = int32(edit.Ordinal), edit.StartTicks, edit.EndTicks
+		texts[index], included[index] = edit.Text, edit.Included
+	}
+	tag, err := tx.Exec(protected, `UPDATE media_operation_cues AS cue
+		SET start_ticks=edit.start_ticks,end_ticks=edit.end_ticks,text=edit.text,included=edit.included
+		FROM unnest($2::integer[],$3::bigint[],$4::bigint[],$5::text[],$6::boolean[])
+		AS edit(ordinal,start_ticks,end_ticks,text,included)
+		WHERE cue.operation_id=$1 AND cue.ordinal=edit.ordinal`, id, ordinals, starts, ends, texts, included)
+	if err != nil {
+		return result, err
+	}
+	if tag.RowsAffected() != int64(len(edits)) {
+		return result, ErrMediaOperationState
 	}
 	_, err = tx.Exec(protected, `UPDATE media_operations SET revision=revision+1,result_hash=$2,updated_at=clock_timestamp() WHERE id=$1`, id, digest)
 	if err != nil {

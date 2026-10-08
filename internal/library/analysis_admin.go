@@ -122,18 +122,9 @@ func (s *Store) ListAnalysisItems(ctx context.Context, actor identity.Principal,
 	if err != nil {
 		return AnalysisItemPage{}, err
 	}
-	for _, id := range ids {
-		item, err := readAnalysisAdminItem(ctx, tx, id)
-		if err != nil {
-			return AnalysisItemPage{}, err
-		}
-		// Only the detail/playback source readers validate supporting bytes.
-		// Indexed audit evidence alone must not advertise a detected interval
-		// as physically revalidated during a cheap inventory request.
-		if item.Detection.Effective != nil && item.Detection.Effective.Provenance == "Detected" {
-			item.Detection.Effective = nil
-		}
-		result.Items = append(result.Items, item)
+	result.Items, err = readAnalysisAdminItems(ctx, tx, ids)
+	if err != nil {
+		return AnalysisItemPage{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return AnalysisItemPage{}, err

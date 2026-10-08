@@ -2,7 +2,6 @@ package library
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
@@ -13,17 +12,51 @@ import (
 // remain distinct entries. Collection references are never playback resources.
 func resolveCollectionMembers(ctx context.Context, tx pgx.Tx, access libraryAccess, collection CollectionInfo, requested []string) ([]string, error) {
 	result := make([]string, 0, len(requested))
+	if len(requested) == 0 {
+		return result, nil
+	}
+	type memberFact struct {
+		kind   string
+		folder bool
+	}
+	facts := make(map[string]memberFact, len(requested))
+	uniqueIDs := make([]string, 0, len(requested))
+	seen := make(map[string]bool, len(requested))
+	for _, id := range requested {
+		if !seen[id] {
+			uniqueIDs = append(uniqueIDs, id)
+			seen[id] = true
+		}
+	}
+	rows, err := tx.Query(ctx, `SELECT i.id,i.type,i.is_folder FROM items i WHERE i.id=ANY($1::text[]) AND `+access.itemPolicySQL("i")+` AND `+ordinaryItemSQL("i"), uniqueIDs)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var id string
+		var fact memberFact
+		if err := rows.Scan(&id, &fact.kind, &fact.folder); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		facts[id] = fact
+	}
+	err = rows.Err()
+	rows.Close()
+	if err != nil {
+		return nil, err
+	}
+	// Replay decisions in request order, including folder expansion and its
+	// cumulative limit, so a later invalid identity cannot mask an earlier error.
 	for _, id := range requested {
 		if id == collection.ID {
 			return nil, ErrInvalidInput
 		}
-		var kind string
-		var folder bool
-		if err := tx.QueryRow(ctx, `SELECT i.type,i.is_folder FROM items i WHERE i.id=$1 AND `+access.itemPolicySQL("i")+` AND `+ordinaryItemSQL("i"), id).Scan(&kind, &folder); errors.Is(err, pgx.ErrNoRows) {
+		fact, exists := facts[id]
+		if !exists {
 			return nil, ErrNotFound
-		} else if err != nil {
-			return nil, err
 		}
+		kind, folder := fact.kind, fact.folder
 		if collection.Kind == BoxSetKind {
 			if kind == PlaylistKind || kind == BoxSetKind || kind == "CollectionFolder" {
 				return nil, ErrInvalidInput

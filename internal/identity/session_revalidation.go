@@ -26,11 +26,24 @@ func (s *Store) RevalidateSession(ctx context.Context, previouslyAuthenticated P
 	return revalidateSession(ctx, s.pool, previouslyAuthenticated)
 }
 
+// RevalidateSessionAuthority applies the same current authentication checks as
+// RevalidateSession but omits account display fields, password-presence flags,
+// and Configuration. It retains user identity, role, policy, client metadata,
+// peer, expiration, and activity facts for consumers that need only authority.
+// The previous principal must come from a trusted authentication operation.
+func (s *Store) RevalidateSessionAuthority(ctx context.Context, previouslyAuthenticated Principal) (Principal, error) {
+	return revalidateSessionProjection(ctx, s.pool, previouslyAuthenticated, false)
+}
+
 type sessionRevalidationQuerier interface {
 	QueryRow(context.Context, string, ...any) pgx.Row
 }
 
 func revalidateSession(ctx context.Context, query sessionRevalidationQuerier, previouslyAuthenticated Principal) (Principal, error) {
+	return revalidateSessionProjection(ctx, query, previouslyAuthenticated, true)
+}
+
+func revalidateSessionProjection(ctx context.Context, query sessionRevalidationQuerier, previouslyAuthenticated Principal, fullUser bool) (Principal, error) {
 	if previouslyAuthenticated.IsApplicationKey() {
 		if !validRevalidationID(previouslyAuthenticated.SessionID) || !validRevalidationID(previouslyAuthenticated.ClientSessionID) {
 			return Principal{}, ErrUnauthorized
@@ -55,11 +68,21 @@ func revalidateSession(ctx context.Context, query sessionRevalidationQuerier, pr
 	}
 	var principal Principal
 	var observedAt time.Time
-	err := query.QueryRow(ctx, `SELECT u.id, u.name, u.is_administrator, u.is_disabled,
-		u.has_password, u.created_at, u.policy, u.configuration, u.local_password_hash IS NOT NULL, u.profile_pin_ciphertext IS NOT NULL, authentication.id,
+	columns := `u.id, u.is_administrator, u.is_disabled, u.policy, authentication.id,
 		authentication.client_name, authentication.device_id, COALESCE(d.custom_name, authentication.device_name),
 		authentication.client_version, authentication.kind, authentication.expires_at,
-		authentication.last_seen_at, clock_timestamp()
+		authentication.last_seen_at, clock_timestamp()`
+	destinations := []any{&principal.User.ID, &principal.User.IsAdministrator, &principal.User.IsDisabled,
+		&principal.User.Policy, &principal.SessionID, &principal.Client.Name, &principal.Client.DeviceID,
+		&principal.Client.Device, &principal.Client.Version, &principal.Kind, &principal.ExpiresAt,
+		&principal.LastSeenAt, &observedAt}
+	if fullUser {
+		columns += `, u.name, u.has_password, u.created_at, u.configuration,
+			u.local_password_hash IS NOT NULL, u.profile_pin_ciphertext IS NOT NULL`
+		destinations = append(destinations, &principal.User.Name, &principal.User.HasPassword,
+			&principal.User.CreatedAt, &principal.User.Configuration, &principal.User.HasLocalPassword, &principal.User.HasProfilePin)
+	}
+	err := query.QueryRow(ctx, `SELECT `+columns+`
 		FROM sessions authentication JOIN users u ON u.id = authentication.user_id
 		LEFT JOIN devices d ON d.id = authentication.device_registry_id AND d.deleted_at IS NULL
 		WHERE authentication.id = $1 AND authentication.user_id = $2
@@ -67,11 +90,7 @@ func revalidateSession(ctx context.Context, query sessionRevalidationQuerier, pr
 		AND authentication.expires_at > clock_timestamp() AND NOT u.is_disabled
 		AND (NOT authentication.local_auth OR $3)`,
 		previouslyAuthenticated.SessionID, previouslyAuthenticated.User.ID, IsLocalPeer(previouslyAuthenticated.PeerIP)).
-		Scan(&principal.User.ID, &principal.User.Name, &principal.User.IsAdministrator,
-			&principal.User.IsDisabled, &principal.User.HasPassword, &principal.User.CreatedAt,
-			&principal.User.Policy, &principal.User.Configuration, &principal.User.HasLocalPassword, &principal.User.HasProfilePin, &principal.SessionID, &principal.Client.Name,
-			&principal.Client.DeviceID, &principal.Client.Device, &principal.Client.Version,
-			&principal.Kind, &principal.ExpiresAt, &principal.LastSeenAt, &observedAt)
+		Scan(destinations...)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Principal{}, ErrUnauthorized
 	}

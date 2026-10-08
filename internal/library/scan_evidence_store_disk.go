@@ -56,9 +56,6 @@ type scanEvidenceDisk struct {
 }
 
 func openScanEvidenceDisk(path, scope string, excluded []string) (_ *scanEvidenceDisk, result error) {
-	if !scanEvidencePlatformSupported() {
-		return nil, fmt.Errorf("%w: scan evidence ownership requires Linux", ErrUnavailable)
-	}
 	if len(scope) != 64 || strings.Trim(scope, "0123456789abcdef") != "" {
 		return nil, ErrInvalidInput
 	}

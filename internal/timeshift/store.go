@@ -758,6 +758,33 @@ func (store *Store) RetainsArtifact(ctx context.Context, scope Scope, id, artifa
 	return artifact != nil && (artifact.visible || store.options.Now().Before(artifact.graceUntil)), nil
 }
 
+// RetainsArtifacts observes one presentation for all requested artifact IDs,
+// without renewing its consumer lease. Missing artifacts have false entries.
+// An empty batch makes no presentation observation, but still honors cancellation.
+func (store *Store) RetainsArtifacts(ctx context.Context, scope Scope, id string, artifactIDs []string) (map[string]bool, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if len(artifactIDs) == 0 {
+		return nil, nil
+	}
+	store.mu.Lock()
+	defer store.mu.Unlock()
+	window, err := store.checkedWindow(ctx, scope, id, false)
+	if err != nil {
+		return nil, err
+	}
+	retained := make(map[string]bool, len(artifactIDs))
+	// Expiry may do filesystem work. Observe grace again after that work rather
+	// than reusing the earlier timestamp that admitted the presentation.
+	now := store.options.Now()
+	for _, artifactID := range artifactIDs {
+		artifact := window.artifacts[artifactID]
+		retained[artifactID] = artifact != nil && (artifact.visible || now.Before(artifact.graceUntil))
+	}
+	return retained, nil
+}
+
 func (store *Store) Seek(ctx context.Context, scope Scope, id string, ticks int64) (Position, error) {
 	if ticks < 0 {
 		return Position{}, ErrInvalid

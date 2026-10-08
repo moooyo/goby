@@ -9,8 +9,6 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func fileDeletionSupported() bool { return true }
-
 func fileDeletionPrivateDirectory(info os.FileInfo) bool {
 	if info == nil || !info.IsDir() || info.Mode().Perm() != 0o700 || info.Mode()&(os.ModeSymlink|os.ModeSetuid|os.ModeSetgid|os.ModeSticky) != 0 {
 		return false

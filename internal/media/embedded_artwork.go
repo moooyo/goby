@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -110,7 +109,7 @@ func (p Prober) extractEmbeddedArtwork(ctx context.Context, input *os.File, info
 	if err := ctx.Err(); err != nil {
 		return result, err
 	}
-	if runtime.GOOS != "linux" || input == nil || info.ProbeVersion < CurrentProbeVersion {
+	if input == nil || info.ProbeVersion < CurrentProbeVersion {
 		return result, ErrEmbeddedArtwork
 	}
 	before, err := input.Stat()

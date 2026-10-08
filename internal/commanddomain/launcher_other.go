@@ -1,6 +1,6 @@
-//go:build !linux || !amd64
+//go:build linux && !amd64
 
 package commanddomain
 
-// RunLauncher refuses platforms without the implemented native kernel policy.
+// RunLauncher refuses Linux architectures without the implemented native kernel policy.
 func RunLauncher() int { return 126 }

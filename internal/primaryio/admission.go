@@ -359,24 +359,33 @@ func (g *Governor) acquirePrepared(ctx context.Context, route preparedRoute, cla
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	r := &request{ctx: ctx, route: route.value, class: class, ready: make(chan struct{})}
+	r := &request{ctx: ctx, route: route.value, class: class}
 	g.mu.Lock()
 	if g.closed {
 		g.mu.Unlock()
 		return nil, ErrClosed
 	}
 	g.dispatchLocked()
+	queued := false
 	if g.eligibleLocked(r) && !g.blockedByOlderLocked(r, len(g.waiters)) {
 		r.granted = true
 		g.chargeLocked(r, 1)
-		close(r.ready)
 	} else if !g.queueAvailableLocked(r) {
 		g.mu.Unlock()
 		return nil, ErrBusy
 	} else {
+		r.ready = make(chan struct{})
 		g.waiters = append(g.waiters, r)
+		queued = true
 	}
 	g.mu.Unlock()
+	if !queued {
+		if err := ctx.Err(); err != nil {
+			g.release(r)
+			return nil, err
+		}
+		return r, nil
+	}
 	select {
 	case <-r.ready:
 		g.mu.Lock()
@@ -410,7 +419,7 @@ func (g *Governor) tryAcquire(ctx context.Context, route Route, class Class) (*r
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	r := &request{ctx: ctx, route: route, class: class, ready: make(chan struct{})}
+	r := &request{ctx: ctx, route: route, class: class}
 	g.mu.Lock()
 	if g.closed {
 		g.mu.Unlock()
@@ -427,7 +436,6 @@ func (g *Governor) tryAcquire(ctx context.Context, route Route, class Class) (*r
 	}
 	r.granted = true
 	g.chargeLocked(r, 1)
-	close(r.ready)
 	g.mu.Unlock()
 	if err := ctx.Err(); err != nil {
 		g.release(r)

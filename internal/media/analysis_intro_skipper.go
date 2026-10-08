@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -187,7 +186,7 @@ func SelectIntroSkipperAudioStream(info Info, preferredLanguage string, preferMo
 }
 
 func introSkipperSource(input *os.File, info Info) (os.FileInfo, error) {
-	if runtime.GOOS != "linux" || input == nil || info.DurationTicks <= 0 || info.DurationTicks > MaxAnalysisDurationTicks {
+	if input == nil || info.DurationTicks <= 0 || info.DurationTicks > MaxAnalysisDurationTicks {
 		return nil, ErrAnalysisUnproven
 	}
 	before, err := input.Stat()

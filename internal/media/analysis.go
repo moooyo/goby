@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"runtime"
 	"time"
 
 	"github.com/moooyo/goby/internal/introdetect"
@@ -125,7 +124,7 @@ func analysisAcquire(ctx context.Context, timeout time.Duration) (context.Contex
 }
 
 func analysisCheckSource(file *os.File, info Info) (os.FileInfo, error) {
-	if runtime.GOOS != "linux" || file == nil || !info.FormatStartKnown || info.DurationTicks <= 0 || info.DurationTicks > MaxAnalysisDurationTicks ||
+	if file == nil || !info.FormatStartKnown || info.DurationTicks <= 0 || info.DurationTicks > MaxAnalysisDurationTicks ||
 		info.FormatStartTicks < -MaxAnalysisDurationTicks || info.FormatStartTicks > MaxAnalysisDurationTicks {
 		return nil, ErrAnalysisUnproven
 	}

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io"
 	"os"
-	"runtime"
 	"time"
 
 	"github.com/moooyo/goby/internal/library"
@@ -23,10 +22,7 @@ type backgroundPreviewRuntime struct {
 // Persistent source-side clips do not depend on the disposable BIF cache.
 // Tool inspection happens once, outside task repository transactions.
 func newBackgroundPreviewRuntime(ctx context.Context, s *Server) (*backgroundPreviewRuntime, error) {
-	r := &backgroundPreviewRuntime{reason: "unsupported_platform"}
-	if runtime.GOOS != "linux" {
-		return r, nil
-	}
+	r := &backgroundPreviewRuntime{}
 	r.extractor = media.AnalysisExtractor{FFmpegPath: s.cfg.FFmpegPath, FFprobePath: s.cfg.FFprobePath}
 	capabilities, err := r.extractor.BackgroundClipAvailability(ctx)
 	if ctx.Err() != nil {

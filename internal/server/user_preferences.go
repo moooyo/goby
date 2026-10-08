@@ -283,11 +283,13 @@ func (s *Server) applyDisplayPreferenceDefaults(w http.ResponseWriter, r *http.R
 		}
 		values[key] = entries[0]
 	}
-	if value, explicit := values["sortby"]; explicit {
-		query.SortBy = value
+	sortBy, explicitSortBy := values["sortby"]
+	sortOrder, explicitSortOrder := values["sortorder"]
+	if explicitSortBy {
+		query.SortBy = sortBy
 	}
-	if value, explicit := values["sortorder"]; explicit {
-		query.SortOrder = value
+	if explicitSortOrder {
+		query.SortOrder = sortOrder
 	}
 	id, client := values["displaypreferencesid"], values["client"]
 	if id == "" {
@@ -301,6 +303,18 @@ func (s *Server) applyDisplayPreferenceDefaults(w http.ResponseWriter, r *http.R
 	}
 	actor := r.Context().Value(principalKey).(identity.Principal)
 	if actor.IsApplicationKey() || query.UserID == "" {
+		return true
+	}
+	if explicitSortBy && explicitSortOrder {
+		if !identity.ValidDisplayPreferencesScope(id, client) {
+			s.preferenceError(w, r, identity.ErrInvalidInput)
+			return false
+		}
+		if library.ValidatePreferenceSort(query.SortBy, query.SortOrder) != nil {
+			apiError(w, r, http.StatusBadRequest, "invalid_input", "The explicit sort fields are not supported.")
+			return false
+		}
+		// Both URL fields are present, so no stored sorting defaults are consumed.
 		return true
 	}
 	prefs, err := s.identity.GetDisplayPreferences(r.Context(), actor, query.UserID, id, client)
@@ -317,10 +331,10 @@ func (s *Server) applyDisplayPreferenceDefaults(w http.ResponseWriter, r *http.R
 	if prefs.Revision == 0 {
 		return true
 	}
-	if _, explicit := values["sortby"]; !explicit {
+	if !explicitSortBy {
 		query.SortBy = prefs.SortBy
 	}
-	if _, explicit := values["sortorder"]; !explicit {
+	if !explicitSortOrder {
 		query.SortOrder = prefs.SortOrder
 	}
 	if library.ValidatePreferenceSort(query.SortBy, query.SortOrder) != nil {
