@@ -15,6 +15,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -30,6 +31,7 @@ import (
 )
 
 const hlsPriorityProfileHeader = "X-Goby-HLS-Profile"
+const hlsPriorityProfileOrdinalHeader = "X-Goby-HLS-Profile-Ordinal"
 
 type hlsPriorityProfileContextKey struct{}
 type hlsPriorityProfileRequestContextKey struct{}
@@ -281,6 +283,9 @@ func (trace *hlsPriorityProfileTracer) wrap(next http.Handler) http.Handler {
 					profile = counts.phaseTiming.Load()
 				}
 				started := time.Now()
+				if hlsStopDiagnosticEnabled() {
+					w.Header().Set(hlsPriorityProfileOrdinalHeader, strconv.FormatInt(ordinal, 10))
+				}
 				group := "steady_get"
 				if counts == &current.stoppingGET {
 					group = "ping_or_stop_get"
@@ -304,10 +309,11 @@ func (trace *hlsPriorityProfileTracer) wrap(next http.Handler) http.Handler {
 }
 
 type hlsPriorityProfileResponse struct {
-	duration time.Duration
-	status   int
-	data     []byte
-	err      error
+	duration       time.Duration
+	status         int
+	data           []byte
+	err            error
+	requestOrdinal int64
 }
 
 // Build requests before timing. Each sample includes Do, the complete body read
@@ -346,7 +352,17 @@ func hlsPriorityProfileRequest(ctx context.Context, client *http.Client, method,
 	if len(data) >= 17<<20 && readErr == nil {
 		readErr = fmt.Errorf("HLS profile response exceeded the fixture limit")
 	}
-	return hlsPriorityProfileResponse{duration: elapsed, status: response.StatusCode, data: data, err: readErr}
+	// Extract the test-only association after the original client timing window.
+	// A retained server detail can now be matched without guessing arrival order.
+	var ordinal int64
+	if value := response.Header.Get(hlsPriorityProfileOrdinalHeader); value != "" {
+		var ordinalErr error
+		ordinal, ordinalErr = strconv.ParseInt(value, 10, 64)
+		if ordinalErr != nil && readErr == nil {
+			readErr = errors.New("invalid HLS profile request ordinal")
+		}
+	}
+	return hlsPriorityProfileResponse{duration: elapsed, status: response.StatusCode, data: data, err: readErr, requestOrdinal: ordinal}
 }
 
 func hlsPriorityProfileClient(t *testing.T) *http.Client {

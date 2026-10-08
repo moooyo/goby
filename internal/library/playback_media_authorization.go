@@ -85,8 +85,8 @@ func (s *Store) readPlaybackMediaAuthorizationPrepared(ctx context.Context, prin
 	if err != nil {
 		return indexedMediaSource{}, PlaybackMediaAuthorization{}, err
 	}
-	// Credential policy is fresh before item/source batching. The source batch
-	// closes and validates its complete result before the play batch can wait.
+	// Credential policy is fresh before item/source reads. Their complete
+	// results are closed and validated before the play batch can wait.
 	snapshot, err := readIndexedPlaybackMediaBatch(ctx, tx, access, itemID, sourceID, includeSubtitles)
 	if err != nil {
 		return indexedMediaSource{}, PlaybackMediaAuthorization{}, err
@@ -219,7 +219,27 @@ func readIndexedPlaybackMedia(ctx context.Context, tx pgx.Tx, access libraryAcce
 	return completeIndexedMediaSource(ctx, tx, access, snapshot, sourceID, modified, includeSubtitles)
 }
 
+// CacheDescribe connections with an enabled statement cache retain one named
+// plan for the complex source query. Other configurations keep the source batch.
 func readIndexedPlaybackMediaBatch(ctx context.Context, tx pgx.Tx, access libraryAccess, itemID, sourceID string, includeSubtitles bool) (indexedMediaSource, error) {
+	configuration := tx.Conn().Config()
+	if configuration.DefaultQueryExecMode == pgx.QueryExecModeCacheDescribe && configuration.StatementCacheCapacity > 0 {
+		var id string
+		if err := tx.QueryRow(ctx, "SELECT id FROM items WHERE id=$1 FOR SHARE", itemID).Scan(&id); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return indexedMediaSource{}, ErrNotFound
+			}
+			return indexedMediaSource{}, fmt.Errorf("%w: lock playback media item: %w", ErrUnavailable, err)
+		}
+		// Each Scan closes its result and returns any completion error. The
+		// second statement retains its fresh snapshot after the SHARE lock wait.
+		snapshot, modified, err := scanIndexedPlaybackMedia(tx.QueryRow(ctx, indexedPlaybackMediaSQL(access),
+			pgx.QueryExecModeCacheStatement, itemID, access.all, access.folders))
+		if err != nil {
+			return indexedMediaSource{}, err
+		}
+		return completeIndexedMediaSource(ctx, tx, access, snapshot, sourceID, modified, includeSubtitles)
+	}
 	batch := &pgx.Batch{}
 	batch.Queue("SELECT id FROM items WHERE id=$1 FOR SHARE", itemID)
 	batch.Queue(indexedPlaybackMediaSQL(access), itemID, access.all, access.folders)

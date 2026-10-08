@@ -113,7 +113,8 @@ type httpGetStopRemeasureAuthorityCase struct {
 
 type httpGetStopRemeasureTracer struct {
 	playbackMediaHTTPProfileTrace
-	authority atomic.Pointer[httpGetStopRemeasureAuthorityCase]
+	authority  atomic.Pointer[httpGetStopRemeasureAuthorityCase]
+	activeHTTP atomic.Int64
 }
 
 func httpGetStopRemeasureRememberFacts(ctx context.Context) {
@@ -175,6 +176,8 @@ func (writer *httpGetStopRemeasureWriter) ReadFrom(reader io.Reader) (int64, err
 func (trace *httpGetStopRemeasureTracer) wrap(next http.Handler) http.Handler {
 	inner := trace.priority.wrap(next)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		trace.activeHTTP.Add(1)
+		defer trace.activeHTTP.Add(-1)
 		current := trace.authority.Load()
 		var counts *httpGetStopRemeasureAuthorityCounts
 		if current != nil {
@@ -494,8 +497,24 @@ func TestHTTPCachedHLSGetStopRemeasurePerformance(t *testing.T) {
 				runtime.ReadMemStats(&after)
 				latencies := hlsPriorityProfileCheck(t, samples, expected)
 				raw := make([]int64, len(samples))
+				var ordinals []int64
+				var seenOrdinals [httpGetStopRemeasureRequests + 1]bool
+				if hlsStopDiagnosticEnabled() && hlsPhaseTimingEnabled() {
+					ordinals = make([]int64, len(samples))
+				}
 				for index, sample := range samples {
 					raw[index] = sample.duration.Nanoseconds()
+					if ordinals != nil {
+						ordinal := sample.requestOrdinal
+						if ordinal < 1 || ordinal > httpGetStopRemeasureRequests || seenOrdinals[ordinal] {
+							t.Fatal("steady GET response ordinals are missing, duplicated or outside the selected wave")
+						}
+						seenOrdinals[ordinal] = true
+						ordinals[index] = ordinal
+					}
+				}
+				if ordinals != nil {
+					record["get_raw_request_ordinals"] = ordinals
 				}
 				median := (latencies[len(latencies)/2-1] + latencies[len(latencies)/2]) / 2
 				record["segment_bytes"], record["get_elapsed_ns"], record["get_raw_duration_ns"] = len(expected), elapsed.Nanoseconds(), raw
@@ -591,11 +610,46 @@ func TestHTTPCachedHLSGetStopRemeasurePerformance(t *testing.T) {
 		finalResources = append(finalResources, usage)
 	}
 	closed["final_scope_resource_usage"] = finalResources
+	closed["guard_observed_at"] = time.Now().UTC()
 	info, err := os.Stat(h.path)
-	if err != nil || pool.Stat().AcquiredConns() != 0 || app.playbackControlDB.Stat().AcquiredConns() != 0 || playbackStopAliasSourceFDs(t, info) != 0 || len(app.streamSlots) != 0 || len(app.hls.slots) != 0 {
+	// Retain each guard's first observation, including on failure. These are
+	// sequential post-Close snapshots, not a simultaneous owner inventory;
+	// neither waiting nor reacquiring may replace an initially failing value.
+	dataState, controlState := pool.Stat(), app.playbackControlDB.Stat()
+	streamSlots, hlsSlots := len(app.streamSlots), len(app.hls.slots)
+	closed["outer_http_handlers"] = trace.activeHTTP.Load()
+	closed["source_stat_error"] = ""
+	if err != nil {
+		closed["source_stat_error"] = err.Error()
+	}
+	closed["data_pool_state"] = map[string]any{
+		"acquired": dataState.AcquiredConns(), "idle": dataState.IdleConns(),
+		"constructing": dataState.ConstructingConns(), "total": dataState.TotalConns(), "max": dataState.MaxConns(),
+	}
+	closed["control_pool_state"] = map[string]any{
+		"acquired": controlState.AcquiredConns(), "idle": controlState.IdleConns(),
+		"constructing": controlState.ConstructingConns(), "total": controlState.TotalConns(), "max": controlState.MaxConns(),
+	}
+	closed["stream_slots"], closed["hls_slots"] = streamSlots, hlsSlots
+	closed["pool_loans"], closed["http_slots"] = dataState.AcquiredConns()+controlState.AcquiredConns(), streamSlots+hlsSlots
+	closed["library_available"] = app.library.Available()
+	closed["hls_done"] = false
+	select {
+	case <-app.hls.done:
+		closed["hls_done"] = true
+	default:
+	}
+	// A failed source stat cannot supply the identity needed for the FD check.
+	// Keep that count unavailable instead of reporting an unobserved zero.
+	sourceFDs := -1
+	closed["source_device_inode_fds"] = nil
+	if err == nil {
+		sourceFDs = playbackStopAliasSourceFDs(t, info)
+		closed["source_device_inode_fds"] = sourceFDs
+	}
+	if err != nil || dataState.AcquiredConns() != 0 || controlState.AcquiredConns() != 0 || sourceFDs != 0 || streamSlots != 0 || hlsSlots != 0 {
 		t.Fatal("closed cached fixture retained a pool loan, HTTP slot or source descriptor")
 	}
-	closed["source_device_inode_fds"], closed["pool_loans"], closed["http_slots"] = 0, 0, 0
 }
 
 type httpGetStopRemeasureRetirement struct {

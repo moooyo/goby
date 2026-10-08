@@ -90,21 +90,32 @@ func lockStateItem(ctx context.Context, tx pgx.Tx, access libraryAccess, itemID 
 	}
 	var item stateItem
 	var raw []byte
-	err := tx.QueryRow(ctx, `SELECT i.id, i.type, i.library_id, i.is_folder, i.media FROM items i
+	batch := &pgx.Batch{}
+	batch.Queue(`SELECT i.id, i.type, i.library_id, i.is_folder, i.media FROM items i
 		WHERE i.id = $1 AND `+access.directSQL("i")+` FOR SHARE OF i`,
-		itemID).Scan(&item.id, &item.itemType, &item.libraryID, &item.isFolder, &raw)
+		itemID)
+	// Keep a separate statement snapshot after SHARE. A scanner may publish a
+	// theme marker or relationship while the first statement waits for its lock.
+	batch.Queue("SELECT "+access.directSQL("i")+" FROM items i WHERE i.id=$1", itemID)
+	results := tx.SendBatch(ctx, batch)
+	defer results.Close()
+	err := results.QueryRow().Scan(&item.id, &item.itemType, &item.libraryID, &item.isFolder, &raw)
 	if errors.Is(err, pgx.ErrNoRows) {
+		_ = results.Close()
 		return stateItem{}, ErrNotFound
 	}
 	if err != nil {
+		_ = results.Close()
 		return stateItem{}, fmt.Errorf("authorize user state item: %w", err)
 	}
-	// A scanner locks affected items before changing theme classification. If
-	// this statement waited for that lock, its original READ COMMITTED snapshot
-	// may predate the marker or relationship change; reread after acquiring SHARE.
 	var direct bool
-	if err := tx.QueryRow(ctx, "SELECT "+access.directSQL("i")+" FROM items i WHERE i.id=$1", itemID).Scan(&direct); err != nil {
+	err = results.QueryRow().Scan(&direct)
+	closeErr := results.Close()
+	if err != nil {
 		return stateItem{}, fmt.Errorf("recheck user state item visibility: %w", err)
+	}
+	if closeErr != nil {
+		return stateItem{}, fmt.Errorf("complete user state item lock: %w", closeErr)
 	}
 	if !direct {
 		return stateItem{}, ErrNotFound
