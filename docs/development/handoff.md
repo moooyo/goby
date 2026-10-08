@@ -1,3 +1,53 @@
+# Prepared-plan retained memory quantified, 2026-10-08
+
+Test-only commit `4df73181523d871522e566aa19921632853aae50` adds saved-evidence
+measurement of real captured typed SELECT templates on dedicated PostgreSQL
+backends. Production remains the accepted Stop/GET code `82dbcd05`. One remote
+build and four fixed native invocations passed once with zero retries; the saved
+JSONL and original Go PASS records independently qualify. No production cache,
+connection or PostgreSQL setting was changed. This task's direct memory-read
+probe returned SQLSTATE 42501 permissions, not zero bytes. A task-owned fixed
+helper filled the observation gap without global monitoring-role grants; this
+probe does not establish the cause of older unavailable records.
+
+For one backend, five repeated representative names retain 1,120,496 total /
+716,120 used CachedPlan-prefix context bytes. After bounded synthetic source
+SQL diversity and eviction draining, 512 names retain 344,401,792 / 250,784,184
+bytes (328.45 / 239.17 MiB). This is not a byte cap or universal worst-case bound.
+The independent statement and description caches were not simultaneously full.
+Statement capacity zero still has DescriptionCacheCapacity 512: named/prefix
+counts are zero, but post-GC whole-process HeapAlloc rises 1,546,208 to 6,878,688
+bytes and returns to 1,547,928 after clearing both caches. Capacity one retains
+different SQL after draining, so its smaller bytes are not a same-content result.
+
+The actual 12-Data plus 4-Control topology holds one designated owner, eleven
+borrowers and
+four Control backends with MinConns zero instead of production one. Its 68 named
+copies across eight SQL forms retain 32,069,456 total / 22,464,832 used prefix
+bytes (30.58 / 21.42 MiB). The extra deployment lease is excluded. This does not
+measure sixteen independently saturated 512-entry caches.
+
+All four clear phases report zero named statements and zero measured prefix
+bytes. Close follows that clear and representative rebuilding, producing
+5/0/2/68 names for single-512/single-0/single-1/topology-16; the capacity-one
+rebuild includes one pending eviction. All nineteen original PID/start pairs
+exit. Post-exit backend bytes remain unavailable, not zero. The fixed-workload
+release observations are not a long-soak leak result, RSS measurement or exclusive
+per-query accounting; whole-process Go heap includes fixture and observer state.
+
+Actual closeout removes only the exact guarded observer helper, owned RAM and
+empty fixture, preserving source, binary, raw evidence, shared caches, corpus,
+role attributes and protected services. The next candidate should reduce source
+policy/user literal SQL variants while preserving authority, freshness and
+results, followed by separate performance and memory acceptance. No additional
+experiment, push or PR is selected; NVMe attribution remains stopped.
+
+Details: [prepared-plan retained-memory report](prepared-plan-memory-20261008.md).
+Evidence: `.artifacts/prepared-plan-memory-20261008`; actual closeout SHA-256
+`20480003c909fcbdc70424cbb4c2f4fd89f57066e9527fcc51012ac19322be2d`.
+
+---
+
 # Stop/GET accepted and final scan comparison completed, 2026-10-08
 
 Code main `82dbcd0540017852fac39747b5b1caa80e89fe00` accepts two narrow changes:
