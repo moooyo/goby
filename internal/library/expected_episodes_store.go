@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/moooyo/goby/internal/identity"
 )
 
@@ -242,23 +243,37 @@ func (s *Store) mutateEpisodeRoster(ctx context.Context, actor identity.Principa
 		WHERE series_id=$1 AND active`, seriesID); err != nil {
 		return EpisodeRosterDetail{}, err
 	}
-	if !withdraw {
-		for _, entry := range edit.Entries {
-			var date any
+	if !withdraw && len(edit.Entries) != 0 {
+		ids := make([]string, len(edit.Entries))
+		keys := make([]string, len(edit.Entries))
+		seasons := make([]int32, len(edit.Entries))
+		episodes := make([]int32, len(edit.Entries))
+		names := make([]string, len(edit.Entries))
+		dates := make([]pgtype.Date, len(edit.Entries))
+		for index, entry := range edit.Entries {
+			ids[index] = expectedEpisodeID(seriesID, edit.Source.Key, entry.Key)
+			keys[index], names[index] = entry.Key, entry.Name
+			seasons[index], episodes[index] = int32(entry.SeasonNumber), int32(entry.EpisodeNumber)
 			if entry.PremiereDate != "" {
 				value, _ := time.Parse(time.DateOnly, entry.PremiereDate)
-				date = value
+				dates[index] = pgtype.Date{Time: value, Valid: true}
 			}
-			_, err := tx.Exec(ctx, `INSERT INTO expected_episodes
-				(id,series_id,source_key,entry_key,season_number,episode_number,name,premiere_date,active,import_revision)
-				VALUES ($1,$2,$3,$4,$5,$6,$7,$8,true,$9) ON CONFLICT (series_id,source_key,entry_key) DO UPDATE SET
-				season_number=EXCLUDED.season_number,episode_number=EXCLUDED.episode_number,name=EXCLUDED.name,
-				premiere_date=EXCLUDED.premiere_date,active=true,import_revision=EXCLUDED.import_revision,
-				updated_at=clock_timestamp(),retired_at=NULL`, expectedEpisodeID(seriesID, edit.Source.Key, entry.Key), seriesID,
-				edit.Source.Key, entry.Key, entry.SeasonNumber, entry.EpisodeNumber, entry.Name, date, next)
-			if err != nil {
-				return EpisodeRosterDetail{}, fmt.Errorf("write expected episode: %w", err)
-			}
+		}
+		// Validation bounds this relation to MaxEpisodeRosterEntries and rejects
+		// duplicate keys and numbers. Keep the batch on ownedTx.Exec so caller
+		// cancellation cannot terminate the catalog ownership session.
+		_, err := tx.Exec(ctx, `INSERT INTO expected_episodes
+			(id,series_id,source_key,entry_key,season_number,episode_number,name,premiere_date,active,import_revision)
+			SELECT entry.id,$1,$2,entry.entry_key,entry.season_number,entry.episode_number,entry.name,entry.premiere_date,true,$3
+			FROM unnest($4::text[],$5::text[],$6::integer[],$7::integer[],$8::text[],$9::date[])
+			AS entry(id,entry_key,season_number,episode_number,name,premiere_date)
+			WHERE true
+			ON CONFLICT (series_id,source_key,entry_key) DO UPDATE SET
+			season_number=EXCLUDED.season_number,episode_number=EXCLUDED.episode_number,name=EXCLUDED.name,
+			premiere_date=EXCLUDED.premiere_date,active=true,import_revision=EXCLUDED.import_revision,
+			updated_at=clock_timestamp(),retired_at=NULL`, seriesID, edit.Source.Key, next, ids, keys, seasons, episodes, names, dates)
+		if err != nil {
+			return EpisodeRosterDetail{}, fmt.Errorf("write expected episode: %w", err)
 		}
 	}
 	if err := recordCatalogChanges(tx, change); err != nil {

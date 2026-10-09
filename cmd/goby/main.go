@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -64,6 +65,14 @@ func run(fallback slog.Handler) (runErr error) {
 			}
 		}
 	}()
+	var err error
+	cliHandled, err = runCLIHelp(os.Args[1:])
+	if cliHandled {
+		if err != nil {
+			_, _ = fmt.Fprintln(os.Stderr, safeCLIError(err))
+		}
+		return err
+	}
 	cfg, err := config.Load()
 	if err != nil {
 		return err

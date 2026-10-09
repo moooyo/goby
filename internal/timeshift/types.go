@@ -119,6 +119,14 @@ type Segment struct {
 	Artifacts             []Artifact
 }
 
+// PublicationResult contains the latest retained segment after publication and
+// expiration. HasLatest is false when the window is empty. Latest.Artifacts is
+// an owned copy, so changing it cannot modify the presentation.
+type PublicationResult struct {
+	Latest    Segment
+	HasLatest bool
+}
+
 type Epoch struct {
 	Generation            uint64
 	FirstSequence         uint64

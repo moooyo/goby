@@ -21,6 +21,16 @@ import (
 var errCLIInput = errors.New("invalid recovery command; use goby recovery help")
 var errCLINoRollback = errors.New("offline activation requires --accept-no-rollback; the original database is preserved but cannot be certified as a rollback copy")
 
+// Static help is available before any service configuration or storage opens.
+func runCLIHelp(args []string) (bool, error) {
+	if len(args) == 1 && (args[0] == "help" || args[0] == "--help" || args[0] == "-h") ||
+		len(args) == 2 && args[0] == "recovery" && args[1] == "help" {
+		_, err := io.WriteString(os.Stdout, recoveryCLIHelp)
+		return true, err
+	}
+	return false, nil
+}
+
 // runCLI executes locally authorized maintenance while holding the same
 // deployment fence as serve. It never logs command arguments or passphrases.
 func runCLI(ctx context.Context, cfg config.Config, args []string) (handled bool, runErr error) {
@@ -38,10 +48,8 @@ func runCLI(ctx context.Context, cfg config.Config, args []string) (handled bool
 	if flag.Lookup("test.v") != nil && strings.HasPrefix(args[0], "-test.") {
 		return false, nil
 	}
-	if len(args) == 1 && (args[0] == "help" || args[0] == "--help" || args[0] == "-h") ||
-		len(args) == 2 && args[0] == "recovery" && args[1] == "help" {
-		_, err := io.WriteString(os.Stdout, recoveryCLIHelp)
-		return true, err
+	if handled, err := runCLIHelp(args); handled {
+		return handled, err
 	}
 	if len(args) < 2 {
 		return true, errCLIInput

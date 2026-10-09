@@ -20,7 +20,7 @@ type Snapshot struct {
 	size      int64
 	modTime   time.Time
 	offset    int64
-	release   func(*Snapshot)
+	release   func(*Snapshot, error)
 	failure   func()
 	stop      func() bool
 	closed    bool
@@ -117,19 +117,16 @@ func (s *Snapshot) Close() error {
 	}
 	err := s.file.Close()
 	s.mu.Unlock()
-	if s.release != nil {
-		s.release(s)
-	}
 	if err != nil {
-		if s.failure != nil {
-			s.failure()
-		}
 		err = ErrUnavailable
+	}
+	if s.release != nil {
+		s.release(s, err)
 	}
 	s.mu.Lock()
 	s.closeErr = err
-	// Completion includes releasing the store's reader slot. Concurrent Close
-	// calls must not return while cancellation is still holding that slot.
+	// Completion includes publishing failure and releasing the store's reader
+	// slot. Concurrent Close calls must wait for both operations.
 	close(s.closeDone)
 	s.mu.Unlock()
 	return err

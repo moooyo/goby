@@ -183,7 +183,9 @@ func (s *Server) serveAnalysisPreview(w http.ResponseWriter, r *http.Request, pr
 			return
 		}
 		body, err = index.JPEG(work, number)
-		if err == nil {
+		// JPEG has already validated the complete frame, so only transform
+		// requests need artwork to decode it again.
+		if err == nil && (request.maxWidth != 0 || request.quality != 0) {
 			var rendered artwork.Result
 			rendered, err = artwork.Render(work, bytes.NewReader(body), artwork.Options{Format: "jpeg", MaxWidth: request.maxWidth, Quality: request.quality})
 			body = rendered.Bytes

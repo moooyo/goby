@@ -12,6 +12,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/moooyo/goby/internal/literaldial"
 )
 
 var networkSlots = make(chan struct{}, 4)
@@ -49,7 +51,11 @@ func publicAddress(address netip.Addr) bool {
 }
 
 func newProviderHTTPTransport() *http.Transport {
-	dialer := &net.Dialer{Timeout: 10 * time.Second, KeepAlive: 30 * time.Second}
+	dialer := &net.Dialer{KeepAlive: 30 * time.Second}
+	return newProviderHTTPTransportWithNetwork(net.DefaultResolver.LookupNetIP, dialer.DialContext)
+}
+
+func newProviderHTTPTransportWithNetwork(lookup func(context.Context, string, string) ([]netip.Addr, error), dial literaldial.DialFunc) *http.Transport {
 	transport := &http.Transport{
 		Proxy: nil, TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12},
 		TLSHandshakeTimeout: 10 * time.Second, ResponseHeaderTimeout: 15 * time.Second,
@@ -60,7 +66,10 @@ func newProviderHTTPTransport() *http.Transport {
 			if err != nil || port != "443" || !allowedHost(host) {
 				return nil, ErrUnavailable
 			}
-			addresses, err := net.DefaultResolver.LookupNetIP(ctx, "ip", host)
+			// DNS and every literal connection attempt share one total budget.
+			ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+			defer cancel()
+			addresses, err := lookup(ctx, "ip", host)
 			if err != nil || len(addresses) == 0 {
 				return nil, ErrUnavailable
 			}
@@ -69,14 +78,12 @@ func newProviderHTTPTransport() *http.Transport {
 					return nil, ErrUnavailable
 				}
 			}
-			for _, candidate := range addresses {
-				connection, err := dialer.DialContext(ctx, network, net.JoinHostPort(candidate.String(), port))
-				if err == nil {
-					return connection, nil
-				}
-				if ctx.Err() != nil {
-					return nil, ctx.Err()
-				}
+			connection, err := literaldial.DialContext(ctx, network, addresses, port, dial)
+			if err == nil {
+				return connection, nil
+			}
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
 			}
 			return nil, ErrUnavailable
 		},

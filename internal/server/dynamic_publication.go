@@ -148,14 +148,25 @@ func (s *Server) publishDynamicSegment(ctx context.Context, spec transcode.Spec,
 			publication.Initializations = append(publication.Initializations, timeshift.ArtifactInput{VariantID: variant, File: rendition.Init})
 		}
 	}
-	snapshot, err := s.dynamicStreams.store.Publish(work, timeshiftScope(session.scope), session.windowID, publication)
+	var snapshot timeshift.WindowSnapshot
+	var result timeshift.PublicationResult
+	// The matched encoding plan fixes the subtitle track set for this session.
+	// Subtitle retention needs the complete atomic publication snapshot.
+	if transcode.HasHLSSubtitles(spec.Plan) {
+		snapshot, err = s.dynamicStreams.store.Publish(work, timeshiftScope(session.scope), session.windowID, publication)
+		if len(snapshot.Segments) > 0 {
+			result = timeshift.PublicationResult{Latest: snapshot.Segments[len(snapshot.Segments)-1], HasLatest: true}
+		}
+	} else {
+		result, err = s.dynamicStreams.store.PublishLatest(work, timeshiftScope(session.scope), session.windowID, publication)
+	}
 	if err != nil {
 		return err
 	}
-	if len(snapshot.Segments) == 0 {
+	if !result.HasLatest {
 		return transcode.ErrOutputUnavailable
 	}
-	published := snapshot.Segments[len(snapshot.Segments)-1]
+	published := result.Latest
 	session.mu.Lock()
 	defer session.mu.Unlock()
 	if session.closed || session.generation != generation {

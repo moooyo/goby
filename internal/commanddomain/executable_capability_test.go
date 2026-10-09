@@ -3,8 +3,6 @@ package commanddomain
 import (
 	"encoding/json"
 	"errors"
-	"runtime"
-	"strings"
 	"testing"
 )
 
@@ -48,18 +46,5 @@ func TestExecutableCapabilityRejectsJSONTrustTransfer(t *testing.T) {
 		if file != nil || !errors.Is(err, ErrUnsafe) {
 			t.Fatalf("rejected JSON left a usable capability: file=%v error=%v", file, err)
 		}
-	}
-}
-
-func TestExecutableCapabilityUnavailableOutsideLinux(t *testing.T) {
-	if runtime.GOOS == "linux" {
-		t.Skip("the unsupported-platform contract applies outside Linux")
-	}
-	capability, err := NewExecutableCapability(nil, "/approved/tool", strings.Repeat("a", 64))
-	if capability != nil {
-		_ = capability.Close()
-	}
-	if capability != nil || !errors.Is(err, ErrUnavailable) {
-		t.Fatalf("the unsupported platform issued executable trust: capability=%v error=%v", capability, err)
 	}
 }

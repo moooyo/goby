@@ -21,6 +21,19 @@ func librarySubject(principal identity.Principal, userID string) library.Subject
 	return subject
 }
 
+type keyPlaybackBindingContextKey struct{}
+
+// keyPlaybackBinding records only successful request-local routing. Reusing it
+// still refreshes credential authority after body reads and activity writes
+// can wait. Media reads and playback mutations also retain their own checks.
+type keyPlaybackBinding struct {
+	credentialID string
+	keyID        int64
+	playID       string
+	clientID     string
+	client       identity.Client
+}
+
 // Media URLs already carry PlaySessionId. Without explicit client metadata,
 // that correlation can recover a key's client context only after the parent
 // credential has authenticated. It never grants access to another key's play.
@@ -39,10 +52,21 @@ func (s *Server) bindKeyPlaybackContext(r *http.Request, principal identity.Prin
 	if err != nil {
 		return identity.Principal{}, err
 	}
+	binding, _ := r.Context().Value(keyPlaybackBindingContextKey{}).(*keyPlaybackBinding)
+	if binding != nil && binding.credentialID == principal.SessionID && binding.keyID == principal.ApplicationKeyID &&
+		binding.playID == playID && binding.clientID == principal.ClientSessionID && binding.client == principal.Client {
+		// Refresh authority without repeating the routing transaction. This
+		// preserves authentication failures after waits and the trusted peer.
+		return users.RevalidateSessionAuthority(r.Context(), principal)
+	}
 	bound, err := users.ResolveApplicationKeyPlaybackContext(r.Context(), principal, playID)
 	if errors.Is(err, identity.ErrNotFound) {
 		// Keep missing/foreign/expired resource behavior at the media handler.
 		return principal, nil
+	}
+	if err == nil && binding != nil {
+		*binding = keyPlaybackBinding{credentialID: bound.SessionID, keyID: bound.ApplicationKeyID,
+			playID: playID, clientID: bound.ClientSessionID, client: bound.Client}
 	}
 	return bound, err
 }

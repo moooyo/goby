@@ -104,6 +104,7 @@ func (s *Server) requireEmby(next http.HandlerFunc) http.HandlerFunc {
 		// persisted playback context before recording that context's activity.
 		applicationActivityRecorded := principal.IsApplicationKey() && client != (identity.Client{})
 		if principal.IsApplicationKey() {
+			r = r.WithContext(context.WithValue(r.Context(), keyPlaybackBindingContextKey{}, &keyPlaybackBinding{}))
 			if playID := playbackContextHint(r); playID != "" {
 				principal, err = s.bindKeyPlaybackContext(r, principal, playID)
 				if err != nil {

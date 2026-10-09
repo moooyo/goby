@@ -17,6 +17,8 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/moooyo/goby/internal/literaldial"
 )
 
 func Signature(secret, timestamp string, body []byte) string {
@@ -47,6 +49,11 @@ func allowedAddress(address netip.Addr, networks []string) bool {
 	return true
 }
 func webhookTransport(t target, options RuntimeOptions, lifetime context.Context, authorize func(context.Context) error) (*http.Transport, func(), error) {
+	dialer := &net.Dialer{}
+	return webhookTransportWithNetwork(t, options, lifetime, authorize, net.DefaultResolver.LookupNetIP, dialer.DialContext)
+}
+
+func webhookTransportWithNetwork(t target, options RuntimeOptions, lifetime context.Context, authorize func(context.Context) error, lookup func(context.Context, string, string) ([]netip.Addr, error), dial literaldial.DialFunc) (*http.Transport, func(), error) {
 	u, err := url.Parse(t.endpoint)
 	if err != nil {
 		return nil, nil, ErrInvalid
@@ -56,7 +63,6 @@ func webhookTransport(t target, options RuntimeOptions, lifetime context.Context
 	if port == "" {
 		port = "443"
 	}
-	dialer := &net.Dialer{Timeout: 3 * time.Second}
 	networkContext, cancelNetwork := context.WithCancel(lifetime)
 	var ownership sync.Mutex
 	var workers sync.WaitGroup
@@ -67,7 +73,10 @@ func webhookTransport(t target, options RuntimeOptions, lifetime context.Context
 			if e != nil || h != host || p != port {
 				return nil, ErrInvalid
 			}
-			addresses, e := net.DefaultResolver.LookupNetIP(ctx, "ip", h)
+			// DNS and every literal connection attempt share one total budget.
+			ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+			defer cancel()
+			addresses, e := lookup(ctx, "ip", h)
 			if e != nil || len(addresses) == 0 || len(addresses) > 32 {
 				return nil, ErrUnavailable
 			}
@@ -76,14 +85,9 @@ func webhookTransport(t target, options RuntimeOptions, lifetime context.Context
 					return nil, ErrInvalid
 				}
 			}
-			for _, candidate := range addresses {
-				connection, e := dialer.DialContext(ctx, "tcp", net.JoinHostPort(candidate.String(), p))
-				if e == nil {
-					return connection, nil
-				}
-				if ctx.Err() != nil {
-					break
-				}
+			connection, e := literaldial.DialContext(ctx, "tcp", addresses, p, dial)
+			if e == nil {
+				return connection, nil
 			}
 			return nil, ErrUnavailable
 		}}

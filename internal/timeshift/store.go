@@ -260,47 +260,68 @@ func (store *Store) preparePublication(window *windowState, publication Publicat
 // Capacity pressure can evict older intervals before copying, but a partial new
 // interval is never advertised. Input descriptors remain owned by the caller.
 func (store *Store) Publish(ctx context.Context, scope Scope, id string, publication Publication) (WindowSnapshot, error) {
+	var result WindowSnapshot
+	err := store.publish(ctx, scope, id, publication, func(window *windowState) {
+		result = snapshotLocked(window)
+	})
+	return result, err
+}
+
+// PublishLatest performs the same atomic publication as Publish, but copies only
+// the latest retained segment instead of the complete window history. The result
+// is selected after expiration while the publication still holds the store lock.
+func (store *Store) PublishLatest(ctx context.Context, scope Scope, id string, publication Publication) (PublicationResult, error) {
+	var result PublicationResult
+	err := store.publish(ctx, scope, id, publication, func(window *windowState) {
+		result = latestPublicationLocked(window)
+	})
+	return result, err
+}
+
+// result copies the requested view under store.mu after a successful commit.
+// It must not retain window state or call back into the store.
+func (store *Store) publish(ctx context.Context, scope Scope, id string, publication Publication, result func(*windowState)) error {
 	store.mu.Lock()
 	window, err := store.checkedWindow(ctx, scope, id, false)
 	if err != nil {
 		store.mu.Unlock()
-		return WindowSnapshot{}, err
+		return err
 	}
 	if store.failure != nil {
 		store.mu.Unlock()
-		return WindowSnapshot{}, ErrStorage
+		return ErrStorage
 	}
 	if window.state.Ended {
 		store.mu.Unlock()
-		return WindowSnapshot{}, ErrEnded
+		return ErrEnded
 	}
 	if window.publishing || store.publishing >= store.options.MaxPublishing {
 		store.mu.Unlock()
-		return WindowSnapshot{}, ErrBusy
+		return ErrBusy
 	}
 	prepared, reserved, err := store.preparePublication(window, publication)
 	if err != nil {
 		store.mu.Unlock()
-		return WindowSnapshot{}, err
+		return err
 	}
 	if reserved > window.options.MaxBytes || reserved > store.options.MaxBytes {
 		store.mu.Unlock()
-		return WindowSnapshot{}, ErrQuota
+		return ErrQuota
 	}
 	newEpoch := publication.Generation != window.generation
 	if window.advertised && reserved+store.requiredInitializationBytesLocked(window, publication.Generation) > window.options.MaxBytes/3 {
 		store.mu.Unlock()
-		return WindowSnapshot{}, ErrQuota
+		return ErrQuota
 	}
 	if !store.canReserveLocked(window, reserved, len(prepared)) {
 		store.mu.Unlock()
-		return WindowSnapshot{}, ErrQuota
+		return ErrQuota
 	}
 	if window.advertised {
 		store.trimActiveLocked(window, reserved, publication.Generation)
 		if store.activeBytesForLocked(window, publication.Generation)+reserved > window.options.MaxBytes/3 {
 			store.mu.Unlock()
-			return WindowSnapshot{}, ErrQuota
+			return ErrQuota
 		}
 	}
 	for len(window.segments) > 0 && (window.bytes+reserved > window.options.MaxBytes || store.bytes+store.pendingBytes+reserved > store.options.MaxBytes ||
@@ -310,12 +331,12 @@ func (store *Store) Publish(ctx context.Context, scope Scope, id string, publica
 	}
 	if store.failure != nil {
 		store.mu.Unlock()
-		return WindowSnapshot{}, ErrStorage
+		return ErrStorage
 	}
 	if window.bytes+reserved > window.options.MaxBytes || store.bytes+store.pendingBytes+reserved > store.options.MaxBytes ||
 		store.artifacts+store.pendingArtifacts+len(prepared) > store.options.MaxArtifacts {
 		store.mu.Unlock()
-		return WindowSnapshot{}, ErrQuota
+		return ErrQuota
 	}
 	window.publishing, window.pendingBytes = true, reserved
 	store.publishing++
@@ -368,7 +389,7 @@ func (store *Store) Publish(ctx context.Context, scope Scope, id string, publica
 		if store.failure != nil {
 			err = errors.Join(err, ErrStorage)
 		}
-		return WindowSnapshot{}, err
+		return err
 	}
 	for _, item := range prepared {
 		window.artifacts[item.artifact.ID] = &artifactState{artifact: item.artifact, charge: item.charge, visible: true}
@@ -423,9 +444,10 @@ func (store *Store) Publish(ctx context.Context, scope Scope, id string, publica
 	store.pruneEpochsLocked(window)
 	store.expireLocked(window, store.options.Now())
 	if store.failure != nil {
-		return WindowSnapshot{}, ErrStorage
+		return ErrStorage
 	}
-	return snapshotLocked(window), nil
+	result(window)
+	return nil
 }
 
 func retainedEpochs(window *windowState) int {
@@ -607,6 +629,15 @@ func (store *Store) expireLocked(window *windowState, now time.Time) {
 	for _, artifact := range window.artifacts {
 		store.removeExpiredLocked(window, artifact)
 	}
+}
+
+func latestPublicationLocked(window *windowState) PublicationResult {
+	if len(window.segments) == 0 {
+		return PublicationResult{}
+	}
+	segment := window.segments[len(window.segments)-1].segment
+	segment.Artifacts = append([]Artifact(nil), segment.Artifacts...)
+	return PublicationResult{Latest: segment, HasLatest: true}
 }
 
 func snapshotLocked(window *windowState) WindowSnapshot {

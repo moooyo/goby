@@ -818,8 +818,13 @@ func (s *Store) Snapshot(ctx context.Context, name string) (*Snapshot, error) {
 		return nil, s.degradeLocked()
 	}
 	snapshot := &Snapshot{file: file, ctx: ctx, name: name, size: stat.Size, modTime: time.Unix(int64(stat.Mtim.Sec), int64(stat.Mtim.Nsec)).UTC(), failure: s.markDegraded}
-	snapshot.release = func(reader *Snapshot) {
+	snapshot.release = func(reader *Snapshot, err error) {
 		s.mu.Lock()
+		// Publish a close failure before retiring the reader so Store.Close
+		// cannot miss both the reader and its failure.
+		if err != nil {
+			s.degraded = true
+		}
 		delete(s.readers, reader)
 		s.mu.Unlock()
 	}
@@ -870,6 +875,11 @@ func (s *Store) Close() error {
 	// Keep the process lock until every pinned reader has released its inode.
 	if err := s.closeDescriptors(); err != nil {
 		s.degraded = true
+		closeErr = ErrUnavailable
+	}
+	// A read failure may have waited for the store mutex while finalizing the
+	// active file. Reader joins above include publication of those failures.
+	if s.degraded {
 		closeErr = ErrUnavailable
 	}
 	s.closeErr = closeErr

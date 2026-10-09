@@ -45,6 +45,11 @@ type AudioWaveformArtifact struct {
 	ModifiedAt    time.Time                         `json:"-"`
 }
 
+type audioWaveformReadResult struct {
+	artifact AudioWaveformArtifact
+	data     media.AudioWaveformData
+}
+
 type AudioWaveformEncoder func(context.Context, *os.File, MediaFile, AudioWaveformJob, io.Writer) (media.AudioWaveformSummary, error)
 
 type audioWaveformManifest struct {
@@ -279,16 +284,24 @@ func checkUnpublishedAudioWaveforms(directory *os.Root, force bool) error {
 }
 
 func readAudioWaveformPayload(ctx context.Context, directory *os.Root, name string, size int64, digest string) (*os.File, media.AudioWaveformSummary, error) {
+	file, data, err := readAudioWaveformPayloadData(ctx, directory, name, size, digest)
+	if err != nil {
+		return nil, media.AudioWaveformSummary{}, err
+	}
+	return file, data.Summary(size), nil
+}
+
+func readAudioWaveformPayloadData(ctx context.Context, directory *os.Root, name string, size int64, digest string) (*os.File, media.AudioWaveformData, error) {
 	if size <= 52 || size > media.MaxAudioWaveformBytes || !backgroundClipHex(digest, 64) {
-		return nil, media.AudioWaveformSummary{}, ErrAudioWaveformStorageConflict
+		return nil, media.AudioWaveformData{}, ErrAudioWaveformStorageConflict
 	}
 	before, err := directory.Lstat(name)
 	if err != nil || !before.Mode().IsRegular() || before.Size() != size {
-		return nil, media.AudioWaveformSummary{}, ErrAudioWaveformStorageConflict
+		return nil, media.AudioWaveformData{}, ErrAudioWaveformStorageConflict
 	}
 	file, err := openScanFile(directory, name)
 	if err != nil {
-		return nil, media.AudioWaveformSummary{}, ErrAudioWaveformStorageConflict
+		return nil, media.AudioWaveformData{}, ErrAudioWaveformStorageConflict
 	}
 	ok := false
 	defer func() {
@@ -298,66 +311,72 @@ func readAudioWaveformPayload(ctx context.Context, directory *os.Root, name stri
 	}()
 	opened, err := file.Stat()
 	if err != nil || !sameMediaSourceFile(before, opened) {
-		return nil, media.AudioWaveformSummary{}, ErrAudioWaveformStorageConflict
+		return nil, media.AudioWaveformData{}, ErrAudioWaveformStorageConflict
 	}
 	data := make([]byte, int(size))
 	for offset := 0; offset < len(data); {
 		if err := ctx.Err(); err != nil {
-			return nil, media.AudioWaveformSummary{}, err
+			return nil, media.AudioWaveformData{}, err
 		}
 		end := min(offset+64*1024, len(data))
 		n, err := file.ReadAt(data[offset:end], int64(offset))
 		if err != nil || n != end-offset {
-			return nil, media.AudioWaveformSummary{}, ErrAudioWaveformStorageConflict
+			return nil, media.AudioWaveformData{}, ErrAudioWaveformStorageConflict
 		}
 		offset = end
 	}
 	hash := sha256.Sum256(data)
 	if hex.EncodeToString(hash[:]) != digest {
-		return nil, media.AudioWaveformSummary{}, ErrAudioWaveformStorageConflict
+		return nil, media.AudioWaveformData{}, ErrAudioWaveformStorageConflict
 	}
 	decoded, err := media.ParseAudioWaveforms(data)
 	if err != nil {
-		return nil, media.AudioWaveformSummary{}, fmt.Errorf("%w: %w", ErrAudioWaveformStorageConflict, err)
+		return nil, media.AudioWaveformData{}, fmt.Errorf("%w: %w", ErrAudioWaveformStorageConflict, err)
 	}
 	after, err := directory.Lstat(name)
 	current, statErr := file.Stat()
 	if err != nil || statErr != nil || !sameMediaSourceFile(opened, after) || !sameMediaSourceFile(opened, current) {
-		return nil, media.AudioWaveformSummary{}, ErrAudioWaveformStorageConflict
+		return nil, media.AudioWaveformData{}, ErrAudioWaveformStorageConflict
 	}
 	if err := ctx.Err(); err != nil {
-		return nil, media.AudioWaveformSummary{}, err
+		return nil, media.AudioWaveformData{}, err
 	}
 	ok = true
-	return file, decoded.Summary(size), nil
+	return file, decoded, nil
 }
 
 func readAudioWaveform(ctx context.Context, directory *os.Root, sourceName, sourceStamp string, sourceCurrent bool) (*os.File, audioWaveformManifest, AudioWaveformArtifact, error) {
+	file, manifest, result, err := readAudioWaveformData(ctx, directory, sourceName, sourceStamp, sourceCurrent)
+	return file, manifest, result.artifact, err
+}
+
+func readAudioWaveformData(ctx context.Context, directory *os.Root, sourceName, sourceStamp string, sourceCurrent bool) (*os.File, audioWaveformManifest, audioWaveformReadResult, error) {
 	var manifest audioWaveformManifest
 	if _, err := readAudioWaveformJSON(directory, "manifest.json", &manifest); err != nil {
-		return nil, manifest, AudioWaveformArtifact{}, err
+		return nil, manifest, audioWaveformReadResult{}, err
 	}
 	if !validAudioWaveformManifest(manifest, sourceName) {
-		return nil, manifest, AudioWaveformArtifact{}, ErrAudioWaveformStorageConflict
+		return nil, manifest, audioWaveformReadResult{}, ErrAudioWaveformStorageConflict
 	}
-	file, summary, err := readAudioWaveformPayload(ctx, directory, manifest.Generation, manifest.Summary.Bytes, manifest.SHA256)
+	file, data, err := readAudioWaveformPayloadData(ctx, directory, manifest.Generation, manifest.Summary.Bytes, manifest.SHA256)
 	if err != nil {
-		return nil, manifest, AudioWaveformArtifact{}, err
+		return nil, manifest, audioWaveformReadResult{}, err
 	}
+	summary := data.Summary(manifest.Summary.Bytes)
 	if !sameAudioWaveformSummary(summary, manifest.Summary) {
 		file.Close()
-		return nil, manifest, AudioWaveformArtifact{}, ErrAudioWaveformStorageConflict
+		return nil, manifest, audioWaveformReadResult{}, ErrAudioWaveformStorageConflict
 	}
 	info, err := file.Stat()
 	if err != nil {
 		file.Close()
-		return nil, manifest, AudioWaveformArtifact{}, err
+		return nil, manifest, audioWaveformReadResult{}, err
 	}
 	artifact := AudioWaveformArtifact{Available: true, Stale: !sourceCurrent || manifest.SourceStamp != sourceStamp,
 		Profile: summary.Profile, Generation: manifest.Generation, DurationTicks: summary.DurationTicks, Size: summary.Bytes,
 		Tracks: slices.Clone(summary.Tracks), OperationID: manifest.OperationID, SourceStamp: manifest.SourceStamp,
 		ETag: `"waveform-` + manifest.Generation + "-" + manifest.SHA256 + `"`, ModifiedAt: info.ModTime().UTC()}
-	return file, manifest, artifact, nil
+	return file, manifest, audioWaveformReadResult{artifact: artifact, data: data}, nil
 }
 
 func (s *Store) recheckAudioWaveformDirectory(snapshot indexedMediaSource, heldParent, heldDirectory *os.Root) error {
@@ -391,22 +410,37 @@ func audioWaveformSourceCurrent(parent *os.Root, snapshot indexedMediaSource) bo
 }
 
 func (s *Store) OpenAudioWaveformFor(ctx context.Context, subject Subject, itemID string) (*os.File, AudioWaveformArtifact, error) {
-	return s.openAudioWaveformFor(ctx, subject, itemID, false)
+	file, result, err := s.openAudioWaveformFor(ctx, subject, itemID, false, true)
+	return file, result.artifact, err
 }
 
 func (s *Store) GetAudioWaveformFor(ctx context.Context, subject Subject, itemID string) (AudioWaveformArtifact, error) {
-	file, artifact, err := s.openAudioWaveformFor(ctx, subject, itemID, true)
+	_, result, err := s.openAudioWaveformFor(ctx, subject, itemID, true, false)
 	if err != nil {
 		return AudioWaveformArtifact{}, err
 	}
-	return artifact, file.Close()
+	return result.artifact, nil
 }
 
-func (s *Store) openAudioWaveformFor(ctx context.Context, subject Subject, itemID string, allowStale bool) (*os.File, AudioWaveformArtifact, error) {
-	if ctx == nil || s == nil || !analysisOpaque(itemID, 128) {
-		return nil, AudioWaveformArtifact{}, ErrInvalidInput
+// ReadAudioWaveformFor returns owned decoded arrays only after current access
+// and source checks. Its worker closes all descriptors before retiring, so a
+// level response can reuse the validated data without reopening or rereading it.
+func (s *Store) ReadAudioWaveformFor(ctx context.Context, subject Subject, itemID string) (media.AudioWaveformData, AudioWaveformArtifact, error) {
+	_, result, err := s.openAudioWaveformFor(ctx, subject, itemID, false, false)
+	if err != nil {
+		return media.AudioWaveformData{}, AudioWaveformArtifact{}, err
 	}
-	var artifact AudioWaveformArtifact
+	return result.data, result.artifact, nil
+}
+
+func (s *Store) openAudioWaveformFor(ctx context.Context, subject Subject, itemID string, allowStale, keepFile bool) (*os.File, audioWaveformReadResult, error) {
+	if ctx == nil || s == nil || !analysisOpaque(itemID, 128) {
+		return nil, audioWaveformReadResult{}, ErrInvalidInput
+	}
+	// The mailbox owns only immutable data, never a descriptor. Read it only
+	// after the media worker's result handoff; cancellation may return while
+	// that worker is still finishing its checks and descriptor cleanup.
+	completed := make(chan audioWaveformReadResult, 1)
 	file, _, err := s.runPreparedMediaSourceWorker(ctx, false, func(work context.Context) (mediaSourceRootHint, error) {
 		return s.readMediaSourceRootHint(work, itemID)
 	}, func(work context.Context) (*os.File, MediaFile, error) {
@@ -439,7 +473,7 @@ func (s *Store) openAudioWaveformFor(ctx context.Context, subject Subject, itemI
 		if err != nil {
 			return nil, MediaFile{}, err
 		}
-		opened, _, found, err := readAudioWaveform(work, directory, filepath.Base(snapshot.relativePath), stamp, audioWaveformSourceCurrent(parent, snapshot))
+		opened, _, result, err := readAudioWaveformData(work, directory, filepath.Base(snapshot.relativePath), stamp, audioWaveformSourceCurrent(parent, snapshot))
 		if err != nil {
 			return nil, MediaFile{}, err
 		}
@@ -459,22 +493,26 @@ func (s *Store) openAudioWaveformFor(ctx context.Context, subject Subject, itemI
 			opened.Close()
 			return nil, MediaFile{}, err
 		}
-		found.Stale = found.Stale || found.SourceStamp != currentStamp || !audioWaveformSourceCurrent(parent, current)
-		artifact = found
-		if found.Stale && !allowStale {
+		result.artifact.Stale = result.artifact.Stale || result.artifact.SourceStamp != currentStamp || !audioWaveformSourceCurrent(parent, current)
+		if result.artifact.Stale && !allowStale {
 			opened.Close()
+			completed <- audioWaveformReadResult{artifact: result.artifact}
 			return nil, MediaFile{}, ErrAudioWaveformStale
 		}
+		if !keepFile {
+			if err := opened.Close(); err != nil {
+				return nil, MediaFile{}, err
+			}
+			opened = nil
+		}
+		completed <- result
 		return opened, snapshot.mediaFile, nil
 	}, func(work context.Context) error {
 		_, err := s.readMediaSourceFor(work, subject, itemID, "")
 		return err
 	})
-	if err != nil {
-		if errors.Is(err, ErrAudioWaveformStale) {
-			return nil, artifact, err
-		}
-		return nil, AudioWaveformArtifact{}, audioWaveformStorageError(err)
+	if err != nil && !errors.Is(err, ErrAudioWaveformStale) {
+		return nil, audioWaveformReadResult{}, audioWaveformStorageError(err)
 	}
-	return file, artifact, nil
+	return file, <-completed, err
 }

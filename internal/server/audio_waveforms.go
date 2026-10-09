@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -254,24 +253,13 @@ func (s *Server) embyAudioWaveformLevel(w http.ResponseWriter, r *http.Request) 
 		apiError(w, r, http.StatusBadRequest, "invalid_input", "Supply a stream index, supported bucket count, and current version tag.")
 		return
 	}
-	file, artifact, err := s.library.OpenAudioWaveformFor(r.Context(), requestLibrarySubject(r, userID), r.PathValue("Id"))
+	data, artifact, err := s.library.ReadAudioWaveformFor(r.Context(), requestLibrarySubject(r, userID), r.PathValue("Id"))
 	if err != nil {
 		s.audioWaveformError(w, r, err)
 		return
 	}
-	defer file.Close()
 	if query.Get("tag") != artifact.ETag {
 		apiError(w, r, http.StatusNotFound, "audio_waveform_changed", "The waveform changed. Reload its current descriptor.")
-		return
-	}
-	encoded, err := io.ReadAll(io.LimitReader(file, media.MaxAudioWaveformBytes+1))
-	if err != nil || int64(len(encoded)) > media.MaxAudioWaveformBytes {
-		s.audioWaveformError(w, r, library.ErrAudioWaveformStorageConflict)
-		return
-	}
-	data, err := media.ParseAudioWaveforms(encoded)
-	if err != nil {
-		s.audioWaveformError(w, r, library.ErrAudioWaveformStorageConflict)
 		return
 	}
 	for _, track := range data.Tracks {

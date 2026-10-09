@@ -372,10 +372,10 @@ func TestSnapshotCloseWaitsForCancellationReaderSlotRelease(t *testing.T) {
 		allow := func() { allowOnce.Do(func() { close(allowRelease) }) }
 		defer allow()
 		originalRelease := reader.release
-		reader.release = func(snapshot *Snapshot) {
+		reader.release = func(snapshot *Snapshot, err error) {
 			close(releaseEntered)
 			<-allowRelease
-			originalRelease(snapshot)
+			originalRelease(snapshot, err)
 		}
 		cancel()
 		<-releaseEntered
@@ -428,10 +428,10 @@ func TestStoreCloseWaitsForConcurrentSnapshotRelease(t *testing.T) {
 		allow := func() { allowOnce.Do(func() { close(allowRelease) }) }
 		defer allow()
 		originalRelease := reader.release
-		reader.release = func(snapshot *Snapshot) {
+		reader.release = func(snapshot *Snapshot, err error) {
 			close(releaseEntered)
 			<-allowRelease
-			originalRelease(snapshot)
+			originalRelease(snapshot, err)
 		}
 		readerClose := make(chan error, 1)
 		go func() { readerClose <- reader.Close() }()
