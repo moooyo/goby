@@ -12,11 +12,13 @@ import (
 )
 
 type artifactState struct {
-	artifact   Artifact
-	charge     int64
-	readers    int
-	visible    bool
-	graceUntil time.Time
+	artifact        Artifact
+	charge          int64
+	readers         int
+	visible         bool
+	graceUntil      time.Time
+	retiring        bool
+	finishedReaders []*ReadHandle
 }
 
 type segmentState struct {
@@ -31,29 +33,34 @@ type epochState struct {
 }
 
 type windowState struct {
-	id            string
-	scope         Scope
-	options       WindowOptions
-	storage       *storageWindow
-	ctx           context.Context
-	cancel        context.CancelFunc
-	segments      []*segmentState
-	epochs        []*epochState
-	artifacts     map[string]*artifactState
-	readers       map[*ReadHandle]struct{}
-	generation    uint64
-	nextSequence  uint64
-	discontinuity uint64
-	revision      uint64
-	liveEdge      int64
-	bytes         int64
-	activeBytes   int64
-	pendingBytes  int64
-	accessed      time.Time
-	state         State
-	publishing    bool
-	closed        bool
-	advertised    bool
+	id             string
+	scope          Scope
+	options        WindowOptions
+	storage        *storageWindow
+	ctx            context.Context
+	cancel         context.CancelFunc
+	segments       []*segmentState
+	epochs         []*epochState
+	artifacts      map[string]*artifactState
+	readers        map[*ReadHandle]struct{}
+	generation     uint64
+	nextSequence   uint64
+	discontinuity  uint64
+	revision       uint64
+	liveEdge       int64
+	bytes          int64
+	activeBytes    int64
+	pendingBytes   int64
+	accessed       time.Time
+	state          State
+	publishing     bool
+	closed         bool
+	advertised     bool
+	cleanupCount   int
+	cleanupBytes   int64
+	cleanupDone    chan struct{}
+	destroying     bool
+	destroyReaders []*ReadHandle
 }
 
 // Store owns an exclusive directory lock until all publications and readers
@@ -77,6 +84,16 @@ type Store struct {
 	closeErr         error
 	done             chan struct{}
 	copyArtifact     func(context.Context, *storageWindow, string, *os.File, os.FileInfo) (int64, error)
+	removeArtifact   func(*storageWindow, string) error
+	cleanupHead      *cleanupTask
+	cleanupTail      *cleanupTask
+	cleanupWake      chan struct{}
+	cleanupStopped   chan struct{}
+	cleanupStopping  bool
+	cleanupCount     int
+	cleanupBytes     int64
+	cleanupArtifacts int
+	cleanupChanged   chan struct{}
 }
 
 func New(options Options) (*Store, error) {
@@ -89,10 +106,13 @@ func New(options Options) (*Store, error) {
 		return nil, err
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	store := &Store{options: options, storage: storage, windows: make(map[string]*windowState), ctx: ctx, cancel: cancel, done: make(chan struct{})}
+	store := &Store{options: options, storage: storage, windows: make(map[string]*windowState), ctx: ctx, cancel: cancel, done: make(chan struct{}),
+		cleanupWake: make(chan struct{}, 1), cleanupStopped: make(chan struct{}), cleanupChanged: make(chan struct{})}
 	store.copyArtifact = func(ctx context.Context, window *storageWindow, id string, file *os.File, info os.FileInfo) (int64, error) {
 		return window.copy(ctx, id, file, info)
 	}
+	store.removeArtifact = func(window *storageWindow, id string) error { return window.remove(id) }
+	go store.clean()
 	store.workers.Add(1)
 	go store.maintain()
 	return store, nil
@@ -121,16 +141,25 @@ func (store *Store) checkedWindow(ctx context.Context, scope Scope, id string, t
 		return nil, ErrNotFound
 	}
 	if window.closed {
+		store.waitCleanupLocked(window)
 		return nil, ErrClosed
 	}
 	now := store.options.Now()
 	if now.Sub(window.accessed) >= store.options.IdleTimeout {
 		store.revokeLocked(window)
+		store.waitCleanupLocked(window)
 		return nil, ErrClosed
 	}
-	store.expireLocked(window, now)
 	if touch {
 		window.accessed = now
+	}
+	store.expireLocked(window, now)
+	store.waitCleanupLocked(window)
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if store.closing || window.closed {
+		return nil, ErrClosed
 	}
 	return window, nil
 }
@@ -281,69 +310,10 @@ func (store *Store) PublishLatest(ctx context.Context, scope Scope, id string, p
 // result copies the requested view under store.mu after a successful commit.
 // It must not retain window state or call back into the store.
 func (store *Store) publish(ctx context.Context, scope Scope, id string, publication Publication, result func(*windowState)) error {
-	store.mu.Lock()
-	window, err := store.checkedWindow(ctx, scope, id, false)
+	window, prepared, reserved, err := store.reservePublication(ctx, scope, id, publication)
 	if err != nil {
-		store.mu.Unlock()
 		return err
 	}
-	if store.failure != nil {
-		store.mu.Unlock()
-		return ErrStorage
-	}
-	if window.state.Ended {
-		store.mu.Unlock()
-		return ErrEnded
-	}
-	if window.publishing || store.publishing >= store.options.MaxPublishing {
-		store.mu.Unlock()
-		return ErrBusy
-	}
-	prepared, reserved, err := store.preparePublication(window, publication)
-	if err != nil {
-		store.mu.Unlock()
-		return err
-	}
-	if reserved > window.options.MaxBytes || reserved > store.options.MaxBytes {
-		store.mu.Unlock()
-		return ErrQuota
-	}
-	newEpoch := publication.Generation != window.generation
-	if window.advertised && reserved+store.requiredInitializationBytesLocked(window, publication.Generation) > window.options.MaxBytes/3 {
-		store.mu.Unlock()
-		return ErrQuota
-	}
-	if !store.canReserveLocked(window, reserved, len(prepared)) {
-		store.mu.Unlock()
-		return ErrQuota
-	}
-	if window.advertised {
-		store.trimActiveLocked(window, reserved, publication.Generation)
-		if store.activeBytesForLocked(window, publication.Generation)+reserved > window.options.MaxBytes/3 {
-			store.mu.Unlock()
-			return ErrQuota
-		}
-	}
-	for len(window.segments) > 0 && (window.bytes+reserved > window.options.MaxBytes || store.bytes+store.pendingBytes+reserved > store.options.MaxBytes ||
-		store.artifacts+store.pendingArtifacts+len(prepared) > store.options.MaxArtifacts || len(window.segments) >= store.options.MaxSegments ||
-		newEpoch && retainedEpochs(window)+1 > store.options.MaxEpochs) {
-		store.dropOldestLocked(window)
-	}
-	if store.failure != nil {
-		store.mu.Unlock()
-		return ErrStorage
-	}
-	if window.bytes+reserved > window.options.MaxBytes || store.bytes+store.pendingBytes+reserved > store.options.MaxBytes ||
-		store.artifacts+store.pendingArtifacts+len(prepared) > store.options.MaxArtifacts {
-		store.mu.Unlock()
-		return ErrQuota
-	}
-	window.publishing, window.pendingBytes = true, reserved
-	store.publishing++
-	store.pendingBytes += reserved
-	store.pendingArtifacts += len(prepared)
-	store.workers.Add(1)
-	store.mu.Unlock()
 	defer store.workers.Done()
 	work, cancel := context.WithCancel(ctx)
 	stop := context.AfterFunc(window.ctx, cancel)
@@ -366,10 +336,18 @@ func (store *Store) publish(ctx context.Context, scope Scope, id string, publica
 	}
 	store.mu.Lock()
 	defer store.mu.Unlock()
-	store.publishing--
+	// Keep the publisher slot until post-copy retirement has completed. Close
+	// cannot destroy the directory and another publisher cannot change results
+	// while this publication temporarily releases the lock to join cleanup.
+	defer func() {
+		store.publishing--
+		window.publishing = false
+		store.destroyClosedLocked(window)
+		store.waitCleanupLocked(window)
+	}()
 	store.pendingBytes -= reserved
 	store.pendingArtifacts -= len(prepared)
-	window.publishing, window.pendingBytes = false, 0
+	window.pendingBytes = 0
 	if err == nil {
 		err = work.Err()
 	}
@@ -380,17 +358,23 @@ func (store *Store) publish(ctx context.Context, scope Scope, id string, publica
 		err = ErrStorage
 	}
 	if err != nil {
+		// Transfer every reserved name to charged, invisible retirement before
+		// releasing the lock. Missing and partial files share the same cleanup.
 		for _, item := range prepared {
-			if removeErr := window.storage.remove(item.artifact.ID); removeErr != nil {
-				store.retainFailedCleanupLocked(window, item, removeErr)
-			}
+			artifact := &artifactState{artifact: item.artifact, charge: item.charge}
+			window.artifacts[item.artifact.ID] = artifact
+			window.bytes += item.charge
+			store.bytes += item.charge
+			store.artifacts++
+			store.removeExpiredLocked(window, artifact)
 		}
-		store.destroyClosedLocked(window)
+		store.waitCleanupLocked(window)
 		if store.failure != nil {
 			err = errors.Join(err, ErrStorage)
 		}
 		return err
 	}
+	newEpoch := publication.Generation != window.generation
 	for _, item := range prepared {
 		window.artifacts[item.artifact.ID] = &artifactState{artifact: item.artifact, charge: item.charge, visible: true}
 		window.bytes += item.charge
@@ -443,11 +427,129 @@ func (store *Store) publish(ctx context.Context, scope Scope, id string, publica
 	bumpRevision(window)
 	store.pruneEpochsLocked(window)
 	store.expireLocked(window, store.options.Now())
+	store.waitCleanupLocked(window)
+	// Cancellation was checked before commit. Once the timeline is committed,
+	// a caller must receive its result even if cancellation arrives during the
+	// synchronous retirement wait, so downstream publication journals agree.
+	if window.closed || store.closing {
+		return ErrClosed
+	}
 	if store.failure != nil {
 		return ErrStorage
 	}
 	result(window)
 	return nil
+}
+
+// Admission owns the publisher slot while waiting for reclaimed capacity, but
+// reserves new bytes only after the old allocations have actually been removed.
+func (store *Store) reservePublication(ctx context.Context, scope Scope, id string, publication Publication) (*windowState, []preparedArtifact, int64, error) {
+	store.mu.Lock()
+	defer store.mu.Unlock()
+	window, err := store.checkedWindow(ctx, scope, id, false)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	if store.failure != nil {
+		return nil, nil, 0, ErrStorage
+	}
+	if window.state.Ended {
+		return nil, nil, 0, ErrEnded
+	}
+	if window.publishing || store.publishing >= store.options.MaxPublishing {
+		return nil, nil, 0, ErrBusy
+	}
+	prepared, reserved, err := store.preparePublication(window, publication)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	if reserved > window.options.MaxBytes || reserved > store.options.MaxBytes ||
+		window.advertised && reserved+store.requiredInitializationBytesLocked(window, publication.Generation) > window.options.MaxBytes/3 {
+		return nil, nil, 0, ErrQuota
+	}
+	window.publishing = true
+	store.publishing++
+	store.workers.Add(1)
+	admitted := false
+	startedRetirement := false
+	defer func() {
+		if !admitted {
+			window.publishing = false
+			store.publishing--
+			store.destroyClosedLocked(window)
+			if startedRetirement {
+				store.waitCleanupLocked(window)
+			}
+			store.workers.Done()
+		}
+	}()
+	for !store.canReserveLocked(window, reserved, len(prepared)) {
+		// Wait only when admitted artifact retirement can cover the shortage.
+		// An unrelated deletion cannot resolve this window's pinned or grace
+		// bytes, and directory retirement cannot release artifact capacity.
+		if !store.canAwaitCleanupLocked(window, reserved, len(prepared)) {
+			return nil, nil, 0, ErrQuota
+		}
+		changed := store.cleanupChanged
+		store.mu.Unlock()
+		select {
+		case <-changed:
+		case <-ctx.Done():
+		case <-window.ctx.Done():
+		}
+		store.mu.Lock()
+		if err := ctx.Err(); err != nil {
+			return nil, nil, 0, err
+		}
+		if store.closing || window.closed {
+			return nil, nil, 0, ErrClosed
+		}
+		if store.failure != nil {
+			return nil, nil, 0, ErrStorage
+		}
+	}
+	if window.advertised {
+		queued := window.cleanupCount
+		store.trimActiveLocked(window, reserved, publication.Generation)
+		startedRetirement = window.cleanupCount > queued
+	}
+	for {
+		store.waitCleanupLocked(window)
+		if err := ctx.Err(); err != nil {
+			return nil, nil, 0, err
+		}
+		if store.closing || window.closed {
+			return nil, nil, 0, ErrClosed
+		}
+		if store.failure != nil {
+			return nil, nil, 0, ErrStorage
+		}
+		if window.advertised && store.activeBytesForLocked(window, publication.Generation)+reserved > window.options.MaxBytes/3 {
+			return nil, nil, 0, ErrQuota
+		}
+		pressure := window.bytes+reserved > window.options.MaxBytes || store.bytes+store.pendingBytes+reserved > store.options.MaxBytes ||
+			store.artifacts+store.pendingArtifacts+len(prepared) > store.options.MaxArtifacts
+		if pressure && !store.canReserveLocked(window, reserved, len(prepared)) {
+			// Grace, readers and other publishers can change while cleanup owns
+			// the filesystem. Do not hide a newly protected playlist for quota.
+			return nil, nil, 0, ErrQuota
+		}
+		if len(window.segments) == 0 || !pressure && len(window.segments) < store.options.MaxSegments &&
+			(publication.Generation == window.generation || retainedEpochs(window)+1 <= store.options.MaxEpochs) {
+			if pressure {
+				return nil, nil, 0, ErrQuota
+			}
+			break
+		}
+		queued := window.cleanupCount
+		store.dropOldestLocked(window)
+		startedRetirement = startedRetirement || window.cleanupCount > queued
+	}
+	window.pendingBytes = reserved
+	store.pendingBytes += reserved
+	store.pendingArtifacts += len(prepared)
+	admitted = true
+	return window, prepared, reserved, nil
 }
 
 func retainedEpochs(window *windowState) int {
@@ -469,6 +571,24 @@ func (store *Store) canReserveLocked(window *windowState, reserved int64, artifa
 	if neededBytes == 0 && neededArtifacts == 0 {
 		return true
 	}
+	reclaimed, count := store.reclaimableCapacityLocked(window)
+	return reclaimed >= neededBytes && count >= neededArtifacts
+}
+
+func (store *Store) canAwaitCleanupLocked(window *windowState, reserved int64, artifacts int) bool {
+	if store.cleanupArtifacts == 0 {
+		return false
+	}
+	reclaimed, count := store.reclaimableCapacityLocked(window)
+	// Maintenance may have moved this window's reclaimable segments to the
+	// retirement queue during a prior wait. Its own queued bytes can satisfy
+	// local pressure, but another window's queued bytes cannot do so.
+	return window.bytes+reserved-window.options.MaxBytes <= reclaimed+window.cleanupBytes &&
+		store.bytes+store.pendingBytes+reserved-store.options.MaxBytes <= reclaimed+store.cleanupBytes &&
+		store.artifacts+store.pendingArtifacts+artifacts-store.options.MaxArtifacts <= count+store.cleanupArtifacts
+}
+
+func (store *Store) reclaimableCapacityLocked(window *windowState) (int64, int) {
 	var reclaimed int64
 	count := 0
 	for _, state := range window.segments {
@@ -483,7 +603,7 @@ func (store *Store) canReserveLocked(window *windowState, reserved int64, artifa
 			}
 		}
 	}
-	return reclaimed >= neededBytes && count >= neededArtifacts
+	return reclaimed, count
 }
 
 func bumpRevision(window *windowState) {
@@ -545,26 +665,12 @@ func (store *Store) failLocked(cause error) {
 	}
 }
 
-func (store *Store) retainFailedCleanupLocked(window *windowState, item preparedArtifact, cause error) {
-	window.artifacts[item.artifact.ID] = &artifactState{artifact: item.artifact, charge: item.charge}
-	window.bytes += item.charge
-	store.bytes += item.charge
-	store.artifacts++
-	store.failLocked(cause)
-}
-
 func (store *Store) removeExpiredLocked(window *windowState, artifact *artifactState) {
-	if artifact.visible || artifact.readers != 0 || !window.closed && store.options.Now().Before(artifact.graceUntil) {
+	if artifact.retiring || artifact.visible || artifact.readers != 0 || !window.closed && store.options.Now().Before(artifact.graceUntil) {
 		return
 	}
-	if err := window.storage.remove(artifact.artifact.ID); err != nil {
-		store.failLocked(err)
-		return
-	}
-	delete(window.artifacts, artifact.artifact.ID)
-	window.bytes -= artifact.charge
-	store.bytes -= artifact.charge
-	store.artifacts--
+	artifact.retiring = true
+	store.enqueueCleanupLocked(window, artifact)
 }
 
 func (store *Store) dropOldestLocked(window *windowState) {
@@ -721,6 +827,13 @@ func (store *Store) Advertise(ctx context.Context, scope Scope, id string, revis
 		// used the larger private snapshot must retry with the trimmed revision.
 		window.advertised = true
 		store.trimActiveLocked(window, 0, window.generation)
+		store.waitCleanupLocked(window)
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		if store.closing || window.closed {
+			return ErrClosed
+		}
 		if store.failure != nil {
 			return ErrStorage
 		}
@@ -763,7 +876,7 @@ func (store *Store) ResolveArtifact(ctx context.Context, scope Scope, id, artifa
 		return Artifact{}, Variant{}, err
 	}
 	artifact := window.artifacts[artifactID]
-	if artifact == nil || !artifact.visible && !store.options.Now().Before(artifact.graceUntil) {
+	if artifact == nil || artifact.retiring || !artifact.visible && !store.options.Now().Before(artifact.graceUntil) {
 		return Artifact{}, Variant{}, ErrNotFound
 	}
 	for _, variant := range window.options.Variants {
@@ -786,7 +899,7 @@ func (store *Store) RetainsArtifact(ctx context.Context, scope Scope, id, artifa
 		return false, err
 	}
 	artifact := window.artifacts[artifactID]
-	return artifact != nil && (artifact.visible || store.options.Now().Before(artifact.graceUntil)), nil
+	return artifact != nil && !artifact.retiring && (artifact.visible || store.options.Now().Before(artifact.graceUntil)), nil
 }
 
 // RetainsArtifacts observes one presentation for all requested artifact IDs,
@@ -811,7 +924,7 @@ func (store *Store) RetainsArtifacts(ctx context.Context, scope Scope, id string
 	now := store.options.Now()
 	for _, artifactID := range artifactIDs {
 		artifact := window.artifacts[artifactID]
-		retained[artifactID] = artifact != nil && (artifact.visible || now.Before(artifact.graceUntil))
+		retained[artifactID] = artifact != nil && !artifact.retiring && (artifact.visible || now.Before(artifact.graceUntil))
 	}
 	return retained, nil
 }
@@ -903,6 +1016,7 @@ func (store *Store) ClosePresentation(ctx context.Context, scope Scope, id strin
 		return err
 	}
 	store.revokeLocked(window)
+	store.waitCleanupLocked(window)
 	if store.failure != nil {
 		return ErrStorage
 	}
@@ -912,32 +1026,26 @@ func (store *Store) ClosePresentation(ctx context.Context, scope Scope, id strin
 func (store *Store) revokeLocked(window *windowState) {
 	window.closed = true
 	window.cancel()
-	for reader := range window.readers {
-		store.closeReaderLocked(reader)
-	}
 	for _, artifact := range window.artifacts {
 		hideArtifactLocked(window, artifact)
 		store.removeExpiredLocked(window, artifact)
+	}
+	for reader := range window.readers {
+		store.closeReaderLocked(reader)
 	}
 	window.segments, window.epochs = nil, nil
 	store.destroyClosedLocked(window)
 }
 
 func (store *Store) destroyClosedLocked(window *windowState) {
-	if !window.closed || window.publishing || len(window.artifacts) != 0 || len(window.readers) != 0 {
+	if !window.closed || window.publishing || window.destroying || len(window.artifacts) != 0 || len(window.readers) != 0 {
 		return
 	}
 	if _, exists := store.windows[window.id]; !exists {
 		return
 	}
-	if err := window.storage.destroy(); err != nil {
-		store.failLocked(err)
-		return
-	}
-	if err := window.storage.close(); err != nil {
-		store.failLocked(err)
-	}
-	delete(store.windows, window.id)
+	window.destroying = true
+	store.enqueueCleanupLocked(window, nil)
 }
 
 func (store *Store) maintain() {
@@ -974,12 +1082,16 @@ func (store *Store) Close(ctx context.Context) error {
 		go func() {
 			store.workers.Wait()
 			store.mu.Lock()
+			store.cleanupStopping = true
+			store.wakeCleanupLocked()
+			store.mu.Unlock()
+			<-store.cleanupStopped
+			// No publication, reader or cleanup can still use these descriptors.
+			// Failed tombstones stay charged, and startup recovery owns leftovers.
 			for _, window := range store.windows {
-				store.revokeLocked(window)
 				_ = window.storage.close()
 			}
 			store.closeErr = errors.Join(store.failure, store.storage.close())
-			store.mu.Unlock()
 			close(store.done)
 		}()
 	}

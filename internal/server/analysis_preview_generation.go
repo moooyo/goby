@@ -300,10 +300,12 @@ func generateAnalysisPreview(ctx context.Context, cache *analysiscache.Store, wo
 		}
 		// Delete after WriteFile returns: deleting from its producer would try
 		// to reacquire Builder's write mutex. BIF has closed each full lease.
-		for _, record := range records {
-			if err := builder.DeleteTemporary(operation, fmt.Sprintf("frame-%06d.jpg", record.index)); err != nil {
-				return nil, nil, err
-			}
+		temporaryNames := make([]string, len(records))
+		for index, record := range records {
+			temporaryNames[index] = fmt.Sprintf("frame-%06d.jpg", record.index)
+		}
+		if err := builder.DeleteTemporaries(operation, temporaryNames); err != nil {
+			return nil, nil, err
 		}
 		timeline, err := library.EncodeAnalysisPreviewTimeline(nominal, actual)
 		if err != nil {

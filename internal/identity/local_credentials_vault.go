@@ -166,6 +166,22 @@ func (s *Store) GetOwnProfileConfiguration(ctx context.Context, actor Principal,
 	if _, err := lockClientSession(ctx, tx, actor, false); err != nil {
 		return nil, "", err
 	}
+	configuration, pin, err := s.readProfileConfiguration(ctx, tx, userID)
+	if err != nil {
+		return nil, "", err
+	}
+	if _, err := lockClientSession(ctx, tx, actor, false); err != nil {
+		return nil, "", err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return nil, "", err
+	}
+	return configuration, pin, nil
+}
+
+// The caller has authorized the ordinary owner and retains the account lock.
+// Its final authority check must follow any vault I/O performed here.
+func (s *Store) readProfileConfiguration(ctx context.Context, tx pgx.Tx, userID string) (json.RawMessage, string, error) {
 	var sealed []byte
 	var configuration json.RawMessage
 	if err := tx.QueryRow(ctx, "SELECT profile_pin_ciphertext,configuration FROM users WHERE id=$1", userID).Scan(&sealed, &configuration); err != nil {
@@ -173,16 +189,11 @@ func (s *Store) GetOwnProfileConfiguration(ctx context.Context, actor Principal,
 	}
 	pin := ""
 	if sealed != nil {
+		var err error
 		pin, err = s.applicationKeyVault.openProfilePin(ctx, userID, sealed)
 		if err != nil {
 			return nil, "", err
 		}
-	}
-	if _, err := lockClientSession(ctx, tx, actor, false); err != nil {
-		return nil, "", err
-	}
-	if err := tx.Commit(ctx); err != nil {
-		return nil, "", err
 	}
 	return configuration, pin, nil
 }

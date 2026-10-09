@@ -177,46 +177,27 @@ func lockCopiedUserData(ctx context.Context, tx pgx.Tx, sourceID string) error {
 	// items before reading their data so scanning/deletion cannot remove the
 	// foreign-key targets midway through the copy. Entity locks follow item
 	// locks, matching catalog writers, and share the same total row budget.
-	rows, err := tx.Query(ctx, `SELECT i.id FROM items i JOIN user_item_data d ON d.item_id=i.id
-		WHERE d.user_id=$1 ORDER BY i.id LIMIT $2 FOR KEY SHARE OF i`, sourceID, maxUserCopyStateRows+1)
-	if err != nil {
+	// Aggregate only outside those bounded locking queries to avoid returning IDs.
+	var count int
+	if err := tx.QueryRow(ctx, `SELECT count(*) FROM (
+		SELECT i.id FROM items i JOIN user_item_data d ON d.item_id=i.id
+		WHERE d.user_id=$1 ORDER BY i.id LIMIT $2 FOR KEY SHARE OF i
+	) locked_items`, sourceID, maxUserCopyStateRows+1).Scan(&count); err != nil {
 		return fmt.Errorf("lock copied user media items: %w", err)
 	}
-	defer rows.Close()
-	count := 0
-	for rows.Next() {
-		var id string
-		if err := rows.Scan(&id); err != nil {
-			return fmt.Errorf("read copied user media item: %w", err)
-		}
-		count++
-		if count > maxUserCopyStateRows {
-			return managedUserFieldError("UserCopyOptions", "UserData exceeds the combined 100000 item/entity state row copy limit")
-		}
+	if count > maxUserCopyStateRows {
+		return managedUserFieldError("UserCopyOptions", "UserData exceeds the combined 100000 item/entity state row copy limit")
 	}
-	if err := rows.Err(); err != nil {
-		return fmt.Errorf("read copied user media items: %w", err)
-	}
-	rows.Close()
-	entities, err := tx.Query(ctx, `SELECT entity.id FROM catalog_entities entity
+	var entityCount int
+	if err := tx.QueryRow(ctx, `SELECT count(*) FROM (
+		SELECT entity.id FROM catalog_entities entity
 		JOIN entity_user_data d ON d.entity_id=entity.id WHERE d.user_id=$1
-		ORDER BY entity.id LIMIT $2 FOR KEY SHARE OF entity`, sourceID, maxUserCopyStateRows-count+1)
-	if err != nil {
+		ORDER BY entity.id LIMIT $2 FOR KEY SHARE OF entity
+	) locked_entities`, sourceID, maxUserCopyStateRows-count+1).Scan(&entityCount); err != nil {
 		return fmt.Errorf("lock copied user catalog entities: %w", err)
 	}
-	defer entities.Close()
-	for entities.Next() {
-		var id int64
-		if err := entities.Scan(&id); err != nil {
-			return fmt.Errorf("read copied user catalog entity: %w", err)
-		}
-		count++
-		if count > maxUserCopyStateRows {
-			return managedUserFieldError("UserCopyOptions", "UserData exceeds the combined 100000 item/entity state row copy limit")
-		}
-	}
-	if err := entities.Err(); err != nil {
-		return fmt.Errorf("read copied user catalog entities: %w", err)
+	if count+entityCount > maxUserCopyStateRows {
+		return managedUserFieldError("UserCopyOptions", "UserData exceeds the combined 100000 item/entity state row copy limit")
 	}
 	return nil
 }

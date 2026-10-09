@@ -122,6 +122,8 @@ func writeScannedMusicSource(ctx context.Context, tx pgx.Tx, itemID, itemType st
 	return nil
 }
 
+const acceptedMusicAlbumParentBatch = 128
+
 // Album publication follows complete root enumeration. File transactions that
 // succeeded before a later failure retain their own accepted probe facts, while
 // incomplete roots retain their previous album source. Each album is published
@@ -142,26 +144,39 @@ func (s *Store) refreshScannedMusicAlbums(ctx context.Context, libraryID string,
 	}
 	sort.Strings(parentIDs)
 	albums := make(map[string]bool)
-	for _, parentID := range parentIDs {
-		var albumID, rootID string
-		err := tx.QueryRow(ctx, `WITH RECURSIVE ancestors AS (
-			SELECT i.id, i.parent_id, i.library_id, i.root_id, i.type, i.is_folder, ARRAY[i.id] AS visited
-			FROM items i WHERE i.id = $1 AND i.library_id = $2 AND `+ordinaryItemSQL("i")+`
+	for start := 0; start < len(parentIDs); start += acceptedMusicAlbumParentBatch {
+		if err := ctx.Err(); err != nil {
+			return 0, err
+		}
+		end := min(start+acceptedMusicAlbumParentBatch, len(parentIDs))
+		var discovered, rootIDs []string
+		// Each origin keeps its own path and stops at its nearest folder album.
+		// At most one album per origin can reach the bounded result arrays. Use
+		// QueryRow so the owned transaction retains its protected SQL context.
+		err := tx.QueryRow(ctx, `WITH RECURSIVE music_album_ancestors AS (
+			SELECT i.id AS origin_id, i.id, i.parent_id, i.library_id, i.root_id, i.type, i.is_folder, ARRAY[i.id] AS visited
+			FROM items i WHERE i.id = ANY($1::text[]) AND i.library_id = $2 AND `+ordinaryItemSQL("i")+`
 			UNION ALL
-			SELECT parent.id, parent.parent_id, parent.library_id, parent.root_id, parent.type, parent.is_folder,
-				child.visited || parent.id FROM ancestors child JOIN items parent
+			SELECT child.origin_id, parent.id, parent.parent_id, parent.library_id, parent.root_id, parent.type, parent.is_folder,
+				child.visited || parent.id FROM music_album_ancestors child JOIN items parent
 				ON parent.id = child.parent_id AND parent.library_id = child.library_id
 			WHERE NOT (child.type = 'MusicAlbum' AND child.is_folder) AND NOT parent.id = ANY(child.visited) AND `+ordinaryItemSQL("parent")+`
-		) SELECT id, COALESCE(root_id, '') FROM ancestors WHERE type = 'MusicAlbum' AND is_folder`,
-			parentID, libraryID).Scan(&albumID, &rootID)
-		if errors.Is(err, pgx.ErrNoRows) {
-			continue
-		}
+		), albums AS (
+			SELECT DISTINCT id, COALESCE(root_id, '') AS root_id FROM music_album_ancestors
+			WHERE type = 'MusicAlbum' AND is_folder
+		) SELECT COALESCE(array_agg(id ORDER BY id), '{}'::text[]),
+			COALESCE(array_agg(root_id ORDER BY id), '{}'::text[]) FROM albums`,
+			parentIDs[start:end], libraryID).Scan(&discovered, &rootIDs)
 		if err != nil {
-			return 0, fmt.Errorf("resolve accepted music album: %w", err)
+			return 0, fmt.Errorf("resolve accepted music albums: %w", err)
 		}
-		if completeRoots[rootID] {
-			albums[albumID] = true
+		if err := ctx.Err(); err != nil {
+			return 0, err
+		}
+		for index, albumID := range discovered {
+			if completeRoots[rootIDs[index]] {
+				albums[albumID] = true
+			}
 		}
 	}
 	albumIDs := make([]string, 0, len(albums))

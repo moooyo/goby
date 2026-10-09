@@ -160,7 +160,8 @@ func (s *Store) UpdateLocalCredentials(ctx context.Context, actor Principal, use
 	if input.EnableLocalPassword && !hasPassword {
 		return LocalCredentialsMutation{}, managedUserFieldError("EnableLocalPassword", "Configure a local password before enabling local password sign-in.")
 	}
-	if input.LocalPassword == nil && input.ProfilePin == nil && current.EnableLocalPassword == input.EnableLocalPassword {
+	localChanged := input.LocalPassword != nil || current.EnableLocalPassword != input.EnableLocalPassword
+	if !localChanged && input.ProfilePin == nil {
 		if err := authorizeUserPreferences(ctx, tx, actor, userID, false, false); err != nil {
 			return LocalCredentialsMutation{}, err
 		}
@@ -174,18 +175,18 @@ func (s *Store) UpdateLocalCredentials(ctx context.Context, actor Principal, use
 		local_password_hash=CASE WHEN $2 THEN $3 ELSE local_password_hash END,
 		profile_pin_ciphertext=CASE WHEN $4 THEN $5 ELSE profile_pin_ciphertext END,
 		local_credentials_revision=local_credentials_revision+1,
-		local_password_failures=0,local_password_blocked_until=NULL,
+		local_password_failures=CASE WHEN $8 THEN 0 ELSE local_password_failures END,
+		local_password_blocked_until=CASE WHEN $8 THEN NULL ELSE local_password_blocked_until END,
 		configuration=(configuration-'ProfilePin') || jsonb_build_object('EnableLocalPassword',$6::boolean),
 		configuration_revision=configuration_revision+CASE WHEN $6 <> $7 OR $4 THEN 1 ELSE 0 END,
 		updated_at=clock_timestamp() WHERE id=$1`, userID, input.LocalPassword != nil, passwordHash,
-		input.ProfilePin != nil, pinCiphertext, input.EnableLocalPassword, current.EnableLocalPassword); err != nil {
+		input.ProfilePin != nil, pinCiphertext, input.EnableLocalPassword, current.EnableLocalPassword, localChanged); err != nil {
 		return LocalCredentialsMutation{}, fmt.Errorf("update local credentials: %w", err)
 	}
 	updated, err := readLocalCredentials(ctx, tx, userID)
 	if err != nil {
 		return LocalCredentialsMutation{}, err
 	}
-	localChanged := input.LocalPassword != nil || current.EnableLocalPassword != input.EnableLocalPassword
 	var revoked bool
 	var sessionIDs []string
 	if localChanged {

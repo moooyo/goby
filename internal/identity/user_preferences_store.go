@@ -122,6 +122,34 @@ func (s *Store) GetUserPreferences(ctx context.Context, actor Principal, userID 
 	return result, nil
 }
 
+// GetOwnPreferenceConfiguration is the private Configuration endpoint read.
+// Unlike the login/Users/Me profile projection, it requires preference access.
+// The account lock keeps the configuration and PIN from a mixed update together.
+func (s *Store) GetOwnPreferenceConfiguration(ctx context.Context, actor Principal, userID string) (json.RawMessage, string, error) {
+	if !validManagedActor(actor) || actor.Kind != "emby" || actor.User.ID != userID {
+		return nil, "", ErrUnauthorized
+	}
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+	defer rollback(tx)
+	if err := authorizeUserPreferences(ctx, tx, actor, userID, true, false); err != nil {
+		return nil, "", err
+	}
+	configuration, pin, err := s.readProfileConfiguration(ctx, tx, userID)
+	if err != nil {
+		return nil, "", err
+	}
+	if err := authorizeUserPreferences(ctx, tx, actor, userID, false, false); err != nil {
+		return nil, "", err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return nil, "", err
+	}
+	return configuration, pin, nil
+}
+
 func readUserPreferences(ctx context.Context, tx pgx.Tx, userID string) (UserPreferences, error) {
 	var result UserPreferences
 	var raw json.RawMessage

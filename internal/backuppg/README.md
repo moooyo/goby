@@ -175,6 +175,14 @@ Recovery validates cached values without refreshing them before fingerprint
 comparison. Trusted migration from an older archive may populate the new
 columns only after its original data has been verified.
 
+Schema 64 adds item-ID lookup indexes for user data, playback sessions, and
+attached media operations. It preserves every durable row shape, original
+migration record, foreign-key action, and publication barrier. Detached media
+operations remain retained history and are excluded only from the new partial
+index. Restoring schema 63 authenticates its original catalog and fingerprints
+before the trusted index-only upgrade; current archives require schema 64's
+separately exported PostgreSQL 17 catalog.
+
 All external commands have time and byte limits, a private process group,
 Linux parent-death signaling, and a pinned creating thread. The child leader is
 kept waitable until the group has been retired to avoid signalling a recycled

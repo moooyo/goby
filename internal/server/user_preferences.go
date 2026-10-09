@@ -142,18 +142,30 @@ func (s *Server) getEmbyUserConfiguration(w http.ResponseWriter, r *http.Request
 		return
 	}
 	actor := r.Context().Value(principalKey).(identity.Principal)
-	result, err := s.identity.GetUserPreferences(r.Context(), actor, id)
-	if err != nil {
-		s.preferenceError(w, r, err)
-		return
+	var configuration any
+	pin := ""
+	if actor.Kind == "emby" && !actor.IsApplicationKey() && actor.User.ID == id {
+		raw, value, err := s.identity.GetOwnPreferenceConfiguration(r.Context(), actor, id)
+		if err != nil {
+			s.localCredentialError(w, r, err)
+			return
+		}
+		configuration, pin = projectUserConfiguration(raw), value
+	} else {
+		result, err := s.identity.GetUserPreferences(r.Context(), actor, id)
+		if err != nil {
+			s.preferenceError(w, r, err)
+			return
+		}
+		configuration = result.Configuration
 	}
-	configuration, err := s.attachOwnProfilePin(r, actor, id, result.Configuration)
+	dto, err := profileConfigurationDTO(configuration, pin)
 	if err != nil {
 		s.localCredentialError(w, r, err)
 		return
 	}
 	w.Header().Set("Cache-Control", "no-store")
-	jsonResponse(w, http.StatusOK, configuration)
+	jsonResponse(w, http.StatusOK, dto)
 }
 
 func (s *Server) updateEmbyUserConfiguration(w http.ResponseWriter, r *http.Request) {

@@ -233,16 +233,24 @@ type loginWindow struct {
 	expires time.Time
 }
 type loginLimiter struct {
-	mu      sync.Mutex
-	windows map[string]loginWindow
+	mu          sync.Mutex
+	windows     map[string]loginWindow
+	nextCleanup time.Time
 }
 
 func newLoginLimiter() *loginLimiter { return &loginLimiter{windows: map[string]loginWindow{}} }
 func (l *loginLimiter) allow(key string) bool {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	now := time.Now()
-	if len(l.windows) > 10000 {
+	return l.allowLocked(key, time.Now())
+}
+
+func (l *loginLimiter) allowLocked(key string, now time.Time) bool {
+	// Bound maintenance even when denied requests retain a high-cardinality map.
+	// Expired slots at capacity become eligible for cleanup within one second;
+	// the next request performs the due pass. Existing addresses reset below.
+	if len(l.windows) > 10000 && !now.Before(l.nextCleanup) {
+		l.nextCleanup = now.Add(time.Second)
 		for k, v := range l.windows {
 			if now.After(v.expires) {
 				delete(l.windows, k)

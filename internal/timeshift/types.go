@@ -150,7 +150,7 @@ type WindowSnapshot struct {
 	LiveStartTicks        int64
 	TargetDurationTicks   int64
 	DiscontinuitySequence uint64
-	// Bytes charges all retained and expired-but-open artifact allocations.
+	// Bytes charges retained, expired-but-open and retiring artifact allocations.
 	Bytes        int64
 	PendingBytes int64
 	Ended        bool

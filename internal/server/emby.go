@@ -129,17 +129,15 @@ func (s *Server) publicUsers(w http.ResponseWriter, r *http.Request) {
 		s.identityError(w, r, err)
 		return
 	}
-	items := make([]map[string]any, 0, len(users))
 	remote := !s.endpointInfo(r).IsInNetwork
+	users, err = s.visiblePublicUsers(r, users, remote, client.DeviceID)
+	if err != nil {
+		s.identityError(w, r, err)
+		return
+	}
+	items := make([]map[string]any, 0, len(users))
 	for _, user := range users {
-		visible, err := s.publicUserVisible(r, user, remote, client.DeviceID)
-		if err != nil {
-			s.identityError(w, r, err)
-			return
-		}
-		if visible {
-			items = append(items, map[string]any{"Id": user.ID, "Name": user.Name, "ServerId": s.serverID, "HasPassword": user.HasPassword, "HasConfiguredPassword": user.HasPassword})
-		}
+		items = append(items, map[string]any{"Id": user.ID, "Name": user.Name, "ServerId": s.serverID, "HasPassword": user.HasPassword, "HasConfiguredPassword": user.HasPassword})
 	}
 	s.attachAvatarDTOs(r.Context(), items)
 	jsonResponse(w, 200, items)

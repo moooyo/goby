@@ -121,6 +121,10 @@ func (s *Server) attachOwnProfilePin(r *http.Request, actor identity.Principal, 
 		configuration = projectUserConfiguration(raw)
 		pin = value
 	}
+	return profileConfigurationDTO(configuration, pin)
+}
+
+func profileConfigurationDTO(configuration any, pin string) (map[string]any, error) {
 	encoded, err := json.Marshal(configuration)
 	if err != nil {
 		return nil, err

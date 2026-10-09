@@ -387,61 +387,113 @@ func (b *Builder) OpenTemporary(ctx context.Context, name string) (*TemporaryLea
 }
 
 func (b *Builder) DeleteTemporary(ctx context.Context, name string) error {
-	if b == nil || !temporaryPattern.MatchString(name) {
+	return b.DeleteTemporaries(ctx, []string{name})
+}
+
+// DeleteTemporaries removes one closed scratch batch and durably commits its
+// directory changes once. Names can be reused only after a successful return.
+// Failed I/O or cancellation aborts the builder without releasing its reservation.
+func (b *Builder) DeleteTemporaries(ctx context.Context, names []string) error {
+	if b == nil || len(names) > hardMaxTemporaryFiles {
 		return ErrInvalidInput
+	}
+	seen := make(map[string]bool, len(names))
+	for _, name := range names {
+		if !temporaryPattern.MatchString(name) || seen[name] {
+			return ErrInvalidInput
+		}
+		seen[name] = true
 	}
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if err := b.ensure(); err != nil {
 		return err
 	}
-	return b.deleteTemporary(ctx, name)
+	return b.deleteTemporaries(ctx, names, syncDirectory)
 }
 
-func (b *Builder) deleteTemporary(ctx context.Context, name string) error {
-	if err := ctx.Err(); err != nil {
+// The caller holds b.mu. A single sync callback keeps the durable boundary
+// explicit and permits deterministic storage-failure tests without global hooks.
+func (b *Builder) deleteTemporaries(ctx context.Context, names []string, syncBatch func(*os.Root) error) error {
+	checkContext := func() error {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		return b.ctx.Err()
+	}
+	if err := checkContext(); err != nil {
+		b.cancel()
+		return err
+	}
+	if len(names) == 0 {
+		return nil
+	}
+	b.temporaryMu.Lock()
+	for _, name := range names {
+		state := b.temporaries[name]
+		if state == nil {
+			b.temporaryMu.Unlock()
+			return ErrNotFound
+		}
+		if state.refs != 0 || state.deleting {
+			b.temporaryMu.Unlock()
+			return ErrBusy
+		}
+	}
+	for _, name := range names {
+		b.temporaries[name].deleting = true
+	}
+	b.temporaryMu.Unlock()
+	committed := false
+	defer func() {
+		// An interrupted batch may already have unlinked files. Keep its names
+		// and full reservation until Abort has retired the actual workspace.
+		if !committed {
+			b.cancel()
+		}
+	}()
+	for _, name := range names {
+		if err := checkContext(); err != nil {
+			return err
+		}
+		file, err := openRegular(b.root, name, os.O_RDONLY, 0)
+		if err != nil {
+			return err
+		}
+		info, statErr := file.Stat()
+		closeErr := file.Close()
+		if err := errors.Join(statErr, closeErr); err != nil {
+			return err
+		}
+		identity, err := fileIdentity(info)
+		if err != nil {
+			return err
+		}
+		if identity != b.temporaries[name].artifact.Identity {
+			return ErrUnsafe
+		}
+		if err := b.root.Remove(name); err != nil {
+			return err
+		}
+	}
+	if err := checkContext(); err != nil {
+		return err
+	}
+	if err := syncBatch(b.root); err != nil {
+		return err
+	}
+	if err := checkContext(); err != nil {
 		return err
 	}
 	b.temporaryMu.Lock()
-	state := b.temporaries[name]
-	if state == nil {
-		b.temporaryMu.Unlock()
-		return ErrNotFound
-	}
-	if state.refs != 0 || state.deleting {
-		b.temporaryMu.Unlock()
-		return ErrBusy
-	}
-	state.deleting = true
-	b.temporaryMu.Unlock()
-	file, err := openRegular(b.root, name, os.O_RDONLY, 0)
-	if err == nil {
-		info, statErr := file.Stat()
-		closeErr := file.Close()
-		err = errors.Join(statErr, closeErr)
-		if err == nil {
-			identity, identityErr := fileIdentity(info)
-			err = identityErr
-			if identity != state.artifact.Identity {
-				err = ErrUnsafe
-			}
-		}
-	}
-	if err == nil {
-		err = b.root.Remove(name)
-	}
-	if err == nil {
-		err = syncDirectory(b.root)
-	}
-	b.temporaryMu.Lock()
-	state.deleting = false
-	if err == nil {
+	for _, name := range names {
+		b.used -= b.temporaries[name].artifact.Size
 		delete(b.temporaries, name)
-		b.used -= state.artifact.Size
 	}
 	b.signalTemporaryLocked()
 	b.temporaryMu.Unlock()
-	return err
+	committed = true
+	return nil
 }
 
 // Publish deletes closed JPEG scratch files, seals metadata, and atomically
@@ -476,11 +528,9 @@ func (b *Builder) Publish(ctx context.Context) (*Publication, error) {
 		temporaries = append(temporaries, name)
 	}
 	b.temporaryMu.Unlock()
-	for _, name := range temporaries {
-		if err := b.deleteTemporary(ctx, name); err != nil {
-			b.cancel()
-			return nil, err
-		}
+	if err := b.deleteTemporaries(ctx, temporaries, syncDirectory); err != nil {
+		b.cancel()
+		return nil, err
 	}
 	artifacts := make([]Artifact, 0, len(b.artifacts))
 	for _, artifact := range b.artifacts {

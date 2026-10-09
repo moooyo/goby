@@ -562,17 +562,30 @@ func publicPolicyVisible(user identity.User, remote bool, deviceID string, usedD
 	return identity.PublicAvatarVisible(user, remote, deviceID, usedDevice)
 }
 
-func (s *Server) publicUserVisible(r *http.Request, user identity.User, remote bool, deviceID string) (bool, error) {
-	policy, err := identity.ParseRuntimePolicy(user.Policy)
-	if err != nil {
-		return false, nil
-	}
-	used := false
-	if policy.IsHiddenFromUnusedDevices && deviceID != "" {
-		used, err = s.identity.UserHasUsedDevice(r.Context(), user.ID, deviceID)
-		if err != nil {
-			return false, err
+func (s *Server) visiblePublicUsers(r *http.Request, users []identity.User, remote bool, deviceID string) ([]identity.User, error) {
+	eligible := make([]bool, len(users))
+	requiresHistory := make([]bool, len(users))
+	candidates := make([]string, 0)
+	for index, user := range users {
+		policy, err := identity.ParseRuntimePolicy(user.Policy)
+		if err != nil || !publicPolicyVisible(user, remote, deviceID, true) {
+			continue
+		}
+		eligible[index] = true
+		requiresHistory[index] = policy.IsHiddenFromUnusedDevices
+		if policy.IsHiddenFromUnusedDevices && deviceID != "" {
+			candidates = append(candidates, user.ID)
 		}
 	}
-	return publicPolicyVisible(user, remote, deviceID, used), nil
+	used, err := s.identity.UsersWithDeviceHistory(r.Context(), candidates, deviceID)
+	if err != nil {
+		return nil, err
+	}
+	visible := make([]identity.User, 0, len(users))
+	for index, user := range users {
+		if eligible[index] && (!requiresHistory[index] || used[user.ID]) {
+			visible = append(visible, user)
+		}
+	}
+	return visible, nil
 }

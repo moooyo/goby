@@ -132,3 +132,54 @@ func (s *Store) UserHasUsedDevice(ctx context.Context, userID, deviceID string) 
 	}
 	return used, nil
 }
+
+// UsersWithDeviceHistory batches the public picker's historical login facts.
+// Revoked and expired ordinary logins still prove prior use; these display
+// facts never establish current authentication or resource authorization.
+func (s *Store) UsersWithDeviceHistory(ctx context.Context, userIDs []string, deviceID string) (map[string]bool, error) {
+	used := make(map[string]bool)
+	if !validRevalidationID(deviceID) || len(userIDs) == 0 {
+		return used, nil
+	}
+	const batchSize = 512
+	batch := make([]string, 0, batchSize)
+	seen := make(map[string]bool, len(userIDs))
+	readBatch := func() error {
+		rows, err := s.pool.Query(ctx, `SELECT DISTINCT user_id FROM sessions
+			WHERE user_id=ANY($1::text[]) AND device_id=$2 AND kind='emby'`, batch, deviceID)
+		if err != nil {
+			return fmt.Errorf("read batched user device history: %w", err)
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var id string
+			if err := rows.Scan(&id); err != nil {
+				return fmt.Errorf("read historical device user: %w", err)
+			}
+			used[id] = true
+		}
+		if err := rows.Err(); err != nil {
+			return fmt.Errorf("read historical device users: %w", err)
+		}
+		return nil
+	}
+	for _, id := range userIDs {
+		if !validRevalidationID(id) || seen[id] {
+			continue
+		}
+		seen[id] = true
+		batch = append(batch, id)
+		if len(batch) == batchSize {
+			if err := readBatch(); err != nil {
+				return nil, err
+			}
+			batch = batch[:0]
+		}
+	}
+	if len(batch) != 0 {
+		if err := readBatch(); err != nil {
+			return nil, err
+		}
+	}
+	return used, nil
+}

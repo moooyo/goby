@@ -145,3 +145,81 @@ func TestMediaOperationSourceRecoveryCatalogPreservesHistoricalObjects(t *testin
 		t.Fatal("source cache recovery plan omitted its trusted trigger or function")
 	}
 }
+
+func TestItemReferenceIndexesRecoveryCatalogPreservesHistoricalObjects(t *testing.T) {
+	previous, prefix, err := loadCatalog(63, "item_reference_catalog")
+	if err != nil {
+		t.Fatal(err)
+	}
+	current, migrations, err := loadCatalog(64, "item_reference_catalog")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(migrations) != 64 || !equalJSON(prefix, migrations[:63]) || migrations[63].Name != "0064_item_reference_indexes.sql" ||
+		previous.SHA256 == current.SHA256 || !equalJSON(previous.Tables, current.Tables) ||
+		!equalJSON(previous.Sequences, current.Sequences) || !equalJSON(previous.Constraints, current.Constraints) {
+		t.Fatal("item-reference indexes changed the historical migration prefix, row shapes, or constraints")
+	}
+	wanted := map[string]string{
+		"user_item_data_item_idx":   "user_item_data",
+		"play_sessions_item_idx":    "play_sessions",
+		"media_operations_item_idx": "media_operations",
+	}
+	var retained []backendReviewCatalogObject
+	added := make(map[string]int)
+	for _, object := range backendReviewCatalogObjects(t, 64) {
+		name := strings.TrimSuffix(object.Name, ".00001")
+		table, expected := wanted[name]
+		if !expected {
+			retained = append(retained, object)
+			continue
+		}
+		switch object.Kind {
+		case "index":
+			var index struct {
+				Table, Method      string
+				Unique, Primary    bool
+				Valid, Ready, Live bool
+				KeyCount           int `json:"key_count"`
+				Columns            []string
+				Predicate          *string
+			}
+			if json.Unmarshal(object.Value, &index) != nil || index.Table != table || index.Method != "btree" ||
+				index.Unique || index.Primary || !index.Valid || !index.Ready || !index.Live || index.KeyCount != 1 ||
+				!equalJSON(index.Columns, []string{"item_id"}) {
+				t.Fatalf("item-reference catalog changed the index definition: %s", name)
+			}
+			if table == "media_operations" {
+				if index.Predicate == nil || *index.Predicate != "item_id IS NOT NULL" {
+					t.Fatal("media-operation item index must exclude only detached history")
+				}
+			} else if index.Predicate != nil {
+				t.Fatal("playback and user-state item indexes must retain all referencing rows")
+			}
+		case "column", "relation":
+		default:
+			t.Fatalf("unexpected new index object kind: %s", object.Kind)
+		}
+		added[name+":"+object.Kind]++
+	}
+	if len(added) != 9 || !equalJSON(backendReviewCatalogObjects(t, 63), retained) {
+		t.Fatal("item-reference migration changed objects beyond the three selected indexes")
+	}
+	for name := range wanted {
+		for _, kind := range []string{"index", "column", "relation"} {
+			if added[name+":"+kind] != 1 {
+				t.Fatalf("item-reference catalog omitted or duplicated %s %s", kind, name)
+			}
+		}
+	}
+	plan, err := compiledRecoveryDropPlan(64)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, index := range plan.indexes {
+		delete(wanted, index)
+	}
+	if len(wanted) != 0 {
+		t.Fatal("item-reference catalog omitted indexes from the authenticated recovery plan")
+	}
+}

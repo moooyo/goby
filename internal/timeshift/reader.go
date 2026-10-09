@@ -17,6 +17,7 @@ type ReadHandle struct {
 	window      *windowState
 	artifact    *artifactState
 	closed      atomic.Bool
+	closeErr    error
 	done        chan struct{}
 	timer       *time.Timer
 	stopContext func() bool
@@ -53,13 +54,15 @@ func (handle *ReadHandle) Done() <-chan struct{} { return handle.done }
 
 func (handle *ReadHandle) Close() error {
 	handle.store.mu.Lock()
-	defer handle.store.mu.Unlock()
-	return handle.store.closeReaderLocked(handle)
+	err := handle.store.closeReaderLocked(handle)
+	handle.store.mu.Unlock()
+	<-handle.done
+	return err
 }
 
 func (store *Store) closeReaderLocked(handle *ReadHandle) error {
 	if !handle.closed.CompareAndSwap(false, true) {
-		return nil
+		return handle.closeErr
 	}
 	if handle.timer != nil {
 		handle.timer.Stop()
@@ -67,14 +70,20 @@ func (store *Store) closeReaderLocked(handle *ReadHandle) error {
 	if handle.stopContext != nil {
 		handle.stopContext()
 	}
-	err := handle.file.Close()
+	handle.closeErr = handle.file.Close()
 	delete(handle.window.readers, handle)
 	handle.artifact.readers--
 	store.readers--
-	close(handle.done)
 	store.removeExpiredLocked(handle.window, handle.artifact)
 	store.destroyClosedLocked(handle.window)
-	return err
+	if handle.artifact.retiring || handle.window.closed {
+		// Only retiring artifacts and revoked windows defer reader completion.
+		// New readers cannot accumulate completion records for either state.
+		handle.artifact.finishedReaders = append(handle.artifact.finishedReaders, handle)
+	} else {
+		close(handle.done)
+	}
+	return handle.closeErr
 }
 
 func (store *Store) OpenArtifact(ctx context.Context, scope Scope, id, artifactID string) (*ReadHandle, error) {
@@ -85,7 +94,7 @@ func (store *Store) OpenArtifact(ctx context.Context, scope Scope, id, artifactI
 		return nil, err
 	}
 	artifact := window.artifacts[artifactID]
-	if artifact == nil || !artifact.visible && !store.options.Now().Before(artifact.graceUntil) {
+	if artifact == nil || artifact.retiring || !artifact.visible && !store.options.Now().Before(artifact.graceUntil) {
 		return nil, ErrNotFound
 	}
 	if store.readers >= store.options.MaxReaders || len(window.readers) >= store.options.MaxWindowReaders {
