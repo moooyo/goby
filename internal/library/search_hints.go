@@ -131,15 +131,15 @@ func (s *Store) SearchHints(ctx context.Context, subject Subject, query SearchHi
 	return result, nil
 }
 
-// The source set is independent of the search text: an entity may match even
-// when its associated media title does not. MediaTypes scopes both physical
-// matches and the visible source membership that qualifies entity matches.
+// Each branch filters its own names before proving source visibility. Entity
+// membership is independent of media titles, while MediaTypes still scopes
+// both physical matches and the authorized sources that qualify entities.
 func searchHintsSQL(query SearchHintsQuery, access libraryAccess) (string, []any) {
 	_, sourceFilter, args := itemQuerySQL(Query{Recursive: true, MediaTypes: query.MediaTypes}, access, "")
 	sourceFilter += " AND i.type<>'CollectionFolder'"
 	args = append(args, query.SearchTerm, "%"+escapeLikeLiteral(query.SearchTerm)+"%", escapeLikeLiteral(query.SearchTerm)+"%")
 	term, contains, starts := len(args)-2, len(args)-1, len(args)
-	nameMatch := fmt.Sprintf("name ILIKE $%d ESCAPE E'\\\\'", contains)
+	nameMatch := fmt.Sprintf("ILIKE $%d ESCAPE E'\\\\'", contains)
 	rank := fmt.Sprintf("CASE WHEN lower(name)=lower($%d::text) THEN 0 WHEN name ILIKE $%d ESCAPE E'\\\\' THEN 1 ELSE 2 END", term, starts)
 	kinds := []string{}
 	for _, entry := range []struct {
@@ -155,16 +155,16 @@ func searchHintsSQL(query SearchHintsQuery, access libraryAccess) (string, []any
 	}
 	args = append(args, kinds, searchHintEnabled(query.IncludeMedia))
 	entityKinds, includeMedia := len(args)-1, len(args)
-	prefix := "WITH eligible_sources AS (SELECT i.id,i.name,i.type FROM items i WHERE " + sourceFilter + "), " +
-		"mixed_hints AS (SELECT 'Item'::text AS owner_kind,i.id,i.name,i.type FROM eligible_sources i " +
-		fmt.Sprintf("WHERE $%d::boolean UNION ALL ", includeMedia) +
+	prefix := "WITH mixed_hints AS (SELECT 'Item'::text AS owner_kind,i.id,i.name,i.type FROM items i " +
+		fmt.Sprintf("WHERE $%d::boolean AND i.name ", includeMedia) + nameMatch + " AND " + sourceFilter + " UNION ALL " +
 		"SELECT 'Entity'::text,entity.id::text,entity.name,entity.kind " +
-		"FROM eligible_sources i JOIN item_entities association ON association.item_id=i.id " +
-		"JOIN catalog_entities entity ON entity.id=association.entity_id WHERE " +
-		fmt.Sprintf("entity.kind=ANY($%d::text[]) AND ", entityKinds) + validEntityAssociationSQL +
-		" AND (entity.kind<>'MusicArtist' OR i.type IN ('Audio','MusicAlbum','MusicVideo')) " +
-		"GROUP BY entity.id,entity.name,entity.kind), eligible_hints AS (SELECT owner_kind,id,name,type," + rank +
-		" AS match_rank FROM mixed_hints WHERE " + nameMatch
+		"FROM catalog_entities entity WHERE entity.name " + nameMatch +
+		fmt.Sprintf(" AND entity.kind=ANY($%d::text[]) AND EXISTS (", entityKinds) +
+		"SELECT 1 FROM item_entities association JOIN items i ON i.id=association.item_id " +
+		"WHERE association.entity_id=entity.id AND " + sourceFilter + " AND " + validEntityAssociationSQL +
+		" AND (entity.kind<>'MusicArtist' OR i.type IN ('Audio','MusicAlbum','MusicVideo'))" +
+		")), eligible_hints AS (SELECT owner_kind,id,name,type," + rank + " AS match_rank FROM mixed_hints"
+	conditions := []string{}
 	for _, field := range []struct {
 		values []string
 		negate bool
@@ -177,7 +177,7 @@ func searchHintsSQL(query SearchHintsQuery, access libraryAccess) (string, []any
 			if field.negate {
 				condition = "NOT (" + condition + ")"
 			}
-			prefix += " AND " + condition
+			conditions = append(conditions, condition)
 		}
 	}
 	for _, field := range []struct {
@@ -186,8 +186,11 @@ func searchHintsSQL(query SearchHintsQuery, access libraryAccess) (string, []any
 	}{{"Movie", query.IsMovie}, {"Series", query.IsSeries}} {
 		if field.value != nil {
 			args = append(args, *field.value)
-			prefix += fmt.Sprintf(" AND (type='%s')=$%d::boolean", field.kind, len(args))
+			conditions = append(conditions, fmt.Sprintf("(type='%s')=$%d::boolean", field.kind, len(args)))
 		}
+	}
+	if len(conditions) != 0 {
+		prefix += " WHERE " + strings.Join(conditions, " AND ")
 	}
 	return prefix + ") ", args
 }

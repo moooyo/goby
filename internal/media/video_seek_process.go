@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -119,7 +118,7 @@ func AnalyzeVideoSeekIndexes(ctx context.Context, executable string, file *os.Fi
 			indexes, resultErr = nil, errors.Join(resultErr, err)
 		}
 	}()
-	if runtime.GOOS != "linux" || !info.FormatStartKnown || info.DurationTicks <= 0 || info.DurationTicks > MaxVideoSeekDurationTicks || strings.TrimSpace(executable) == "" {
+	if !info.FormatStartKnown || info.DurationTicks <= 0 || info.DurationTicks > MaxVideoSeekDurationTicks || strings.TrimSpace(executable) == "" {
 		return nil, nil
 	}
 	streams := make([]Stream, 0)
@@ -299,7 +298,7 @@ func VerifyVideoSeekCandidate(ctx context.Context, executable string, file *os.F
 		}
 	}()
 	candidate, err := ValidateVideoSeekCandidate(encoded)
-	if err != nil || runtime.GOOS != "linux" || decoderThreads < 1 || decoderThreads > MaxVideoSeekDecoderThreads {
+	if err != nil || decoderThreads < 1 || decoderThreads > MaxVideoSeekDecoderThreads {
 		return verification, nil
 	}
 	identity, err := VideoSeekSourceIdentity(before)

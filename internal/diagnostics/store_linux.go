@@ -70,6 +70,13 @@ type Store struct {
 	write      func(*os.File, []byte) (int, error)
 	syncFile   func(*os.File) error
 	freeBytes  func(int) (uint64, error)
+
+	writerMu     sync.Mutex
+	writeQueue   []*diagnosticWrite
+	queuedBytes  int
+	queueChanged chan struct{}
+	writeStop    chan struct{}
+	writerDone   chan struct{}
 }
 
 // Open never imports arbitrary existing logs. A new directory must be empty;
@@ -109,6 +116,7 @@ func Open(config Config) (*Store, error) {
 	if err := s.createActiveLocked(s.now().UTC()); err != nil {
 		return nil, err
 	}
+	s.startWriter()
 	success = true
 	return s, nil
 }
@@ -685,6 +693,16 @@ func (s *Store) healthyLocked(ctx context.Context) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
+	if s.stoppingWrites() {
+		return ErrUnavailable
+	}
+	return s.healthyWriteLocked(ctx)
+}
+
+func (s *Store) healthyWriteLocked(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if s.closed || s.degraded || s.directory == nil || s.lock == nil {
 		return ErrUnavailable
 	}
@@ -704,66 +722,6 @@ func (s *Store) healthyLocked(ctx context.Context) error {
 	return nil
 }
 
-func (s *Store) appendRecord(ctx context.Context, line []byte) error {
-	if len(line) == 0 || len(line) > MaxRecordBytes || line[len(line)-1] != '\n' || bytes.Count(line, []byte{'\n'}) != 1 || !json.Valid(line) {
-		return ErrInvalid
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if err := s.healthyLocked(ctx); err != nil {
-		return err
-	}
-	now := s.now().UTC()
-	if s.active == nil || s.activeSize+int64(len(line)) > s.cfg.MaxFileBytes || s.activeDay != now.Format("2006-01-02") {
-		if err := s.finishActiveLocked(); err != nil {
-			return s.degradeLocked()
-		}
-		if err := s.pruneLocked(now, true); err != nil {
-			return s.degradeLocked()
-		}
-		if err := s.createActiveLocked(now); err != nil {
-			return s.degradeLocked()
-		}
-	}
-	if err := s.pruneLocked(now, false); err != nil {
-		return s.degradeLocked()
-	}
-	if err := s.ensureSpaceLocked(int64(len(line))); err != nil {
-		return s.degradeLocked()
-	}
-	var current *entry
-	for index := range s.registry.Files {
-		if s.registry.Files[index].Name == s.activeName {
-			current = &s.registry.Files[index]
-			break
-		}
-	}
-	if current == nil {
-		return s.degradeLocked()
-	}
-	check, stat, err := s.registeredFile(*current, syscall.O_RDONLY)
-	if err != nil {
-		return s.degradeLocked()
-	}
-	check.Close()
-	if stat.Size != s.activeSize {
-		return s.degradeLocked()
-	}
-	before := s.activeSize
-	if err := s.writeAll(s.active, line); err != nil {
-		// Restore the complete-record boundary after a partial write. Even if
-		// rollback succeeds, the store remains degraded until an explicit reopen.
-		_ = s.active.Truncate(before)
-		_ = s.syncFile(s.active)
-		return s.degradeLocked()
-	}
-	s.activeSize += int64(len(line))
-	if err := s.syncFile(s.active); err != nil {
-		return s.degradeLocked()
-	}
-	return nil
-}
-
 func (s *Store) degradeLocked() error {
 	s.degraded = true
 	return ErrUnavailable
@@ -779,7 +737,7 @@ func (s *Store) Status() Status {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return Status{
-		Healthy: !s.closed && !s.degraded && s.directory != nil, Degraded: s.degraded || !s.closed && s.directory == nil, Closed: s.closed,
+		Healthy: !s.closed && !s.stoppingWrites() && !s.degraded && s.directory != nil, Degraded: s.degraded || !s.closed && s.directory == nil, Closed: s.closed,
 		MaxFileBytes: s.cfg.MaxFileBytes, MaxFiles: s.cfg.MaxFiles, RetentionDays: s.cfg.RetentionDays,
 		MinFreeBytes: s.cfg.MinFreeBytes, Format: "jsonl",
 	}
@@ -872,9 +830,11 @@ func (s *Store) Snapshot(ctx context.Context, name string) (*Snapshot, error) {
 	return snapshot, nil
 }
 
-// Close stops new writes and readers, flushes complete records, releases the
-// process lock, and closes outstanding snapshots. It is safe to call repeatedly.
+// Close stops admission and readers, waits for every accepted write and the
+// writer itself, and then releases snapshots and the process lock. It is safe
+// to call repeatedly or concurrently.
 func (s *Store) Close() error {
+	s.stopWriter()
 	s.mu.Lock()
 	if s.closed {
 		done := s.closeDone

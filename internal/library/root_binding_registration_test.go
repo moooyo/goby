@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/moooyo/goby/internal/identity"
@@ -75,9 +74,6 @@ func TestRootBindingRegistrationUnsupportedRetainsAuthorizedDirectories(t *testi
 func TestRootBindingRegistrationUnsupportedStillRejectsNamedReplacement(t *testing.T) {
 	for _, target := range []string{"approved", "registered"} {
 		t.Run(target, func(t *testing.T) {
-			if runtime.GOOS == "windows" && target == "approved" {
-				t.Skip("fixture requires renaming the approved directory while its top-level os.Root remains open")
-			}
 			store, approved, path := rootBindingRegistrationDirectory(t)
 			registration, err := store.authorizePath(path)
 			if err != nil {

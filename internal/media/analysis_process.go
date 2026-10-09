@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"runtime"
 	"sync"
 	"time"
 )
@@ -57,7 +56,7 @@ func runAnalysisProcess(ctx context.Context, executable string, input *os.File, 
 
 func runAnalysisProcessProfile(ctx context.Context, executable string, input *os.File, stdin io.Reader, args []string, timeout time.Duration, stdoutLimit int64,
 	stderr analysisStderrSink, parse func(io.Reader) error, gpu bool, executables ...*os.File) error {
-	if ctx == nil || runtime.GOOS != "linux" || executable == "" || stderr == nil || parse == nil || stdoutLimit < 1 || stdoutLimit > 8<<30 || timeout <= 0 || timeout > 2*time.Hour {
+	if ctx == nil || executable == "" || stderr == nil || parse == nil || stdoutLimit < 1 || stdoutLimit > 8<<30 || timeout <= 0 || timeout > 2*time.Hour {
 		return ErrAnalysisUnavailable
 	}
 	if input != nil {

@@ -133,6 +133,60 @@ func TestMusicInstantMixFiltersDoNotNarrowSeedAuthorityAndEmptySeedStaysEmpty(t 
 	}
 }
 
+func TestMusicInstantMixDeduplicatesCreditsAndPreservesExplicitOrder(t *testing.T) {
+	ctx, store, _, _ := musicDiscoveryFixture(t)
+	searchHintTestMetadata(t, ctx, store, "mix-seed", `{"Artists":["Alpha"],"Genres":["Rock"],"Tags":["Shared one","Shared two"],"Studios":["Shared studio"]}`)
+	searchHintTestMetadata(t, ctx, store, "mix-album-b", `{"AlbumArtists":["Alpha"]}`)
+	searchHintTestMetadata(t, ctx, store, "mix-related", `{"Artists":["Alpha"]}`)
+	searchHintTestMetadata(t, ctx, store, "mix-foreign", `{"Artists":["Other"],"Genres":["Rock"],"Tags":["Shared one","Shared two"],"Studios":["Shared studio"]}`)
+	searchHintTestExec(t, ctx, store, `INSERT INTO item_entities(item_id,entity_id,position,display_name,credit_type,credit_group)
+		SELECT item_id,entity_id,99,display_name,credit_type,credit_group FROM item_entities
+		WHERE item_id IN ('mix-seed','mix-related') AND credit_group=1`)
+	for _, id := range []string{"mix-fallback-a", "mix-fallback-z"} {
+		similarInsert(t, ctx, store, id, "Audio", "library-b", "library-b", nil)
+		searchHintTestExec(t, ctx, store, `UPDATE items target SET root_id=source.root_id,
+			path='/media/b/' || target.id || '.flac',relative_path=target.id || '.flac',
+			file_identity='fixture-' || target.id,file_size=source.file_size,modified_at=source.modified_at,media=source.media
+			FROM items source WHERE target.id=$1 AND source.id='mix-seed'`, id)
+	}
+	searchHintTestExec(t, ctx, store, `UPDATE items SET name=CASE id
+		WHEN 'mix-related' THEN 'A credited' WHEN 'mix-foreign' THEN 'Z facets'
+		WHEN 'mix-seed' THEN 'Seed' WHEN 'mix-sibling' THEN 'Sibling' ELSE 'Fallback' END,
+		sort_name=CASE WHEN id LIKE 'mix-fallback-%' THEN 'Fallback' ELSE sort_name END
+		WHERE id IN ('mix-related','mix-foreign','mix-seed','mix-sibling','mix-fallback-a','mix-fallback-z')`)
+	seed := MusicMixSeed{Kind: "Song", ID: "mix-seed"}
+	query := InstantMixQuery{Query: Query{UserID: "restricted", Limit: 100}}
+	result, err := store.QueryInstantMix(ctx, seed, query)
+	// One artist reached through repeated direct credits and album inheritance
+	// contributes four points; the genre, two tags and studio contribute five.
+	want := []string{"mix-seed", "mix-sibling", "mix-foreign", "mix-related", "mix-fallback-a", "mix-fallback-z"}
+	if err != nil || result.TotalRecordCount != len(want) || !reflect.DeepEqual(queryItemIDs(result.Items), want) {
+		t.Fatalf("distinct credit weights, bonuses or zero-score ties changed: %v, %v", queryItemIDs(result.Items), err)
+	}
+	query.Ids = []string{"mix-related", "mix-foreign", "mix-fallback-a", "mix-fallback-z"}
+	result, err = store.QueryInstantMix(ctx, seed, query)
+	if err != nil || result.TotalRecordCount != 4 || !reflect.DeepEqual(queryItemIDs(result.Items), want[2:]) {
+		t.Fatalf("candidate restriction changed the excluded seed's profile: %v, %v", queryItemIDs(result.Items), err)
+	}
+	query.Ids, query.ExplicitSort, query.SortBy = nil, true, "Name"
+	for _, test := range []struct {
+		direction string
+		want      []string
+	}{
+		{"Ascending", []string{"mix-related", "mix-fallback-a", "mix-fallback-z", "mix-seed", "mix-sibling", "mix-foreign"}},
+		{"Descending", []string{"mix-foreign", "mix-sibling", "mix-seed", "mix-fallback-z", "mix-fallback-a", "mix-related"}},
+	} {
+		query.SortOrder = test.direction
+		for _, start := range []int{0, 2, 4} {
+			query.StartIndex, query.Limit = start, 2
+			result, err = store.QueryInstantMix(ctx, seed, query)
+			if err != nil || result.TotalRecordCount != len(test.want) || !reflect.DeepEqual(queryItemIDs(result.Items), test.want[start:start+2]) {
+				t.Fatalf("explicit %s page %d changed: %v, %v", test.direction, start, queryItemIDs(result.Items), err)
+			}
+		}
+	}
+}
+
 func TestMusicInstantMixPlaylistVisibilityDeduplicationAndIDCollision(t *testing.T) {
 	ctx, store, artist, _ := musicDiscoveryFixture(t)
 	playlist, err := store.CreateCollection(ctx, Subject{UserID: "admin"}, PlaylistKind, CollectionInput{Name: "Mix seed", MediaType: "Audio", ItemIDs: []string{"mix-seed", "mix-seed", "mix-hidden"}, IsPublic: true})

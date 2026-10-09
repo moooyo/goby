@@ -290,14 +290,17 @@ func instantMixRelationSQL(seed resolvedMusicMixSeed, query InstantMixQuery, acc
 		prefix += fmt.Sprintf(` AND NOT EXISTS(SELECT 1 FROM mix_credits credit WHERE credit.item_id=i.id AND credit.kind='MusicArtist' AND credit.entity_id=ANY($%d::bigint[]))`, len(args))
 	}
 	prefix += `
+	), mix_credit_scores AS (
+		SELECT credit.item_id,sum(CASE credit.kind WHEN 'MusicArtist' THEN 4 WHEN 'Genre' THEN 2 ELSE 1 END) AS score
+		FROM mix_credits credit JOIN mix_seed_entities seed ON seed.entity_id=credit.entity_id AND seed.kind=credit.kind
+		GROUP BY credit.item_id
 	), mix_scores AS (
 		SELECT candidate.id,
 		CASE WHEN EXISTS(SELECT 1 FROM mix_seed_tracks seed WHERE seed.id=candidate.id) THEN 16 ELSE 0 END
 		+ CASE WHEN EXISTS(SELECT 1 FROM mix_seed_albums album WHERE album.album_id=scope.album_id) THEN 8 ELSE 0 END
-		+ COALESCE((SELECT sum(CASE credit.kind WHEN 'MusicArtist' THEN 4 WHEN 'Genre' THEN 2 ELSE 1 END)
-			FROM mix_credits credit JOIN mix_seed_entities seed ON seed.entity_id=credit.entity_id AND seed.kind=credit.kind
-			WHERE credit.item_id=candidate.id),0) AS score
+		+ COALESCE(credit.score,0) AS score
 		FROM mix_candidates candidate JOIN mix_scope scope ON scope.id=candidate.id
+		LEFT JOIN mix_credit_scores credit ON credit.item_id=candidate.id
 	) `
 	return prefix, args
 }

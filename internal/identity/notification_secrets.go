@@ -44,13 +44,17 @@ func LockNotificationMutation(ctx context.Context, tx pgx.Tx, actor Principal, n
 	if native {
 		return CheckAdministrator(ctx, tx, actor, AdministratorNative, true)
 	}
-	return CheckNotificationSession(ctx, tx, actor, true)
+	return CheckNotificationSession(ctx, tx, actor)
 }
-func CheckNotificationSession(ctx context.Context, tx pgx.Tx, actor Principal, lock bool) error {
+
+// CheckNotificationSession pins the account and login with shared locks.
+// Notification writes do not mutate either authority row. Every call checks
+// the database clock again, including the final check after resource waits.
+func CheckNotificationSession(ctx context.Context, tx pgx.Tx, actor Principal) error {
 	if actor.Kind != "emby" || actor.IsApplicationKey() {
 		return ErrClientSessionForbidden
 	}
-	_, err := lockClientSession(ctx, tx, actor, lock)
+	_, err := lockClientSession(ctx, tx, actor, false)
 	return err
 }
 

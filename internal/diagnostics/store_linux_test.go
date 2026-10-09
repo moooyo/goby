@@ -564,6 +564,7 @@ func TestStoreRecoversIncompleteActiveRecord(t *testing.T) {
 	store := testStore(t, Config{})
 	first := appendTestRecord(t, store, "complete")
 	item := firstTestFile(t, store)
+	store.stopWriter()
 	if _, err := store.active.Write([]byte("{\"message\":\"incomplete")); err != nil {
 		t.Fatal(err)
 	}
@@ -590,6 +591,7 @@ func TestStoreRecoversIncompleteActiveRecord(t *testing.T) {
 func TestStoreRecoversPublishedRegistryAfterDirectorySyncFailure(t *testing.T) {
 	store := testStore(t, Config{MaxFileBytes: MaxRecordBytes})
 	appendTestRecord(t, store, strings.Repeat("x", 5000))
+	store.stopWriter()
 	if err := store.finishActiveLocked(); err != nil {
 		t.Fatal(err)
 	}
@@ -615,6 +617,7 @@ func TestStoreRecoversInterruptedRetentionDeletion(t *testing.T) {
 		t.Run(map[bool]string{false: "before unlink", true: "after unlink"}[removed], func(t *testing.T) {
 			store := testStore(t, Config{})
 			appendTestRecord(t, store, "old")
+			store.stopWriter()
 			if err := store.finishActiveLocked(); err != nil {
 				t.Fatal(err)
 			}
@@ -642,6 +645,7 @@ func TestStoreRecoversInterruptedRetentionDeletion(t *testing.T) {
 
 func TestStoreRecoversInitialMarkerPublicationLink(t *testing.T) {
 	store := testStore(t, Config{})
+	store.stopWriter()
 	item := store.registry.Files[0]
 	if err := store.active.Close(); err != nil {
 		t.Fatal(err)

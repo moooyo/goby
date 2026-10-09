@@ -83,6 +83,60 @@ func TestInspectionCacheConcurrentHitsMissesAndCapacity(t *testing.T) {
 	}
 }
 
+func TestInspectionCacheConcurrentDuplicateInsertionEvictsOnlyOldest(t *testing.T) {
+	var cache InspectionCache
+	for index := 0; index < inspectionCacheEntries; index++ {
+		digest, info := inspectionCacheTestEntry(index)
+		if err := cache.remember(context.Background(), digest, info); err != nil {
+			t.Fatal(err)
+		}
+	}
+	const workers = 16
+	start := make(chan struct{})
+	finished := make(chan error, workers)
+	var ready sync.WaitGroup
+	ready.Add(workers)
+	digest, info := inspectionCacheTestEntry(inspectionCacheEntries)
+	for range workers {
+		go func() {
+			ready.Done()
+			<-start
+			finished <- cache.remember(context.Background(), digest, info)
+		}()
+	}
+	ready.Wait()
+	close(start)
+	for range workers {
+		select {
+		case err := <-finished:
+			if err != nil {
+				t.Fatal(err)
+			}
+		case <-time.After(3 * time.Second):
+			t.Fatal("duplicate successful insertions did not finish")
+		}
+	}
+	for insertion := inspectionCacheEntries; insertion < inspectionCacheEntries+2; insertion++ {
+		if insertion > inspectionCacheEntries {
+			nextDigest, nextInfo := inspectionCacheTestEntry(insertion)
+			if err := cache.remember(context.Background(), nextDigest, nextInfo); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if len(cache.entries) != inspectionCacheEntries {
+			t.Fatalf("concurrent duplicate insertion changed the full cache population: %d", len(cache.entries))
+		}
+		for index := 0; index <= insertion; index++ {
+			key, want := inspectionCacheTestEntry(index)
+			current, exists := cache.lookup(key)
+			retained := index > insertion-inspectionCacheEntries
+			if exists != retained || retained && current != want {
+				t.Fatalf("concurrent duplicates advanced FIFO eviction more than once: insertion=%d index=%d retained=%t", insertion, index, exists)
+			}
+		}
+	}
+}
+
 type inspectionCacheBlockedReader struct {
 	reader  io.Reader
 	entered chan struct{}
@@ -213,8 +267,21 @@ func TestInspectionCacheCanceledInsertionAndDuplicateDoNotEvict(t *testing.T) {
 		t.Fatal("canceled insertion did not finish after lock release")
 	}
 	cache.mu.Lock()
-	defer cache.mu.Unlock()
 	if _, exists := cache.entries[digest]; exists || len(cache.entries) != inspectionCacheEntries || cache.entries[firstDigest] != firstInfo {
+		cache.mu.Unlock()
 		t.Fatal("canceled insertion changed or evicted successful metadata")
+	}
+	cache.mu.Unlock()
+	if err := cache.remember(context.Background(), digest, info); err != nil {
+		t.Fatal(err)
+	}
+	if _, exists := cache.lookup(firstDigest); exists {
+		t.Fatal("canceled or duplicate insertion changed the next FIFO eviction")
+	}
+	for index := 1; index < inspectionCacheEntries; index++ {
+		payload := append(append([]byte(nil), data...), byte(index), byte(index>>8))
+		if _, exists := cache.lookup(sha256.Sum256(payload)); !exists {
+			t.Fatalf("successful insertion after cancellation evicted an unrelated entry: index=%d", index)
+		}
 	}
 }

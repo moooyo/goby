@@ -5,7 +5,6 @@ import (
 	"io/fs"
 	"os"
 	"path"
-	"runtime"
 	"strings"
 	"testing"
 )
@@ -161,12 +160,6 @@ func TestClassifyThemePathKeepsReservedAudioOutOfAlbumEvidence(t *testing.T) {
 	}
 	for _, test := range cases {
 		t.Run(test.name, func(t *testing.T) {
-			if runtime.GOOS == "windows" && test.name == "OrdinaryDriveLikeBasename" {
-				if _, err := classifyThemePath(test.paths[0], 0); !errors.Is(err, ErrInvalidInput) {
-					t.Fatalf("Windows accepted a colon in a local entry path: %v", err)
-				}
-				return
-			}
 			var ordinary []os.DirEntry
 			for _, relative := range test.paths {
 				classification, err := classifyThemePath(relative, 0)

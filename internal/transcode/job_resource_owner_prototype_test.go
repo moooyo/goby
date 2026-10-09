@@ -1,12 +1,9 @@
 package transcode
 
-import (
-	"errors"
-	"sync"
-)
+import "sync"
 
-var errJobResourceOwnership = errors.New("transcode resource ownership transition is invalid")
-
+// This test-only ownership prototype is staged for future manager integration.
+// Production admission and completion remain in Manager and finalizationExecutor.
 const maxExecutionSlots = 4096
 
 // executionSlotPool counts actual execution capacity independently from
@@ -105,9 +102,9 @@ const (
 	jobRetireLiveVerified
 )
 
-// jobResourceOwner records the manager's separate resource lifetimes. It does
-// not create, confine or verify a command domain. Verified retirement originates
-// in this job's actual resourceLifecycle barrier, never in a progress counter,
+// jobResourceOwner models separate resource lifetimes for the staged prototype.
+// It does not create, confine or verify a command domain. Verified retirement
+// originates in this job's actual resourceLifecycle barrier, never in a progress counter,
 // directory inventory, completion ticket or storage lease flag. Enforced mode
 // must remain unavailable until its native broker prerequisites are complete.
 //

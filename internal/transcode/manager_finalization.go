@@ -8,6 +8,8 @@ import (
 
 var errManagerFinalization = errors.New("transcode finalization ownership is invalid")
 
+var errJobResourceOwnership = errors.New("transcode resource ownership transition is invalid")
+
 // enqueueFinalization transfers an already accepted job to the fixed executor.
 // The runner calls it only after Run and its descriptor/observer defers return.
 // This legacy path does not attest a native command domain or all-writer policy;
@@ -277,50 +279,4 @@ func (m *Manager) quarantineJobFinalization(j *managedJob, _ error) {
 		}
 	}()
 	m.signal()
-}
-
-// finishLegacySynchronously exists only for explicit package test fixtures that
-// manually construct an unticketed job. Every production runner hands off to
-// enqueueFinalization. A ticketed job cannot bypass its fixed executor lifetime.
-func (m *Manager) finishLegacySynchronously(j *managedJob, runErr error) {
-	if m == nil || j == nil {
-		return
-	}
-	claimed := false
-	func() {
-		m.mu.Lock()
-		defer m.mu.Unlock()
-		if j.completion != nil || j.finalizationQueued || j.finished {
-			return
-		}
-		j.finalizationQueued = true
-		if j.running {
-			j.subjectOwnershipHeld = true
-		}
-		claimed = true
-	}()
-	if !claimed {
-		return
-	}
-	returned := false
-	defer func() {
-		if !returned {
-			m.quarantineJobFinalization(j, errManagerFinalization)
-		}
-	}()
-	if err := closeFinalizationInputs(j); err != nil {
-		m.quarantineJobFinalization(j, err)
-		returned = true
-		return
-	}
-	inspectionErr := m.finalizeJobInspection(j, runErr)
-	_ = m.finalizeJobTerminal(j, runErr, inspectionErr, nil)
-	func() {
-		m.mu.Lock()
-		defer m.mu.Unlock()
-		// Unticketed test fixtures have no executor return phase. Clear their
-		// test-only claim only after both synchronous callbacks returned.
-		j.finalizationQueued = false
-	}()
-	returned = true
 }

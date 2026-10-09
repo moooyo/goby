@@ -74,23 +74,62 @@ func (s *Store) ResolveEmby(ctx context.Context, token string) (Principal, error
 }
 
 func (s *Store) resolveEmbyWithPeer(ctx context.Context, token, peerIP string) (Principal, error) {
-	principal, err := s.ResolveWithPeer(ctx, token, "emby", peerIP)
-	if err == nil || !errors.Is(err, ErrUnauthorized) {
-		return principal, err
-	}
 	digest, ok := tokenDigest(token)
 	if !ok {
 		return Principal{}, ErrUnauthorized
 	}
-	principal, err = scanApplicationKeyPrincipal(s.pool.QueryRow(ctx, `SELECT k.id, a.id, c.id,
-		c.client_name, c.device_id, c.device_name, c.client_version, c.last_seen_at
-		FROM sessions a JOIN application_keys k ON k.credential_id = a.id
-		JOIN application_key_clients c ON c.credential_id = a.id
-		AND c.client_name = a.client_name AND c.device_id = a.device_id
-		WHERE a.token_hash = $1 AND a.kind = 'application_key' AND a.user_id IS NULL
-		AND a.expires_at IS NULL AND a.revoked_at IS NULL`, digest[:]))
+	var principal Principal
+	var createdAt, expiresAt *time.Time
+	var observedAt time.Time
+	// The hash is globally unique. Materialize its one credential once, then
+	// project only the matching kind without treating a failed login as a key.
+	err := s.pool.QueryRow(ctx, `WITH credential AS MATERIALIZED (
+		SELECT id, user_id, kind, client_name, device_id, device_name, client_version,
+			device_registry_id, expires_at, last_seen_at, local_auth
+		FROM sessions WHERE token_hash = $1 AND revoked_at IS NULL
+		AND kind IN ('emby', 'application_key')
+	)
+	SELECT u.id, u.name, u.is_administrator, u.is_disabled, u.has_password,
+		u.created_at, u.policy, u.configuration, u.local_password_hash IS NOT NULL,
+		u.profile_pin_ciphertext IS NOT NULL, s.id, s.client_name, s.device_id,
+		COALESCE(d.custom_name, s.device_name), s.client_version, s.kind,
+		s.expires_at, s.last_seen_at, 0::bigint, ''::text, clock_timestamp()
+	FROM credential s JOIN users u ON u.id = s.user_id
+	LEFT JOIN devices d ON d.id = s.device_registry_id AND d.deleted_at IS NULL
+	WHERE s.kind = 'emby' AND s.expires_at > clock_timestamp() AND NOT u.is_disabled
+	AND (NOT s.local_auth OR $2)
+	UNION ALL
+	SELECT '', '', false, false, false, NULL::timestamptz, NULL::jsonb, NULL::jsonb,
+		false, false, s.id, c.client_name, c.device_id, c.device_name, c.client_version,
+		s.kind, NULL::timestamptz, c.last_seen_at, k.id, c.id, clock_timestamp()
+	FROM credential s JOIN application_keys k ON k.credential_id = s.id
+	JOIN application_key_clients c ON c.credential_id = s.id
+		AND c.client_name = s.client_name AND c.device_id = s.device_id
+	WHERE s.kind = 'application_key' AND s.user_id IS NULL AND s.expires_at IS NULL`, digest[:], IsLocalPeer(peerIP)).
+		Scan(&principal.User.ID, &principal.User.Name, &principal.User.IsAdministrator,
+			&principal.User.IsDisabled, &principal.User.HasPassword, &createdAt, &principal.User.Policy,
+			&principal.User.Configuration, &principal.User.HasLocalPassword, &principal.User.HasProfilePin,
+			&principal.SessionID, &principal.Client.Name, &principal.Client.DeviceID,
+			&principal.Client.Device, &principal.Client.Version, &principal.Kind, &expiresAt,
+			&principal.LastSeenAt, &principal.ApplicationKeyID, &principal.ClientSessionID, &observedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Principal{}, ErrUnauthorized
+	}
 	if err != nil {
-		return Principal{}, err
+		return Principal{}, fmt.Errorf("resolve Emby credential: %w", err)
+	}
+	if createdAt != nil {
+		principal.User.CreatedAt = *createdAt
+	}
+	if expiresAt != nil {
+		principal.ExpiresAt = *expiresAt
+	}
+	if principal.Kind == "emby" {
+		policy, err := ParseRuntimePolicy(principal.User.Policy)
+		if err != nil || !parsedLoginPolicyAllows(policy, principal.User.Policy, principal.Client.DeviceID, observedAt) ||
+			(!policy.EnableRemoteAccess && !IsLocalPeer(peerIP)) {
+			return Principal{}, ErrUnauthorized
+		}
 	}
 	principal.PeerIP = peerIP
 	return principal, nil

@@ -192,8 +192,27 @@ held by metadata or open descriptors. Allow space for those readers as well.
 The registry persists deletion intent before unlinking. Startup recovers an
 interrupted owned deletion and can trim an incomplete trailing record from
 the previous active file before closing it. This is recovery of registered
-state, not adoption of arbitrary orphan files. Complete records are synced;
-a partial-write failure attempts to restore the previous line boundary.
+state, not adoption of arbitrary orphan files.
+
+One writer drains accepted records in admission order, without an aggregation
+timer. Its queue holds at most 64 records and 512 KiB; each batch holds at most
+32 records and 128 KiB. Full queues apply context-aware backpressure. Logging
+remains synchronous: a successful call means the record's file was synced,
+with records in the same batch sharing that sync. A batch crossing rotation
+commits the old file before acknowledging its records and proceeding through
+the existing registry, deletion-intent and new-file ordering. Health, file
+identity and space checks remain per record. A partial-write failure attempts
+to restore only the current record's starting boundary; an earlier successful
+acknowledgment can never be undone by rollback.
+
+Cancellation before admission or before the writer starts a queued record
+prevents that write. Once writing starts, the caller waits for its persistence
+result even if its context is cancelled. Final HTTP request diagnostics retain
+their independent background context. Close rejects new records and readers,
+drains accepted records including shutdown events, and waits for the writer
+to exit before closing snapshots and releasing the process lock. Writer failure
+returns errors to unfinished callers; it cannot leave them waiting indefinitely
+for a worker that has exited.
 
 Write, sync, space, registration, or identity failures mark the store degraded.
 The degraded state is sticky until an explicit close/reopen; it does not

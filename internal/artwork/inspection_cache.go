@@ -12,10 +12,12 @@ const inspectionCacheEntries = 512
 
 // InspectionCache retains only successful image metadata for concurrent callers.
 // Its zero value is ready for use, and it must not be copied after first use.
-// It retains no readers, descriptors or image pixels.
+// It retains no readers, descriptors or image pixels, and evicts in FIFO order.
 type InspectionCache struct {
 	mu      sync.Mutex
 	entries map[[sha256.Size]byte]Info
+	order   [inspectionCacheEntries][sha256.Size]byte
+	next    int
 }
 
 // InspectJoined fully reads and hashes the current reader before reusing any
@@ -65,10 +67,12 @@ func (cache *InspectionCache) remember(ctx context.Context, digest [sha256.Size]
 		return nil
 	}
 	if cache.entries == nil {
-		cache.entries = make(map[[sha256.Size]byte]Info)
+		cache.entries = make(map[[sha256.Size]byte]Info, inspectionCacheEntries)
 	} else if len(cache.entries) == inspectionCacheEntries {
-		clear(cache.entries)
+		delete(cache.entries, cache.order[cache.next])
 	}
 	cache.entries[digest] = info
+	cache.order[cache.next] = digest
+	cache.next = (cache.next + 1) % inspectionCacheEntries
 	return nil
 }

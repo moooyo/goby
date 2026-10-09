@@ -1496,12 +1496,6 @@ func (m *Manager) persist(j *managedJob) error {
 	return nil
 }
 
-// finish is the synchronous compatibility boundary for explicit internal test
-// helpers. Production runners always transfer through enqueueFinalization.
-func (m *Manager) finish(j *managedJob, runErr error) {
-	m.finishLegacySynchronously(j, runErr)
-}
-
 // Unticketed completed records exist only in recovery/test fixtures. Every
 // production Ensure owns an exact ticket; callback completion must return it
 // before guarded record removal can make its metadata capacity reusable.

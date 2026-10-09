@@ -183,26 +183,6 @@ func dynamicArtifactName(id, format string, initialization bool) string {
 	return id + extension
 }
 
-func dynamicSnapshotArtifact(snapshot timeshift.WindowSnapshot, name string) (timeshift.Artifact, string, bool) {
-	for _, variant := range snapshot.Variants {
-		for _, segment := range snapshot.Segments {
-			for _, artifact := range segment.Artifacts {
-				if artifact.VariantID == variant.ID && name == dynamicArtifactName(artifact.ID, variant.Format, false) {
-					return artifact, variant.Kind, true
-				}
-			}
-		}
-		for _, epoch := range snapshot.Epochs {
-			for _, artifact := range epoch.Initializations {
-				if artifact.VariantID == variant.ID && name == dynamicArtifactName(artifact.ID, variant.Format, true) {
-					return artifact, variant.Kind, true
-				}
-			}
-		}
-	}
-	return timeshift.Artifact{}, "", false
-}
-
 func dynamicViewStart(snapshot timeshift.WindowSnapshot, view dynamicPlaybackView) (*int64, error) {
 	if view.StartTicks == nil && !view.Live {
 		return nil, nil

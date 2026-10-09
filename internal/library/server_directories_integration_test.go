@@ -4,7 +4,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/moooyo/goby/internal/identity"
@@ -17,10 +16,8 @@ func TestServerDirectoriesStayWithinApprovedRootsAndFreshAuthority(t *testing.T)
 	second := filepath.Dir(libraryIntegrationFile(t, approved, "beta/file.txt", "not media"))
 	libraryIntegrationFile(t, approved, "loose-file.txt", "not a directory")
 	outside := t.TempDir()
-	if runtime.GOOS != "windows" {
-		if err := os.Symlink(outside, filepath.Join(approved, "escape")); err != nil {
-			t.Fatal(err)
-		}
+	if err := os.Symlink(outside, filepath.Join(approved, "escape")); err != nil {
+		t.Fatal(err)
 	}
 	roots, err := store.BrowseServerDirectories(ctx, actor, identity.AdministratorNative, "", 0, 100)
 	if err != nil || len(roots.Items) != 1 || roots.Items[0].Path != approved || roots.ParentPath != "" {
@@ -46,9 +43,6 @@ func TestServerDirectoriesStayWithinApprovedRootsAndFreshAuthority(t *testing.T)
 		t.Fatalf("validate allowed directory: %q, %v", canonical, err)
 	}
 	for _, path := range []string{outside, filepath.Join(approved, "escape")} {
-		if runtime.GOOS == "windows" && filepath.Base(path) == "escape" {
-			continue
-		}
 		if _, err := store.ValidateServerDirectory(ctx, actor, identity.AdministratorNative, path); !errors.Is(err, ErrForbidden) {
 			t.Fatalf("outside directory accepted: %q, %v", path, err)
 		}

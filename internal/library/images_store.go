@@ -22,59 +22,6 @@ const storedImageReadLimit int64 = 20 * 1024 * 1024
 // release a worker whose filesystem operation is still blocked on storage.
 var publicImageWorkers = make(chan struct{}, 4)
 
-type publicImageWorkResult struct {
-	file  *os.File
-	image Image
-	err   error
-}
-
-func runPublicImageWorker(ctx context.Context, slots chan struct{}, work func() (*os.File, Image, error)) (*os.File, Image, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, Image{}, err
-	}
-	select {
-	case slots <- struct{}{}:
-	case <-ctx.Done():
-		return nil, Image{}, ctx.Err()
-	}
-	if err := ctx.Err(); err != nil {
-		<-slots
-		return nil, Image{}, err
-	}
-	result := make(chan publicImageWorkResult)
-	go func() {
-		defer func() { <-slots }()
-		if ctx.Err() != nil {
-			return
-		}
-		file, image, err := work()
-		if err != nil && file != nil {
-			_ = file.Close()
-			file = nil
-		}
-		select {
-		case result <- publicImageWorkResult{file: file, image: image, err: err}:
-			// Ownership moves to the receiver only after the unbuffered handoff.
-		case <-ctx.Done():
-			if file != nil {
-				_ = file.Close()
-			}
-		}
-	}()
-	select {
-	case outcome := <-result:
-		if err := ctx.Err(); err != nil {
-			if outcome.file != nil {
-				_ = outcome.file.Close()
-			}
-			return nil, Image{}, err
-		}
-		return outcome.file, outcome.image, outcome.err
-	case <-ctx.Done():
-		return nil, Image{}, ctx.Err()
-	}
-}
-
 // Image describes a validated, indexed local image. Path and Filename are
 // authorized item metadata and must not be included in public image responses.
 type Image struct {

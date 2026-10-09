@@ -315,7 +315,7 @@ func (s *Store) EnqueueTest(ctx context.Context, actor identity.Principal) error
 		return ErrUnavailable
 	}
 	defer tx.Rollback(ctx)
-	if err = identity.CheckNotificationSession(ctx, tx, actor, true); err != nil {
+	if err = identity.CheckNotificationSession(ctx, tx, actor); err != nil {
 		return err
 	}
 	if err = lockJournalControl(ctx, tx); err != nil {
@@ -343,7 +343,7 @@ func (s *Store) EnqueueTest(ctx context.Context, actor identity.Principal) error
 	if err = s.enqueue(ctx, tx, t, seq, "Test", []notificationjournal.Reference{}, false); err != nil {
 		return err
 	}
-	if err = identity.CheckNotificationSession(ctx, tx, actor, false); err != nil {
+	if err = identity.CheckNotificationSession(ctx, tx, actor); err != nil {
 		return err
 	}
 	return tx.Commit(ctx)

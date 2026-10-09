@@ -296,6 +296,32 @@ func TestStoreSearchHintsChecksApplicationAuthorityAndTargetScope(t *testing.T) 
 	}
 }
 
+func TestStoreSearchHintsEntityNamesEscapeLiteralsAndRequireOneValidSource(t *testing.T) {
+	ctx, store := libraryQueryTestStore(t)
+	seedLibraryQueryFixture(t, ctx, store.pool)
+	searchHintTestMetadata(t, ctx, store, "audio-b", `{"Genres":["Literal %_\\ entity","Literal ordinary entity"],"Artists":["Split source artist"]}`)
+	searchHintTestMetadata(t, ctx, store, "movie-a", `{"Artists":["Split source artist"]}`)
+	similarInsert(t, ctx, store, "hidden-source-track", "Audio", "library-a", "library-a", map[string]any{"Artists": []string{"Split source artist"}})
+	literal := searchHintTestEntity(t, ctx, store, "Genre", "Literal %_\\ entity")
+	artist := searchHintTestEntity(t, ctx, store, "MusicArtist", "Split source artist")
+	searchHintTestExec(t, ctx, store, `UPDATE item_entities SET credit_group=0 WHERE item_id='audio-b' AND entity_id=$1::bigint`, artist.ID)
+	subject := Subject{UserID: "restricted"}
+	for _, term := range []string{"%", "_", "\\", "%_\\"} {
+		query := SearchHintsQuery{SearchTerm: term, IncludeItemTypes: []string{"Genre"}, Limit: 100}
+		assertSearchHintPage(t, searchHintTestQuery(t, ctx, store, subject, query), 1, literal)
+	}
+	query := SearchHintsQuery{SearchTerm: "Split source", Limit: 100}
+	// A hidden valid credit cannot combine with a visible legacy credit to
+	// authorize the same artist. Each qualifying source must satisfy all rules.
+	assertSearchHintPage(t, searchHintTestQuery(t, ctx, store, subject, query), 0)
+	searchHintTestExec(t, ctx, store, `UPDATE item_entities SET credit_group=1 WHERE item_id='audio-b' AND entity_id=$1::bigint`, artist.ID)
+	assertSearchHintPage(t, searchHintTestQuery(t, ctx, store, subject, query), 1, artist)
+	query.MediaTypes = []string{"Video"}
+	assertSearchHintPage(t, searchHintTestQuery(t, ctx, store, subject, query), 0)
+	query.MediaTypes = []string{"Audio"}
+	assertSearchHintPage(t, searchHintTestQuery(t, ctx, store, subject, query), 1, artist)
+}
+
 type searchHintSnapshotTraceKey struct{}
 
 type searchHintSnapshotTracer struct {

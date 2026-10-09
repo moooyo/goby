@@ -218,7 +218,7 @@ func (s *Store) Registration(ctx context.Context, actor identity.Principal) (Reg
 		return Registration{}, ErrUnavailable
 	}
 	defer tx.Rollback(ctx)
-	if err = identity.CheckNotificationSession(ctx, tx, actor, false); err != nil {
+	if err = identity.CheckNotificationSession(ctx, tx, actor); err != nil {
 		return Registration{}, err
 	}
 	result, err := readRegistration(ctx, tx, actor.SessionID)
@@ -314,7 +314,7 @@ func (s *Store) PutRegistration(ctx context.Context, actor identity.Principal, i
 	if err != nil {
 		return Registration{}, ErrUnavailable
 	}
-	if err = identity.CheckNotificationSession(ctx, tx, actor, false); err != nil {
+	if err = identity.CheckNotificationSession(ctx, tx, actor); err != nil {
 		return Registration{}, err
 	}
 	if tx.Commit(ctx) != nil {
@@ -350,7 +350,7 @@ func (s *Store) DeleteRegistration(ctx context.Context, actor identity.Principal
 	if err != nil {
 		return Registration{}, ErrUnavailable
 	}
-	if err = identity.CheckNotificationSession(ctx, tx, actor, false); err != nil {
+	if err = identity.CheckNotificationSession(ctx, tx, actor); err != nil {
 		return Registration{}, err
 	}
 	if tx.Commit(ctx) != nil {

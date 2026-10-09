@@ -1,7 +1,6 @@
 package library
 
 import (
-	"runtime"
 	"strings"
 	"testing"
 
@@ -74,12 +73,6 @@ func TestSubtitleTimelineExternalStampBindsEntireSetAndKeepsLegacyVersion(t *tes
 func TestSubtitleTimelineRawBitmapFactsFenceHiddenIndexAndParentBinding(t *testing.T) {
 	snapshot := subtitleTimelineTestSnapshot()
 	relative := "Movie/movie.en.sup"
-	if runtime.GOOS == "windows" {
-		// A root-level fixture keeps the catalog path valid without native
-		// separators, while retaining the hidden-index and parent checks.
-		snapshot.relativePath = "movie.mkv"
-		relative = "movie.en.sup"
-	}
 	legacy, _ := subtitleTimelineSourceStamp(snapshot)
 	track := subtitleTimelineExternalTestTrack(1)
 	snapshot.mediaFile.Item.bitmapSubtitleFacts = []storedBitmapSubtitle{{BitmapSubtitle: track, relativePath: relative, rootID: snapshot.root.id}}
