@@ -169,7 +169,20 @@ func lockPlaybackMediaAuthority(ctx context.Context, tx pgx.Tx, statement string
 	return nil
 }
 
-func indexedPlaybackMediaSQL(access libraryAccess) string {
+func indexedPlaybackMediaQuery(access libraryAccess, itemID string) (string, []any) {
+	folders := access.folders
+	if folders == nil {
+		folders = []string{}
+	}
+	parameters := &policySQLParameters{
+		arguments: []any{itemID, access.all, folders},
+		positions: map[string]string{"folders": "$3::text[]"},
+	}
+	statement := indexedPlaybackMediaSQLWithPolicy(access.directSQLWithParameters("i", parameters))
+	return statement, parameters.arguments
+}
+
+func indexedPlaybackMediaSQLWithPolicy(policy string) string {
 	// Capture the source and its complete publication/binding revisions in one
 	// READ COMMITTED statement. Never lock roots after locking the item.
 	return `SELECT i.id, i.library_id, i.type, i.path, i.media,
@@ -180,7 +193,7 @@ func indexedPlaybackMediaSQL(access libraryAccess) string {
 		FROM items i JOIN library_roots r ON r.id=i.root_id AND r.library_id=i.library_id
 		WHERE i.id=$1 AND NOT i.is_folder AND i.media IS NOT NULL
 		AND i.type IN ('Movie', 'Episode', 'Video', 'Audio')
-		AND ($2::boolean OR i.library_id=ANY($3::text[])) AND ` + access.directSQL("i")
+		AND ($2::boolean OR i.library_id=ANY($3::text[])) AND ` + policy
 }
 
 func scanIndexedPlaybackMedia(row rowScanner) (indexedMediaSource, *time.Time, error) {
@@ -212,7 +225,8 @@ func scanIndexedPlaybackMedia(row rowScanner) (indexedMediaSource, *time.Time, e
 }
 
 func readIndexedPlaybackMedia(ctx context.Context, tx pgx.Tx, access libraryAccess, itemID, sourceID string, includeSubtitles bool) (indexedMediaSource, error) {
-	snapshot, modified, err := scanIndexedPlaybackMedia(tx.QueryRow(ctx, indexedPlaybackMediaSQL(access), itemID, access.all, access.folders))
+	statement, arguments := indexedPlaybackMediaQuery(access, itemID)
+	snapshot, modified, err := scanIndexedPlaybackMedia(tx.QueryRow(ctx, statement, arguments...))
 	if err != nil {
 		return indexedMediaSource{}, err
 	}
@@ -222,6 +236,7 @@ func readIndexedPlaybackMedia(ctx context.Context, tx pgx.Tx, access libraryAcce
 // CacheDescribe connections with an enabled statement cache retain one named
 // plan for the complex source query. Other configurations keep the source batch.
 func readIndexedPlaybackMediaBatch(ctx context.Context, tx pgx.Tx, access libraryAccess, itemID, sourceID string, includeSubtitles bool) (indexedMediaSource, error) {
+	statement, arguments := indexedPlaybackMediaQuery(access, itemID)
 	configuration := tx.Conn().Config()
 	if configuration.DefaultQueryExecMode == pgx.QueryExecModeCacheDescribe && configuration.StatementCacheCapacity > 0 {
 		var id string
@@ -233,8 +248,8 @@ func readIndexedPlaybackMediaBatch(ctx context.Context, tx pgx.Tx, access librar
 		}
 		// Each Scan closes its result and returns any completion error. The
 		// second statement retains its fresh snapshot after the SHARE lock wait.
-		snapshot, modified, err := scanIndexedPlaybackMedia(tx.QueryRow(ctx, indexedPlaybackMediaSQL(access),
-			pgx.QueryExecModeCacheStatement, itemID, access.all, access.folders))
+		cachedArguments := append([]any{pgx.QueryExecModeCacheStatement}, arguments...)
+		snapshot, modified, err := scanIndexedPlaybackMedia(tx.QueryRow(ctx, statement, cachedArguments...))
 		if err != nil {
 			return indexedMediaSource{}, err
 		}
@@ -242,7 +257,7 @@ func readIndexedPlaybackMediaBatch(ctx context.Context, tx pgx.Tx, access librar
 	}
 	batch := &pgx.Batch{}
 	batch.Queue("SELECT id FROM items WHERE id=$1 FOR SHARE", itemID)
-	batch.Queue(indexedPlaybackMediaSQL(access), itemID, access.all, access.folders)
+	batch.Queue(statement, arguments...)
 	results := tx.SendBatch(ctx, batch)
 	defer results.Close()
 	var id string

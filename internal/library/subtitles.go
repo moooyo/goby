@@ -67,7 +67,7 @@ func scanStoredSubtitle(row rowScanner, additional ...any) (storedSubtitle, erro
 // snapshot as the surrounding projection. No filesystem work is done here.
 func attachSubtitles(ctx context.Context, tx pgx.Tx, items []Item) error {
 	ids := make([]string, 0, len(items))
-	positions := make(map[string][]int, len(items))
+	positions := make(map[string][]subtitleProjectionPosition, len(items))
 	for index := range items {
 		items[index].Subtitles = []Subtitle{}
 		items[index].BitmapSubtitles = []BitmapSubtitle{}
@@ -78,7 +78,7 @@ func attachSubtitles(ctx context.Context, tx pgx.Tx, items []Item) error {
 		if _, exists := positions[items[index].ID]; !exists {
 			ids = append(ids, items[index].ID)
 		}
-		positions[items[index].ID] = append(positions[items[index].ID], index)
+		positions[items[index].ID] = append(positions[items[index].ID], subtitleProjectionPosition{index: index, embedded: -2})
 	}
 	if len(ids) == 0 {
 		return nil
@@ -98,10 +98,13 @@ func attachSubtitles(ctx context.Context, tx pgx.Tx, items []Item) error {
 		if err != nil {
 			return fmt.Errorf("decode item subtitle: %w", err)
 		}
-		for _, index := range positions[itemID] {
+		itemPositions := positions[itemID]
+		for offset := range itemPositions {
+			position := &itemPositions[offset]
+			index := position.index
 			// Reprobed embedded streams invalidate colliding external indexes even
 			// if a following sidecar scan failed before it could reallocate them.
-			if source.Index > highestEmbeddedStreamIndex(items[index].Media) && len(items[index].Subtitles) < maxActiveSubtitles {
+			if source.Index > position.highestEmbeddedIndex(items) && len(items[index].Subtitles) < maxActiveSubtitles {
 				items[index].Subtitles = append(items[index].Subtitles, source.Subtitle)
 			}
 		}
@@ -121,6 +124,20 @@ func attachSubtitles(ctx context.Context, tx pgx.Tx, items []Item) error {
 		trimSubtitleProjection(&items[index])
 	}
 	return nil
+}
+
+// The existing item-position entry owns its lazy maximum across all subtitle
+// kinds. The -2 sentinel differs from the valid empty-stream maximum of -1.
+type subtitleProjectionPosition struct {
+	index    int
+	embedded int
+}
+
+func (position *subtitleProjectionPosition) highestEmbeddedIndex(items []Item) int {
+	if position.embedded == -2 {
+		position.embedded = highestEmbeddedStreamIndex(items[position.index].Media)
+	}
+	return position.embedded
 }
 
 func highestEmbeddedStreamIndex(info *media.Info) int {

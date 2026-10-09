@@ -598,18 +598,25 @@ func (s *Store) beginApplicationKeyOperation(ctx context.Context, actor Principa
 }
 
 func authorizeApplicationKeyActor(ctx context.Context, tx AuthorizationTx, actor Principal, expectedSelfRevocation *time.Time) error {
+	if !actor.IsApplicationKey() {
+		// Ordinary administrators retain their credential audience and current
+		// Emby login policy after every wait. Device authorization delegates only
+		// application principals back here, so this branch cannot recurse.
+		err := authorizeDeviceActor(ctx, tx, actor, actor.Kind == "admin", expectedSelfRevocation)
+		if errors.Is(err, ErrClientSessionForbidden) {
+			return ErrUnauthorized
+		}
+		return err
+	}
 	var authorized bool
 	err := tx.QueryRow(ctx, `SELECT EXISTS (
-		SELECT 1 FROM sessions a LEFT JOIN users u ON u.id = a.user_id
-		LEFT JOIN application_keys k ON k.credential_id = a.id
-		WHERE a.id = $1 AND a.kind = $2
-		AND (a.revoked_at IS NULL OR ($5::timestamptz IS NOT NULL AND a.revoked_at = $5))
-		AND ((a.kind IN ('admin', 'emby') AND a.user_id = $3 AND u.is_administrator
-			AND NOT u.is_disabled AND a.expires_at > clock_timestamp() AND $4::bigint = 0 AND $6 = '')
-			OR (a.kind = 'application_key' AND a.user_id IS NULL AND $3 = ''
-				AND a.expires_at IS NULL AND k.id = $4 AND EXISTS (SELECT 1 FROM application_key_clients c
-					WHERE c.credential_id = a.id AND c.id = $6))))`, actor.SessionID, actor.Kind,
-		actor.User.ID, actor.ApplicationKeyID, expectedSelfRevocation, actor.ClientSessionID).Scan(&authorized)
+		SELECT 1 FROM sessions a JOIN application_keys k ON k.credential_id = a.id
+		WHERE a.id = $1 AND a.kind = 'application_key' AND a.user_id IS NULL
+		AND a.expires_at IS NULL AND k.id = $2
+		AND (a.revoked_at IS NULL OR ($3::timestamptz IS NOT NULL AND a.revoked_at = $3))
+		AND EXISTS (SELECT 1 FROM application_key_clients c
+			WHERE c.credential_id = a.id AND c.id = $4))`, actor.SessionID,
+		actor.ApplicationKeyID, expectedSelfRevocation, actor.ClientSessionID).Scan(&authorized)
 	if err != nil {
 		return fmt.Errorf("authorize application key manager: %w", err)
 	}

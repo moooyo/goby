@@ -28,9 +28,6 @@ func (s *Store) ViewingStatisticsFor(ctx context.Context, subject Subject) (View
 		return ViewingStatistics{}, err
 	}
 	defer tx.Rollback(ctx)
-	if _, err := tx.Exec(ctx, `SET LOCAL jit = off`); err != nil {
-		return ViewingStatistics{}, fmt.Errorf("disable viewing statistics query JIT: %w", err)
-	}
 	// Numeric accumulation avoids bigint overflow before the total becomes text.
 	// A malformed or out-of-range runtime is unknown, not a fabricated duration.
 	statement := `SELECT COALESCE(SUM(CASE WHEN state.played THEN duration.ticks

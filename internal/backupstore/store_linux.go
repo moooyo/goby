@@ -512,6 +512,9 @@ func (s *Store) Close() error {
 		closeErr = ErrUnavailable
 	}
 	s.mu.Lock()
+	if s.degraded {
+		closeErr = ErrUnavailable
+	}
 	s.closeErr = closeErr
 	close(s.closeDone)
 	s.mu.Unlock()

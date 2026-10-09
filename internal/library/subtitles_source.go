@@ -115,38 +115,14 @@ func (s *Store) ReadSubtitleFor(ctx context.Context, subject Subject, itemID, me
 	})
 }
 
-func (s *Store) readSubtitleContent(ctx context.Context, primary indexedMediaSource, source storedSubtitle) (content SubtitleContent, resultErr error) {
-	file, err := s.openPublicMediaSource(ctx, primary)
+func (s *Store) readSubtitleContent(ctx context.Context, primary indexedMediaSource, source storedSubtitle) (SubtitleContent, error) {
+	var data []byte
+	err := s.withSubtitlePrimarySource(ctx, primary, func() error {
+		var err error
+		data, err = s.readSubtitleSource(ctx, primary, source)
+		return err
+	})
 	if err != nil {
-		return SubtitleContent{}, err
-	}
-	defer func() { resultErr = errors.Join(resultErr, closePrimarySidecarResource(ctx, file)) }()
-	data, err := s.readSubtitleSource(ctx, primary, source)
-	if err != nil {
-		return SubtitleContent{}, err
-	}
-	// Recheck the original descriptor and pathname after sidecar storage work.
-	// Reading the video contents is unnecessary for this snapshot contract.
-	after, err := file.Stat()
-	if err != nil {
-		return SubtitleContent{}, fmt.Errorf("%w: primary media metadata cannot be rechecked during subtitle reading", ErrUnavailable)
-	}
-	if !primary.matches(after) {
-		return SubtitleContent{}, fmt.Errorf("%w: %w: primary media changed during subtitle reading", ErrUnavailable, ErrSourceChanged)
-	}
-	current, err := s.openPublicMediaSource(ctx, primary)
-	if err != nil {
-		return SubtitleContent{}, err
-	}
-	defer func() { resultErr = errors.Join(resultErr, closePrimarySidecarResource(ctx, current)) }()
-	currentInfo, err := current.Stat()
-	if err != nil {
-		return SubtitleContent{}, fmt.Errorf("%w: current media metadata cannot be read during subtitle reading", ErrUnavailable)
-	}
-	if !sameMediaSourceFile(after, currentInfo) {
-		return SubtitleContent{}, fmt.Errorf("%w: %w: primary media was replaced during subtitle reading", ErrUnavailable, ErrSourceChanged)
-	}
-	if err := ctx.Err(); err != nil {
 		return SubtitleContent{}, err
 	}
 	modifiedAt := source.ModifiedAt
@@ -156,18 +132,62 @@ func (s *Store) readSubtitleContent(ctx context.Context, primary indexedMediaSou
 	return SubtitleContent{Data: data, Info: source.Subtitle, ModifiedAt: modifiedAt}, nil
 }
 
+// One source descriptor covers a bounded sequence of subtitle reads. Its final
+// fresh open also checks the current catalog publication before any success is
+// delivered; every descriptor remains owned until actual retirement completes.
+func (s *Store) withSubtitlePrimarySource(ctx context.Context, primary indexedMediaSource, work func() error) (resultErr error) {
+	file, err := s.openPublicMediaSource(ctx, primary)
+	if err != nil {
+		return err
+	}
+	defer func() { resultErr = errors.Join(resultErr, closePrimarySidecarResource(ctx, file)) }()
+	if err := work(); err != nil {
+		return err
+	}
+	// Recheck the original descriptor and pathname after sidecar storage work.
+	// Reading the video contents is unnecessary for this snapshot contract.
+	after, err := file.Stat()
+	if err != nil {
+		return fmt.Errorf("%w: primary media metadata cannot be rechecked during subtitle reading", ErrUnavailable)
+	}
+	if !primary.matches(after) {
+		return fmt.Errorf("%w: %w: primary media changed during subtitle reading", ErrUnavailable, ErrSourceChanged)
+	}
+	current, err := s.openPublicMediaSource(ctx, primary)
+	if err != nil {
+		return err
+	}
+	defer func() { resultErr = errors.Join(resultErr, closePrimarySidecarResource(ctx, current)) }()
+	currentInfo, err := current.Stat()
+	if err != nil {
+		return fmt.Errorf("%w: current media metadata cannot be read during subtitle reading", ErrUnavailable)
+	}
+	if !sameMediaSourceFile(after, currentInfo) {
+		return fmt.Errorf("%w: %w: primary media was replaced during subtitle reading", ErrUnavailable, ErrSourceChanged)
+	}
+	return ctx.Err()
+}
+
 func (s *Store) readSubtitleSnapshot(ctx context.Context, userID, itemID, sourceID string, index int) (indexedMediaSource, storedSubtitle, error) {
 	return s.readSubtitleSnapshotFor(ctx, Subject{UserID: userID}, itemID, sourceID, index)
 }
 
 func (s *Store) readSubtitleSnapshotFor(ctx context.Context, subject Subject, itemID, sourceID string, index int) (indexedMediaSource, storedSubtitle, error) {
-	tx, access, err := s.beginSubjectRead(ctx, subject)
+	primary, tracks, err := s.readSubtitleSnapshotsFor(ctx, subject, itemID, sourceID, []int{index}, false)
 	if err != nil {
 		return indexedMediaSource{}, storedSubtitle{}, err
 	}
+	return primary, tracks[0], nil
+}
+
+func (s *Store) readSubtitleSnapshotsFor(ctx context.Context, subject Subject, itemID, sourceID string, indices []int, discardOwnedContent bool) (indexedMediaSource, []storedSubtitle, error) {
+	tx, access, err := s.beginSubjectRead(ctx, subject)
+	if err != nil {
+		return indexedMediaSource{}, nil, err
+	}
 	defer tx.Rollback(ctx)
 	if !access.canPlay {
-		return indexedMediaSource{}, storedSubtitle{}, ErrForbidden
+		return indexedMediaSource{}, nil, ErrForbidden
 	}
 	var snapshot indexedMediaSource
 	var modified *time.Time
@@ -181,48 +201,62 @@ func (s *Store) readSubtitleSnapshotFor(ctx context.Context, subject Subject, it
 		&snapshot.relativePath, &snapshot.identity, &snapshot.mediaFile.Size, &modified,
 		&snapshot.root.id, &snapshot.root.libraryID, &snapshot.root.path, &snapshot.root.allowedPath, &snapshot.root.relativePath)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return indexedMediaSource{}, storedSubtitle{}, ErrNotFound
+		return indexedMediaSource{}, nil, ErrNotFound
 	}
 	if err != nil {
-		return indexedMediaSource{}, storedSubtitle{}, fmt.Errorf("%w: read subtitle media snapshot: %w", ErrUnavailable, err)
+		return indexedMediaSource{}, nil, fmt.Errorf("%w: read subtitle media snapshot: %w", ErrUnavailable, err)
 	}
 	if item.Media == nil || len(item.Media.Streams) == 0 || sourceID != media.SourceID(item.ID) {
-		return indexedMediaSource{}, storedSubtitle{}, ErrNotFound
+		return indexedMediaSource{}, nil, ErrNotFound
 	}
-	track, err := scanStoredSubtitle(tx.QueryRow(ctx, "SELECT "+subtitleColumns+` FROM item_subtitles s
-		WHERE s.item_id = $1 AND s.root_id = $2 AND s.stream_index = $3 AND s.active`, itemID, snapshot.root.id, index))
-	if errors.Is(err, pgx.ErrNoRows) {
-		track, err = readOwnedSubtitle(ctx, tx, itemID, snapshot.root.id, index)
-	}
-	if errors.Is(err, pgx.ErrNoRows) || (err == nil && track.Index <= highestEmbeddedStreamIndex(item.Media)) {
-		return indexedMediaSource{}, storedSubtitle{}, ErrNotFound
-	}
-	if err != nil {
-		return indexedMediaSource{}, storedSubtitle{}, fmt.Errorf("%w: read indexed subtitle: %w", ErrUnavailable, err)
-	}
-	if item.Media.ProbeVersion < media.CurrentProbeVersion || item.Media.FileChangeTimeNs <= 0 ||
-		modified == nil || modified.IsZero() || snapshot.identity == "" || snapshot.mediaFile.Size <= 0 {
-		return indexedMediaSource{}, storedSubtitle{}, fmt.Errorf("%w: primary media snapshot is outdated; rescan required", ErrUnavailable)
-	}
-	item.CanPlay = true
-	snapshot.mediaFile.Item = item
-	snapshot.mediaFile.SourceID = sourceID
-	snapshot.mediaFile.ModifiedAt = modified.UTC()
-	if err := validateMediaSource(snapshot); err != nil {
-		return indexedMediaSource{}, storedSubtitle{}, err
-	}
-	if err := validateSubtitleSnapshot(snapshot, track); err != nil {
-		return indexedMediaSource{}, storedSubtitle{}, err
+	tracks := make([]storedSubtitle, 0, len(indices))
+	highestEmbedded := highestEmbeddedStreamIndex(item.Media)
+	for position, index := range indices {
+		track, err := scanStoredSubtitle(tx.QueryRow(ctx, "SELECT "+subtitleColumns+` FROM item_subtitles s
+			WHERE s.item_id = $1 AND s.root_id = $2 AND s.stream_index = $3 AND s.active`, itemID, snapshot.root.id, index))
+		if errors.Is(err, pgx.ErrNoRows) {
+			track, err = readOwnedSubtitle(ctx, tx, itemID, snapshot.root.id, index)
+		}
+		if errors.Is(err, pgx.ErrNoRows) || (err == nil && track.Index <= highestEmbedded) {
+			return indexedMediaSource{}, nil, ErrNotFound
+		}
+		if err != nil {
+			return indexedMediaSource{}, nil, fmt.Errorf("%w: read indexed subtitle: %w", ErrUnavailable, err)
+		}
+		if position == 0 {
+			// Preserve the single-track selector's not-found precedence over
+			// outdated primary metadata while preparing the source only once.
+			if item.Media.ProbeVersion < media.CurrentProbeVersion || item.Media.FileChangeTimeNs <= 0 ||
+				modified == nil || modified.IsZero() || snapshot.identity == "" || snapshot.mediaFile.Size <= 0 {
+				return indexedMediaSource{}, nil, fmt.Errorf("%w: primary media snapshot is outdated; rescan required", ErrUnavailable)
+			}
+			item.CanPlay = true
+			snapshot.mediaFile.Item = item
+			snapshot.mediaFile.SourceID = sourceID
+			snapshot.mediaFile.ModifiedAt = modified.UTC()
+			if err := validateMediaSource(snapshot); err != nil {
+				return indexedMediaSource{}, nil, err
+			}
+		}
+		if err := validateSubtitleSnapshot(snapshot, track); err != nil {
+			return indexedMediaSource{}, nil, err
+		}
+		// Validation-only groups consume owned payloads in the authorized
+		// snapshot, retaining metadata rather than up to eight full buffers.
+		if discardOwnedContent {
+			track.ownedData = nil
+		}
+		tracks = append(tracks, track)
 	}
 	if err := captureMediaPublicationRead(ctx, tx, &snapshot); err != nil {
-		return indexedMediaSource{}, storedSubtitle{}, err
+		return indexedMediaSource{}, nil, err
 	}
 	// Authorization and both catalog sources share one repeatable read snapshot;
 	// release the database before touching potentially unavailable storage.
 	if err := tx.Commit(ctx); err != nil {
-		return indexedMediaSource{}, storedSubtitle{}, fmt.Errorf("%w: complete authorized subtitle read: %w", ErrUnavailable, err)
+		return indexedMediaSource{}, nil, fmt.Errorf("%w: complete authorized subtitle read: %w", ErrUnavailable, err)
 	}
-	return snapshot, track, nil
+	return snapshot, tracks, nil
 }
 
 func validateSubtitleSnapshot(primary indexedMediaSource, source storedSubtitle) error {

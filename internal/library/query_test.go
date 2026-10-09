@@ -739,6 +739,7 @@ func libraryQueryTestStore(t *testing.T) (context.Context, *Store) {
 		config.ConnConfig.RuntimeParams = make(map[string]string)
 	}
 	config.ConnConfig.RuntimeParams["search_path"] = schema
+	config.ConnConfig.RuntimeParams["jit"] = "off"
 	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
 		t.Fatal("create isolated query test pool")

@@ -49,9 +49,9 @@ func readPolicyCandidateIDs(t *testing.T, ctx context.Context, tx pgx.Tx, predic
 	return ids
 }
 
-func readPolicyPredicateStates(t *testing.T, ctx context.Context, tx pgx.Tx, predicate string) map[string]*bool {
+func readPolicyPredicateStates(t *testing.T, ctx context.Context, tx pgx.Tx, predicate string, arguments ...any) map[string]*bool {
 	t.Helper()
-	rows, err := tx.Query(ctx, "SELECT i.id,"+predicate+" FROM items i ORDER BY i.id")
+	rows, err := tx.Query(ctx, "SELECT i.id,"+predicate+" FROM items i ORDER BY i.id", arguments...)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,6 +129,11 @@ func TestSharedPolicyAncestryPreservesResultsAndReducesRecursivePlans(t *testing
 			if !reflect.DeepEqual(readPolicyPredicateStates(t, ctx, tx, legacy), readPolicyPredicateStates(t, ctx, tx, candidate)) {
 				t.Fatal("sharing policy ancestry changed a true, false, or unknown authorization result")
 			}
+			parameters := &policySQLParameters{}
+			bound := access.itemPolicySQLWithParameters("i", parameters)
+			if !reflect.DeepEqual(readPolicyPredicateStates(t, ctx, tx, legacy), readPolicyPredicateStates(t, ctx, tx, bound, parameters.arguments...)) {
+				t.Fatal("binding policy values changed a true, false, or unknown authorization result")
+			}
 			before := readPolicyCandidateIDs(t, ctx, tx, legacy)
 			after := readPolicyCandidateIDs(t, ctx, tx, candidate)
 			if !reflect.DeepEqual(before, after) {
@@ -156,5 +161,14 @@ func TestSharedPolicyAncestryPreservesResultsAndReducesRecursivePlans(t *testing
 				t.Fatalf("shared policy retained duplicate recursive plans: before=%d after=%d", counts[0], counts[1])
 			}
 		})
+	}
+	for _, folders := range [][]string{nil, {}} {
+		access := libraryAccess{userID: "restricted", folders: folders}
+		parameters := &policySQLParameters{}
+		bound := access.itemPolicySQLWithParameters("i", parameters)
+		if !reflect.DeepEqual(readPolicyPredicateStates(t, ctx, tx, legacyItemPolicySQL(access, "i")),
+			readPolicyPredicateStates(t, ctx, tx, bound, parameters.arguments...)) {
+			t.Fatal("nil and empty folder arrays changed policy NULL semantics")
+		}
 	}
 }

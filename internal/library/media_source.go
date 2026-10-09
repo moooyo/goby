@@ -292,7 +292,7 @@ func validateMediaSource(snapshot indexedMediaSource) error {
 	if path == "." || !validMediaSourceRelativePath(path) || filepath.Clean(path) != path ||
 		!filepath.IsAbs(root.path) || !filepath.IsAbs(root.allowedPath) ||
 		strings.ContainsRune(root.path, '\x00') || strings.ContainsRune(root.allowedPath, '\x00') ||
-		hasTraversal(root.path) || hasTraversal(root.allowedPath) || !validMediaSourceRelativePath(root.relativePath) ||
+		hasTraversal(root.path) || hasTraversal(root.allowedPath) || !validLibraryRootRelativePath(root.relativePath) ||
 		filepath.Clean(root.path) != filepath.Join(root.allowedPath, root.relativePath) {
 		return fmt.Errorf("%w: invalid indexed media path or root", ErrUnavailable)
 	}
@@ -309,6 +309,12 @@ func validateMediaSource(snapshot indexedMediaSource) error {
 
 func validMediaSourceRelativePath(path string) bool {
 	return path != "" && filepath.IsLocal(path) && !hasTraversal(path) && !strings.ContainsAny(path, "\\\x00")
+}
+
+// Registered roots use Linux path components, where a backslash is a literal
+// name character. Media item paths retain their separate catalog restrictions.
+func validLibraryRootRelativePath(path string) bool {
+	return path != "" && filepath.IsLocal(path) && !hasTraversal(path) && !strings.ContainsRune(path, '\x00')
 }
 
 func mediaSnapshotTag(snapshot indexedMediaSource) string {

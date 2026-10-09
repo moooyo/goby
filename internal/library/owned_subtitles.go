@@ -38,7 +38,7 @@ func scanOwnedSubtitle(row rowScanner, additional ...any) (Subtitle, error) {
 	return track, nil
 }
 
-func attachOwnedSubtitles(ctx context.Context, tx pgx.Tx, items []Item, ids []string, positions map[string][]int) error {
+func attachOwnedSubtitles(ctx context.Context, tx pgx.Tx, items []Item, ids []string, positions map[string][]subtitleProjectionPosition) error {
 	rows, err := tx.Query(ctx, `SELECT `+ownedSubtitleColumns+`,s.item_id FROM item_owned_subtitles s
 		JOIN items i ON i.id=s.item_id AND i.root_id=s.root_id
 		JOIN library_roots r ON r.id=i.root_id AND r.library_id=i.library_id
@@ -54,9 +54,11 @@ func attachOwnedSubtitles(ctx context.Context, tx pgx.Tx, items []Item, ids []st
 		if err != nil {
 			return err
 		}
-		for _, position := range positions[itemID] {
-			if track.Index > highestEmbeddedStreamIndex(items[position].Media) {
-				items[position].Subtitles = append(items[position].Subtitles, track)
+		itemPositions := positions[itemID]
+		for offset := range itemPositions {
+			position := &itemPositions[offset]
+			if track.Index > position.highestEmbeddedIndex(items) {
+				items[position.index].Subtitles = append(items[position.index].Subtitles, track)
 			}
 		}
 	}

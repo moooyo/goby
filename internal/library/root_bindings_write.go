@@ -2,6 +2,8 @@ package library
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math"
@@ -116,10 +118,8 @@ func (s *Store) updateRootBindingAttempt(ctx context.Context, actor identity.Pri
 	if err != nil {
 		return RootBindingInfo{}, rootBindingObservationError(err)
 	}
-	fingerprint, err := observed.Fingerprint()
-	if err != nil {
-		return RootBindingInfo{}, rootBindingObservationError(err)
-	}
+	digest := sha256.Sum256(document)
+	fingerprint := hex.EncodeToString(digest[:])
 	if fingerprint != input.ObservedFingerprint {
 		return RootBindingInfo{}, ErrRootBindingConflict
 	}

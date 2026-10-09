@@ -370,6 +370,11 @@ func catalogQueryJITStore(t *testing.T, ctx context.Context, fixture *Store, inc
 	config := fixture.pool.Config()
 	config.MaxConns, config.MinConns = 1, 0
 	config.ConnConfig.RuntimeParams["jit"] = incoming
+	// This fixture checks that reads retain the connection policy, not LLVM
+	// compilation performance. Explicit non-production JIT-on sessions stay
+	// bounded without changing the setting observed inside the transaction.
+	config.ConnConfig.RuntimeParams["jit_above_cost"] = "1000000000"
+	trace.expectedJIT = incoming
 	config.ConnConfig.Tracer = trace
 	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
@@ -387,6 +392,8 @@ type catalogQueryJITRead struct {
 
 type catalogQueryJITTracer struct {
 	reads       []catalogQueryJITRead
+	expectedJIT string
+	jitSettings int
 	err         error
 	projections bool
 	failPage    bool
@@ -400,12 +407,17 @@ func (trace *catalogQueryJITTracer) TraceQueryStart(ctx context.Context, conn *p
 	if ctx.Value(catalogQueryJITObservationKey{}) != nil {
 		return ctx
 	}
+	if strings.HasPrefix(strings.ToUpper(strings.TrimSpace(data.SQL)), "SET LOCAL JIT") {
+		trace.jitSettings++
+	}
 	kind := ""
 	if strings.Contains(data.SQL, "SELECT count(*) FROM items i WHERE ") {
 		kind = "count"
 	} else if (strings.Contains(data.SQL, " FROM items i WHERE ") || strings.Contains(data.SQL, "FROM latest_groups latest")) &&
 		strings.Contains(data.SQL, " LIMIT $") && strings.Contains(data.SQL, " OFFSET $") {
 		kind = "page"
+	} else if strings.HasPrefix(data.SQL, "SELECT COALESCE(SUM(CASE WHEN state.played THEN duration.ticks") {
+		kind = "statistics"
 	}
 	if kind == "" && trace.projections {
 		switch {
@@ -463,13 +475,35 @@ func assertCatalogQueryJITReads(t *testing.T, trace *catalogQueryJITTracer, pair
 
 func assertCatalogQueryJITReadKinds(t *testing.T, trace *catalogQueryJITTracer, want []string, pid int32) {
 	t.Helper()
-	if trace.err != nil || len(trace.reads) != len(want) {
-		t.Fatalf("catalog query observations are incomplete: reads=%+v, error=%v", trace.reads, trace.err)
+	if trace.err != nil || len(trace.reads) != len(want) || trace.jitSettings != 0 {
+		t.Fatalf("catalog query observations are incomplete: reads=%+v, jit_settings=%d, error=%v", trace.reads, trace.jitSettings, trace.err)
 	}
 	for index, read := range trace.reads {
-		if read.kind != want[index] || read.jit != "off" || read.readOnly != "on" || read.isolation != "repeatable read" || read.pid != pid {
-			t.Fatalf("catalog read lost its transaction-local execution policy: %+v", read)
+		if read.kind != want[index] || read.jit != trace.expectedJIT || read.readOnly != "on" || read.isolation != "repeatable read" || read.pid != pid {
+			t.Fatalf("catalog read changed its connection policy or authorized snapshot: %+v", read)
 		}
+	}
+}
+
+func TestCatalogCountAndViewingStatisticsKeepPoolJITPolicy(t *testing.T) {
+	ctx, fixture := libraryQueryTestStore(t)
+	seedLibraryQueryFixture(t, ctx, fixture.pool)
+	for _, incoming := range []string{"on", "off"} {
+		t.Run(incoming, func(t *testing.T) {
+			trace := &catalogQueryJITTracer{}
+			store := catalogQueryJITStore(t, ctx, fixture, incoming, trace)
+			pid := assertCatalogQueryJITSession(t, ctx, store.pool, incoming, 0)
+			page, err := store.CountQueryItems(ctx, Query{UserID: "restricted", ParentID: "library-b", Recursive: true, IncludeItemTypes: []string{"Episode"}})
+			if err != nil || page.TotalRecordCount != 2 || len(page.Items) != 0 {
+				t.Fatalf("count-only query changed: result=%+v error=%v", page, err)
+			}
+			statistics, err := store.ViewingStatisticsFor(ctx, Subject{UserID: "restricted"})
+			if err != nil || statistics.EstimatedContentTicks != "0" || !statistics.IsEstimate {
+				t.Fatalf("empty viewing statistics changed: result=%+v error=%v", statistics, err)
+			}
+			assertCatalogQueryJITReadKinds(t, trace, []string{"count", "statistics"}, pid)
+			assertCatalogQueryJITSession(t, ctx, store.pool, incoming, pid)
+		})
 	}
 }
 

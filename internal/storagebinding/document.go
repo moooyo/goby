@@ -62,17 +62,7 @@ func DecodeSnapshot(raw []byte) (Snapshot, error) {
 // Input order and nil boundary slices do not create alternative stored forms.
 // This operation validates structure only and never approves live storage.
 func EncodeSnapshot(snapshot Snapshot) ([]byte, error) {
-	if err := snapshot.Validate(); err != nil {
-		return nil, err
-	}
-	raw, err := snapshot.canonicalBytes()
-	if err != nil {
-		return nil, err
-	}
-	if len(raw) > MaxDocumentBytes {
-		return nil, ErrTopologyLimit
-	}
-	return raw, nil
+	return snapshot.canonicalBytes()
 }
 
 func decodeDocumentObject(raw []byte, required ...string) (map[string]json.RawMessage, error) {

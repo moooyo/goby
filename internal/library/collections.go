@@ -136,7 +136,11 @@ func validateCollectionIDs(ids []string, required bool) error {
 // collectionAccessSQL applies independent ownership and sharing to every
 // collection projection. Sharing does not grant access to its member media.
 func collectionAccessSQL(alias, userID string, administrator bool) string {
-	user := policySQLString(userID)
+	return collectionAccessSQLWithUser(alias, policySQLString(userID), administrator)
+}
+
+// user is a package-built SQL literal or typed parameter, never raw input.
+func collectionAccessSQLWithUser(alias, user string, administrator bool) string {
 	permission := "collection_acl.is_public OR collection_acl.owner_id=" + user + " OR EXISTS (SELECT 1 FROM media_collection_shares collection_share WHERE collection_share.collection_id=collection_acl.item_id AND collection_share.user_id=" + user + ")"
 	if administrator {
 		permission = "true"

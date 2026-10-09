@@ -23,7 +23,7 @@ type Snapshot struct {
 	closeDone chan struct{}
 	closeErr  error
 	stop      func() bool
-	release   func(*Snapshot)
+	release   func(*Snapshot, error)
 	failure   func()
 }
 
@@ -57,16 +57,20 @@ func (s *Snapshot) Read(p []byte) (int, error) {
 	if errors.Is(err, io.EOF) && s.offset == s.size {
 		err = nil
 	}
-	s.mu.Unlock()
 	if err != nil {
 		if s.ctx.Err() != nil {
+			s.mu.Unlock()
 			return n, s.ctx.Err()
 		}
+		// Publish a read failure before Close can retire this reader. Store
+		// shutdown never waits for a snapshot while holding the store mutex.
 		if s.failure != nil {
 			s.failure()
 		}
+		s.mu.Unlock()
 		return n, ErrIntegrity
 	}
+	s.mu.Unlock()
 	return n, nil
 }
 
@@ -121,14 +125,11 @@ func (s *Snapshot) Close() error {
 	}
 	err := s.file.Close()
 	s.mu.Unlock()
-	if s.release != nil {
-		s.release(s)
-	}
 	if err != nil {
 		err = ErrUnavailable
-		if s.failure != nil {
-			s.failure()
-		}
+	}
+	if s.release != nil {
+		s.release(s, err)
 	}
 	s.mu.Lock()
 	s.closeErr = err

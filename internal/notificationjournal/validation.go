@@ -54,44 +54,52 @@ func ValidateEvents(values []string) error {
 // Source userdata requires its immutable owner; delivery rows derive the owner
 // from their registration. Terminal rows may have cleared reference arrays.
 func ValidateReferences(kind, owner string, raw []byte, delivery bool) error {
+	_, err := DecodeReferences(kind, owner, raw, delivery)
+	return err
+}
+
+// DecodeReferences returns owned, ordered references only after every stored
+// field and namespace rule has passed. Invalid input returns no partial result.
+func DecodeReferences(kind, owner string, raw []byte, delivery bool) ([]Reference, error) {
 	if len(raw) > 524288 {
-		return ErrJournal
+		return nil, ErrJournal
 	}
 	decoder := json.NewDecoder(bytes.NewReader(raw))
 	var objects []map[string]json.RawMessage
 	if decoder.Decode(&objects) != nil || objects == nil {
-		return ErrJournal
+		return nil, ErrJournal
 	}
 	var extra any
 	if decoder.Decode(&extra) != io.EOF || len(objects) > 4096 {
-		return ErrJournal
+		return nil, ErrJournal
 	}
 	switch kind {
 	case "CatalogInvalidated":
 		if owner != "" || !delivery && len(objects) == 0 {
-			return ErrJournal
+			return nil, ErrJournal
 		}
 	case "UserDataInvalidated":
 		if !delivery && !ValidID(owner) {
-			return ErrJournal
+			return nil, ErrJournal
 		}
 	case "ResyncRequired", "Test":
 		if !delivery || owner != "" {
-			return ErrJournal
+			return nil, ErrJournal
 		}
 	default:
-		return ErrJournal
+		return nil, ErrJournal
 	}
 	if kind == "Test" && len(objects) != 0 {
-		return ErrJournal
+		return nil, ErrJournal
 	}
+	refs := make([]Reference, 0, len(objects))
 	seen := map[Reference]bool{}
 	for _, object := range objects {
 		var ref Reference
 		for key, value := range object {
 			var text string
 			if json.Unmarshal(value, &text) != nil {
-				return ErrJournal
+				return nil, ErrJournal
 			}
 			switch key {
 			case "Kind":
@@ -103,28 +111,29 @@ func ValidateReferences(kind, owner string, raw []byte, delivery bool) error {
 			case "SourceId":
 				ref.SourceID = text
 			default:
-				return ErrJournal
+				return nil, ErrJournal
 			}
 		}
 		if !ValidID(ref.ID) || ref.Kind != "Item" && ref.Kind != "Entity" && ref.Kind != "Library" || ref.LibraryID != "" && !ValidID(ref.LibraryID) || seen[ref] {
-			return ErrJournal
+			return nil, ErrJournal
 		}
 		seen[ref] = true
 		if ref.SourceID != "" && (!ValidID(ref.SourceID) || ref.LibraryID == "" || ref.Kind == "Entity") {
-			return ErrJournal
+			return nil, ErrJournal
 		}
 		if ref.Kind == "Entity" {
 			id, err := strconv.ParseInt(ref.ID, 10, 64)
 			if err != nil || id <= 0 || strconv.FormatInt(id, 10) != ref.ID || ref.LibraryID != "" {
-				return ErrJournal
+				return nil, ErrJournal
 			}
 		}
 		if kind == "CatalogInvalidated" && (ref.Kind == "Entity" || ref.LibraryID == "") {
-			return ErrJournal
+			return nil, ErrJournal
 		}
 		if kind == "UserDataInvalidated" && (ref.Kind == "Library" || ref.LibraryID != "" || ref.SourceID != "") {
-			return ErrJournal
+			return nil, ErrJournal
 		}
+		refs = append(refs, ref)
 	}
-	return nil
+	return refs, nil
 }

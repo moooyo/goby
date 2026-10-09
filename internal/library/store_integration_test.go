@@ -71,6 +71,7 @@ func libraryIntegrationStoreWithTimeout(t *testing.T, prober Prober, timeout tim
 		config.ConnConfig.RuntimeParams = make(map[string]string)
 	}
 	config.ConnConfig.RuntimeParams["search_path"] = schema
+	config.ConnConfig.RuntimeParams["jit"] = "off"
 	config.MaxConns = 10
 	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {

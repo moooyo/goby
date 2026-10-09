@@ -167,7 +167,7 @@ func readBitmapSubtitleRows(ctx context.Context, tx pgx.Tx, itemID, rootID strin
 	return result, rows.Err()
 }
 
-func attachBitmapSubtitles(ctx context.Context, tx pgx.Tx, items []Item, ids []string, positions map[string][]int) error {
+func attachBitmapSubtitles(ctx context.Context, tx pgx.Tx, items []Item, ids []string, positions map[string][]subtitleProjectionPosition) error {
 	rows, err := tx.Query(ctx, `SELECT `+bitmapSubtitleColumns+`,s.item_id FROM item_bitmap_subtitles s
 		JOIN items i ON i.id=s.item_id AND i.root_id=s.root_id
 		JOIN library_roots r ON r.id=i.root_id AND r.library_id=i.library_id
@@ -182,14 +182,17 @@ func attachBitmapSubtitles(ctx context.Context, tx pgx.Tx, items []Item, ids []s
 		if err != nil {
 			return err
 		}
-		for _, position := range positions[itemID] {
+		itemPositions := positions[itemID]
+		for offset := range itemPositions {
+			position := &itemPositions[offset]
+			item := &items[position.index]
 			facts := track
 			facts.Components = append([]BitmapSubtitleComponent(nil), track.Components...)
-			items[position].bitmapSubtitleFacts = append(items[position].bitmapSubtitleFacts, facts)
-			if track.Index > highestEmbeddedStreamIndex(items[position].Media) {
+			item.bitmapSubtitleFacts = append(item.bitmapSubtitleFacts, facts)
+			if track.Index > position.highestEmbeddedIndex(items) {
 				copy := track.BitmapSubtitle
 				copy.Components = append([]BitmapSubtitleComponent(nil), track.Components...)
-				items[position].BitmapSubtitles = append(items[position].BitmapSubtitles, copy)
+				item.BitmapSubtitles = append(item.BitmapSubtitles, copy)
 			}
 		}
 	}

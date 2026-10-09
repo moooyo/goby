@@ -758,10 +758,10 @@ func TestSnapshotConcurrentCloseWaitsForReaderRelease(t *testing.T) {
 		unblockRelease := func() { releaseOnce.Do(func() { close(allowRelease) }) }
 		defer unblockRelease()
 		release := snapshot.release
-		snapshot.release = func(reader *Snapshot) {
+		snapshot.release = func(reader *Snapshot, closeErr error) {
 			close(entered)
 			<-allowRelease
-			release(reader)
+			release(reader, closeErr)
 		}
 		first := make(chan error, 1)
 		second := make(chan error, 1)

@@ -762,7 +762,7 @@ func TestPreparedPlanResidentMemory(t *testing.T) {
 		"context_row_limit_per_backend": 16384, "inventory_row_limit_per_backend": 2048,
 		"normal_exec_barriers_per_backend": 1, "deallocate_all_calls_per_backend": 2,
 		"go_version": runtime.Version(), "go_max_procs": runtime.GOMAXPROCS(0),
-		"policy_shape_scope": "bounded valid synthetic policy/user literal diversity; not a measured production policy distribution",
+		"policy_shape_scope": "historical literal-policy calibration; current playback binds these values; not a production SQL-shape distribution",
 		"scope":              "real captured typed SELECT templates replayed on dedicated backends; not complete HTTP, scan, Server or Store execution; deployment lease excluded",
 		"observer_scope":     "raw simple SQL replaces unnamed statements; contexts include the fixed observer; ident is PostgreSQL view-truncated and only a 32-character prefix plus hash is exported; parent/name are not unique tree keys",
 		"memory_scope":       "backend context totals are not per-query costs; Go heap is process-wide after GC and includes the fixed fixture, observer and recorder; TotalAlloc is cumulative allocation, not retained heap",

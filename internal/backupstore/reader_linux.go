@@ -52,7 +52,16 @@ func (s *Store) snapshot(ctx context.Context, id, expectedDigest string) (*Snaps
 		return nil, s.unhealthy(ErrIntegrity)
 	}
 	snapshot := &Snapshot{file: f, ctx: ctx, name: id + ".age", size: rec.Metadata.Size, modTime: time.Unix(int64(st.Mtim.Sec), int64(st.Mtim.Nsec)).UTC(), failure: s.markDegraded}
-	snapshot.release = func(reader *Snapshot) { s.mu.Lock(); delete(s.readers, reader); s.mu.Unlock() }
+	snapshot.release = func(reader *Snapshot, closeErr error) {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		// Reader retirement and its failure become visible in one observation.
+		// Close must not miss the error after the reader leaves this map.
+		if closeErr != nil {
+			s.degraded = true
+		}
+		delete(s.readers, reader)
+	}
 	s.readers[snapshot] = id
 	snapshot.mu.Lock()
 	snapshot.stop = context.AfterFunc(ctx, func() { _ = snapshot.Close() })

@@ -138,7 +138,7 @@ func validFileDeletionSpec(spec fileDeletionSpec) bool {
 		len(root.path) > 4096 || len(root.allowedPath) > 4096 || len(root.relativePath) > 4096 ||
 		!filepath.IsAbs(root.path) || !filepath.IsAbs(root.allowedPath) || hasTraversal(root.path) || hasTraversal(root.allowedPath) ||
 		strings.ContainsRune(root.path, '\x00') || strings.ContainsRune(root.allowedPath, '\x00') ||
-		!validMediaSourceRelativePath(root.relativePath) || filepath.Clean(root.path) != filepath.Join(root.allowedPath, root.relativePath) ||
+		!validLibraryRootRelativePath(root.relativePath) || filepath.Clean(root.path) != filepath.Join(root.allowedPath, root.relativePath) ||
 		!pathWithin(root.path, filepath.Join(root.path, path)) || !validFileDeletionStageName(spec.StageName) {
 		return false
 	}

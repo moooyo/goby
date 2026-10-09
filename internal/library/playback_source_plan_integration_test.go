@@ -106,7 +106,7 @@ func TestPlaybackSourcePlanRespectsActualConnectionConfiguration(t *testing.T) {
 	if err != nil || closeErr != nil {
 		t.Fatalf("read the existing source projection oracle: read=%v rollback=%v", err, closeErr)
 	}
-	expectedSQL := indexedPlaybackMediaSQL(access)
+	expectedSQL, _ := indexedPlaybackMediaQuery(access, fixture.item.ID)
 	for _, test := range []struct {
 		name                         string
 		mode                         pgx.QueryExecMode

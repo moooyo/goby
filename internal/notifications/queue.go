@@ -173,12 +173,9 @@ func (s *Store) fanoutRegistration(ctx context.Context, id string) error {
 		if !selected || v.user != "" && v.user != t.user {
 			continue
 		}
-		if notificationjournal.ValidateReferences(v.kind, v.user, v.raw, false) != nil {
-			return ErrInvalid
-		}
-		refs, err := decodeReferences(v.raw)
+		refs, err := notificationjournal.DecodeReferences(v.kind, v.user, v.raw, false)
 		if err != nil {
-			return err
+			return ErrInvalid
 		}
 		refs, err = s.authorizedRefs(ctx, t, refs)
 		if err != nil {
@@ -374,11 +371,11 @@ func (s *Store) claim(ctx context.Context, occupied []string) (delivery, error) 
 	if err != nil {
 		return d, err
 	}
-	if notificationjournal.ValidateReferences(d.kind, "", raw, true) != nil {
+	d.refs, err = notificationjournal.DecodeReferences(d.kind, "", raw, true)
+	if err != nil {
 		return d, ErrInvalid
 	}
-	d.refs, err = decodeReferences(raw)
-	return d, err
+	return d, nil
 }
 func (s *Store) finish(ctx context.Context, d delivery, state, code string, delay time.Duration) error {
 	tx, err := s.pool.Begin(ctx)

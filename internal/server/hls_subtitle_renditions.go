@@ -169,20 +169,17 @@ func writeHLSSubtitleRenditions(out *strings.Builder, session *hlsSession, resou
 func (s *Server) authorizeHLSSubtitles(ctx context.Context, principal identity.Principal, scope transcode.Scope, source library.MediaFile, plan transcode.Plan) error {
 	tracks := transcode.PlanHLSSubtitles(plan)
 	planning := playback.Source{ItemID: source.Item.ID, MediaSourceID: source.SourceID, ItemType: source.Item.Type, Info: playbackMediaInfo(source.Item)}
+	var external []library.SubtitleExpectation
 	for slot := 0; slot < tracks.Count; slot++ {
 		if _, ok := playback.HLSSubtitleMetadata(planning, plan, slot); !ok {
 			return library.ErrSourceChanged
 		}
 		track := tracks.Tracks[slot]
 		if track.ExternalTag != "" {
-			bound := plan
-			bound.Subtitle = transcode.SubtitlePlan{Mode: "hls", StreamIndex: track.StreamIndex, Codec: track.Codec, ExternalTag: track.ExternalTag}
-			if _, err := s.readPlannedExternalSubtitle(ctx, principal, scope, bound); err != nil {
-				return err
-			}
+			external = append(external, library.SubtitleExpectation{Index: track.StreamIndex, Codec: track.Codec, Tag: track.ExternalTag})
 		}
 	}
-	return nil
+	return s.library.ValidateSubtitlesFor(ctx, librarySubject(principal, principal.User.ID), scope.ItemID, scope.SourceID, external)
 }
 
 type hlsSubtitleWindow struct {

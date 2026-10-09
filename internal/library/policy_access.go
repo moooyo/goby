@@ -44,12 +44,66 @@ func policySQLArray(values []string) string {
 	return "ARRAY[" + strings.Join(quoted, ",") + "]::text[]"
 }
 
+// policySQLParameters binds data for one statement. Fixed semantic names reuse
+// a placeholder when the same policy also protects an auxiliary owner. A nil
+// builder preserves the literal SQL used by existing non-playback consumers.
+type policySQLParameters struct {
+	arguments []any
+	positions map[string]string
+}
+
+func (parameters *policySQLParameters) bind(name, cast string, value any) string {
+	if position, exists := parameters.positions[name]; exists {
+		return position
+	}
+	parameters.arguments = append(parameters.arguments, value)
+	position := fmt.Sprintf("$%d::%s", len(parameters.arguments), cast)
+	if parameters.positions == nil {
+		parameters.positions = make(map[string]string)
+	}
+	parameters.positions[name] = position
+	return position
+}
+
+func (parameters *policySQLParameters) text(name, value string) string {
+	if parameters == nil {
+		return policySQLString(value)
+	}
+	return parameters.bind(name, "text", value)
+}
+
+func (parameters *policySQLParameters) array(name string, values []string) string {
+	if parameters == nil {
+		return policySQLArray(values)
+	}
+	// ARRAY[] in the literal predicate is an empty array, never SQL NULL.
+	if values == nil {
+		values = []string{}
+	}
+	return parameters.bind(name, "text[]", values)
+}
+
+func (parameters *policySQLParameters) integer(name string, value int) string {
+	if parameters == nil {
+		return fmt.Sprint(value)
+	}
+	return parameters.bind(name, "integer", value)
+}
+
 // itemPolicySQL is the single item authorization predicate used before counts,
 // paging, projections, user-state writes, and opening any media resource. Only
 // package-owned SQL aliases may be supplied. A collection's own ACL never grants
 // access to the source items it references.
 func (access libraryAccess) itemPolicySQL(alias string) string {
-	conditions := []string{collectionAccessSQL(alias, access.userID, access.administrator)}
+	return access.itemPolicySQLWithParameters(alias, nil)
+}
+
+func (access libraryAccess) itemPolicySQLWithParameters(alias string, parameters *policySQLParameters) string {
+	user := ""
+	if !access.administrator {
+		user = parameters.text("user", access.userID)
+	}
+	conditions := []string{collectionAccessSQLWithUser(alias, user, access.administrator)}
 	if !access.policy.AllowsFeature(identity.FeaturePlaylists) {
 		conditions = append(conditions, alias+".type <> 'Playlist'")
 	}
@@ -57,7 +111,7 @@ func (access libraryAccess) itemPolicySQL(alias string) string {
 		conditions = append(conditions, alias+".type <> 'BoxSet'")
 	}
 	if !access.all {
-		conditions = append(conditions, "("+alias+".library_id="+policySQLString(collectionLibraryID)+" OR "+alias+".library_id=ANY("+policySQLArray(access.folders)+"))")
+		conditions = append(conditions, "("+alias+".library_id="+policySQLString(collectionLibraryID)+" OR "+alias+".library_id=ANY("+parameters.array("folders", access.folders)+"))")
 	}
 	policy := access.policy
 	if len(policy.ExcludedSubFolders) == 0 && policy.MaxParentalRating == nil && len(policy.BlockUnratedItems) == 0 && len(policy.BlockedTags) == 0 && len(policy.IncludeTags) == 0 {
@@ -73,19 +127,19 @@ func (access libraryAccess) itemPolicySQL(alias string) string {
 	) `
 	ancestorConditions := []string{}
 	if len(policy.ExcludedSubFolders) != 0 {
-		excluded := policySQLArray(policy.ExcludedSubFolders)
+		excluded := parameters.array("excluded", policy.ExcludedSubFolders)
 		ancestorConditions = append(ancestorConditions, "NOT EXISTS (SELECT 1 FROM policy_ancestors WHERE id=ANY("+excluded+") OR path=ANY("+excluded+"))")
 	}
-	tagMatch := func(tags []string) string {
+	tagMatch := func(name string, tags []string) string {
 		return `EXISTS (SELECT 1 FROM policy_ancestors ancestor
 			JOIN item_entities association ON association.item_id=ancestor.id
 			JOIN catalog_entities tag ON tag.id=association.entity_id AND tag.kind='Tag'
-			WHERE tag.normalized_name IN (SELECT lower(btrim(value)) FROM unnest(` + policySQLArray(tags) + ") AS allowed(value)))"
+			WHERE tag.normalized_name IN (SELECT lower(btrim(value)) FROM unnest(` + parameters.array(name, tags) + ") AS allowed(value)))"
 	}
 	// Explicit block lists are denials. Inclusive mode changes BlockedTags into
 	// the allow list used by older clients; IncludeTags is the current allow list.
 	if len(policy.BlockedTags) != 0 && !policy.IsTagBlockingModeInclusive {
-		ancestorConditions = append(ancestorConditions, "NOT "+tagMatch(policy.BlockedTags))
+		ancestorConditions = append(ancestorConditions, "NOT "+tagMatch("blocked_tags", policy.BlockedTags))
 	}
 	allowTags := append([]string{}, policy.IncludeTags...)
 	if policy.IsTagBlockingModeInclusive {
@@ -111,17 +165,17 @@ func (access libraryAccess) itemPolicySQL(alias string) string {
 			WHEN 'TV-Y7' THEN 3 WHEN 'TV-Y7-FV' THEN 4 WHEN 'PG' THEN 5 WHEN 'TV-PG' THEN 5 WHEN 'PG-13' THEN 7 WHEN 'T' THEN 7
 			WHEN 'TV-14' THEN 8 WHEN 'R' THEN 9 WHEN 'M' THEN 9 WHEN 'TV-MA' THEN 9 WHEN 'NC-17' THEN 10
 			WHEN 'AO' THEN 15 WHEN 'RP' THEN 15 WHEN 'UR' THEN 15 WHEN 'X' THEN 15 WHEN 'XXX' THEN 15 ELSE NULL END`
-		ratingConditions = append(ratingConditions, "("+rating+" IS NULL OR "+value+fmt.Sprintf(" <= %d)", *policy.MaxParentalRating))
+		ratingConditions = append(ratingConditions, "("+rating+" IS NULL OR "+value+" <= "+parameters.integer("rating", *policy.MaxParentalRating)+")")
 	}
 	if len(policy.BlockUnratedItems) != 0 {
 		category := "CASE WHEN " + alias + `.type='Movie' THEN 'Movie' WHEN ` + alias + `.type IN ('Series','Season','Episode') THEN 'Series'
 			WHEN ` + alias + `.type IN ('Audio','MusicAlbum','MusicArtist','MusicVideo') THEN 'Music'
 			WHEN EXISTS (SELECT 1 FROM item_extra_resources extra WHERE extra.resource_item_id=` + alias + `.id AND extra.active AND extra.kind='trailer') THEN 'Trailer' ELSE 'Other' END`
-		ratingConditions = append(ratingConditions, "(("+rating+" IS NOT NULL AND "+rating+" NOT IN ('UR','NR','UNRATED','NOT RATED')) OR NOT ("+category+")=ANY("+policySQLArray(policy.BlockUnratedItems)+"))")
+		ratingConditions = append(ratingConditions, "(("+rating+" IS NOT NULL AND "+rating+" NOT IN ('UR','NR','UNRATED','NOT RATED')) OR NOT ("+category+")=ANY("+parameters.array("unrated", policy.BlockUnratedItems)+"))")
 	}
 	content := strings.Join(ratingConditions, " AND ")
 	if len(allowTags) != 0 {
-		tags := tagMatch(allowTags)
+		tags := tagMatch("allowed_tags", allowTags)
 		if content == "" {
 			content = tags
 		} else if policy.AllowTagOrRating {
@@ -147,11 +201,15 @@ func (access libraryAccess) ordinarySQL(alias string) string {
 }
 
 func (access libraryAccess) directSQL(alias string) string {
-	return "(" + directItemSQL(alias) + " AND " + access.itemPolicySQL(alias) + ` AND NOT EXISTS (
+	return access.directSQLWithParameters(alias, nil)
+}
+
+func (access libraryAccess) directSQLWithParameters(alias string, parameters *policySQLParameters) string {
+	return "(" + directItemSQL(alias) + " AND " + access.itemPolicySQLWithParameters(alias, parameters) + ` AND NOT EXISTS (
 		SELECT 1 FROM item_extra_resources policy_extra JOIN items policy_owner ON policy_owner.id=policy_extra.owner_item_id
-		WHERE policy_extra.resource_item_id=` + alias + `.id AND policy_extra.active AND NOT ` + access.itemPolicySQL("policy_owner") + `) AND NOT EXISTS (
+		WHERE policy_extra.resource_item_id=` + alias + `.id AND policy_extra.active AND NOT ` + access.itemPolicySQLWithParameters("policy_owner", parameters) + `) AND NOT EXISTS (
 		SELECT 1 FROM item_theme_resources policy_theme JOIN items policy_owner ON policy_owner.id=policy_theme.owner_item_id
-		WHERE policy_theme.resource_item_id=` + alias + `.id AND policy_theme.active AND NOT ` + access.itemPolicySQL("policy_owner") + "))"
+		WHERE policy_theme.resource_item_id=` + alias + `.id AND policy_theme.active AND NOT ` + access.itemPolicySQLWithParameters("policy_owner", parameters) + "))"
 }
 
 // scopeSQL also protects nested parent projections and folder count subqueries.
