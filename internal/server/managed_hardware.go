@@ -164,10 +164,29 @@ func (inventory *managedHardwareInventory) devices() []managedHardwareDevice {
 	return devices
 }
 
+// status reuses the device-list observations for the selected-device projection.
+// The observations live only for this management response.
+func (inventory *managedHardwareInventory) status(selection settings.HardwareSelection) ([]managedHardwareDevice, bool, string) {
+	devices := inventory.devices()
+	_, available, code := inventory.resolveWithCheck(selection, func(entry managedHardwareEntry) (bool, string) {
+		for _, device := range devices {
+			if device.DeviceID == entry.id {
+				return device.Available, device.Code
+			}
+		}
+		return false, managedHardwareNotAuthorized
+	})
+	return devices, available, code
+}
+
 // resolve preserves the selected axes on rejection, but never supplies a device
 // path for an unknown or replaced ID. A caller must gate hardware admission on
 // the returned availability instead of treating an empty path as a default.
 func (inventory *managedHardwareInventory) resolve(selection settings.HardwareSelection) (transcode.Hardware, bool, string) {
+	return inventory.resolveWithCheck(selection, inventory.checkEntry)
+}
+
+func (inventory *managedHardwareInventory) resolveWithCheck(selection settings.HardwareSelection, check func(managedHardwareEntry) (bool, string)) (transcode.Hardware, bool, string) {
 	hardware := transcode.Hardware{Decode: selection.Decode, Encode: selection.Encode}
 	if hardware.Decode == "" {
 		hardware.Decode = "software"
@@ -192,7 +211,7 @@ func (inventory *managedHardwareInventory) resolve(selection settings.HardwareSe
 			if entry.id != selection.DeviceID {
 				continue
 			}
-			available, code := inventory.checkEntry(entry)
+			available, code := check(entry)
 			if !available {
 				return hardware, false, code
 			}

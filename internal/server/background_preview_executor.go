@@ -165,6 +165,7 @@ func (e backgroundPreviewTaskExecutor) encode(ctx context.Context, file *os.File
 			if err != nil {
 				return media.BackgroundClipSummary{}, err
 			}
+			options.ValidateHardware = e.server.backgroundClipDeviceCheck(options.DolbyVision.Device)
 			break
 		}
 	}

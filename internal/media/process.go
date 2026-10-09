@@ -202,6 +202,9 @@ func startConventionalMediaProcessWithCapability(ctx context.Context, command *e
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
+	if err := checkBackgroundClipHardware(ctx); err != nil {
+		return nil, err
+	}
 	process := &mediaProcess{command: command, release: release, retainForCleanup: retainForCleanup}
 	if err := process.attachProbeRetirement(ctx); err != nil {
 		return nil, err

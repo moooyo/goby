@@ -537,7 +537,9 @@ func TestHTTPAdminSettingsRequestSnapshotRemainsConsistentAcrossConcurrentCommit
 		wanted := f.app.cfg.Transcoding
 		wanted.MaxBitrate, wanted.MaxWidth = old.Effective.MaxBitrate, old.Effective.MaxWidth
 		wanted.MaxHeight, wanted.MaxAudioChannels = old.Effective.MaxHeight, old.Effective.MaxAudioChannels
-		wanted.Hardware, wanted.HardwareUnavailable = old.Hardware, old.HardwareUnavailable
+		var available bool
+		wanted.Hardware, available, _ = f.app.resolveSettingsHardware(old)
+		wanted.HardwareUnavailable = !available
 		wanted.Execution, wanted.Threads = old.Execution, old.Execution.Threads
 		if old.TranscodingMaxWidth > 0 {
 			wanted.MaxWidth = min(wanted.MaxWidth, old.TranscodingMaxWidth)

@@ -125,7 +125,7 @@ func TestClassifyThemePathDoesNotReserveOrdinarySimilarNames(t *testing.T) {
 func TestClassifyThemePathRejectsUnsafePathsAndObservedNonregularTypes(t *testing.T) {
 	for _, relative := range []string{"", " ", ".", "..", "../theme.mp3", "Movie/../theme.mp3", "./theme.mp3",
 		"Movie/./theme.mp3", "Movie//theme.mp3", "Movie/theme-music/", "/theme.mp3", "//server/theme.mp3",
-		"C:/Movie/theme.mp3", "C:theme.mp3", `Movie\theme.mp3`, `C:\Movie\theme.mp3`, "Movie/theme\x00.mp3"} {
+		"C:/../theme.mp3", "C:Movie/../theme.mp3", `Movie\theme.mp3`, `C:\Movie\theme.mp3`, "Movie/theme\x00.mp3"} {
 		for _, mode := range []fs.FileMode{0, fs.ModeDir} {
 			actual, err := classifyThemePath(relative, mode)
 			if !errors.Is(err, ErrInvalidInput) || actual.Reserved || actual.Kind != themePathKindNone {
@@ -141,6 +141,21 @@ func TestClassifyThemePathRejectsUnsafePathsAndObservedNonregularTypes(t *testin
 				t.Errorf("nonregular entry %q mode %v = %+v, error = %v", relative, mode, actual, err)
 			}
 		}
+	}
+}
+
+func TestClassifyThemePathPreservesLinuxColonComponents(t *testing.T) {
+	for _, owner := range []string{"C:Movie", "C:"} {
+		for _, suffix := range []string{"theme.mp3", "theme-music/song.mp3"} {
+			relative := owner + "/" + suffix
+			actual, err := classifyThemePath(relative, 0)
+			if err != nil || !actual.Reserved || actual.Kind != themePathKindSong || actual.OwnerDirectory != owner {
+				t.Fatalf("literal Linux colon path lost its theme role: %q, %+v, %v", relative, actual, err)
+			}
+		}
+	}
+	if actual, err := classifyThemePath("C:theme.mp3", 0); err != nil || actual.Reserved || actual.Kind != themePathKindNone {
+		t.Fatalf("literal ordinary colon basename gained a theme role: %+v, %v", actual, err)
 	}
 }
 

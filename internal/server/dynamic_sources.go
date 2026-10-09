@@ -92,7 +92,8 @@ func (s *Server) initializeDynamicSources(_ context.Context) error {
 }
 
 func (s *Server) dynamicLimits(ctx context.Context, principal identity.Principal, request playback.Request, r *http.Request) (playback.ConversionLimits, error) {
-	limits := hlsPrincipalLimits(s.requestPlanningConfig(r), principal)
+	planning := s.requestPlanningConfig(r)
+	limits := hlsPrincipalLimits(planning, principal)
 	if principal.IsApplicationKey() && request.DeviceProfile != nil {
 		if request.UserID == "" {
 			return limits, playback.ErrInvalidRequest
@@ -101,7 +102,7 @@ func (s *Server) dynamicLimits(ctx context.Context, principal identity.Principal
 		if err != nil {
 			return limits, err
 		}
-		limits = hlsApplicationTargetLimits(s.requestPlanningConfig(r), target)
+		limits = hlsApplicationTargetLimits(planning, target)
 	}
 	return applyPrincipalRemoteBitrateLimit(limits, principal), nil
 }

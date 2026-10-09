@@ -109,12 +109,16 @@ func runAnalysisProcessJoined(ctx context.Context, executable string, input *os.
 		return err
 	}
 	defer stdout.Close()
+	// Admission may reject before Cmd.Start closes its child pipe endpoints.
+	// These writers were created here; input and executable files are borrowed.
+	defer command.Stdout.(*os.File).Close()
 	errorPipe, err := command.StderrPipe()
 	if err != nil {
 		stderr.Close(err)
 		return err
 	}
 	defer errorPipe.Close()
+	defer command.Stderr.(*os.File).Close()
 	process, err := startMediaProcess(processContext, command)
 	if err != nil {
 		cancel()

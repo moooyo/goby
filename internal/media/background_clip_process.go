@@ -7,6 +7,27 @@ import (
 	"time"
 )
 
+type backgroundClipHardwareContextKey struct{}
+
+// Only a GPU clip carries this check through source-read and process-capacity
+// waits. The ordinary process runners invoke it immediately before launching.
+func backgroundClipHardwareContext(ctx context.Context, gpu bool, validate func(context.Context) error) context.Context {
+	if !gpu || validate == nil {
+		return ctx
+	}
+	return context.WithValue(ctx, backgroundClipHardwareContextKey{}, validate)
+}
+
+func checkBackgroundClipHardware(ctx context.Context) error {
+	if validate, _ := ctx.Value(backgroundClipHardwareContextKey{}).(func(context.Context) error); validate != nil {
+		if err := validate(ctx); err != nil {
+			return err
+		}
+		return ctx.Err()
+	}
+	return nil
+}
+
 func runBackgroundClipProcess(ctx context.Context, executable string, input *os.File, args []string, timeout time.Duration, stdoutLimit int64,
 	stderr analysisStderrSink, parse func(io.Reader) error, gpu bool, executables ...*os.File) error {
 	return runAnalysisProcessProfile(ctx, executable, input, nil, args, timeout, stdoutLimit, stderr, parse, gpu, executables...)

@@ -157,13 +157,24 @@ func startNativeMediaProcessWithCounter(ctx context.Context, command *exec.Cmd, 
 		observed = true
 		return nil, err
 	}
-	owner, err := newNativeMediaOwner(scope, governor, release, counter)
-	if err != nil {
-		release()
-		child.notStarted()
-		observed = true
+	transferred := false
+	defer func() {
+		if !transferred {
+			// No native owner or command exists yet. A rejected or interrupted
+			// hardware callback must return this prelaunch reservation as well.
+			release()
+			child.notStarted()
+			observed = true
+		}
+	}()
+	if err := checkBackgroundClipHardware(ctx); err != nil {
 		return nil, err
 	}
+	owner, err := newNativeMediaOwner(scope, governor, release, counter)
+	if err != nil {
+		return nil, err
+	}
+	transferred = true
 	returned := false
 	defer owner.finishStart()
 	defer func() {

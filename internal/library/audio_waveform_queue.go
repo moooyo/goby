@@ -128,17 +128,11 @@ func withAudioWaveformFence(ctx context.Context, s *Store, fence AnalysisFence, 
 // PrepareAutomaticAudioWaveforms only inserts absent records. Neither
 // scans nor configuration/source changes reset a completed or failed artifact.
 func (s *Store) PrepareAutomaticAudioWaveforms(ctx context.Context, fence AnalysisFence, libraryID string) error {
-	if !metadataIdentifier(libraryID) {
-		return ErrInvalidInput
-	}
-	return withAudioWaveformFence(ctx, s, fence, func(tx OwnedTx) error {
-		_, err := tx.Exec(`INSERT INTO audio_waveform_queue(item_id)
+	return s.prepareAutomaticSidecars(ctx, fence, libraryID, TaskAudioWaveformGenerationKey, `INSERT INTO audio_waveform_queue(item_id)
    SELECT i.id FROM items i JOIN libraries l ON l.id=i.library_id WHERE i.library_id=$1
     AND l.options->'EnableAudioWaveformGeneration'='true'::jsonb
     AND l.collection_type IN ('movies','tvshows','mixed') AND i.type IN ('Movie','Episode') AND `+audioWaveformEligibleSQL+`
-   ORDER BY i.id ON CONFLICT(item_id) DO NOTHING`, libraryID)
-		return err
-	})
+   ORDER BY i.id ON CONFLICT(item_id) DO NOTHING`)
 }
 
 // A bounded child yields the shared media execution slot between batches. The

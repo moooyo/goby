@@ -66,3 +66,40 @@ func TestBackgroundDolbyVisionPolicyRejectsCancelledAdmission(t *testing.T) {
 		t.Fatalf("cancelled generation retained cached profile admission: %+v, %v", options, err)
 	}
 }
+
+func TestBackgroundDolbyVisionDeviceCheckBindsGenerationAndCurrentContext(t *testing.T) {
+	const device = "/dev/dri/renderD128"
+	identity := managedHardwareTestIdentity(20)
+	inspections := 0
+	inventory := newManagedHardwareInventoryWithInspector(config.TranscodingConfig{Hardware: transcode.Hardware{Device: device}},
+		func(string) (managedHardwareIdentity, string) {
+			inspections++
+			return identity, ""
+		})
+	server := &Server{managedHardware: inventory}
+	check := server.backgroundClipDeviceCheck(device)
+	if check == nil || check(context.Background()) != nil {
+		t.Fatal("captured device did not pass its current startup identity check")
+	}
+	cancelled, cancel := context.WithCancel(context.Background())
+	cancel()
+	before := inspections
+	if err := check(cancelled); !errors.Is(err, context.Canceled) || inspections != before {
+		t.Fatal("cancelled process context inspected or admitted hardware")
+	}
+	if err := check(context.Background()); err != nil {
+		t.Fatal("a previous caller's cancellation poisoned later device admission", err)
+	}
+	identity.Node.Inode++
+	server.managedHardware = newManagedHardwareInventoryWithInspector(config.TranscodingConfig{Hardware: transcode.Hardware{Device: device}},
+		func(string) (managedHardwareIdentity, string) { return identity, "" })
+	if err := check(context.Background()); !errors.Is(err, media.ErrBackgroundClipDolbyVisionUnavailable) {
+		t.Fatal("device check adopted a newer inventory generation or replacement device", err)
+	}
+	if err := server.backgroundClipDeviceCheck(device)(context.Background()); err != nil {
+		t.Fatal("a new generation did not independently admit its own identity", err)
+	}
+	if check := (&Server{}).backgroundClipDeviceCheck(device); check != nil {
+		t.Fatal("direct fixture without an inventory acquired a hardware callback")
+	}
+}

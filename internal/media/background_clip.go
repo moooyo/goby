@@ -39,12 +39,16 @@ type BackgroundClipSummary struct {
 	Bytes         int64
 }
 
-// BackgroundClipOptions contains only server-selected encoding parameters.
-// Zero values use 1280 pixels and 1.5 Mbps. The display ratio is preserved.
+// BackgroundClipOptions contains server-selected encoding parameters and an
+// optional execution authority check. Zero values use 1280 pixels and 1.5 Mbps.
+// The display ratio is preserved.
 type BackgroundClipOptions struct {
 	MaxWidth     int
 	VideoBitrate int
 	DolbyVision  *BackgroundClipDolbyVisionOptions
+	// ValidateHardware checks the captured device at GPU process admission.
+	// It receives the current process context and is unused by software clips.
+	ValidateHardware func(context.Context) error
 }
 
 type backgroundClipPlan struct {
@@ -145,7 +149,8 @@ func (extractor AnalysisExtractor) GenerateBackgroundClipWithOptions(ctx context
 	}
 	var encoded bytes.Buffer
 	sink := &analysisDiscardStderr{}
-	err = runBackgroundClipProcess(processContext, "/proc/self/fd/4", file, backgroundClipEncodeArgs(stream, plan, limits), limits.Timeout,
+	encodeContext := backgroundClipHardwareContext(processContext, plan.dolbyVision, plan.options.ValidateHardware)
+	err = runBackgroundClipProcess(encodeContext, "/proc/self/fd/4", file, backgroundClipEncodeArgs(stream, plan, limits), limits.Timeout,
 		min(MaxBackgroundClipBytes, limits.MaxOutputBytes), sink, func(reader io.Reader) error {
 			_, err := io.Copy(&encoded, reader)
 			return err

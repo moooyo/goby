@@ -128,17 +128,11 @@ func withSubtitleTimelineFence(ctx context.Context, s *Store, fence AnalysisFenc
 // PrepareAutomaticSubtitleTimelines only inserts absent records. Neither
 // scans nor configuration/source changes reset a completed or failed artifact.
 func (s *Store) PrepareAutomaticSubtitleTimelines(ctx context.Context, fence AnalysisFence, libraryID string) error {
-	if !metadataIdentifier(libraryID) {
-		return ErrInvalidInput
-	}
-	return withSubtitleTimelineFence(ctx, s, fence, func(tx OwnedTx) error {
-		_, err := tx.Exec(`INSERT INTO subtitle_timeline_queue(item_id)
+	return s.prepareAutomaticSidecars(ctx, fence, libraryID, TaskSubtitleTimelineGenerationKey, `INSERT INTO subtitle_timeline_queue(item_id)
    SELECT i.id FROM items i JOIN libraries l ON l.id=i.library_id WHERE i.library_id=$1
     AND l.options->'EnableSubtitleTimelineGeneration'='true'::jsonb
     AND l.collection_type IN ('movies','tvshows','mixed') AND i.type IN ('Movie','Episode') AND `+subtitleTimelineEligibleSQL+`
-   ORDER BY i.id ON CONFLICT(item_id) DO NOTHING`, libraryID)
-		return err
-	})
+   ORDER BY i.id ON CONFLICT(item_id) DO NOTHING`)
 }
 
 // A bounded child yields the shared media execution slot between batches. The

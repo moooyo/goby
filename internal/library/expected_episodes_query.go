@@ -16,6 +16,16 @@ import (
 // season: zero seasons uses the series, exactly one uses that season, and two or
 // more require an administrator to resolve the physical catalog ambiguity.
 func expectedEpisodeItemsSQL(access libraryAccess) string {
+	return expectedEpisodeItemsFilteredSQL(access, "")
+}
+
+// identityFilter is a package-owned predicate on e.id. Direct lookups bind the
+// same ID parameter here and outside the virtual projection; general discovery
+// keeps its complete population and applies its existing outer predicates.
+func expectedEpisodeItemsFilteredSQL(access libraryAccess, identityFilter string) string {
+	if identityFilter != "" {
+		identityFilter += " AND "
+	}
 	name := `COALESCE(NULLIF(e.name,''),'Episode ' || e.episode_number::text)`
 	return `SELECT (jsonb_populate_record(NULL::items,jsonb_build_object(
 		'id',e.id,'library_id',s.library_id,'root_id',NULL,
@@ -36,7 +46,7 @@ func expectedEpisodeItemsSQL(access libraryAccess) string {
 			WHERE season.parent_id=s.id AND season.library_id=s.library_id AND season.type='Season' AND season.is_folder
 			AND season.index_number=e.season_number AND ` + ordinaryItemSQL("season") + `) season_match ON season_match.count<=1
 		LEFT JOIN items roster_season ON roster_season.id=season_match.id
-		WHERE e.active AND roster.state='active' AND e.source_key=roster.source_key
+		WHERE ` + identityFilter + `e.active AND roster.state='active' AND e.source_key=roster.source_key
 			AND s.type='Series' AND s.is_folder AND ` + access.ordinarySQL("s") + `
 			AND (season_match.count=0 OR ` + access.ordinarySQL("roster_season") + `)
 			AND NOT EXISTS (SELECT 1 FROM items physical LEFT JOIN items physical_parent ON physical_parent.id=physical.parent_id
@@ -49,7 +59,7 @@ func readExpectedEpisode(ctx context.Context, tx pgx.Tx, access libraryAccess, i
 	}
 	var fact []byte
 	item, err := scanItem(tx.QueryRow(ctx, `SELECT `+access.itemColumnsSQL()+`,i.expected_episode FROM (`+
-		expectedEpisodeItemsSQL(access)+`) i WHERE i.id=$1 AND `+access.itemPolicySQL("i"), id), &fact)
+		expectedEpisodeItemsFilteredSQL(access, "e.id=$1::text")+`) i WHERE i.id=$1 AND `+access.itemPolicySQL("i"), id), &fact)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Item{}, ErrNotFound
 	}

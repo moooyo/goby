@@ -17,15 +17,18 @@ import (
 // media-prefix inspection, independently of FFmpeg's initial progress message,
 // which can precede the first usable fragment or audio packet.
 type progressiveObserver struct {
-	file           *os.File
-	plan           Plan
-	callback       func(Progress)
-	cancel         func()
-	mu             sync.Mutex
-	last           Progress
-	err            error
-	stop           chan struct{}
-	done           chan struct{}
+	file     *os.File
+	plan     Plan
+	callback func(Progress)
+	cancel   func()
+	mu       sync.Mutex
+	last     Progress
+	err      error
+	stop     chan struct{}
+	done     chan struct{}
+	// Only the inspection owner uses scratch. finish joins the ticker before
+	// its final inspection; cancellation never clears a live owner's buffer.
+	scratch        []byte
 	wavHeaderBytes int64
 	wavDataBytes   int64
 	wavAlignment   int
@@ -86,7 +89,10 @@ func newProgressiveObserver(directory string, input *os.File, plan Plan, callbac
 
 func (o *progressiveObserver) start() {
 	go func() {
-		defer close(o.done)
+		defer func() {
+			o.scratch = nil
+			close(o.done)
+		}()
 		ticker := time.NewTicker(25 * time.Millisecond)
 		defer ticker.Stop()
 		for {
@@ -120,6 +126,12 @@ func (o *progressiveObserver) report(p Progress) {
 }
 
 func (o *progressiveObserver) inspect(final bool) error {
+	retainScratch := false
+	defer func() {
+		if !retainScratch {
+			o.scratch = nil
+		}
+	}()
 	info, err := o.file.Stat()
 	if err != nil {
 		return err
@@ -135,13 +147,18 @@ func (o *progressiveObserver) inspect(final bool) error {
 	o.mu.Unlock()
 	ready := alreadyReady
 	if !ready && info.Size() > 0 {
-		length := min(info.Size(), int64(MaxProgressivePrefixBytes))
-		prefix := make([]byte, int(length))
-		n, err := o.file.ReadAt(prefix, 0)
+		length := int(min(info.Size(), int64(MaxProgressivePrefixBytes)))
+		if cap(o.scratch) < length {
+			capacity := min(MaxProgressivePrefixBytes, max(length, 2*cap(o.scratch)))
+			o.scratch = make([]byte, length, capacity)
+		} else {
+			o.scratch = o.scratch[:length]
+		}
+		n, err := o.file.ReadAt(o.scratch, 0)
 		if err != nil && !errors.Is(err, io.EOF) {
 			return err
 		}
-		prefix = prefix[:n]
+		prefix := o.scratch[:n]
 		if o.plan.AudioCodec == "copy" && o.plan.StartTicks > 0 && o.plan.Container == "ogg" && oggFLACIdentification(prefix) {
 			return ErrInvalidProgressiveStream
 		}
@@ -156,6 +173,7 @@ func (o *progressiveObserver) inspect(final bool) error {
 	if final && !ready {
 		return ErrInvalidProgressiveStream
 	}
+	retainScratch = !ready && !final
 	o.mu.Lock()
 	defer o.mu.Unlock()
 	changed := ready && !o.last.Ready
@@ -172,6 +190,7 @@ func (o *progressiveObserver) inspect(final bool) error {
 func (o *progressiveObserver) finish(success bool) error {
 	close(o.stop)
 	<-o.done
+	defer func() { o.scratch = nil }()
 	o.mu.Lock()
 	err := o.err
 	o.mu.Unlock()

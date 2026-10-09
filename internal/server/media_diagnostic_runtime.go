@@ -106,8 +106,9 @@ func newMediaDiagnosticRuntime(s *Server) (*mediaDiagnosticRuntime, error) {
 		runs: make(map[string]*mediaDiagnosticRun), done: make(chan struct{}), authorize: s.checkMediaDiagnosticActor, reserve: s.reserveMediaDiagnostic}
 	m.captureProfile = func() (media.DiagnosticProfile, int64, bool) {
 		snapshot := s.currentSettingsSnapshot()
-		return media.DiagnosticProfile{Decode: snapshot.Hardware.Decode, Encode: snapshot.Hardware.Encode, Device: snapshot.Hardware.Device},
-			snapshot.Revision, !snapshot.HardwareUnavailable
+		hardware, available, _ := s.resolveSettingsHardware(snapshot)
+		return media.DiagnosticProfile{Decode: hardware.Decode, Encode: hardware.Encode, Device: hardware.Device},
+			snapshot.Revision, available
 	}
 	m.validateProfile = func(profile media.DiagnosticProfile) bool {
 		if s.managedHardware == nil {

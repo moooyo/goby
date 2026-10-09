@@ -143,7 +143,7 @@ func (s *Server) overview(w http.ResponseWriter, r *http.Request) {
 func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
 	decode, encode := []string{}, []string{}
 	snapshot := s.requestSettings(r)
-	hardware := snapshot.Hardware
+	hardware, available, _ := s.resolveSettingsHardware(snapshot)
 	if hardware.Decode != "" && hardware.Decode != "software" {
 		decode = append(decode, hardware.Decode)
 	}
@@ -154,7 +154,7 @@ func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, 200, map[string]any{
 		"ServerVersion": s.version, "Features": featuresForTranscoding(transcoding),
 		"Toolchain":   map[string]string{"Go": config.GoVersion, "FFmpeg": config.FFmpegVersion},
-		"Hardware":    map[string]any{"Verified": false, "Configured": len(decode)+len(encode) > 0, "Available": !snapshot.HardwareUnavailable, "Decode": decode, "Encode": encode},
+		"Hardware":    map[string]any{"Verified": false, "Configured": len(decode)+len(encode) > 0, "Available": available, "Decode": decode, "Encode": encode},
 		"Transcoding": transcoding,
 	})
 }

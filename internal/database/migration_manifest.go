@@ -89,6 +89,8 @@ var publishedMigrations = [...]publishedMigration{
 	{63, "0063_media_operation_source_revision.sql", "9fb1e687f863972e2c4fcc0cd77e98289b479b01444cd9c05b25e6f8a28b300b"},
 	{64, "0064_item_reference_indexes.sql", "a65f8e5f2f53bda2ae356ecb17f0e7bf3bdf0ecaaf25cfa8510c263c4419a283"},
 	{65, "0065_task_runs_completed_index.sql", "55236d310fdd36f6e6b6f4c54fd622f83892c386e28a22682837d3daab7202d1"},
+	{66, "0066_linux_auxiliary_paths.sql", "4b18305673016f02358624e394e18a8a23981aec63a5dd789a774829ff20223e"},
+	{67, "0067_media_operations_pending_index.sql", "796f54cff22c7544fbfa3e80123a6033eb49af6e707ad2b59cdf67c8211d46c0"},
 }
 
 func validatePublishedMigrations(available []migration) error {

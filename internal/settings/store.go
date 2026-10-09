@@ -70,6 +70,14 @@ func (s *Store) Snapshot() Snapshot {
 	return cloneSnapshot(*s.current.Load())
 }
 
+// ValueSnapshot reads one coherent published revision without cloning fields
+// that ordinary runtime readers do not consume. All projected fields are values.
+func (s *Store) ValueSnapshot() ValueSnapshot {
+	snapshot := s.current.Load()
+	return ValueSnapshot{Revision: snapshot.Revision, Effective: snapshot.Effective, Encoding: snapshot.Encoding,
+		DesiredNetwork: snapshot.Runtime.DesiredNetwork, Hardware: snapshot.Runtime.Hardware, Execution: snapshot.Runtime.Execution}
+}
+
 // Get checks current administrator authority and returns the same published
 // state consumed by runtime readers, not an independently read database view.
 func (s *Store) Get(ctx context.Context, actor Actor) (Snapshot, error) {

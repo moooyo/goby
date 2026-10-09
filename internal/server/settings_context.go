@@ -18,19 +18,20 @@ type requestSettingsSnapshot struct {
 	Effective           settings.Values
 	DesiredNetwork      settings.NetworkValues
 	TranscodingMaxWidth int
-	Hardware            transcode.Hardware
-	HardwareUnavailable bool
+	HardwareSelection   settings.HardwareSelection
 	Execution           transcode.ExecutionOptions
+	// Direct handler fixtures without managed settings capture their deployment
+	// profile here. Production snapshots carry only the opaque selection above.
+	hardwareFallback            transcode.Hardware
+	hardwareFallbackUnavailable bool
 }
 
 func (s *Server) currentSettingsSnapshot() requestSettingsSnapshot {
 	if s.settings != nil {
-		snapshot := s.settings.Snapshot()
-		hardware, available, _ := s.resolveManagedHardware(snapshot.Runtime.Hardware)
+		snapshot := s.settings.ValueSnapshot()
 		return requestSettingsSnapshot{Revision: snapshot.Revision, Effective: snapshot.Effective,
-			DesiredNetwork:      snapshot.Runtime.DesiredNetwork,
-			TranscodingMaxWidth: snapshot.Encoding.TranscodingMaxWidth, Hardware: hardware,
-			HardwareUnavailable: !available, Execution: snapshot.Runtime.Execution}
+			DesiredNetwork: snapshot.DesiredNetwork, TranscodingMaxWidth: snapshot.Encoding.TranscodingMaxWidth,
+			HardwareSelection: snapshot.Hardware, Execution: snapshot.Execution}
 	}
 	// Direct handler fixtures may have no settings store. Production startup
 	// initializes the store before its request handler is exposed.
@@ -39,7 +40,7 @@ func (s *Server) currentSettingsSnapshot() requestSettingsSnapshot {
 		execution = transcode.DefaultExecutionOptions(s.cfg.Transcoding.Threads)
 	}
 	binding, _ := config.HTTPBindingDefaults(s.cfg.ListenAddress)
-	return requestSettingsSnapshot{DesiredNetwork: settings.NetworkValues{BindHost: binding.BindHost, HttpPort: binding.HttpPort}, Hardware: s.cfg.Transcoding.Hardware, HardwareUnavailable: s.cfg.Transcoding.HardwareUnavailable, Execution: execution, Effective: settings.Values{
+	return requestSettingsSnapshot{DesiredNetwork: settings.NetworkValues{BindHost: binding.BindHost, HttpPort: binding.HttpPort}, hardwareFallback: s.cfg.Transcoding.Hardware, hardwareFallbackUnavailable: s.cfg.Transcoding.HardwareUnavailable, Execution: execution, Effective: settings.Values{
 		ServerName: s.cfg.ServerName, MaxBitrate: s.cfg.Transcoding.MaxBitrate,
 		MaxWidth: s.cfg.Transcoding.MaxWidth, MaxHeight: s.cfg.Transcoding.MaxHeight,
 		MaxAudioChannels: s.cfg.Transcoding.MaxAudioChannels,
@@ -77,11 +78,21 @@ func (s *Server) requestPlanningConfig(r *http.Request) config.TranscodingConfig
 	}
 	planning.MaxHeight = snapshot.Effective.MaxHeight
 	planning.MaxAudioChannels = snapshot.Effective.MaxAudioChannels
-	planning.Hardware = snapshot.Hardware
-	planning.HardwareUnavailable = snapshot.HardwareUnavailable
+	hardware, available, _ := s.resolveSettingsHardware(snapshot)
+	planning.Hardware = hardware
+	planning.HardwareUnavailable = !available
 	planning.Execution = snapshot.Execution
 	planning.Threads = snapshot.Execution.Threads
 	return planning
+}
+
+// Hardware consumers resolve the captured selection at use time. A settings
+// publication cannot retarget it, and ordinary scalar readers perform no device I/O.
+func (s *Server) resolveSettingsHardware(snapshot requestSettingsSnapshot) (transcode.Hardware, bool, string) {
+	if snapshot.HardwareSelection != (settings.HardwareSelection{}) {
+		return s.resolveManagedHardware(snapshot.HardwareSelection)
+	}
+	return snapshot.hardwareFallback, !snapshot.hardwareFallbackUnavailable, ""
 }
 
 // Direct handler fixtures without the process inventory retain their explicit

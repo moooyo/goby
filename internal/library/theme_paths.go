@@ -53,7 +53,7 @@ type themePathClassification struct {
 func classifyThemePath(relative string, mode fs.FileMode) (themePathClassification, error) {
 	ordinary := themePathClassification{Kind: themePathKindNone, Layout: themePathLayoutNone}
 	if relative == "." || !validMediaSourceRelativePath(relative) || path.Clean(relative) != relative ||
-		strings.TrimSpace(relative) == "" || themePathHasDrivePrefix(relative) {
+		strings.TrimSpace(relative) == "" {
 		return ordinary, fmt.Errorf("%w: theme paths must be canonical local relative entry paths", ErrInvalidInput)
 	}
 	if mode.Type() != 0 && mode.Type() != fs.ModeDir {
@@ -118,12 +118,4 @@ func themePathNameEqual(name, expected string) bool {
 	// Matching byte length excludes non-ASCII case-fold aliases of these
 	// fixed ASCII layout names without rejecting Unicode in owner directories.
 	return len(name) == len(expected) && strings.EqualFold(name, expected)
-}
-
-func themePathHasDrivePrefix(relative string) bool {
-	if len(relative) < 2 || relative[1] != ':' {
-		return false
-	}
-	letter := relative[0]
-	return letter >= 'A' && letter <= 'Z' || letter >= 'a' && letter <= 'z'
 }

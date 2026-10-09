@@ -29,10 +29,10 @@ func TestManagedExecutionPlanningUsesOneDetachedRequestSnapshot(t *testing.T) {
 	execution.SoftwareToneMapping = false
 	snapshot := requestSettingsSnapshot{Revision: 42, Effective: settings.Values{ServerName: "one revision", MaxBitrate: 4_000_000,
 		MaxWidth: 1920, MaxHeight: 1080, MaxAudioChannels: 6}, TranscodingMaxWidth: 1280,
-		Hardware: transcode.Hardware{Decode: "software", Encode: "vaapi", Device: "/dev/dri/renderD129"}, Execution: execution}
+		hardwareFallback: transcode.Hardware{Decode: "software", Encode: "vaapi", Device: "/dev/dri/renderD129"}, Execution: execution}
 	r := managedExecutionRequest(httptest.NewRequest(http.MethodGet, "/", nil), snapshot)
 	snapshot.Execution.Threads = 11
-	snapshot.Hardware.Device = "/dev/dri/renderD130"
+	snapshot.hardwareFallback.Device = "/dev/dri/renderD130"
 	planning := s.requestPlanningConfig(r)
 	if planning.Threads != 7 || planning.Execution != execution || planning.Hardware.Device != "/dev/dri/renderD129" ||
 		planning.MaxWidth != 1280 || planning.MaxBitrate != 4_000_000 || planning.MaxAudioChannels != 6 || !planning.Enabled {
@@ -135,8 +135,8 @@ func TestManagedExecutionDynamicRevisionKeepsExecutionAcrossChangedSettings(t *t
 	changed.Execution = transcode.DefaultExecutionOptions(12)
 	changed.Execution.H264 = transcode.CPUQuality{Preset: "medium", RateControl: "capped_crf", CRF: 33}
 	changed.Execution.SoftwareToneMapping, changed.Execution.VulkanToneMapping = false, false
-	changed.Hardware = transcode.Hardware{Decode: "vaapi", Encode: "vaapi", Device: "/dev/dri/renderD129"}
-	changed.HardwareUnavailable = true
+	changed.hardwareFallback = transcode.Hardware{Decode: "vaapi", Encode: "vaapi", Device: "/dev/dri/renderD129"}
+	changed.hardwareFallbackUnavailable = true
 	get := managedExecutionRequest(dynamicTestRequest(principal, http.MethodGet, target.String()), changed)
 	get.SetPathValue("LiveStreamId", lease.ID)
 	values, _ := hlsValues(get)
@@ -154,7 +154,7 @@ func TestManagedExecutionDynamicRevisionKeepsExecutionAcrossChangedSettings(t *t
 		t.Fatal("a delayed producer adopted changed execution settings or retired its revision")
 	}
 	limits, err := s.dynamicLimits(get.Context(), principal, request, get)
-	if err != nil || limits.Execution != changed.Execution || limits.Hardware != changed.Hardware || !limits.HardwareUnavailable {
+	if err != nil || limits.Execution != changed.Execution || limits.Hardware != changed.hardwareFallback || !limits.HardwareUnavailable {
 		t.Fatal("new admission did not consume the latest request choices")
 	}
 }

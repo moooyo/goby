@@ -1531,14 +1531,19 @@ func (m *Manager) maintain() { m.maintainJobs(true) }
 
 func (m *Manager) maintainJobs(periodic bool) {
 	m.mu.Lock()
-	jobs := make([]*managedJob, 0, len(m.jobs))
+	var jobs []*managedJob
 	for _, j := range m.jobs {
-		jobs = append(jobs, j)
+		if !j.reclaiming && j.directory &&
+			(j.running || j.record.State == "completed" || readableSealedProduction(j)) &&
+			(periodic || j.mediaReady && !j.ready) {
+			jobs = append(jobs, j)
+		}
 	}
 	cursor := m.maintenanceCursor
 	m.mu.Unlock()
 	// Stable ordering and a persisted cursor give both active producers and
-	// completed caches a fair share of the finite inspection allowance.
+	// completed caches a fair share of the finite inspection allowance. Warm
+	// reader wakeups do not copy or sort unrelated retained history.
 	slices.SortFunc(jobs, func(a, b *managedJob) int { return strings.Compare(a.record.ID, b.record.ID) })
 	start := 0
 	for start < len(jobs) && jobs[start].record.ID <= cursor {

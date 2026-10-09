@@ -163,6 +163,8 @@ func applyFolderUserData(data map[string]UserData, id string, total, unplayed in
 
 // A UNION of stable root/item/library identifiers terminates cycles and keeps
 // overlapping requested roots independent without counting a descendant twice.
+// The subsequent primary-key joins cannot multiply leaves; count their nullable
+// IDs directly so an empty root still has zero playable descendants.
 func folderUserDataCountsSQL(rootQuery string, userParameter int, scopes ...libraryAccess) string {
 	access := unrestrictedLibraryAccess()
 	if len(scopes) != 0 {
@@ -176,8 +178,8 @@ func folderUserDataCountsSQL(rootQuery string, userParameter int, scopes ...libr
 			ON child.parent_id = parent.item_id AND child.library_id = parent.library_id
 		WHERE `+access.ordinarySQL("child")+`
 	)
-	SELECT roots.id, count(DISTINCT leaf.id) AS total_count,
-		count(DISTINCT leaf.id) FILTER (WHERE NOT COALESCE(user_data.played, false)) AS unplayed_count
+	SELECT roots.id, count(leaf.id) AS total_count,
+		count(leaf.id) FILTER (WHERE NOT COALESCE(user_data.played, false)) AS unplayed_count
 	FROM roots LEFT JOIN folder_descendants descendant ON descendant.root_id = roots.id
 	LEFT JOIN items leaf ON leaf.id = descendant.item_id AND leaf.library_id = descendant.library_id
 		AND leaf.id <> roots.id AND NOT leaf.is_folder AND leaf.type IN (`+userDataPlayableTypesSQL+`) AND `+access.ordinarySQL("leaf")+`

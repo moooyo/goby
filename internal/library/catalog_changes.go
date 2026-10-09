@@ -90,6 +90,9 @@ func (s *Store) notifyCatalogChanges(notification CatalogNotification) {
 	if !notification.Resync && len(notification.Changes) == 0 {
 		return
 	}
+	// This runs after commit while catalog ownership is still held. Invalidate
+	// discovery even without an external listener or a successful whole scan.
+	s.automaticDiscovery.invalidate()
 	listener := s.catalogListener.Load()
 	if listener == nil {
 		return

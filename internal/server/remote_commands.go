@@ -545,6 +545,31 @@ func (s *Server) authorizeRemotePlayItems(ctx context.Context, actor, target lib
 	if err != nil {
 		return err
 	}
+	return checkRemotePlayPermissions(controller, receiver, ids)
+}
+
+func (s *Server) authorizeRemotePlayItemsWithAuthority(ctx context.Context, actor, target library.Subject, ids []string) (library.ItemPermissionAuthority, error) {
+	if !validRemoteItemIDs(ids) {
+		return library.ItemPermissionAuthority{}, errRemoteCommandInput
+	}
+	controller, authority, err := s.library.ItemPermissionsWithAuthorityFor(ctx, actor, ids)
+	if err != nil {
+		return library.ItemPermissionAuthority{}, err
+	}
+	if _, visible := controller[ids[0]]; !visible {
+		return library.ItemPermissionAuthority{}, library.ErrNotFound
+	}
+	receiver, err := s.library.ItemPermissionsFor(ctx, target, ids)
+	if err != nil {
+		return library.ItemPermissionAuthority{}, err
+	}
+	if err := checkRemotePlayPermissions(controller, receiver, ids); err != nil {
+		return library.ItemPermissionAuthority{}, err
+	}
+	return authority, nil
+}
+
+func checkRemotePlayPermissions(controller, receiver map[string]library.ItemPermission, ids []string) error {
 	for _, itemID := range ids {
 		if _, visible := controller[itemID]; !visible {
 			return library.ErrNotFound
@@ -586,43 +611,30 @@ func (s *Server) authorizeRemoteSocketEvent(ctx context.Context, receiver identi
 	if err != nil {
 		return false, nil
 	}
-	var controllerSubject library.Subject
+	var trustedController identity.Principal
 	if authority := event.Authority(); authority.Kind != "emby" {
 		if authority == (events.Authority{}) || controllerSupplied {
 			return false, nil
 		}
-		controller, err := s.identity.RevalidateSession(ctx, identity.Principal{
+		trustedController = identity.Principal{
 			Kind: identity.ApplicationKeyKind, SessionID: authority.CredentialID,
 			ClientSessionID: authority.ClientSessionID, ApplicationKeyID: authority.ApplicationKeyID,
-		})
-		if errors.Is(err, identity.ErrUnauthorized) || errors.Is(err, identity.ErrInvalidCredentials) {
-			return false, nil
 		}
-		if err != nil {
-			return false, err
-		}
-		if !controller.IsApplicationKey() || !controller.CanManageServer() {
-			return false, nil
-		}
-		controllerSubject = librarySubject(controller, "")
 	} else {
 		if !controllerSupplied || controllerID != authority.UserID {
 			return false, nil
 		}
-		controller, err := s.identity.RevalidateSession(ctx, identity.Principal{
+		trustedController = identity.Principal{
 			Kind: authority.Kind, User: identity.User{ID: authority.UserID},
 			SessionID: authority.SessionID, PeerIP: authority.PeerIP,
-		})
-		if errors.Is(err, identity.ErrUnauthorized) || errors.Is(err, identity.ErrInvalidCredentials) {
-			return false, nil
 		}
-		if err != nil {
-			return false, err
-		}
-		if !identity.CanControlClientSession(controller.User, identity.ClientSession{UserID: receiver.User.ID, Kind: receiver.Kind}) {
-			return false, nil
-		}
-		controllerSubject = library.Subject{UserID: controller.User.ID}
+	}
+	controller, err := s.revalidateRemoteController(ctx, trustedController, receiver)
+	if remoteControllerDenied(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
 	}
 	noPresenceFilter := 0
 	targets, err := s.identity.ListClientSessions(ctx, receiver, identity.ClientSessionFilter{
@@ -637,19 +649,56 @@ func (s *Server) authorizeRemoteSocketEvent(ctx context.Context, receiver identi
 	if len(targets) != 1 || !targets[0].Capabilities.SupportsMediaControl {
 		return false, nil
 	}
+	var itemAuthority library.ItemPermissionAuthority
 	if event.MessageType() == "Play" {
 		var ids []string
 		if json.Unmarshal(fields["itemids"], &ids) != nil || !validRemoteItemIDs(ids) {
 			return false, nil
 		}
-		if err := s.authorizeRemotePlayItems(ctx, controllerSubject, clientSessionLibrarySubject(targets[0]), ids); err != nil {
+		itemAuthority, err = s.authorizeRemotePlayItemsWithAuthority(ctx, librarySubject(controller, controller.User.ID), clientSessionLibrarySubject(targets[0]), ids)
+		if err != nil {
 			if errors.Is(err, library.ErrForbidden) || errors.Is(err, library.ErrNotFound) {
 				return false, nil
 			}
 			return false, err
 		}
 	}
+	// Receiver locks and either item projection may wait after the initial
+	// controller check. This pool read is a new authority observation, outside
+	// the repeatable-read catalog snapshots and before any network write.
+	controller, err = s.revalidateRemoteController(ctx, trustedController, receiver)
+	if remoteControllerDenied(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	if event.MessageType() == "Play" && !itemAuthority.MatchesPrincipal(controller) {
+		// Compare the policy actually used by the item query, not an earlier
+		// principal that could match again after an intervening policy change.
+		return false, nil
+	}
 	return true, nil
+}
+
+func (s *Server) revalidateRemoteController(ctx context.Context, trusted, receiver identity.Principal) (identity.Principal, error) {
+	controller, err := s.identity.RevalidateSessionAuthority(ctx, trusted)
+	if err != nil {
+		return identity.Principal{}, err
+	}
+	if controller.IsApplicationKey() {
+		if !controller.CanManageServer() {
+			return identity.Principal{}, identity.ErrUnauthorized
+		}
+	} else if !identity.CanControlClientSession(controller.User, identity.ClientSession{UserID: receiver.User.ID, Kind: receiver.Kind}) {
+		return identity.Principal{}, identity.ErrClientSessionForbidden
+	}
+	return controller, nil
+}
+
+func remoteControllerDenied(err error) bool {
+	return errors.Is(err, identity.ErrUnauthorized) || errors.Is(err, identity.ErrInvalidCredentials) ||
+		errors.Is(err, identity.ErrClientSessionForbidden)
 }
 
 func (s *Server) remoteCommandError(w http.ResponseWriter, r *http.Request, err error) {

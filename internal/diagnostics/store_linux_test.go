@@ -509,9 +509,9 @@ func TestStoreLinesPaginationAndInputBounds(t *testing.T) {
 	}
 }
 
-func TestStoreRejectsInvalidRecordWithoutDegrading(t *testing.T) {
+func TestStoreRejectsInvalidEncodedRecordBoundsWithoutDegrading(t *testing.T) {
 	store := testStore(t, Config{})
-	for _, line := range [][]byte{nil, []byte("{}"), []byte("{}\n{}\n"), []byte("invalid\n"), []byte(strings.Repeat("x", MaxRecordBytes) + "\n")} {
+	for _, line := range [][]byte{nil, []byte("{}"), []byte(strings.Repeat("x", MaxRecordBytes) + "\n")} {
 		if err := store.appendRecord(context.Background(), line); !errors.Is(err, ErrInvalid) {
 			t.Fatalf("invalid record accepted: %v", err)
 		}

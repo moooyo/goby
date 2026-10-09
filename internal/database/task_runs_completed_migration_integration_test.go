@@ -75,8 +75,16 @@ func TestTaskRunsCompletedIndexUpgradePreservesSchema64(t *testing.T) {
 				if taskRunsCompletedHistory(t, ctx, pool) != before {
 					t.Fatal("completed-run index migration changed retained rows, history ordering, or the published prefix")
 				}
-				if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 65 {
-					t.Fatalf("completed-run migration version = %d, want 65: %v", version, err)
+				wantVersion := int64(65)
+				if runner == "normal" {
+					migrations, err := database.EmbeddedMigrations()
+					if err != nil {
+						t.Fatal(err)
+					}
+					wantVersion = migrations[len(migrations)-1].Version
+				}
+				if version, err := database.SchemaVersion(ctx, pool); err != nil || version != wantVersion {
+					t.Fatalf("completed-run migration version = %d, want %d: %v", version, wantVersion, err)
 				}
 			}
 		})

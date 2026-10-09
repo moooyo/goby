@@ -621,6 +621,7 @@ func (state *scanState) prepareThemeFiles(group *themeDirectoryScan) ([]*prepare
 
 func (state *scanState) prepareAuxiliaryFiles(group *themeDirectoryScan, role scannedMediaRole) (_ []*preparedThemeFile, resultErr error) {
 	files := make([]*preparedThemeFile, 0, len(group.candidates))
+	factsBudget := newAuxiliaryProbeFactsBudget(scanProbeFactsBytes)
 	var source *auxiliaryPreparedSource
 	complete := false
 	defer func() {
@@ -651,17 +652,7 @@ func (state *scanState) prepareAuxiliaryFiles(group *themeDirectoryScan, role sc
 			input.probe.EmbeddedMusic.Version == media.CurrentMusicMetadataVersion && input.probe.EmbeddedMusic.Title != "" {
 			file.name = input.probe.EmbeddedMusic.Title
 		}
-		// Auxiliary sort keys historically preserve filename/title case. Use
-		// the same derivation as publication and configuration rebuilds so a
-		// configured prefix does not make every cached visit appear changed.
-		if err := state.store.pool.QueryRow(state.task.ctx, `SELECT goby_generated_sort_name($1,sort_remove_words,true) FROM managed_settings WHERE id=1`, file.name).Scan(&file.sortName); err != nil {
-			return nil, err
-		}
 		stored := input.stored
-		previousName, previousSort, previousOverview := stored.name, stored.sortName, stored.overview
-		if stored.automatic != nil {
-			previousName, previousSort, previousOverview = stored.automatic.Name, stored.automatic.SortName, stored.automatic.Overview
-		}
 		file.id = stored.id
 		if file.id == "" {
 			file.id, err = randomID()
@@ -669,10 +660,6 @@ func (state *scanState) prepareAuxiliaryFiles(group *themeDirectoryScan, role sc
 				return nil, err
 			}
 		}
-		file.changed = !input.unchanged || stored.id == "" || stored.rootID != state.root.id ||
-			stored.path != filepath.Join(state.root.path, filepath.FromSlash(candidate.relative)) || stored.parentID != group.owner.id ||
-			stored.itemType != itemType || previousName != file.name || previousSort != file.sortName || previousOverview != "" ||
-			stored.indexNumber != 0 || stored.parentIndexNumber != 0 || !reflect.DeepEqual(stored.local, localMetadata{})
 		file.sourceRow = input.primary.row
 		if source == nil {
 			source, err = state.prepareAuxiliarySource(input.primary, role == scannedRoleTheme && group.owner.itemType == "CollectionFolder")
@@ -683,7 +670,7 @@ func (state *scanState) prepareAuxiliaryFiles(group *themeDirectoryScan, role sc
 		file.source = source
 		// Retain bounded facts for atomic group publication. Each probe and its
 		// descriptor retire before the next candidate consumes an owner slot.
-		if !auxiliaryProbeFactsFit(files) {
+		if !factsBudget.add(file) {
 			state.warnings++
 			return nil, nil
 		}
@@ -691,6 +678,19 @@ func (state *scanState) prepareAuxiliaryFiles(group *themeDirectoryScan, role sc
 			return nil, err
 		}
 		input.file, input.primary, input.authority = nil, nil, nil
+	}
+	if err := state.prepareAuxiliarySortNames(files, &factsBudget); err != nil {
+		if err == errScanProbeFactsBudget {
+			state.warnings++
+			return nil, nil
+		}
+		return nil, err
+	}
+	// Sort names are the only facts filled after the append-time accounting.
+	// Recheck the complete projection before retaining or publishing this group.
+	if !auxiliaryProbeFactsFit(files) {
+		state.warnings++
+		return nil, nil
 	}
 	if err := state.verifyThemeDirectories(group.relative, false); err != nil {
 		if !auxiliaryInputWarning(err) {
@@ -2096,17 +2096,9 @@ func runAuxiliaryRootIO(ctx context.Context, operation *PrimaryRootIO, rootID st
 // Charge facts independently from descriptors and operation owners. Oversized
 // facts retain the previous complete population rather than publishing a prefix.
 func auxiliaryProbeFactsFit(files []*preparedThemeFile) bool {
-	type facts struct {
-		Stored                       storedFile
-		Probe                        *media.Info
-		Row                          rootBindingRow
-		Candidate                    themeCandidate
-		ID, Name, SortName, ItemType string
-	}
-	values := make([]facts, 0, len(files))
+	values := make([]auxiliaryProbeFacts, 0, len(files))
 	for _, file := range files {
-		values = append(values, facts{file.input.stored, file.input.probe, file.sourceRow,
-			file.candidate, file.id, file.name, file.sortName, file.itemType})
+		values = append(values, preparedAuxiliaryFacts(file))
 	}
 	return scanProbeFactsFit(values, scanProbeFactsBytes)
 }

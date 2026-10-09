@@ -21,7 +21,7 @@ type extraPathClassification struct {
 func classifyExtraPath(relative string, mode fs.FileMode) (extraPathClassification, error) {
 	ordinary := extraPathClassification{}
 	if relative == "." || !validMediaSourceRelativePath(relative) || path.Clean(relative) != relative ||
-		strings.TrimSpace(relative) == "" || themePathHasDrivePrefix(relative) {
+		strings.TrimSpace(relative) == "" {
 		return ordinary, fmt.Errorf("%w: extra paths must be canonical local relative entry paths", ErrInvalidInput)
 	}
 	if mode.Type() != 0 && mode.Type() != fs.ModeDir {

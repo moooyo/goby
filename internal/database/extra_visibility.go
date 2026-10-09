@@ -44,6 +44,10 @@ func ThemeResourceItemSQL(alias string, activeOnly bool) string {
 // validation. Inactive resources retain their parent, library and reserved
 // identity while their owner may move or cease to be an ordinary Movie.
 func ExtraResourceItemSQL(alias string, activeOnly bool) string {
+	return extraResourceItemSQL(alias, activeOnly, true)
+}
+
+func extraResourceItemSQL(alias string, activeOnly, linuxPaths bool) string {
 	item := pgx.Identifier{alias}.Sanitize()
 	link := pgx.Identifier{alias + "_extra_link"}.Sanitize()
 	ownerAlias, rootAlias := alias+"_extra_owner", alias+"_extra_root"
@@ -53,6 +57,10 @@ func ExtraResourceItemSQL(alias string, activeOnly bool) string {
 	if activeOnly {
 		active = ` AND ` + link + `.active`
 	}
+	legacyPath := ""
+	if !linuxPaths {
+		legacyPath = ` AND ` + item + `.relative_path !~ '^[A-Za-z]:'`
+	}
 	return `(EXISTS (SELECT 1 FROM item_extra_resources AS ` + link +
 		` JOIN items AS ` + owner + ` ON ` + owner + `.id = ` + link + `.owner_item_id
 		JOIN library_roots AS ` + root + ` ON ` + root + `.id = ` + item + `.root_id
@@ -61,8 +69,7 @@ func ExtraResourceItemSQL(alias string, activeOnly bool) string {
 		AND ` + link + `.kind IN ('clip', 'deleted_scene', 'trailer')
 		AND ` + item + `.parent_id = ` + owner + `.id
 		AND ` + owner + `.library_id = ` + item + `.library_id AND ` + root + `.library_id = ` + item + `.library_id
-		AND ` + item + `.relative_path <> '' AND position(chr(92) in ` + item + `.relative_path) = 0
-		AND ` + item + `.relative_path !~ '^[A-Za-z]:'
+		AND ` + item + `.relative_path <> '' AND position(chr(92) in ` + item + `.relative_path) = 0` + legacyPath + `
 		AND NOT (string_to_array(` + item + `.relative_path, '/') && ARRAY['', '.', '..'])
 		AND (NOT ` + link + `.active OR (` + owner + `.root_id = ` + item + `.root_id
 		AND ` + owner + `.type = 'Movie' AND NOT ` + owner + `.is_folder AND ` + CatalogOrdinaryItemSQL(ownerAlias) + `))
@@ -83,9 +90,11 @@ func ValidateExtraState(ctx context.Context, tx pgx.Tx, version int64) error {
 		return errors.New("extra state validation requires a transaction")
 	}
 	var valid bool
+	// Older archives keep their published path semantics before migration. New
+	// schemas accept literal colon names without introducing drive semantics.
 	statement := `SELECT NOT EXISTS (SELECT 1 FROM item_extra_resources AS resource_link
 		LEFT JOIN items AS resource_item ON resource_item.id = resource_link.resource_item_id
-		WHERE resource_item.id IS NULL OR NOT ` + ExtraResourceItemSQL("resource_item", false) + `)`
+		WHERE resource_item.id IS NULL OR NOT ` + extraResourceItemSQL("resource_item", false, version >= 66) + `)`
 	if err := tx.QueryRow(ctx, statement).Scan(&valid); err != nil {
 		return fmt.Errorf("read extra semantic state: %w", err)
 	}

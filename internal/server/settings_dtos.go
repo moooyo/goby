@@ -143,12 +143,17 @@ func (s *Server) adminSettingsDTO(snapshot settings.Snapshot) map[string]any {
 		"RestartRequired": network.RestartRequired, "ReconnectURL": network.ReconnectURL,
 	}
 	devices := make([]map[string]any, 0)
+	var available bool
+	var code string
 	if s.managedHardware != nil {
-		for _, device := range s.managedHardware.devices() {
+		var observations []managedHardwareDevice
+		observations, available, code = s.managedHardware.status(snapshot.Runtime.Hardware)
+		for _, device := range observations {
 			devices = append(devices, map[string]any{"DeviceId": device.DeviceID, "Label": device.Label, "Available": device.Available, "Code": device.Code})
 		}
+	} else {
+		_, available, code = s.resolveManagedHardware(snapshot.Runtime.Hardware)
 	}
-	_, available, code := s.resolveManagedHardware(snapshot.Runtime.Hardware)
 	runtime["Hardware"] = map[string]any{"Available": available, "Code": code, "Devices": devices}
 	result["Runtime"] = runtime
 	return result

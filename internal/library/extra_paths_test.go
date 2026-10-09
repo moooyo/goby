@@ -40,11 +40,20 @@ func TestExtraPathsUseTheFirstAuxiliaryDirectoryBoundary(t *testing.T) {
 		mode fs.FileMode
 	}{
 		{"../featurettes/a.mp4", 0}, {"/featurettes/a.mp4", 0}, {"Film//featurettes/a.mp4", 0},
-		{"C:/featurettes/a.mp4", 0}, {"Film/./featurettes/a.mp4", 0}, {`Film\featurettes\a.mp4`, 0},
+		{"C:/../featurettes/a.mp4", 0}, {"Film/./featurettes/a.mp4", 0}, {`Film\featurettes\a.mp4`, 0},
 		{"Film/featurettes/a.mp4", fs.ModeSymlink}, {"Film/featurettes/a.mp4", fs.ModeNamedPipe},
 	} {
 		if _, err := classifyExtraPath(test.path, test.mode); err == nil {
 			t.Errorf("unsafe extra path or entry type was accepted: %+v", test)
+		}
+	}
+}
+
+func TestExtraPathsPreserveLinuxColonComponents(t *testing.T) {
+	for _, owner := range []string{"C:Movie", "C:"} {
+		actual, err := classifyExtraPath(owner+"/featurettes/a.mp4", 0)
+		if err != nil || !actual.Reserved || actual.Kind != ExtraKindClip || actual.OwnerDirectory != owner || actual.Boundary != owner+"/featurettes" {
+			t.Fatalf("literal Linux colon path lost its extra role: %+v, %v", actual, err)
 		}
 	}
 }

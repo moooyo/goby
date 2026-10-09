@@ -226,3 +226,25 @@ func TestManagedHardwareInventoryInvalidDirectConfigurationFailsClosed(t *testin
 		t.Fatal("invalid direct configuration retained authorization")
 	}
 }
+
+func TestManagedHardwareStatusUsesOneObservationPerDevice(t *testing.T) {
+	inspections := 0
+	identity := managedHardwareTestIdentity(20)
+	inventory := newManagedHardwareInventoryWithInspector(config.TranscodingConfig{
+		Hardware:          transcode.Hardware{Decode: "vaapi", Encode: "software", Device: "/dev/dri/renderD128"},
+		AllowedAMDDevices: [8]string{"/dev/dri/renderD129"}, AllowedAMDDeviceCount: 1},
+		func(string) (managedHardwareIdentity, string) {
+			inspections++
+			return identity, ""
+		})
+	inspections = 0
+	devices, available, code := inventory.status(inventory.defaultSelection())
+	if inspections != 2 || !available || code != "" || len(devices) != 2 || !devices[0].Available || !devices[1].Available {
+		t.Fatal("selected hardware repeated or disagreed with the current management observations")
+	}
+	identity.Node.Inode++
+	devices, available, code = inventory.status(inventory.defaultSelection())
+	if inspections != 4 || available || code != managedHardwareIdentityChanged || devices[0].Available || devices[1].Available {
+		t.Fatal("management observations outlived the response that captured them")
+	}
+}

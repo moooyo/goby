@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/moooyo/goby/internal/identity"
+	"github.com/moooyo/goby/internal/transcode"
 )
 
 var (
@@ -68,6 +69,17 @@ type Snapshot struct {
 	Sorting        Sorting
 	Runtime        RuntimeSnapshot
 	UpdatedAt      time.Time
+}
+
+// ValueSnapshot projects one published revision without mutable references.
+// Readers that need overrides or management fields must use Snapshot instead.
+type ValueSnapshot struct {
+	Revision       int64
+	Effective      Values
+	Encoding       Encoding
+	DesiredNetwork NetworkValues
+	Hardware       HardwareSelection
+	Execution      transcode.ExecutionOptions
 }
 
 type Actor struct {

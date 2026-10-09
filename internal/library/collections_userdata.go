@@ -59,9 +59,11 @@ func collectionUserDataDescendantsSQL(rootQuery string, access libraryAccess) st
 }
 
 func collectionUserDataCountsSQL(rootQuery string, userParameter int, access libraryAccess) string {
+	// Recursive UNION already deduplicates each root/item/library tuple, and
+	// both joins below are unique. A NULL leaf must still contribute zero.
 	return collectionUserDataDescendantsSQL(rootQuery, access) + fmt.Sprintf(`SELECT roots.id,
-		count(DISTINCT leaf.id) AS total_count,
-		count(DISTINCT leaf.id) FILTER (WHERE NOT COALESCE(user_data.played,false)) AS unplayed_count
+		count(leaf.id) AS total_count,
+		count(leaf.id) FILTER (WHERE NOT COALESCE(user_data.played,false)) AS unplayed_count
 		FROM roots LEFT JOIN collection_userdata_descendants descendant ON descendant.root_id=roots.id
 		LEFT JOIN items leaf ON leaf.id=descendant.item_id AND leaf.library_id=descendant.library_id
 			AND leaf.id<>roots.id AND NOT leaf.is_folder AND leaf.type IN (`+userDataPlayableTypesSQL+`) AND `+access.ordinarySQL("leaf")+`

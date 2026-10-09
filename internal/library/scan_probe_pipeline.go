@@ -450,9 +450,17 @@ func (state *scanState) acceptScannedMedia(input *scannedMediaInput, kind string
 // stops before iterating an over-budget container. It bounds accepted facts,
 // not allocator overhead or temporary media-parser working memory.
 func scanProbeFactsFit(value any, budget int64) bool {
+	_, fits := scanProbeFactsSize(value, budget)
+	return fits
+}
+
+// A successful charge composes with other independently retained facts. A
+// failed walk has no reusable partial charge and preserves the original limit.
+func scanProbeFactsSize(value any, budget int64) (int64, bool) {
 	if budget < 0 {
-		return false
+		return 0, false
 	}
+	initial := budget
 	var visit func(reflect.Value, bool) bool
 	charge := func(size uint64) bool {
 		if size > uint64(budget) {
@@ -513,7 +521,10 @@ func scanProbeFactsFit(value any, budget int64) bool {
 		}
 		return true
 	}
-	return visit(reflect.ValueOf(value), true)
+	if !visit(reflect.ValueOf(value), true) {
+		return 0, false
+	}
+	return initial - budget, true
 }
 
 // This adapter borrows the existing primary-item transaction; it neither

@@ -5,7 +5,6 @@ package diagnostics
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"syscall"
 )
 
@@ -71,8 +70,12 @@ func (s *Store) stopWriter() {
 	<-done
 }
 
+// appendRecord accepts one complete JSONL record from diagnosticHandler's
+// private JSON encoder. Raw external bytes must not enter this boundary.
+// Keep a queue-owned copy: the encoder's backing capacity is not the charged
+// line length, and callers may reuse their bytes after this method returns.
 func (s *Store) appendRecord(ctx context.Context, line []byte) error {
-	if len(line) == 0 || len(line) > MaxRecordBytes || line[len(line)-1] != '\n' || bytes.Count(line, []byte{'\n'}) != 1 || !json.Valid(line) {
+	if len(line) == 0 || len(line) > MaxRecordBytes || line[len(line)-1] != '\n' {
 		return ErrInvalid
 	}
 	for {

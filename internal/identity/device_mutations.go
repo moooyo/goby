@@ -155,14 +155,15 @@ func (s *Store) DeleteEmbyDevice(ctx context.Context, actor Principal, lookup st
 // lockDeviceDeletion fixes registration first, then all accounts and existing
 // credentials in the established management order. Registering a new credential
 // holds the same device advisory lock before its account, so no new generation
-// member can appear after the owner set has been selected.
+// member can appear after the owner set has been selected. Shared account locks
+// retain authority while allowing unrelated credentials to authorize.
 func lockDeviceDeletion(ctx context.Context, tx pgx.Tx, actor Principal, native bool, id int64, reported string) ([]string, error) {
 	if err := lockDeviceRegistration(ctx, tx, reported); err != nil {
 		return nil, err
 	}
 	rows, err := tx.Query(ctx, `SELECT id FROM users
 		WHERE id = $1 OR id IN (SELECT user_id FROM sessions WHERE device_registry_id = $2 AND kind = 'emby')
-		ORDER BY id FOR UPDATE`, actor.User.ID, id)
+		ORDER BY id FOR SHARE`, actor.User.ID, id)
 	if err != nil {
 		return nil, fmt.Errorf("lock device login accounts: %w", err)
 	}

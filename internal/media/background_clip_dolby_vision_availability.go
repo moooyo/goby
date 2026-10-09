@@ -22,7 +22,7 @@ type BackgroundClipDolbyVisionCapabilities struct {
 // Vulkan device to CPU-encoded SDR. It proves the execution dependencies only;
 // each real DV source still needs source-bound RPU and strict per-frame checks.
 // In particular, this synthetic check does not establish Profile 5 acceptance.
-func (extractor AnalysisExtractor) BackgroundClipDolbyVisionAvailability(ctx context.Context, device string) (result BackgroundClipDolbyVisionCapabilities, resultErr error) {
+func (extractor AnalysisExtractor) BackgroundClipDolbyVisionAvailability(ctx context.Context, device string, validateHardware func(context.Context) error) (result BackgroundClipDolbyVisionCapabilities, resultErr error) {
 	result.Device = device
 	if ctx == nil {
 		return result, ErrAnalysisUnavailable
@@ -92,7 +92,7 @@ func (extractor AnalysisExtractor) BackgroundClipDolbyVisionAvailability(ctx con
 	}
 	var encoded bytes.Buffer
 	sink = &analysisDiscardStderr{}
-	err = runBackgroundClipProcess(bounded, "/proc/self/fd/3", nil, args, limits.Timeout, 4<<20, sink,
+	err = runBackgroundClipProcess(backgroundClipHardwareContext(bounded, true, validateHardware), "/proc/self/fd/3", nil, args, limits.Timeout, 4<<20, sink,
 		func(reader io.Reader) error { _, err := io.Copy(&encoded, reader); return err }, true, ffmpeg.file)
 	if err == nil {
 		err = sink.failure()

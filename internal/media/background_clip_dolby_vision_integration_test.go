@@ -27,7 +27,7 @@ func backgroundClipActualDolbyVisionSetup(t *testing.T, source string) (context.
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	t.Cleanup(cancel)
 	extractor := AnalysisExtractor{FFmpegPath: ffmpeg, FFprobePath: ffprobe, Limits: AnalysisLimits{Timeout: 2 * time.Minute}}
-	capability, err := extractor.BackgroundClipDolbyVisionAvailability(ctx, device)
+	capability, err := extractor.BackgroundClipDolbyVisionAvailability(ctx, device, nil)
 	if err != nil || !capability.Available || !analysisValidSHA256(capability.FFmpegSHA256) || !analysisValidSHA256(capability.FFprobeSHA256) {
 		t.Fatalf("actual DV execution dependencies unavailable: %+v, %v", capability, err)
 	}
