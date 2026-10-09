@@ -209,6 +209,21 @@ func TestControlUsesSerializedBytesAtTheExactBoundary(t *testing.T) {
 	}
 }
 
+func TestControlTerminalTransitionStillReservesReturnPath(t *testing.T) {
+	data := budgetFixture(t, 1)
+	op := data.Operations[0]
+	data.Transition = &transitionRecord{OperationID: op.ID, Phase: "returning", Before: op.SourceState,
+		CanReturn: true, BeforeRetained: op.Target, TargetBefore: op.Target}
+	before := budgetJSON(t, data)
+	reserve := recoverycontrol.MaxPayloadBytes - len(before)
+	if _, err := encodeControl(data, reserve); !errors.Is(err, ErrCapacity) {
+		t.Fatalf("terminal operation bypassed transition return-path capacity: %v", err)
+	}
+	if !bytes.Equal(before, budgetJSON(t, data)) {
+		t.Fatal("terminal transition projection changed retained evidence")
+	}
+}
+
 func TestControlCapacityRestoresDurableMemoryAndAllowsTerminalCompletion(t *testing.T) {
 	var data controlData
 	history := budgetFixture(t, maxOperations-1)

@@ -151,8 +151,10 @@ func encodeControl(data controlData, extraReserve int) ([]byte, error) {
 		return nil, ErrInvalid
 	}
 	reserve := extraReserve
+	hasNonterminal := false
 	for _, op := range data.Operations {
 		if !terminalOperation(op.State) {
+			hasNonterminal = true
 			reserve += controlCompletionReserve
 			break
 		}
@@ -160,19 +162,21 @@ func encodeControl(data controlData, extraReserve int) ([]byte, error) {
 	if len(payload) > recoverycontrol.MaxPayloadBytes-reserve {
 		return nil, ErrCapacity
 	}
-	projected := data
-	projected.Operations = slices.Clone(data.Operations)
-	for index := range projected.Operations {
-		if !terminalOperation(projected.Operations[index].State) {
-			budgetOperationScalars(&projected.Operations[index])
+	if hasNonterminal {
+		projected := data
+		projected.Operations = slices.Clone(data.Operations)
+		for index := range projected.Operations {
+			if !terminalOperation(projected.Operations[index].State) {
+				budgetOperationScalars(&projected.Operations[index])
+			}
 		}
-	}
-	maximum, err := json.Marshal(projected)
-	if err != nil {
-		return nil, ErrInvalid
-	}
-	if len(maximum) > recoverycontrol.MaxPayloadBytes-reserve {
-		return nil, ErrCapacity
+		maximum, err := json.Marshal(projected)
+		if err != nil {
+			return nil, ErrInvalid
+		}
+		if len(maximum) > recoverycontrol.MaxPayloadBytes-reserve {
+			return nil, ErrCapacity
+		}
 	}
 	if err := checkTransitionCapacity(data, reserve); err != nil {
 		return nil, err

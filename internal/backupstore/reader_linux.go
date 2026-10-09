@@ -13,6 +13,12 @@ func (s *Store) Snapshot(ctx context.Context, id string) (*Snapshot, error) {
 	if !hexValue(id, 32) {
 		return nil, ErrInvalid
 	}
+	return s.snapshot(ctx, id, "")
+}
+
+// snapshot checks an optional digest before opening or charging a reader. The
+// catalog comparison and descriptor registration share one health observation.
+func (s *Store) snapshot(ctx context.Context, id, expectedDigest string) (*Snapshot, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if err := s.healthy(ctx); err != nil {
@@ -23,6 +29,14 @@ func (s *Store) Snapshot(ctx context.Context, id string) (*Snapshot, error) {
 		return nil, ErrNotFound
 	}
 	rec := s.registry.Entries[i]
+	if expectedDigest != "" {
+		if rec.Metadata.Digest != expectedDigest {
+			return nil, ErrConflict
+		}
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+	}
 	if rec.Phase != "ready" || rec.Metadata.State != StateReady {
 		return nil, ErrNotReady
 	}
@@ -52,14 +66,7 @@ func (s *Store) Verify(ctx context.Context, id, expectedDigest string, summary S
 	if !hexValue(id, 32) || !hexValue(expectedDigest, 64) || !validSummary(&summary) {
 		return Metadata{}, ErrInvalid
 	}
-	metadata, err := s.Get(ctx, id)
-	if err != nil {
-		return Metadata{}, err
-	}
-	if metadata.Digest != expectedDigest {
-		return Metadata{}, ErrConflict
-	}
-	snapshot, err := s.Snapshot(ctx, id)
+	snapshot, err := s.snapshot(ctx, id, expectedDigest)
 	if err != nil {
 		return Metadata{}, err
 	}

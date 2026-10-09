@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -196,7 +197,8 @@ func searchHintsSQL(query SearchHintsQuery, access libraryAccess) (string, []any
 }
 
 func populateSearchHints(ctx context.Context, tx pgx.Tx, subject Subject, access libraryAccess, hints []SearchHint, projection QueryProjection) error {
-	itemIDs, entityIDs := []string{}, []string{}
+	itemIDs := []string{}
+	entityIDs := []int64{}
 	itemPositions, entityPositions := map[string]int{}, map[string]int{}
 	for index, hint := range hints {
 		switch hint.Reference.Kind {
@@ -204,7 +206,11 @@ func populateSearchHints(ctx context.Context, tx pgx.Tx, subject Subject, access
 			itemIDs = append(itemIDs, hint.Reference.ID)
 			itemPositions[hint.Reference.ID] = index
 		case "Entity":
-			entityIDs = append(entityIDs, hint.Reference.ID)
+			id, err := strconv.ParseInt(hint.Reference.ID, 10, 64)
+			if err != nil || id <= 0 || strconv.FormatInt(id, 10) != hint.Reference.ID {
+				return ErrUnavailable
+			}
+			entityIDs = append(entityIDs, id)
 			entityPositions[hint.Reference.ID] = index
 		default:
 			return ErrUnavailable
@@ -250,7 +256,7 @@ func populateSearchHints(ctx context.Context, tx pgx.Tx, subject Subject, access
 		// entity fallback and must not disclose even a collision bit.
 		rows, err := tx.Query(ctx, "SELECT entity.id,entity.name,entity.kind,0,"+
 			"NOT EXISTS(SELECT 1 FROM items i WHERE i.id=entity.id::text AND "+access.directSQL("i")+") "+
-			"FROM catalog_entities entity WHERE entity.id::text=ANY($1::text[])", entityIDs)
+			"FROM catalog_entities entity WHERE entity.id=ANY($1::bigint[])", entityIDs)
 		if err != nil {
 			return fmt.Errorf("project entity search hints: %w", err)
 		}

@@ -291,6 +291,12 @@ func providerTaskConfiguration(client *providers.Client) map[string]bool {
 }
 
 func (s *Store) resolvedProviderTaskQuery(ctx context.Context, detail ItemMetadataDetail) (providers.Query, error) {
+	if detail.Type != "Season" && detail.Type != "Episode" {
+		if err := ctx.Err(); err != nil {
+			return providers.Query{}, err
+		}
+		return providerQuery(detail), nil
+	}
 	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
 	if err != nil {
 		return providers.Query{}, err

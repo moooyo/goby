@@ -551,7 +551,7 @@ func analysisInvalidateCatalog(tx OwnedTx) error {
 		return pgx.ErrTxClosed
 	}
 	view.catalog.catalogChanges.requireResync()
-	view.catalog.notificationReferences = append(view.catalog.notificationReferences, refs...)
+	view.catalog.rememberNotificationReferences(refs...)
 	return view.observeLocked(view.catalog.flushSystemEvent())
 }
 

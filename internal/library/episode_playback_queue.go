@@ -51,18 +51,32 @@ func (s *Store) EpisodePlaybackQueue(ctx context.Context, subject Subject, serie
 		AND ` + navigationNumberSQL("source.media", "DurationTicks") + `>0
 	) `
 	result := ItemResult{Items: make([]Item, 0)}
-	if err := tx.QueryRow(ctx, prefix+`SELECT count(*) FROM episode_queue`, args...).Scan(&result.TotalRecordCount); err != nil {
-		return ItemResult{}, fmt.Errorf("count episode playback queue: %w", err)
+	// Select only bounded keys once. The same repeatable-read snapshot keeps
+	// their authorization and ordering valid through the later item projection.
+	var ids []string
+	args = append(args, MaxEpisodePlaybackQueueItems+1)
+	if err := tx.QueryRow(ctx, prefix+`SELECT ARRAY(
+		SELECT id FROM episode_queue ORDER BY episode_order LIMIT $7
+	)`, args...).Scan(&ids); err != nil {
+		return ItemResult{}, fmt.Errorf("select episode playback queue: %w", err)
 	}
+	result.TotalRecordCount = len(ids)
 	if result.TotalRecordCount > MaxEpisodePlaybackQueueItems {
 		return ItemResult{}, ErrEpisodePlaybackQueueLimit
+	}
+	if len(ids) == 0 {
+		if err := tx.Commit(ctx); err != nil {
+			return ItemResult{}, fmt.Errorf("complete empty episode playback queue: %w", err)
+		}
+		return result, nil
 	}
 	projection := QueryProjection{}
 	if len(projections) != 0 {
 		projection = projections[0]
 	}
-	rows, err := tx.Query(ctx, prefix+`SELECT `+access.scopeSQL(projectBrowseMediaSQL(nextUpItemColumns, projection))+` FROM episode_queue queue
-		JOIN items i ON i.id=queue.id AND i.library_id=queue.library_id ORDER BY queue.episode_order`, args...)
+	rows, err := tx.Query(ctx, `SELECT `+access.scopeSQL(projectBrowseMediaSQL(nextUpItemColumns, projection))+`
+		FROM unnest($1::text[]) WITH ORDINALITY AS queue(id, ordinal)
+		JOIN items i ON i.id=queue.id ORDER BY queue.ordinal`, ids)
 	if err != nil {
 		return ItemResult{}, fmt.Errorf("query episode playback queue: %w", err)
 	}

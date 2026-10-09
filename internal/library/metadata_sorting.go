@@ -139,15 +139,7 @@ func RebuildGeneratedSortNames(tx OwnedTx) (resultErr error) {
 			return pgx.ErrTxClosed
 		}
 		view.catalog.catalogChanges.requireResync()
-		for _, ref := range refs {
-			found := false
-			for _, existing := range view.catalog.notificationReferences {
-				found = found || existing == ref
-			}
-			if !found && len(view.catalog.notificationReferences) < 4097 {
-				view.catalog.notificationReferences = append(view.catalog.notificationReferences, ref)
-			}
-		}
+		view.catalog.rememberNotificationReferences(refs...)
 		return nil
 	}()
 	if err != nil {

@@ -334,17 +334,19 @@ func (s *Store) List(ctx context.Context, offset, limit int) (Page, error) {
 	if err := s.healthy(ctx); err != nil {
 		return Page{}, err
 	}
-	items := make([]Metadata, 0, len(s.registry.Entries))
-	for _, rec := range s.registry.Entries {
+	items := make([]int, 0, len(s.registry.Entries))
+	for index, rec := range s.registry.Entries {
 		if !rec.Deleting {
-			items = append(items, copyMetadata(rec.Metadata))
+			items = append(items, index)
 		}
 	}
 	sort.Slice(items, func(i, j int) bool {
-		if items[i].CreatedAt.Equal(items[j].CreatedAt) {
-			return items[i].ID > items[j].ID
+		first := &s.registry.Entries[items[i]].Metadata
+		second := &s.registry.Entries[items[j]].Metadata
+		if first.CreatedAt.Equal(second.CreatedAt) {
+			return first.ID > second.ID
 		}
-		return items[i].CreatedAt.After(items[j].CreatedAt)
+		return first.CreatedAt.After(second.CreatedAt)
 	})
 	page := Page{Items: []Metadata{}, TotalRecordCount: len(items), StartIndex: offset, Limit: limit}
 	if offset < len(items) {
@@ -352,7 +354,10 @@ func (s *Store) List(ctx context.Context, offset, limit int) (Page, error) {
 		if limit < end-offset {
 			end = offset + limit
 		}
-		page.Items = items[offset:end]
+		page.Items = make([]Metadata, end-offset)
+		for index, entry := range items[offset:end] {
+			page.Items[index] = copyMetadata(s.registry.Entries[entry].Metadata)
+		}
 	}
 	return page, nil
 }

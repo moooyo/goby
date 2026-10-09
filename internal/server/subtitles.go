@@ -96,8 +96,12 @@ func readSubtitleOptions(r *http.Request) (int, subtitle.Options, error) {
 
 // readSubtitleContentFor shares current source authorization between sidecar
 // delivery and embedded extraction. Every cache validator still passes through
-// this path; extracted files are never cached across permission changes.
+// this path; extracted bytes never substitute for current authorization.
 func (s *Server) readSubtitleContentFor(ctx context.Context, subject library.Subject, itemID, sourceID string, index int, format subtitle.Format) (library.SubtitleContent, error) {
+	return s.readSubtitleContentForExtraction(ctx, subject, itemID, sourceID, index, format, nil)
+}
+
+func (s *Server) readSubtitleContentForExtraction(ctx context.Context, subject library.Subject, itemID, sourceID string, index int, format subtitle.Format, cached *hlsSubtitleExtractionRead) (library.SubtitleContent, error) {
 	if index < 0 || sourceID == "" {
 		return library.SubtitleContent{}, library.ErrInvalidInput
 	}
@@ -110,7 +114,12 @@ func (s *Server) readSubtitleContentFor(ctx context.Context, subject library.Sub
 		_ = file.Close()
 		return library.SubtitleContent{}, err
 	}
-	defer closePrimaryMediaSource(file, read)
+	defer func() {
+		if err := closePrimaryMediaSource(file, read); err != nil && cached != nil {
+			// An uncertain input retirement must not publish a reusable result.
+			cached.candidate = library.SubtitleContent{}
+		}
+	}()
 	ctx = read.Context(ctx)
 	if source.Item.Media == nil {
 		return library.SubtitleContent{}, library.ErrNotFound
@@ -131,6 +140,14 @@ func (s *Server) readSubtitleContentFor(ctx context.Context, subject library.Sub
 		if native != "ass" && format != "" {
 			native = string(format)
 		}
+		if cached != nil {
+			if err := cached.prepare(ctx, source, stream, native, s.cfg.FFmpegPath); err != nil {
+				return library.SubtitleContent{}, err
+			}
+			if content, found := cached.get(); found {
+				return content, nil
+			}
+		}
 		var data []byte
 		err := media.RunSourceReadPhase(ctx, func(work context.Context) error {
 			var err error
@@ -140,9 +157,13 @@ func (s *Server) readSubtitleContentFor(ctx context.Context, subject library.Sub
 		if err != nil {
 			return library.SubtitleContent{}, err
 		}
-		return library.SubtitleContent{Data: data, Info: library.Subtitle{Index: index, Codec: native,
+		content := library.SubtitleContent{Data: data, Info: library.Subtitle{Index: index, Codec: native,
 			Language: stream.Language, Title: stream.Title, IsDefault: stream.IsDefault, IsForced: stream.IsForced,
-			Size: int64(len(data)), ModifiedAt: source.ModifiedAt}, ModifiedAt: source.ModifiedAt}, nil
+			Size: int64(len(data)), ModifiedAt: source.ModifiedAt}, ModifiedAt: source.ModifiedAt}
+		if cached != nil {
+			cached.candidate = content
+		}
+		return content, nil
 	}
 	return s.library.ReadSubtitleFor(ctx, subject, itemID, sourceID, index)
 }

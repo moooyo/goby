@@ -3,8 +3,12 @@ package library
 import (
 	"crypto/sha256"
 	"encoding/json"
+
 	"github.com/moooyo/goby/internal/notificationjournal"
 )
+
+// Retain one extra reference so RecordCatalog preserves its overflow behavior.
+const notificationReferenceOverflow = 4097
 
 func (tx *ownedTx) recordNotificationJournal() error {
 	batch := tx.catalogChanges
@@ -33,6 +37,9 @@ func (tx *ownedTx) recordNotificationJournal() error {
 
 func (tx *ownedTx) rememberNotificationChanges(changes []CatalogChange) {
 	for _, change := range changes {
+		if len(tx.notificationReferences) >= notificationReferenceOverflow {
+			return
+		}
 		if validCatalogChange(change) {
 			tx.rememberNotificationScope(change.LibraryID, change.ItemID, change.ParentID, change.PreviousParentID)
 		}
@@ -40,16 +47,31 @@ func (tx *ownedTx) rememberNotificationChanges(changes []CatalogChange) {
 }
 func (tx *ownedTx) rememberNotificationScope(libraryID string, ids ...string) {
 	for _, id := range ids {
+		if len(tx.notificationReferences) >= notificationReferenceOverflow {
+			return
+		}
 		if id == "" {
 			continue
 		}
 		ref := notificationjournal.Reference{Kind: "Item", ID: id, LibraryID: libraryID, SourceID: ids[0]}
-		found := false
-		for _, old := range tx.notificationReferences {
-			found = found || old == ref
+		tx.rememberNotificationReferences(ref)
+	}
+}
+
+// All append paths share this transaction-private index. The slice retains
+// first-insertion order, and source-scoped references remain distinct.
+func (tx *ownedTx) rememberNotificationReferences(refs ...notificationjournal.Reference) {
+	for _, ref := range refs {
+		if len(tx.notificationReferences) >= notificationReferenceOverflow {
+			return
 		}
-		if !found && len(tx.notificationReferences) < 4097 {
-			tx.notificationReferences = append(tx.notificationReferences, ref)
+		if _, found := tx.notificationReferenceSet[ref]; found {
+			continue
 		}
+		if tx.notificationReferenceSet == nil {
+			tx.notificationReferenceSet = make(map[notificationjournal.Reference]struct{})
+		}
+		tx.notificationReferenceSet[ref] = struct{}{}
+		tx.notificationReferences = append(tx.notificationReferences, ref)
 	}
 }

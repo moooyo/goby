@@ -96,23 +96,29 @@ func (s *Store) fanout(ctx context.Context) error {
 	return capacityErr
 }
 func (s *Store) fanoutRegistration(ctx context.Context, id string) error {
-	tx, err := s.pool.Begin(ctx)
+	// Revalidation uses this connection but must observe changes committed after
+	// the cursor/target reads, even when the server default is Repeatable Read.
+	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
 	if err != nil {
 		return ErrUnavailable
 	}
 	defer tx.Rollback(ctx)
-	var cursor int64
+	var cursor, registrationRevision int64
 	var events []string
-	if err = tx.QueryRow(ctx, `SELECT source_cursor,event_ids FROM notification_registrations WHERE id=$1 AND enabled`, id).Scan(&cursor, &events); err != nil {
+	if err = tx.QueryRow(ctx, `SELECT source_cursor,event_ids,revision FROM notification_registrations WHERE id=$1 AND enabled`, id).Scan(&cursor, &events, &registrationRevision); err != nil {
 		return nil
 	}
 	t, err := readTarget(ctx, tx, id)
-	if err != nil {
+	if err != nil || t.regRevision != registrationRevision {
+		// Subscription edits may keep the same cursor while changing event_ids.
+		// Never filter new sources with events from a different registration.
 		return nil
 	}
-	if _, err = s.users.RevalidateSession(ctx, t.principal()); err != nil {
+	if _, err = identity.RevalidateSessionInTransaction(ctx, tx, t.principal()); err != nil {
 		if errors.Is(err, identity.ErrUnauthorized) {
-			if _, err = tx.Exec(ctx, `UPDATE notification_registrations SET enabled=false WHERE id=$1`, id); err != nil {
+			// A new revision may bind the same login to a now-authorized peer.
+			// Retire only the registration whose principal was rejected here.
+			if _, err = tx.Exec(ctx, `UPDATE notification_registrations SET enabled=false WHERE id=$1 AND revision=$2`, id, t.regRevision); err != nil {
 				return ErrUnavailable
 			}
 			return tx.Commit(ctx)

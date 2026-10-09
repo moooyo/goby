@@ -9,7 +9,10 @@ import (
 )
 
 func TestScanReconciliationEvidencePhysicalPaths(t *testing.T) {
-	for _, relative := range []string{"movie.mp4", "folder/movie.mp4", ".ignored", "folder with spaces/track.flac"} {
+	for _, relative := range []string{
+		"movie.mp4", "folder/movie.mp4", ".ignored", "folder with spaces/track.flac",
+		"C:movie.mp4", "C:/movie.mp4",
+	} {
 		actual, valid := scanReconciliationRelative(filepath.FromSlash(relative), false)
 		if !valid || actual != relative {
 			t.Errorf("physical path %q: got %q, %v", relative, actual, valid)
@@ -21,7 +24,7 @@ func TestScanReconciliationEvidencePhysicalPaths(t *testing.T) {
 	for _, relative := range []string{
 		"", ".", "..", "../movie.mp4", "folder/../movie.mp4", "folder/./movie.mp4",
 		"folder//movie.mp4", "folder/", "/movie.mp4", "//album/root", "//series/example",
-		`C:\movie.mp4`, "C:/movie.mp4", "C:movie.mp4", `\\server\share\movie.mp4`,
+		`C:\movie.mp4`, `\\server\share\movie.mp4`, "C:/../movie.mp4", "C:/./movie.mp4", "C:movie/../escape.mp4",
 		"movie\x00.mp4", strings.Repeat("a", 256), strings.Repeat("a/", scanReconciliationMaxPathBytes),
 		strings.Repeat("a/", MaxThemeAncestorDepth+1) + "movie.mp4",
 	} {

@@ -72,33 +72,35 @@ func (h *hlsRuntime) health() transcode.Health {
 }
 
 type hlsSession struct {
-	mu                     sync.Mutex
-	id                     string
-	key                    hlsKey
-	principal              identity.Principal
-	output                 playback.Source
-	subtitleSource         playback.Source
-	subtitleView           playback.HLSSubtitleView
-	audioTiming            *media.AudioTiming
-	startHint              int64
-	accessed               time.Time
-	presenceUpdated        time.Time
-	maintenanceChecked     time.Time
-	closed                 bool
-	timeline               *transcode.Timeline
-	lead                   int64
-	building               chan struct{}
-	subtitleProducerClocks map[string]*hlsProducerSubtitleClock
-	windowGraph            *hlsGeneratedWindowGraph
-	producers              []hlsProducer
-	admission              *hlsAdmission
-	admissionRevision      uint64
-	progressiveReaders     int
-	lastAsked              int
-	demand                 hlsPlaybackDemand
-	ctx                    context.Context
-	cancel                 context.CancelFunc
-	playbackReference      *playbackAdmissionReference
+	mu                      sync.Mutex
+	id                      string
+	key                     hlsKey
+	principal               identity.Principal
+	output                  playback.Source
+	subtitleSource          playback.Source
+	subtitleView            playback.HLSSubtitleView
+	audioTiming             *media.AudioTiming
+	startHint               int64
+	accessed                time.Time
+	presenceUpdated         time.Time
+	maintenanceChecked      time.Time
+	closed                  bool
+	timeline                *transcode.Timeline
+	lead                    int64
+	building                chan struct{}
+	subtitleProducerClocks  map[string]*hlsProducerSubtitleClock
+	subtitleExtractions     map[int]hlsSubtitleExtractionEntry
+	subtitleExtractionBytes int
+	windowGraph             *hlsGeneratedWindowGraph
+	producers               []hlsProducer
+	admission               *hlsAdmission
+	admissionRevision       uint64
+	progressiveReaders      int
+	lastAsked               int
+	demand                  hlsPlaybackDemand
+	ctx                     context.Context
+	cancel                  context.CancelFunc
+	playbackReference       *playbackAdmissionReference
 }
 
 // HLS session IDs identify immutable output revisions, not credentials. Their
@@ -123,6 +125,8 @@ type hlsRuntime struct {
 	generatedWindowPinMu     sync.Mutex
 	generatedWindowPinOwners map[*transcode.ReadHandle]*hlsSession
 	initializationBudget     hlsInitializationBudget
+	subtitleExtractionMu     sync.Mutex
+	subtitleExtractionBytes  int
 	requests                 sync.WaitGroup
 	workers                  sync.WaitGroup
 	once                     sync.Once
@@ -332,6 +336,7 @@ func (h *hlsRuntime) retire(session *hlsSession) {
 	h.mu.Lock()
 	session.mu.Lock()
 	session.closed = true
+	h.clearSubtitleExtractionsLocked(session)
 	if session.windowGraph != nil {
 		session.windowGraph.initialization.release()
 	}

@@ -75,7 +75,7 @@ func (options ScanEvidenceOptions) normalized() (ScanEvidenceOptions, error) {
 		options.MaxFallbackHandles = 4096
 	}
 	if options.Directory == "" || !filepath.IsAbs(options.Directory) || filepath.Clean(options.Directory) != options.Directory ||
-		options.Directory == filepath.VolumeName(options.Directory)+string(filepath.Separator) ||
+		options.Directory == string(filepath.Separator) ||
 		strings.ContainsRune(options.Directory, '\x00') || len(options.Directory) > 4096 ||
 		strings.TrimSpace(options.ServerID) == "" || len(options.ServerID) > 128 || strings.ContainsRune(options.ServerID, '\x00') ||
 		options.MaxBytes < 64<<10 || options.MaxBytes > 1<<30 || options.MaxDirectories < 1 || options.MaxDirectories > 131072 ||

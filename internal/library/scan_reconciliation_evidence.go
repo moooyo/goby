@@ -678,7 +678,7 @@ func (evidence *scanReconciliationEvidence) verifyDirectory(ctx context.Context,
 
 func scanReconciliationRelative(relative string, allowRoot bool) (string, bool) {
 	if relative == "" || len(relative) > scanReconciliationMaxPathBytes || strings.ContainsRune(relative, '\x00') ||
-		filepath.IsAbs(relative) || filepath.VolumeName(relative) != "" || len(relative) >= 2 && relative[1] == ':' {
+		filepath.IsAbs(relative) {
 		return "", false
 	}
 	relative = filepath.ToSlash(relative)

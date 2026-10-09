@@ -117,6 +117,7 @@ func TestPrimaryIOQueuedGrantCancellationBeforeDeliveryReturnsCapacity(t *testin
 	primaryIOAssertCounts(t, g, 1, 0, 1)
 	g.release(holder)
 	primaryIOAssertCounts(t, g, 1, 0, 0)
+	primaryIOAssertQueueDimensionsEmpty(t, g)
 	// Both select cases are ready before the granted request resumes. Either
 	// selection must return its undelivered charge exactly once.
 	cancel()
@@ -126,6 +127,7 @@ func TestPrimaryIOQueuedGrantCancellationBeforeDeliveryReturnsCapacity(t *testin
 		t.Fatalf("cancellation before queued grant delivery escaped compensation: %+v", value)
 	}
 	primaryIOAssertCounts(t, g, 0, 0, 0)
+	primaryIOAssertQueueDimensionsEmpty(t, g)
 }
 
 func BenchmarkPrimaryIOUncontendedAdmission(b *testing.B) {

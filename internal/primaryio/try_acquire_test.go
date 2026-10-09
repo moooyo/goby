@@ -41,6 +41,7 @@ func TestPrimaryIOTryAcquireBusyDoesNotQueueOrRetainAcquisition(t *testing.T) {
 	candidate := primaryIOOwner(t, owners, context.Background())
 	primaryIOAssertTryBusy(t, candidate, route, Background)
 	primaryIOAssertCounts(t, g, 1, 1, 0)
+	primaryIOAssertQueueDimensionsEmpty(t, g)
 
 	// A rejected phase leaves its retained owner idle and transferable.
 	receiver, err := candidate.Transfer()

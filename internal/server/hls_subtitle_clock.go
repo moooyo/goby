@@ -43,7 +43,11 @@ func (s *Server) serveGeneratedHLSSubtitle(w http.ResponseWriter, r *http.Reques
 		s.hlsError(w, r, transcode.ErrJobNotFound)
 		return false
 	}
-	content, err := s.readSubtitleContentFor(ctx, librarySubject(principal, principal.User.ID), session.key.scope.ItemID, session.key.scope.SourceID, track.StreamIndex, subtitle.FormatWebVTT)
+	var cached *hlsSubtitleExtractionRead
+	if track.ExternalTag == "" && session.key.plan.SourceMode == "" {
+		cached = &hlsSubtitleExtractionRead{runtime: s.hls, session: session}
+	}
+	content, err := s.readSubtitleContentForExtraction(ctx, librarySubject(principal, principal.User.ID), session.key.scope.ItemID, session.key.scope.SourceID, track.StreamIndex, subtitle.FormatWebVTT, cached)
 	if err != nil {
 		s.subtitleError(w, r, err)
 		return false
@@ -69,6 +73,9 @@ func (s *Server) serveGeneratedHLSSubtitle(w http.ResponseWriter, r *http.Reques
 	if err := ctx.Err(); err != nil {
 		s.hlsError(w, r, err)
 		return false
+	}
+	if cached != nil {
+		cached.publish(ctx)
 	}
 	writer, err := newIdleResponseWriter(w, ctx, mediaWriteIdle)
 	if err != nil {

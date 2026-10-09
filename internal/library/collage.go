@@ -249,13 +249,20 @@ func mergeCollageImageListing(ctx context.Context, tx pgx.Tx, access libraryAcce
 	if len(ids) == 0 {
 		return nil
 	}
+	var entityIDs []int64
+	for _, id := range ids {
+		parsed, err := strconv.ParseInt(id, 10, 64)
+		if err == nil && parsed > 0 && strconv.FormatInt(parsed, 10) == id {
+			entityIDs = append(entityIDs, parsed)
+		}
+	}
 	// Resolve only aggregate targets in one query; ordinary image-less pages
 	// must not trigger a new database query for each movie or music track.
 	rows, err := tx.Query(ctx, `SELECT i.id,'item' FROM items i WHERE i.id=ANY($1::text[]) AND i.type='CollectionFolder' AND `+access.directSQL("i")+`
-		UNION ALL SELECT entity.id::text,'entity' FROM catalog_entities entity WHERE entity.id::text=ANY($1::text[]) AND entity.kind='Genre'
+		UNION ALL SELECT entity.id::text,'entity' FROM catalog_entities entity WHERE entity.id=ANY($2::bigint[]) AND entity.kind='Genre'
 		AND NOT EXISTS(SELECT 1 FROM items collision WHERE collision.id=entity.id::text)
 		AND EXISTS(SELECT 1 FROM item_entities association JOIN items i ON i.id=association.item_id WHERE association.entity_id=entity.id
-		AND i.type<>'CollectionFolder' AND `+access.ordinarySQL("i")+`) ORDER BY 1`, ids)
+		AND i.type<>'CollectionFolder' AND `+access.ordinarySQL("i")+`) ORDER BY 1`, ids, entityIDs)
 	if err != nil {
 		return err
 	}

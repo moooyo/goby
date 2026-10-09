@@ -5,6 +5,7 @@ package recoverycontrol
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 
@@ -23,6 +24,7 @@ type Store struct {
 	marker        ownerMarker
 	markerFile    trackedFile
 	currentFile   trackedFile
+	parsedCurrent *parsedRecord
 	proof         publicationProof
 	proofFile     trackedFile
 	closed        bool
@@ -30,6 +32,14 @@ type Store struct {
 	syncFile      func(*os.File) error
 	syncDirectory func(*os.File) error
 	rename        func(int, string, int, string, uint) error
+}
+
+// A parsed record owns immutable payload bytes from a fully verified read or
+// a normalized candidate whose exact encoding was durably published.
+// Its file and current publication authority must still be checked on each use.
+type parsedRecord struct {
+	file  trackedFile
+	value record
 }
 
 func Open(ctx context.Context, directory, deploymentID string) (*Store, error) {
@@ -280,26 +290,31 @@ func (s *Store) readCurrent(ctx context.Context) (Snapshot, recordReference, err
 	if !file.Present || file != s.currentFile {
 		return Snapshot{}, recordReference{}, ErrUnavailable
 	}
-	var current record
-	if err := decode(data, &current); err != nil {
-		return Snapshot{}, recordReference{}, err
-	}
-	if current.Version != 1 || current.DeploymentID != s.marker.DeploymentID || current.StoreID != s.marker.StoreID {
-		return Snapshot{}, recordReference{}, ErrRecoveryRequired
-	}
-	if current.Revision == 0 {
-		if current.PreviousDigest != "" || !bytes.Equal(current.Payload, []byte("null")) {
+	parsed := s.parsedCurrent
+	if parsed == nil || parsed.file != file {
+		var current record
+		if err := decode(data, &current); err != nil {
+			return Snapshot{}, recordReference{}, err
+		}
+		if current.Version != 1 || current.DeploymentID != s.marker.DeploymentID || current.StoreID != s.marker.StoreID {
 			return Snapshot{}, recordReference{}, ErrRecoveryRequired
 		}
-	} else {
-		if !validHex(current.PreviousDigest, 64) {
-			return Snapshot{}, recordReference{}, ErrRecoveryRequired
+		if current.Revision == 0 {
+			if current.PreviousDigest != "" || !bytes.Equal(current.Payload, []byte("null")) {
+				return Snapshot{}, recordReference{}, ErrRecoveryRequired
+			}
+		} else {
+			if !validHex(current.PreviousDigest, 64) {
+				return Snapshot{}, recordReference{}, ErrRecoveryRequired
+			}
+			normalized, err := normalizePayload(current.Payload)
+			if err != nil || !bytes.Equal(normalized, current.Payload) {
+				return Snapshot{}, recordReference{}, ErrRecoveryRequired
+			}
 		}
-		normalized, err := normalizePayload(current.Payload)
-		if err != nil || !bytes.Equal(normalized, current.Payload) {
-			return Snapshot{}, recordReference{}, ErrRecoveryRequired
-		}
+		parsed = &parsedRecord{file: file, value: current}
 	}
+	current := parsed.value
 	actual := recordReference{Revision: current.Revision, Digest: file.Digest, PreviousDigest: current.PreviousDigest, Identity: file.Identity}
 	if actual != s.proof.Candidate && (s.proof.Before == nil || actual != *s.proof.Before) {
 		return Snapshot{}, recordReference{}, ErrRecoveryRequired
@@ -329,6 +344,7 @@ func (s *Store) readCurrent(ctx context.Context) (Snapshot, recordReference, err
 	if err := s.checkRoot(ctx); err != nil {
 		return Snapshot{}, recordReference{}, err
 	}
+	s.parsedCurrent = parsed
 	return recordSnapshot(current, file.Digest), actual, nil
 }
 
@@ -372,6 +388,12 @@ func (s *Store) CompareAndSwap(ctx context.Context, expectedDigest string, paylo
 	if err != nil || len(data) > maxRecordBytes {
 		return Snapshot{}, ErrInvalid
 	}
+	// The encoder can escape characters inside RawMessage. Reuse the payload
+	// representation that a fresh read decodes, while preserving the CAS result.
+	var parsedCandidate record
+	if err := json.Unmarshal(data, &parsedCandidate); err != nil {
+		return Snapshot{}, ErrInvalid
+	}
 	temporary, candidateFile, err := s.createTemporary(ctx, data)
 	if err != nil {
 		return Snapshot{}, err
@@ -395,6 +417,12 @@ func (s *Store) CompareAndSwap(ctx context.Context, expectedDigest string, paylo
 		return Snapshot{}, err
 	}
 	s.currentFile = file
+	s.parsedCurrent = nil
+	// Escaping can expand an accepted payload beyond the read limit. Keep
+	// those records on the existing full-validation path.
+	if len(parsedCandidate.Payload) <= MaxPayloadBytes {
+		s.parsedCurrent = &parsedRecord{file: file, value: parsedCandidate}
+	}
 	return recordSnapshot(candidate, file.Digest), nil
 }
 

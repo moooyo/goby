@@ -255,6 +255,7 @@ type ownedTx struct {
 	notificationJournalStamp    [32]byte
 	notificationJournalRecorded bool
 	notificationReferences      []notificationjournal.Reference
+	notificationReferenceSet    map[notificationjournal.Reference]struct{}
 }
 
 func (tx *ownedTx) Exec(_ context.Context, statement string, args ...any) (pgconn.CommandTag, error) {

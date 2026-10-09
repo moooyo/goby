@@ -425,6 +425,7 @@ func TestPrimaryIOGovernorCloseCancelsQueueButRetainsActiveLease(t *testing.T) {
 	queued := primaryIOOwner(t, runtime, context.Background())
 	queuedResult := primaryIOQueuedAcquire(t, queued, primaryIORoute("b", "db"), Foreground)
 	g.Close()
+	primaryIOAssertQueueDimensionsEmpty(t, g)
 	result := primaryIOAwaitAcquire(t, queuedResult)
 	if !errors.Is(result.err, ErrClosed) || result.lease != nil {
 		t.Fatalf("queue at governor close: %+v", result)

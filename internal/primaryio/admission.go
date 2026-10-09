@@ -98,20 +98,25 @@ type request struct {
 // dimensions can drain together. Unrelated domains and foreground reservations
 // remain available; no waiting request is charged as an actual I/O owner.
 type Governor struct {
-	mu      sync.Mutex
-	limits  Limits
-	closed  bool
-	active  laneCount
-	roots   map[RootKey]laneCount
-	domains map[string]laneCount
-	waiters []*request
+	mu            sync.Mutex
+	limits        Limits
+	closed        bool
+	active        laneCount
+	roots         map[RootKey]laneCount
+	domains       map[string]laneCount
+	waiters       []*request
+	queuedRoots   map[RootKey]int
+	queuedDomains map[string]int
 }
 
 func NewGovernor(limits Limits) (*Governor, error) {
 	if !limits.valid() {
 		return nil, ErrInvalid
 	}
-	return &Governor{limits: limits, roots: make(map[RootKey]laneCount), domains: make(map[string]laneCount)}, nil
+	return &Governor{
+		limits: limits, roots: make(map[RootKey]laneCount), domains: make(map[string]laneCount),
+		queuedRoots: make(map[RootKey]int), queuedDomains: make(map[string]int),
+	}, nil
 }
 
 // copyRoute bounds and copies trusted keys so mutation of caller-owned slices
@@ -250,34 +255,38 @@ func (g *Governor) queueAvailableLocked(r *request) bool {
 		return false
 	}
 	for _, root := range r.route.Roots {
-		count := 0
-		for _, queued := range g.waiters {
-			for _, key := range queued.route.Roots {
-				if key == root {
-					count++
-					break
-				}
-			}
-		}
-		if count >= g.limits.RootQueued {
+		if g.queuedRoots[root] >= g.limits.RootQueued {
 			return false
 		}
 	}
 	for _, domain := range r.route.Domains {
-		count := 0
-		for _, queued := range g.waiters {
-			for _, key := range queued.route.Domains {
-				if key == domain {
-					count++
-					break
-				}
-			}
-		}
-		if count >= g.limits.DomainQueued {
+		if g.queuedDomains[domain] >= g.limits.DomainQueued {
 			return false
 		}
 	}
 	return true
+}
+
+// Queued dimensions are independent of active charges: a compound request may
+// still wait after one of its dimensions becomes idle. Zero counts are removed
+// so these maps contain only keys charged by the bounded waiting queue.
+func (g *Governor) chargeQueuedLocked(r *request, delta int) {
+	for _, root := range r.route.Roots {
+		count := g.queuedRoots[root] + delta
+		if count == 0 {
+			delete(g.queuedRoots, root)
+		} else {
+			g.queuedRoots[root] = count
+		}
+	}
+	for _, domain := range r.route.Domains {
+		count := g.queuedDomains[domain] + delta
+		if count == 0 {
+			delete(g.queuedDomains, domain)
+		} else {
+			g.queuedDomains[domain] = count
+		}
+	}
 }
 
 func addCount(count laneCount, class Class, delta int) laneCount {
@@ -309,6 +318,7 @@ func (g *Governor) chargeLocked(r *request, delta int) {
 }
 
 func (g *Governor) removeLocked(index int) {
+	g.chargeQueuedLocked(g.waiters[index], -1)
 	copy(g.waiters[index:], g.waiters[index+1:])
 	g.waiters[len(g.waiters)-1] = nil
 	g.waiters = g.waiters[:len(g.waiters)-1]
@@ -376,6 +386,7 @@ func (g *Governor) acquirePrepared(ctx context.Context, route preparedRoute, cla
 	} else {
 		r.ready = make(chan struct{})
 		g.waiters = append(g.waiters, r)
+		g.chargeQueuedLocked(r, 1)
 		queued = true
 	}
 	g.mu.Unlock()
@@ -486,6 +497,8 @@ func (g *Governor) Close() {
 		g.waiters[index] = nil
 	}
 	g.waiters = nil
+	g.queuedRoots = nil
+	g.queuedDomains = nil
 }
 
 type Stats struct {
