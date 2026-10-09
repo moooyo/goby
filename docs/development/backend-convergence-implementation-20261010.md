@@ -163,11 +163,11 @@ throughput claims. SQL observations used warm shared buffers (`shared_reads=0`).
 
 | Finding and fixture | Previous median | Candidate median | Supporting observation |
 | --- | ---: | ---: | --- |
-| C12, 12,000 terminal operations and 40 mixed pending, ordinary claim | 1.945 ms | 0.013 ms | Shared hits 574 to 4; partial index 16,384 bytes. |
-| C12, same fixture, cancellation-only claim | 0.984 ms | 0.013 ms | Both custom and generic plans use the new index for both flags. |
+| C12, 12,000 terminal operations and 40 mixed-state operations, pending query | 1.945 ms | 0.013 ms | Six pending candidates; shared hits 574 to 4; partial index 16,384 bytes. |
+| C12, same fixture, cancellation-only query | 0.984 ms | 0.013 ms | Four cancellation candidates; custom and generic plans use the new index for both flags. |
 | C06, known expected-episode ID | 37.573 ms | 0.310 ms | Shared hits 16,592 to 52; base primary-key lookup. |
 | C06, known-ID batch | 37.823 ms | 0.320 ms | Shared hits 16,592 to 54. |
-| C05, two roots and 2,000 leaves | 50.734 ms | 41.929 ms | Shared hits unchanged at 62,217. |
+| C05, two roots and 2,000 added leaves | 50.734 ms | 41.929 ms | Shared hits unchanged at 62,217. |
 | C04, 128 retained jobs | 10,013 ns | 2,932 ns | 1,152 B / 1 allocation to 0 B / 0 allocations. |
 | C04, 4,096 retained jobs | 564,137 ns | 118,860 ns | 32,768 B / 1 allocation to 0 B / 0 allocations. |
 | C08, incomplete 1 MiB prefix | 82,169 ns | 20,964 ns | 1,048,784 B / 2 allocations to 208 B / 1 allocation. |
@@ -175,7 +175,8 @@ throughput claims. SQL observations used warm shared buffers (`shared_reads=0`).
 | C15, 64 files | 2,630,976 ns | 235,523 ns | 1,324,760 B to 124,976 B. |
 | C15, 256 files | 42,103,039 ns | 979,559 ns | 19,967,192 B to 450,608 B. |
 
-C04 uses warm retained jobs without filesystem work. C08 repeatedly observes a
+C12 measures candidate SELECT queries, excluding ClaimMediaOperation locking
+and execution. C04 uses warm retained jobs without filesystem work. C08 repeatedly observes a
 fixed incomplete prefix while retaining fresh ReadAt and parse operations.
 C15 compares the previous prefix algorithm plus publication audit with the
 incremental algorithm plus post-sort and publication audits in the same process
