@@ -17,6 +17,14 @@ type workerExecution struct {
 	group  string
 }
 
+type executionDisposition uint8
+
+const (
+	executionContinue executionDisposition = iota
+	executionQueueFull
+	executionDeferRun
+)
+
 // Fencing forbids further database writes, but does not transfer ownership of
 // an executing provider's resources. Keep Close pending until every worker has
 // acknowledged cancellation before the caller can close its dependencies.
@@ -63,7 +71,7 @@ func (m *Manager) reapExecutions(ctx context.Context, shutdown bool) error {
 // The coordinator alone owns the execution map. The closed done channel
 // publishes the result. Failed finalization keeps that result for retry and
 // never executes an external side effect twice within the same server life.
-func (m *Manager) reconcileExecution(ctx context.Context, run Run, child Child, shutdown bool) (bool, error) {
+func (m *Manager) reconcileExecution(ctx context.Context, run Run, child Child, shutdown bool) (executionDisposition, error) {
 	if execution, exists := m.executions[child.ID]; exists {
 		if shutdown || run.State == RunStopping {
 			execution.cancel()
@@ -71,34 +79,34 @@ func (m *Manager) reconcileExecution(ctx context.Context, run Run, child Child, 
 		select {
 		case <-execution.done:
 			if err := m.store.finishExecution(ctx, run.ID, child.ID, execution.token, execution.err, shutdown); err != nil {
-				return false, err
+				return executionContinue, err
 			}
 			execution.cancel()
 			delete(m.executions, child.ID)
 		default:
 		}
-		return false, nil
+		return executionContinue, nil
 	}
 	if child.State != ChildWaiting {
-		return false, fmt.Errorf("%w: a running generic child has no owned worker", ErrInconsistent)
+		return executionContinue, fmt.Errorf("%w: a running generic child has no owned worker", ErrInconsistent)
 	}
 	if shutdown || run.State == RunStopping {
-		return false, nil
+		return executionContinue, nil
 	}
 	group := ""
 	if isMediaAnalysisExecution(run.TaskKey) {
 		group = analysisConcurrencyGroup
 		for _, execution := range m.executions {
 			if execution.group == group {
-				return false, nil
+				return executionContinue, nil
 			}
 		}
-		next, err := m.store.nextAnalysisRun(ctx, m.lastAnalysisRunID)
+		next, err := m.store.nextAnalysisRun(ctx, m.lastAnalysisTaskKey)
 		if err != nil {
-			return false, err
+			return executionContinue, err
 		}
 		if next != run.ID {
-			return false, nil
+			return executionDeferRun, nil
 		}
 	}
 	limit := 2
@@ -106,30 +114,30 @@ func (m *Manager) reconcileExecution(ctx context.Context, run Run, child Child, 
 		limit = m.options.MaxConcurrent()
 	}
 	if limit < 1 || limit > 16 {
-		return false, fmt.Errorf("%w: executor concurrency is outside 1..16", ErrInvalidInput)
+		return executionContinue, fmt.Errorf("%w: executor concurrency is outside 1..16", ErrInvalidInput)
 	}
 	if len(m.executions) >= limit {
-		return true, nil
+		return executionQueueFull, nil
 	}
 	if !m.enter() {
-		return false, context.Canceled
+		return executionContinue, context.Canceled
 	}
 	defer m.operations.Done()
 	token, err := randomID()
 	if err != nil {
-		return false, err
+		return executionContinue, err
 	}
 	if _, err := m.store.claimExecution(ctx, run.ID, child.ID, token); err != nil {
 		if errors.Is(err, context.Canceled) || errors.Is(err, errAnalysisGroupBusy) {
-			return false, nil
+			return executionContinue, nil
 		}
-		return false, err
+		return executionContinue, err
 	}
 	workCtx, cancel := context.WithCancel(systemevents.WithDerived(m.ctx))
 	execution := &workerExecution{runID: run.ID, token: token, cancel: cancel, done: make(chan struct{}), group: group}
 	m.executions[child.ID] = execution
 	if group != "" {
-		m.lastAnalysisRunID = run.ID
+		m.lastAnalysisTaskKey = run.TaskKey
 	}
 	entry, registered := m.store.executors.lookup(run.TaskKey)
 	go func() {
@@ -156,5 +164,5 @@ func (m *Manager) reconcileExecution(ctx context.Context, run Run, child Child, 
 			return m.store.updateExecutionProgress(workCtx, run.ID, child.ID, token, progress)
 		})
 	}()
-	return false, nil
+	return executionContinue, nil
 }

@@ -245,6 +245,9 @@ func testHTTPAdminTaskSchedules(t *testing.T, key string) {
 	if objectValue(t, jsonObject(t, definition), "Task")["Revision"] != "1" {
 		t.Fatal("read-only schedule preview changed the task revision")
 	}
+	// Trigger replacement requires the coordinator to finish initializing its
+	// schedules; the preceding read-only preview is available during startup.
+	scheduledTaskHTTPWait(t, &scheduledTaskHTTPFixture{serverFixture: f}, "task manager readiness before replacing triggers", f.app.taskManager.Available)
 	body := map[string]any{"Revision": "1", "ScheduleTimezone": "Asia/Shanghai", "Triggers": triggers}
 	replaced := f.request(t, http.MethodPut, base, body, headers, cookie)
 	expectStatus(t, replaced, http.StatusOK)

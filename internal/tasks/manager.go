@@ -69,7 +69,7 @@ type Manager struct {
 	lastScheduleErrorLog    time.Time
 	runtimeDeadlines        map[string]time.Time
 	executions              map[string]*workerExecution
-	lastAnalysisRunID       string
+	lastAnalysisTaskKey     string
 	pendingAnalysisStartups []AnalysisDeferral
 }
 
@@ -572,10 +572,16 @@ func (m *Manager) reconcile(ctx context.Context, shutdown bool) (bool, error) {
 			m.childOffsets[run.ID] = 0
 			budget--
 		}
-		queueFull := false
+		queueFull, deferRun := false, false
 		for childIndex, child := range children.Items {
 			if err := ctx.Err(); err != nil {
 				return false, err
+			}
+			// Only waiting dispatch is deferred. A mixed page must still expose
+			// queued/running children without an owned worker. Skipped waiting
+			// children consume neither the pass budget nor a cursor advance.
+			if deferRun && child.State == ChildWaiting {
+				continue
 			}
 			budget--
 			m.childOffsets[run.ID] = children.StartIndex + childIndex + 1
@@ -590,7 +596,10 @@ func (m *Manager) reconcile(ctx context.Context, shutdown bool) (bool, error) {
 				}
 			}
 			if _, scanTask := library.TaskScanOptions(run.TaskKey); !scanTask {
-				queueFull, err = m.reconcileExecution(ctx, run, child, shutdown)
+				var disposition executionDisposition
+				disposition, err = m.reconcileExecution(ctx, run, child, shutdown)
+				queueFull = disposition == executionQueueFull
+				deferRun = deferRun || disposition == executionDeferRun
 			} else if shutdown || run.State == RunStopping {
 				err = m.scans.CancelTaskScan(ctx, child.ID)
 			} else if child.State == ChildWaiting {

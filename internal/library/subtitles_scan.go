@@ -527,6 +527,9 @@ func (state *scanState) persistSubtitlesTx(tx pgx.Tx, itemID, relative string, p
 	sort.Strings(paths)
 	for _, path := range paths {
 		entry := inspected[path].source
+		if previous, exists := previousByPath[path]; exists && previous.matches(entry) {
+			continue
+		}
 		index, exists := retained[path]
 		if !exists {
 			if total >= maxSubtitleIdentities || highest >= maxSubtitleStreamIndex || len(retained)+ownedActive >= maxActiveSubtitles {

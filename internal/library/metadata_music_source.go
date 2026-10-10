@@ -41,6 +41,10 @@ func mergeAcceptedMusicSource(localSource, musicSource []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	return mergeAcceptedMusicMetadata(localSource, music, extracted)
+}
+
+func mergeAcceptedMusicMetadata(localSource []byte, music musicMetadataSource, extracted bool) ([]byte, error) {
 	if !extracted {
 		return bytes.Clone(localSource), nil
 	}
@@ -88,8 +92,15 @@ func mergeAcceptedMusicSource(localSource, musicSource []byte) ([]byte, error) {
 // source, without depending on JSON formatting or object key ordering.
 func acceptedMusicSourceHash(musicSource []byte) (string, error) {
 	music, extracted, err := decodeAcceptedMusicSource(musicSource)
-	if err != nil || !extracted {
+	if err != nil {
 		return "", err
+	}
+	return acceptedMusicMetadataHash(music, extracted)
+}
+
+func acceptedMusicMetadataHash(music musicMetadataSource, extracted bool) (string, error) {
+	if !extracted {
+		return "", nil
 	}
 	encoded, err := json.Marshal(music)
 	if err != nil {
@@ -106,6 +117,10 @@ func acceptedMusicName(localSource, musicSource []byte, fallback string) (string
 	if err != nil {
 		return "", err
 	}
+	return acceptedMusicMetadataName(localSource, music, fallback)
+}
+
+func acceptedMusicMetadataName(localSource []byte, music musicMetadataSource, fallback string) (string, error) {
 	local, err := metadataSourceObject(localSource)
 	if err != nil {
 		return "", err

@@ -713,8 +713,8 @@ func TestGenericExecutionAuthorizationRunsBeforeExecutorAndSurvivesRevocation(t 
 			if revokeBeforeStart {
 				f.invalidateActor(t, "revoked")
 			}
-			if full, err := manager.reconcileExecution(f.ctx, run, child, false); err != nil || full {
-				t.Fatalf("dispatch: full=%t %v", full, err)
+			if disposition, err := manager.reconcileExecution(f.ctx, run, child, false); err != nil || disposition != executionContinue {
+				t.Fatalf("dispatch: disposition=%d %v", disposition, err)
 			}
 			execution := manager.executions[child.ID]
 			if execution == nil {
@@ -771,8 +771,8 @@ func TestAnalysisGroupAlternatesBoundedRunsWithoutOccupyingOtherProviderSlots(t 
 	t.Cleanup(func() { manager.drainExecutions() })
 	dispatch := func(run Run, child Child) {
 		t.Helper()
-		if full, err := manager.reconcileExecution(f.ctx, run, child, false); err != nil || full {
-			t.Fatalf("dispatch: full=%t %v", full, err)
+		if disposition, err := manager.reconcileExecution(f.ctx, run, child, false); err != nil || disposition == executionQueueFull {
+			t.Fatalf("dispatch: disposition=%d %v", disposition, err)
 		}
 	}
 	dispatch(first, a[0])

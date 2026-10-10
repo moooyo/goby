@@ -44,12 +44,16 @@ func syncScannedMetadata(ctx context.Context, tx pgx.Tx, itemID string, options 
 	if selected.Base != nil {
 		name, sortName, overview = selected.Base.Name, selected.Base.SortName, selected.Base.Overview
 	}
-	musicHash, err := acceptedMusicSourceHash(musicSource)
+	music, extracted, err := decodeAcceptedMusicSource(musicSource)
+	if err != nil {
+		return err
+	}
+	musicHash, err := acceptedMusicMetadataHash(music, extracted)
 	if err != nil {
 		return err
 	}
 	if musicHash != "" {
-		chosenName, err := acceptedMusicName(localSource, musicSource, name)
+		chosenName, err := acceptedMusicMetadataName(localSource, music, name)
 		if err != nil {
 			return err
 		}
@@ -82,7 +86,7 @@ func syncScannedMetadata(ctx context.Context, tx pgx.Tx, itemID string, options 
 			return err
 		}
 	}
-	mergedSource, err := mergeAcceptedMusicSource(localSource, musicSource)
+	mergedSource, err := mergeAcceptedMusicMetadata(localSource, music, extracted)
 	if err != nil {
 		return err
 	}

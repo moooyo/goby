@@ -23,6 +23,7 @@ type mediaAnalysisRuntime struct {
 	availability        media.AnalysisAvailability
 	creditsVisual       media.CreditsVisualCapabilities
 	creditsAudioProfile string
+	creditsFingerprints creditsFingerprintCache
 	profiles            map[string]library.AnalysisExecutionProfile
 	cache               *analysiscache.Store
 	ctx                 context.Context

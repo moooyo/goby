@@ -93,15 +93,13 @@ func checkFileMutationActor(ctx context.Context, tx pgx.Tx, actor identity.Princ
 	if disabled || actor.Kind == "admin" && !administrator {
 		return libraryAccess{}, ErrForbidden
 	}
-	query = `SELECT id FROM sessions WHERE id=$1 AND user_id=$2 AND kind=$3`
 	if lock {
-		query += " FOR SHARE"
-	}
-	var id string
-	if err := tx.QueryRow(ctx, query, actor.SessionID, actor.User.ID, actor.Kind).Scan(&id); errors.Is(err, pgx.ErrNoRows) {
-		return libraryAccess{}, ErrForbidden
-	} else if err != nil {
-		return libraryAccess{}, err
+		var id string
+		if err := tx.QueryRow(ctx, `SELECT id FROM sessions WHERE id=$1 AND user_id=$2 AND kind=$3 FOR SHARE`, actor.SessionID, actor.User.ID, actor.Kind).Scan(&id); errors.Is(err, pgx.ErrNoRows) {
+			return libraryAccess{}, ErrForbidden
+		} else if err != nil {
+			return libraryAccess{}, err
+		}
 	}
 	var live bool
 	var deviceID string

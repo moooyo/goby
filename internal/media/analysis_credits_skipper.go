@@ -50,6 +50,18 @@ func creditsSkipperArgs(index int, start, end float64) []string {
 // lifetime. The caller selects audio with SelectIntroSkipperAudioStream and
 // owns cohort matching, publication, and any persistence policy.
 func (e AnalysisExtractor) ExtractCreditsSkipper(ctx context.Context, input *os.File, info Info, request IntroSkipperAnalysisRequest) (result CreditsSkipperFeatures, resultErr error) {
+	return e.creditsSkipper(ctx, input, info, request, true)
+}
+
+// CheckCreditsSkipper repeats the current source and executable proof, including
+// active capability queries, without decoding audio. It returns no fingerprint;
+// a caller may use it only after independently proving the complete source bytes
+// for a previously extracted raw sequence and preserving its own authorization.
+func (e AnalysisExtractor) CheckCreditsSkipper(ctx context.Context, input *os.File, info Info, request IntroSkipperAnalysisRequest) (CreditsSkipperFeatures, error) {
+	return e.creditsSkipper(ctx, input, info, request, false)
+}
+
+func (e AnalysisExtractor) creditsSkipper(ctx context.Context, input *os.File, info Info, request IntroSkipperAnalysisRequest, extract bool) (result CreditsSkipperFeatures, resultErr error) {
 	if ctx == nil {
 		return result, ErrAnalysisUnavailable
 	}
@@ -85,25 +97,32 @@ func (e AnalysisExtractor) ExtractCreditsSkipper(ctx context.Context, input *os.
 	if err != nil {
 		return result, err
 	}
-	defer tool.file.Close()
+	defer func() {
+		failCreditsSkipperAnalysis(tool.file.Close(), &result, &resultErr)
+	}()
 	if err := analysisValidateIntroSkipperFFmpeg(bounded, tool); err != nil {
 		return result, err
 	}
 	start := introskipper.CreditsFingerprintStartSeconds(info.DurationTicks)
 	end := float64(info.DurationTicks) / float64(TicksPerSecond)
 	var output []byte
-	sink := &introSkipperStderr{limit: min(limits.MaxStderrBytes, 1<<20)}
-	err = runAnalysisStream(bounded, "/proc/self/fd/4", input, creditsSkipperArgs(request.AudioStreamIndex, start, end), limits.Timeout,
-		int64(introskipper.MaxFingerprintPoints*4), sink, func(reader io.Reader) error { var err error; output, err = io.ReadAll(reader); return err }, tool.file)
-	if err != nil {
-		return result, err
+	if extract {
+		sink := &introSkipperStderr{limit: min(limits.MaxStderrBytes, 1<<20)}
+		err = runAnalysisStream(bounded, "/proc/self/fd/4", input, creditsSkipperArgs(request.AudioStreamIndex, start, end), limits.Timeout,
+			int64(introskipper.MaxFingerprintPoints*4), sink, func(reader io.Reader) error { var err error; output, err = io.ReadAll(reader); return err }, tool.file)
+		if err != nil {
+			return result, err
+		}
 	}
 	if err := tool.check(); err != nil {
 		return result, err
 	}
-	raw, err := parseIntroSkipperFingerprint(output)
-	if err != nil {
-		return result, err
+	var raw []uint32
+	if extract {
+		raw, err = parseIntroSkipperFingerprint(output)
+		if err != nil {
+			return result, err
+		}
 	}
 	profile, err := CreditsSkipperAlgorithmProfile(AnalysisAvailability{IntroSkipperAvailable: true, IntroFFmpegSHA256: tool.sha})
 	if err != nil {
@@ -127,7 +146,18 @@ func finalizeCreditsSkipperAnalysis(ctx context.Context, checkSource func() erro
 	if release != nil {
 		defer release()
 	}
-	if err := errors.Join(checkSource(), ctx.Err()); err != nil {
-		*result, *resultErr = CreditsSkipperFeatures{}, err
+	failCreditsSkipperAnalysis(errors.Join(checkSource(), ctx.Err()), result, resultErr)
+}
+
+func failCreditsSkipperAnalysis(failure error, result *CreditsSkipperFeatures, resultErr *error) {
+	if failure == nil {
+		return
 	}
+	// The parser returns this sentinel directly as a completed-empty outcome.
+	// A proof or retirement failure replaces that outcome; retaining it in a
+	// joined error would let the caller mistake a real failure for empty audio.
+	if *resultErr == ErrIntroSkipperFingerprintUnavailable {
+		*resultErr = nil
+	}
+	*result, *resultErr = CreditsSkipperFeatures{}, errors.Join(*resultErr, failure)
 }

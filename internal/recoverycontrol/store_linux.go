@@ -273,43 +273,45 @@ func (s *Store) validateProof() error {
 	return nil
 }
 
-func (s *Store) readCurrent(ctx context.Context) (Snapshot, recordReference, error) {
+// readCurrent retains private payload storage. Public callers must construct a
+// snapshot only after all current-record and publication checks succeed.
+func (s *Store) readCurrent(ctx context.Context) (record, recordReference, error) {
 	if err := s.checkRoot(ctx); err != nil {
-		return Snapshot{}, recordReference{}, err
+		return record{}, recordReference{}, err
 	}
 	if err := s.checkFile(ctx, proofName, s.proofFile); err != nil {
-		return Snapshot{}, recordReference{}, err
+		return record{}, recordReference{}, err
 	}
 	if err := s.validateProof(); err != nil {
-		return Snapshot{}, recordReference{}, err
+		return record{}, recordReference{}, err
 	}
 	data, file, err := readFile(ctx, s.directory, currentName, maxRecordBytes)
 	if err != nil {
-		return Snapshot{}, recordReference{}, err
+		return record{}, recordReference{}, err
 	}
 	if !file.Present || file != s.currentFile {
-		return Snapshot{}, recordReference{}, ErrUnavailable
+		return record{}, recordReference{}, ErrUnavailable
 	}
 	parsed := s.parsedCurrent
 	if parsed == nil || parsed.file != file {
 		var current record
 		if err := decode(data, &current); err != nil {
-			return Snapshot{}, recordReference{}, err
+			return record{}, recordReference{}, err
 		}
 		if current.Version != 1 || current.DeploymentID != s.marker.DeploymentID || current.StoreID != s.marker.StoreID {
-			return Snapshot{}, recordReference{}, ErrRecoveryRequired
+			return record{}, recordReference{}, ErrRecoveryRequired
 		}
 		if current.Revision == 0 {
 			if current.PreviousDigest != "" || !bytes.Equal(current.Payload, []byte("null")) {
-				return Snapshot{}, recordReference{}, ErrRecoveryRequired
+				return record{}, recordReference{}, ErrRecoveryRequired
 			}
 		} else {
 			if !validHex(current.PreviousDigest, 64) {
-				return Snapshot{}, recordReference{}, ErrRecoveryRequired
+				return record{}, recordReference{}, ErrRecoveryRequired
 			}
 			normalized, err := normalizePayload(current.Payload)
 			if err != nil || !bytes.Equal(normalized, current.Payload) {
-				return Snapshot{}, recordReference{}, ErrRecoveryRequired
+				return record{}, recordReference{}, ErrRecoveryRequired
 			}
 		}
 		parsed = &parsedRecord{file: file, value: current}
@@ -317,35 +319,35 @@ func (s *Store) readCurrent(ctx context.Context) (Snapshot, recordReference, err
 	current := parsed.value
 	actual := recordReference{Revision: current.Revision, Digest: file.Digest, PreviousDigest: current.PreviousDigest, Identity: file.Identity}
 	if actual != s.proof.Candidate && (s.proof.Before == nil || actual != *s.proof.Before) {
-		return Snapshot{}, recordReference{}, ErrRecoveryRequired
+		return record{}, recordReference{}, ErrRecoveryRequired
 	}
 	names, err := directoryNames(s.directory)
 	if err != nil {
-		return Snapshot{}, recordReference{}, err
+		return record{}, recordReference{}, err
 	}
 	for _, name := range names {
 		if name == markerName || name == lockName || name == currentName || name == proofName {
 			continue
 		}
 		if !temporaryName(name) {
-			return Snapshot{}, recordReference{}, ErrRecoveryRequired
+			return record{}, recordReference{}, ErrRecoveryRequired
 		}
 		// Temporary files from a crashed process are inert. They must be safe
 		// regular files but are never read into a record or deleted by name.
 		file, stat, err := openRegular(s.directory, name, unix.O_RDONLY)
 		if err != nil {
-			return Snapshot{}, recordReference{}, ErrUnavailable
+			return record{}, recordReference{}, ErrUnavailable
 		}
 		file.Close()
 		if stat.Size < 0 || stat.Size > maxRecordBytes {
-			return Snapshot{}, recordReference{}, ErrUnavailable
+			return record{}, recordReference{}, ErrUnavailable
 		}
 	}
 	if err := s.checkRoot(ctx); err != nil {
-		return Snapshot{}, recordReference{}, err
+		return record{}, recordReference{}, err
 	}
 	s.parsedCurrent = parsed
-	return recordSnapshot(current, file.Digest), actual, nil
+	return current, actual, nil
 }
 
 func (s *Store) Read(ctx context.Context) (Snapshot, error) {
@@ -353,8 +355,11 @@ func (s *Store) Read(ctx context.Context) (Snapshot, error) {
 		return Snapshot{}, err
 	}
 	defer s.leave()
-	snapshot, _, err := s.readCurrent(ctx)
-	return snapshot, err
+	current, reference, err := s.readCurrent(ctx)
+	if err != nil {
+		return Snapshot{}, err
+	}
+	return recordSnapshot(current, reference.Digest), nil
 }
 
 // CompareAndSwap replaces the record only when expectedDigest identifies the
@@ -376,14 +381,14 @@ func (s *Store) CompareAndSwap(ctx context.Context, expectedDigest string, paylo
 		return Snapshot{}, err
 	}
 	defer s.leave()
-	current, before, err := s.readCurrent(ctx)
+	_, before, err := s.readCurrent(ctx)
 	if err != nil {
 		return Snapshot{}, err
 	}
-	if current.Digest != expectedDigest || current.Revision == ^uint64(0) {
+	if before.Digest != expectedDigest || before.Revision == ^uint64(0) {
 		return Snapshot{}, ErrConflict
 	}
-	candidate := record{Version: 1, DeploymentID: s.marker.DeploymentID, StoreID: s.marker.StoreID, Revision: current.Revision + 1, PreviousDigest: current.Digest, Payload: normalized}
+	candidate := record{Version: 1, DeploymentID: s.marker.DeploymentID, StoreID: s.marker.StoreID, Revision: before.Revision + 1, PreviousDigest: before.Digest, Payload: normalized}
 	data, err := encode(candidate)
 	if err != nil || len(data) > maxRecordBytes {
 		return Snapshot{}, ErrInvalid
@@ -399,7 +404,7 @@ func (s *Store) CompareAndSwap(ctx context.Context, expectedDigest string, paylo
 		return Snapshot{}, err
 	}
 	defer s.removeOwnedTemporary(temporary, candidateFile)
-	proof := publicationProof{Version: 1, DeploymentID: s.marker.DeploymentID, StoreID: s.marker.StoreID, Before: &before, Candidate: recordReference{Revision: candidate.Revision, Digest: candidateFile.Digest, PreviousDigest: current.Digest, Identity: candidateFile.Identity}}
+	proof := publicationProof{Version: 1, DeploymentID: s.marker.DeploymentID, StoreID: s.marker.StoreID, Before: &before, Candidate: recordReference{Revision: candidate.Revision, Digest: candidateFile.Digest, PreviousDigest: before.Digest, Identity: candidateFile.Identity}}
 	proofData, _ := encode(proof)
 	proofFile, err := s.replace(ctx, proofName, proofData, s.proofFile)
 	if err != nil {

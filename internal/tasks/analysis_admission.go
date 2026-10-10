@@ -50,6 +50,7 @@ func isMediaAnalysisExecution(key string) bool {
 }
 
 func mediaAnalysisExecutionKeys() []string {
+	// This order is also the in-process round-robin order for the shared slot.
 	return []string{library.TaskIntroAnalysisKey, library.TaskPreviewGenerationKey, library.TaskCreditsAnalysisKey, library.TaskBackgroundPreviewGenerationKey, library.TaskAudioWaveformGenerationKey, library.TaskSubtitleTimelineGenerationKey}
 }
 

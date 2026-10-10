@@ -12,13 +12,17 @@ import (
 
 var errAnalysisGroupBusy = errors.New("analysis concurrency group is occupied")
 
-func (s *Store) nextAnalysisRun(ctx context.Context, previousRun string) (string, error) {
+// Definition keys are unique and each definition has at most one active run.
+// Rotate through the fixed task keys, so new runs cannot postpone the wrap to
+// an older key that still has waiting work. A restart begins at the first key.
+func (s *Store) nextAnalysisRun(ctx context.Context, previousKey string) (string, error) {
 	var id string
 	err := s.pool.QueryRow(ctx, `SELECT r.id FROM task_runs r
-		WHERE r.task_key=ANY($1::text[]) AND r.state IN ('pending','running')
+		JOIN unnest($1::text[]) WITH ORDINALITY AS task_keys(key,ordinal) ON task_keys.key=r.task_key
+		WHERE r.state IN ('pending','running')
 		AND EXISTS(SELECT 1 FROM task_run_children c WHERE c.run_id=r.id AND c.state='waiting')
-		ORDER BY (r.id=$2),r.created_at,r.id LIMIT 1`,
-		mediaAnalysisExecutionKeys(), previousRun).Scan(&id)
+		ORDER BY (task_keys.ordinal<=COALESCE(array_position($1::text[],$2::text),0)),task_keys.ordinal LIMIT 1`,
+		mediaAnalysisExecutionKeys(), previousKey).Scan(&id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", nil
 	}

@@ -87,14 +87,31 @@ actor data nor an old worker can become system authority. Existing RecoverRuns
 interrupts abandoned pending/running/stopping children before a new manager;
 it never issues replacement tokens for them.
 
-The two analysis keys share the `media.analysis` group with capacity one. Waiting
-for this group creates no worker and consumes no generic execution slot. A free
-slot selects a run different from the previously served run when another pending
-or running analysis run has waiting children; remaining ties use creation time
-and immutable ID. Child pagination cannot pin the group to an off-page ordinal.
-The existing generic MaxConcurrent limit, cancellation, reap and join semantics
-remain in force. A durable running-child check also prevents a second claim in
-the group. A completed bounded child returns its slot only after result reaping.
+Six media task keys share the `media.analysis` group with capacity one. Their
+fixed round-robin order is intro analysis, preview generation, credits analysis,
+background preview generation, audio waveform generation and subtitle timeline
+generation. A free slot selects the next key with a pending or running run and
+waiting children, after the last successfully claimed key, wrapping as needed.
+Definition keys are unique and each definition has at most one active run, so
+continuously arriving new runs cannot postpone the turn of an older eligible key.
+Disabled definitions and unavailable executors do not remove already-admitted
+work from selection or change its existing execution/failure lifecycle.
+
+The in-process cursor advances only after the database claim succeeds and its
+worker is registered. Execution-time authorization or provider failure still
+consumes that turn. A new manager starts before the first key; recovery retains
+its interruption semantics and does not issue replacement execution tokens.
+Waiting for the group creates no worker and consumes no generic execution slot.
+When another run is selected, the current reconciliation pass skips its remaining
+waiting children but still checks nonwaiting entries in the fetched page. Only
+examined children consume the pass budget and advance child cursors, and the run
+is still refreshed before traversal continues to other runs. No selected run ID
+is retained as execution authority or dispatched without a fresh claim.
+
+The existing generic MaxConcurrent limit, cancellation, runtime deadlines, reap
+and join semantics remain in force. A durable running-child check also prevents
+a second claim in the group. A completed bounded child returns its slot only
+after result reaping.
 
 ## Schema 50 integration fragment
 

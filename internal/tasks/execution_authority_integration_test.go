@@ -95,8 +95,8 @@ func TestGlobalWorkerExecutionAuthorizationAcceptsManualAndSystemSources(t *test
 			defer cancel()
 			manager := &Manager{store: f.store, ctx: ctx, wake: make(chan struct{}, 1), executions: map[string]*workerExecution{}, runtimeDeadlines: map[string]time.Time{}}
 			t.Cleanup(func() { manager.drainExecutions() })
-			if full, err := manager.reconcileExecution(f.ctx, run, child, false); err != nil || full {
-				t.Fatalf("global dispatch: full=%t error=%v", full, err)
+			if disposition, err := manager.reconcileExecution(f.ctx, run, child, false); err != nil || disposition != executionContinue {
+				t.Fatalf("global dispatch: disposition=%d error=%v", disposition, err)
 			}
 			execution := manager.executions[child.ID]
 			if execution == nil {

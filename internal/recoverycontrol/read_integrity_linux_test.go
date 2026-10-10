@@ -34,6 +34,40 @@ func TestControlRepeatedReadsKeepIndependentPayloadsAcrossCAS(t *testing.T) {
 	}
 }
 
+func TestControlMaximumPayloadCASIsolatesPublicStorage(t *testing.T) {
+	directory := controlDirectory(t)
+	store := openControl(t, directory)
+	initial := readControl(t, store)
+	prefix, suffix := `{"text":"`, `"}`
+	payload := []byte(prefix + strings.Repeat("x", MaxPayloadBytes-len(prefix)-len(suffix)) + suffix)
+	first := writeControl(t, store, initial.Digest, payload)
+	if first.Revision != 1 || len(first.Payload) != MaxPayloadBytes || !bytes.Equal(first.Payload, payload) {
+		t.Fatal("CAS changed a maximum-sized payload")
+	}
+	payload[len(payload)/2], first.Payload[0] = 'y', 'x'
+	current := readControl(t, store)
+	if current.Payload[0] != '{' || current.Payload[len(current.Payload)/2] != 'x' {
+		t.Fatal("maximum-sized CAS retained public payload storage")
+	}
+	next := writeControl(t, store, current.Digest, current.Payload)
+	if next.Revision != current.Revision+1 || next.Digest == current.Digest || !bytes.Equal(next.Payload, current.Payload) {
+		t.Fatal("maximum-sized equal-payload CAS did not advance the record")
+	}
+	current.Payload[len(current.Payload)/2], next.Payload[len(next.Payload)-1] = 'y', 'x'
+	actual := readControl(t, store)
+	if len(actual.Payload) != MaxPayloadBytes || actual.Payload[len(actual.Payload)/2] != 'x' || actual.Payload[len(actual.Payload)-1] != '}' {
+		t.Fatal("consecutive maximum-sized CAS shared payload storage")
+	}
+	if err := store.Close(); err != nil {
+		t.Fatal(err)
+	}
+	store = openControl(t, directory)
+	reopened := readControl(t, store)
+	if reopened.Revision != next.Revision || reopened.Digest != next.Digest || !bytes.Equal(reopened.Payload, actual.Payload) {
+		t.Fatal("reopen changed the maximum-sized publication")
+	}
+}
+
 func TestControlPublishedRecordMatchesFreshDecode(t *testing.T) {
 	for _, test := range []struct {
 		payload string
@@ -98,11 +132,11 @@ func TestControlExpandedPayloadIsNotAcceptedByReadCache(t *testing.T) {
 	}
 }
 
-func TestControlRepeatedReadRechecksCurrentProofRelation(t *testing.T) {
+func TestControlRepeatedReadAndCASRecheckCurrentProofRelation(t *testing.T) {
 	ctx := context.Background()
 	store := openControl(t, controlDirectory(t))
 	initial := readControl(t, store)
-	writeControl(t, store, initial.Digest, []byte(`{"phase":"prepared"}`))
+	published := writeControl(t, store, initial.Digest, []byte(`{"phase":"prepared"}`))
 	readControl(t, store)
 	proof := store.proof
 	proof.Candidate.Digest = strings.Repeat("f", 64)
@@ -121,9 +155,12 @@ func TestControlRepeatedReadRechecksCurrentProofRelation(t *testing.T) {
 	if _, err := store.Read(ctx); !errors.Is(err, ErrRecoveryRequired) {
 		t.Fatalf("repeated read accepted an unrelated publication proof: %v", err)
 	}
+	if _, err := store.CompareAndSwap(ctx, published.Digest, []byte(`{"phase":"finished"}`)); !errors.Is(err, ErrRecoveryRequired) {
+		t.Fatalf("CAS accepted an unrelated publication proof: %v", err)
+	}
 }
 
-func TestControlRepeatedReadAndReopenRejectChangedMalformedRecords(t *testing.T) {
+func TestControlRepeatedReadCASAndReopenRejectChangedMalformedRecords(t *testing.T) {
 	for _, change := range []struct {
 		name string
 		old  string
@@ -140,7 +177,7 @@ func TestControlRepeatedReadAndReopenRejectChangedMalformedRecords(t *testing.T)
 			directory := controlDirectory(t)
 			store := openControl(t, directory)
 			initial := readControl(t, store)
-			writeControl(t, store, initial.Digest, []byte(`{"key":1}`))
+			published := writeControl(t, store, initial.Digest, []byte(`{"key":1}`))
 			readControl(t, store)
 			filename := filepath.Join(directory, currentName)
 			data, err := os.ReadFile(filename)
@@ -156,6 +193,9 @@ func TestControlRepeatedReadAndReopenRejectChangedMalformedRecords(t *testing.T)
 			}
 			if _, err := store.Read(ctx); err == nil {
 				t.Fatal("repeated read accepted changed current bytes")
+			}
+			if _, err := store.CompareAndSwap(ctx, published.Digest, []byte(`{"key":2}`)); !errors.Is(err, ErrUnavailable) {
+				t.Fatalf("CAS accepted changed current bytes: %v", err)
 			}
 			proof := store.proof
 			proof.Candidate.Digest = hash(changed)

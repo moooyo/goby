@@ -105,6 +105,27 @@ func BenchmarkControlRecordValidation(b *testing.B) {
 	}
 }
 
+var controlSnapshotBenchmarkSink Snapshot
+
+// BenchmarkControlRecordSnapshot isolates the public-boundary payload copy from
+// filesystem verification and publication.
+func BenchmarkControlRecordSnapshot(b *testing.B) {
+	for _, size := range []int{1024, MaxPayloadBytes} {
+		b.Run(fmt.Sprintf("payload_bytes=%d", size), func(b *testing.B) {
+			prefix, suffix := `{"text":"`, `"}`
+			payload := []byte(prefix + strings.Repeat("x", size-len(prefix)-len(suffix)) + suffix)
+			current := record{Revision: 1, Payload: payload}
+			digest := strings.Repeat("a", 64)
+			b.ReportAllocs()
+			b.SetBytes(int64(size))
+			b.ResetTimer()
+			for range b.N {
+				controlSnapshotBenchmarkSink = recordSnapshot(current, digest)
+			}
+		})
+	}
+}
+
 func controlBenchmarkPayload(count int) []byte {
 	var payload strings.Builder
 	payload.WriteString(`{"version":1,"operations":[`)

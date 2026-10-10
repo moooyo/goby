@@ -132,47 +132,77 @@ func (r *mediaAnalysisRuntime) executeCreditsAnalysis(ctx context.Context, task 
 	return progress(tasks.Progress{Processed: int64(len(work.Sources)), Updated: int64(len(values))})
 }
 
-func (r *mediaAnalysisRuntime) creditsSourceFingerprint(ctx context.Context, task tasks.Work, work library.AnalysisWork, source library.AnalysisSource) (hash string, fingerprint []uint32, resultErr error) {
+func (r *mediaAnalysisRuntime) creditsSourceFingerprint(ctx context.Context, task tasks.Work, work library.AnalysisWork, source library.AnalysisSource) (string, []uint32, error) {
+	result, err := r.readCreditsSourceFingerprint(ctx, task, work, source)
+	if err != nil {
+		return "", nil, err
+	}
+	if err := ctx.Err(); err != nil {
+		return "", nil, err
+	}
+	// The read helper has now completed its deferred descriptor and I/O lease
+	// retirement. A late close failure must never publish a reusable entry.
+	if result.cacheable {
+		r.creditsFingerprints.put(result.key, result.raw)
+	}
+	return result.hash, result.raw, nil
+}
+
+func (r *mediaAnalysisRuntime) readCreditsSourceFingerprint(ctx context.Context, task tasks.Work, work library.AnalysisWork, source library.AnalysisSource) (result creditsFingerprintRead, resultErr error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(work.Profile.MaxItemRuntimeSeconds)*time.Second)
 	defer cancel()
 	task = task.WithContext(ctx)
 	file, opened, err := r.server.library.OpenAnalysisSource(ctx, task.ChildID, source.ItemID, task.Fence)
 	if err != nil {
-		return "", nil, err
+		return result, err
 	}
 	read, err := r.server.library.PrepareMediaSourceIO(ctx, opened)
-	defer func() { resultErr = errors.Join(resultErr, closeAnalysisSourceRead(file, read)) }()
+	defer func() { resultErr = errors.Join(resultErr, closeAnalysisSourceRead(file, read), ctx.Err()) }()
 	if err != nil {
-		return "", nil, err
+		return result, err
 	}
 	ctx = read.Context(ctx)
 	if opened.Item.Media == nil || opened.Size != source.Size || opened.Size > work.Profile.MaxSourceBytes || opened.Item.Media.DurationTicks != source.DurationTicks {
-		return "", nil, media.ErrAnalysisUnproven
+		return result, media.ErrAnalysisUnproven
 	}
-	hash, err = analysisSourceDigest(ctx, file, source.Size, work.Profile.MaxSourceBytes)
+	result.hash, err = analysisSourceDigest(ctx, file, source.Size, work.Profile.MaxSourceBytes)
 	if err != nil {
-		return "", nil, err
+		return result, err
 	}
-	fingerprint = []uint32{}
+	result.raw = []uint32{}
 	index, found := media.SelectIntroSkipperAudioStream(*opened.Item.Media, "", true)
 	if !found {
-		return hash, fingerprint, nil
+		return result, nil
 	}
 	extractor := r.extractor
 	extractor.Limits.Timeout = time.Duration(work.Profile.MaxItemRuntimeSeconds) * time.Second
-	value, err := extractor.ExtractCreditsSkipper(ctx, file, *opened.Item.Media, media.IntroSkipperAnalysisRequest{AudioStreamIndex: index, Options: work.Execution.IntroSkipperOptions})
+	request := media.IntroSkipperAnalysisRequest{AudioStreamIndex: index, Options: work.Execution.IntroSkipperOptions}
+	if !work.Force {
+		result.key, result.cacheable = creditsFingerprintKey(work, source, result.hash, r.creditsAudioProfile, index)
+	}
+	var value media.CreditsSkipperFeatures
+	if result.cacheable {
+		result.raw = r.creditsFingerprints.get(result.key)
+	}
+	if len(result.raw) != 0 {
+		value, err = extractor.CheckCreditsSkipper(ctx, file, *opened.Item.Media, request)
+	} else {
+		value, err = extractor.ExtractCreditsSkipper(ctx, file, *opened.Item.Media, request)
+		result.raw = value.RawFingerprint
+	}
 	if err != nil {
 		if ctx.Err() == nil && errors.Is(err, media.ErrIntroSkipperFingerprintUnavailable) {
-			return hash, fingerprint, nil
+			result.raw, result.cacheable = []uint32{}, false
+			return result, nil
 		}
-		return "", nil, err
+		return result, err
 	}
 	if value.AlgorithmProfile != r.creditsAudioProfile || value.FFmpegSHA256 != work.Execution.FingerprintSHA256 ||
 		value.FingerprintStartSeconds != introskipper.CreditsFingerprintStartSeconds(source.DurationTicks) ||
 		value.FingerprintEndSeconds != float64(source.DurationTicks)/float64(media.TicksPerSecond) {
-		return "", nil, media.ErrAnalysisUnproven
+		return result, media.ErrAnalysisUnproven
 	}
-	return hash, value.RawFingerprint, nil
+	return result, nil
 }
 
 func (r *mediaAnalysisRuntime) creditsSourceVisual(ctx context.Context, task tasks.Work, work library.AnalysisWork, source library.AnalysisSource, audio *introskipper.EpisodeResult) (result library.AnalysisStoredCreditsResult, resultErr error) {
