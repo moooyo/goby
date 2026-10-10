@@ -539,9 +539,6 @@ func encodeEvent(envelope Envelope, maxBytes int) (Event, error) {
 		}
 		envelope.MessageID = hex.EncodeToString(id[:])
 	}
-	if envelope.Data != nil {
-		envelope.Data = append(json.RawMessage{}, envelope.Data...)
-	}
 	payload, err := json.Marshal(envelope)
 	if err != nil {
 		return Event{}, fmt.Errorf("%w: %v", ErrInvalidEvent, err)

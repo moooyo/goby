@@ -73,8 +73,8 @@ func checkScanReconciliationMusic(ctx context.Context, tx pgx.Tx, libraryID stri
 				i.type='MusicAlbum' AND i.is_folder,
 				COALESCE(octet_length(i.parent_id)>256,false)
 				FROM items i WHERE i.id=ANY($1::text[]) AND i.library_id=$2
-				AND NOT (i.id=ANY($3::text[])) AND `+ordinaryItemSQL("i")+`
-				ORDER BY i.id`, frontier[start:end], libraryID, excluded)
+				AND `+ordinaryItemSQL("i")+`
+				ORDER BY i.id`, frontier[start:end], libraryID)
 			if err != nil {
 				return fmt.Errorf("resolve surviving music albums: %w", err)
 			}

@@ -60,6 +60,10 @@ type PreviewAnalysisSummary struct {
 // or cancellation error invalidates all frames emitted by this invocation.
 // The synchronous callback must return promptly and honor the caller context.
 func (extractor AnalysisExtractor) ExtractPreviews(ctx context.Context, file *os.File, info Info, streamIndex int, options PreviewAnalysisOptions, emit func(PreviewFrame) error) (summary PreviewAnalysisSummary, resultErr error) {
+	return extractor.extractPreviews(ctx, file, info, streamIndex, options, emit, nil)
+}
+
+func (extractor AnalysisExtractor) extractPreviews(ctx context.Context, file *os.File, info Info, streamIndex int, options PreviewAnalysisOptions, emit func(PreviewFrame) error, build *analysisPreviewBuild) (summary PreviewAnalysisSummary, resultErr error) {
 	if ctx == nil {
 		return summary, ErrAnalysisUnavailable
 	}
@@ -78,6 +82,11 @@ func (extractor AnalysisExtractor) ExtractPreviews(ctx context.Context, file *os
 	if err != nil {
 		return summary, err
 	}
+	if build != nil && build.proof != nil {
+		if err := videoSeekCheckSource(file, build.before); err != nil {
+			return summary, err
+		}
+	}
 	finalContext := ctx
 	var release func()
 	defer func() {
@@ -94,6 +103,12 @@ func (extractor AnalysisExtractor) ExtractPreviews(ctx context.Context, file *os
 		return summary, err
 	}
 	finalContext, release = processContext, operationRelease
+	if build != nil && build.proof != nil {
+		// Pin both executable byte identities even when the standalone caller
+		// did not supply expected digests for the first extraction.
+		extractor.ExpectedFFmpegSHA256 = build.ffmpegSHA
+		extractor.ExpectedFFprobeSHA256 = build.geometry.ffprobeSHA
+	}
 	tool, err := analysisOpenToolExpected(processContext, extractor.FFmpegPath, extractor.ExpectedFFmpegSHA256)
 	if err != nil {
 		return summary, err
@@ -116,9 +131,29 @@ func (extractor AnalysisExtractor) ExtractPreviews(ctx context.Context, file *os
 		return summary, err
 	}
 	budget := &analysisPreviewHoldBudget{limits: limits}
-	proof, err := runAnalysisPreviewHoldPlan(processContext, tool, file, before, info, stream, plan, limits, budget)
-	if err != nil {
-		return summary, err
+	var proof analysisPreviewHoldProof
+	if build != nil {
+		budget.actual = &build.actual
+	}
+	if build != nil && build.proof != nil {
+		if tool.sha != build.ffmpegSHA || geometry != build.geometry || plan.interval != build.interval {
+			return summary, fmt.Errorf("%w: preview build source or tool facts changed", ErrAnalysisUnproven)
+		}
+		proof = *build.proof
+		budget.bytes, budget.frames, budget.packets = build.source.bytes, build.source.frames, build.source.packets
+		if err := budget.admitRepeat(proof.sourceFrames, proof.packets); err != nil {
+			return summary, err
+		}
+	} else {
+		proof, err = runAnalysisPreviewHoldPlan(processContext, tool, file, before, info, stream, plan, limits, budget)
+		if err != nil {
+			return summary, err
+		}
+		if build != nil {
+			build.proof, build.before, build.geometry = &proof, before, geometry
+			build.ffmpegSHA, build.interval = tool.sha, plan.interval
+			build.source = analysisPreviewHoldUsage{bytes: budget.bytes, frames: budget.frames, packets: budget.packets}
+		}
 	}
 	log, err := newAnalysisPreviewHoldLog(info, stream, plan, limits, budget, &proof)
 	if err != nil {

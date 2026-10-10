@@ -39,11 +39,13 @@ type targetQuerier interface {
 	QueryRow(context.Context, string, ...any) pgx.Row
 }
 
+const targetAuthoritySQL = `
+	FROM notification_registrations r CROSS JOIN notification_transport c JOIN sessions s ON true JOIN users u ON u.id=s.user_id
+	WHERE r.id=$1 AND c.id=1 AND r.enabled AND c.enabled AND s.id=r.session_id AND s.user_id=r.user_id AND s.device_id=r.device_id AND s.kind='emby' AND s.revoked_at IS NULL AND s.expires_at>clock_timestamp() AND NOT u.is_disabled`
+
 func readTarget(ctx context.Context, query targetQuerier, id string) (target, error) {
 	var t target
-	err := query.QueryRow(ctx, `SELECT r.id,r.session_id,r.user_id,r.device_id,r.peer_ip,r.revision,c.revision,r.token_generation,c.credential_generation,c.endpoint,c.allowed_networks,r.token_ciphertext,c.credential_ciphertext
-	FROM notification_registrations r CROSS JOIN notification_transport c JOIN sessions s ON true JOIN users u ON u.id=s.user_id
-	WHERE r.id=$1 AND c.id=1 AND r.enabled AND c.enabled AND s.id=r.session_id AND s.user_id=r.user_id AND s.device_id=r.device_id AND s.kind='emby' AND s.revoked_at IS NULL AND s.expires_at>clock_timestamp() AND NOT u.is_disabled`, id).Scan(&t.id, &t.session, &t.user, &t.device, &t.peer, &t.regRevision, &t.configRevision, &t.tokenGeneration, &t.credentialGeneration, &t.endpoint, &t.networks, &t.token, &t.credential)
+	err := query.QueryRow(ctx, `SELECT r.id,r.session_id,r.user_id,r.device_id,r.peer_ip,r.revision,c.revision,r.token_generation,c.credential_generation,c.endpoint,c.allowed_networks,r.token_ciphertext,c.credential_ciphertext`+targetAuthoritySQL, id).Scan(&t.id, &t.session, &t.user, &t.device, &t.peer, &t.regRevision, &t.configRevision, &t.tokenGeneration, &t.credentialGeneration, &t.endpoint, &t.networks, &t.token, &t.credential)
 	return t, err
 }
 func (s *Store) currentTarget(ctx context.Context, id string) (target, error) {
@@ -56,6 +58,23 @@ func (s *Store) currentTarget(ctx context.Context, id string) (target, error) {
 	}
 	return t, nil
 }
+
+type targetRevisions struct {
+	regRevision, configRevision int64
+}
+
+func (s *Store) currentTargetRevisions(ctx context.Context, id string) (targetRevisions, error) {
+	var revisions targetRevisions
+	err := s.pool.QueryRow(ctx, `SELECT r.revision,c.revision`+targetAuthoritySQL, id).Scan(&revisions.regRevision, &revisions.configRevision)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return targetRevisions{}, identity.ErrUnauthorized
+		}
+		return targetRevisions{}, ErrUnavailable
+	}
+	return revisions, nil
+}
+
 func (s *Store) authorizedRefs(ctx context.Context, t target, refs []notificationjournal.Reference) ([]notificationjournal.Reference, error) {
 	fresh, err := s.users.RevalidateSession(ctx, t.principal())
 	if err != nil {

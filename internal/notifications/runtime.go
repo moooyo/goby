@@ -416,7 +416,7 @@ func failureDisposition(attempt int, err error) (string, string, time.Duration) 
 var errSourceVisibilityChanged = errors.New("notification source visibility changed")
 
 func (r *Runtime) checkDelivery(ctx context.Context, t target, expected []notificationjournal.Reference) error {
-	fresh, err := r.store.currentTarget(ctx, t.id)
+	fresh, err := r.store.currentTargetRevisions(ctx, t.id)
 	if err != nil {
 		return err
 	}

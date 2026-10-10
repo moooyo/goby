@@ -65,10 +65,22 @@ func (r *mediaAnalysisRuntime) buildPreview(ctx context.Context, work library.An
 	if err != nil {
 		return nil, nil, err
 	}
-	return generateAnalysisPreview(ctx, r.cache, work, source, plan,
-		func(ctx context.Context, options media.PreviewAnalysisOptions, emit func(media.PreviewFrame) error) (media.PreviewAnalysisSummary, error) {
-			return extractor.ExtractPreviews(ctx, file, info, stream, options, emit)
-		})
+	operation, cancel := context.WithTimeout(ctx, time.Duration(work.Profile.MaxItemRuntimeSeconds)*time.Second)
+	defer cancel()
+	var publication *analysiscache.Publication
+	var values []library.AnalysisPreviewPublication
+	err = extractor.WithPreviewBuild(operation, file, info, stream, func(extract media.PreviewAnalysisExtract) error {
+		var buildErr error
+		publication, values, buildErr = generateAnalysisPreview(operation, r.cache, work, source, plan,
+			func(_ context.Context, options media.PreviewAnalysisOptions, emit func(media.PreviewFrame) error) (media.PreviewAnalysisSummary, error) {
+				return extract(options, emit)
+			})
+		return buildErr
+	})
+	if err != nil {
+		return nil, nil, discardAnalysisPreviewPublication(publication, err)
+	}
+	return publication, values, nil
 }
 
 func planAnalysisPreviewBuild(configuration config.MediaAnalysisConfig, work library.AnalysisWork, source library.AnalysisSource, info media.Info) (analysisPreviewBuildPlan, error) {

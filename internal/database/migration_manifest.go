@@ -91,6 +91,7 @@ var publishedMigrations = [...]publishedMigration{
 	{65, "0065_task_runs_completed_index.sql", "55236d310fdd36f6e6b6f4c54fd622f83892c386e28a22682837d3daab7202d1"},
 	{66, "0066_linux_auxiliary_paths.sql", "4b18305673016f02358624e394e18a8a23981aec63a5dd789a774829ff20223e"},
 	{67, "0067_media_operations_pending_index.sql", "796f54cff22c7544fbfa3e80123a6033eb49af6e707ad2b59cdf67c8211d46c0"},
+	{68, "0068_catalog_entity_reuse.sql", "bf88f792671a305d4da05a1cf358af719e64de4e6fd209cac6f64e4713becacb"},
 }
 
 func validatePublishedMigrations(available []migration) error {

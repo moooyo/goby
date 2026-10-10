@@ -38,13 +38,22 @@ type analysisPreviewHoldProof struct {
 	trace                 [sha256.Size]byte
 }
 
-// Both full decodes share these operation budgets. No complete diagnostic
-// stream or collection of image rasters is retained.
+type analysisPreviewHoldUsage struct {
+	bytes           int64
+	frames, packets int
+}
+
+// Both logical full decodes share these operation budgets. A reused source
+// audit seeds its completed usage without charging it again to actual work.
+// At most three variants each satisfy source + output <= limits, so actual
+// source + all outputs is also bounded by three times those same limits.
+// No complete diagnostic stream or collection of image rasters is retained.
 type analysisPreviewHoldBudget struct {
 	mu              sync.Mutex
 	limits          AnalysisLimits
 	bytes           int64
 	frames, packets int
+	actual          *analysisPreviewHoldUsage
 }
 
 func (budget *analysisPreviewHoldBudget) addBytes(count int) error {
@@ -54,6 +63,9 @@ func (budget *analysisPreviewHoldBudget) addBytes(count int) error {
 		return fmt.Errorf("%w: preview operation diagnostics", ErrAnalysisBudget)
 	}
 	budget.bytes += int64(count)
+	if budget.actual != nil {
+		budget.actual.bytes += int64(count)
+	}
 	return nil
 }
 
@@ -65,6 +77,10 @@ func (budget *analysisPreviewHoldBudget) addRecords(frames, packets int) error {
 	}
 	budget.frames += frames
 	budget.packets += packets
+	if budget.actual != nil {
+		budget.actual.frames += frames
+		budget.actual.packets += packets
+	}
 	return nil
 }
 

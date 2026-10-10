@@ -183,6 +183,13 @@ index. Restoring schema 63 authenticates its original catalog and fingerprints
 before the trusted index-only upgrade; current archives require schema 64's
 separately exported PostgreSQL 17 catalog.
 
+Schema 68 changes only catalog entity synchronization. Exact existing entities
+are reused under row locks; only missing identities enter the original
+collision-checking insertion path. Durable rows, association rules and the
+historical function identity are preserved. Current archives authenticate the
+new function body with the separately exported PostgreSQL 17 catalog; older
+archives retain their original catalogs before the trusted function upgrade.
+
 All external commands have time and byte limits, a private process group,
 Linux parent-death signaling, and a pinned creating thread. The child leader is
 kept waitable until the group has been retired to avoid signalling a recycled

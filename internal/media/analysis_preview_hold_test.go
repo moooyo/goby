@@ -274,6 +274,49 @@ func TestAnalysisPreviewHoldBudgetsAreCumulative(t *testing.T) {
 	}
 }
 
+func TestAnalysisPreviewBuildBudgetsRetainSourceCostForEveryVariant(t *testing.T) {
+	timestamps := []int64{0, 3000, 7000}
+	proof, _, sourceBudget := previewHoldTestPlan(t, timestamps, 8100*TicksPerSecond/1000, TicksPerSecond)
+	info, stream, plan, limits, _ := previewHoldTestSetup(t, 8100*TicksPerSecond/1000, TicksPerSecond)
+	source := analysisPreviewHoldUsage{bytes: sourceBudget.bytes, frames: sourceBudget.frames, packets: sourceBudget.packets}
+	actual := source
+	transcript := []byte(previewHoldTestTranscript(timestamps, &proof))
+	limits.MaxSourceFrames = source.frames * 2
+	limits.MaxStderrBytes = source.bytes + int64(len(transcript))
+	for variant := 0; variant < 3; variant++ {
+		budget := &analysisPreviewHoldBudget{limits: limits, bytes: source.bytes, frames: source.frames, packets: source.packets, actual: &actual}
+		if err := budget.admitRepeat(proof.sourceFrames, proof.packets); err != nil {
+			t.Fatal(err)
+		}
+		log, err := newAnalysisPreviewHoldLog(info, stream, plan, limits, budget, &proof)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := log.Write(transcript); err != nil {
+			t.Fatalf("variant %d rejected the original two-pass budget: %v", variant, err)
+		}
+		log.Close(nil)
+		if err := readAnalysisPreviewHeldFrames(context.Background(), bytes.NewReader(make([]byte, 36)), log,
+			func(analysisPreviewHoldPoint, []byte) error { return nil }); err != nil || log.result() != nil {
+			t.Fatalf("variant %d audit failed: %v / %v", variant, err, log.result())
+		}
+		if err := budget.addBytes(1); !errors.Is(err, ErrAnalysisBudget) {
+			t.Fatalf("variant %d forgot shared source diagnostic usage: %v", variant, err)
+		}
+		if err := budget.addRecords(1, 0); !errors.Is(err, ErrAnalysisBudget) {
+			t.Fatalf("variant %d forgot shared source frame usage: %v", variant, err)
+		}
+		budget.limits.MaxSourceFrames = 1
+		budget.frames, budget.packets = 0, 4
+		if err := budget.addRecords(0, 1); !errors.Is(err, ErrAnalysisBudget) {
+			t.Fatalf("variant %d ignored its cumulative packet budget: %v", variant, err)
+		}
+	}
+	if actual.frames != 4*source.frames || actual.packets != 4*source.packets || actual.bytes != source.bytes+3*int64(len(transcript)) {
+		t.Fatalf("actual work duplicated shared audit usage or omitted output work: source=%+v actual=%+v", source, actual)
+	}
+}
+
 func TestAnalysisPreviewHoldAcceptsAtomicRecordsSharingPhysicalLines(t *testing.T) {
 	info, stream, plan, limits, budget := previewHoldTestSetup(t, 8100*TicksPerSecond/1000, TicksPerSecond)
 	first, err := newAnalysisPreviewHoldLog(info, stream, plan, limits, budget, nil)
