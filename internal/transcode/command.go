@@ -16,7 +16,7 @@ var (
 	ErrStart            = errors.New("transcode process could not start")
 	ErrProcess          = errors.New("transcode process failed")
 	ErrProgress         = errors.New("invalid transcode progress output")
-	ErrUnsupported      = errors.New("transcoding requires Linux")
+	ErrUnsupported      = errors.New("unsupported transcode operation")
 )
 
 const (

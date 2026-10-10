@@ -11,7 +11,6 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/activity"
 	"github.com/moooyo/goby/internal/diagnostics"
 	"github.com/moooyo/goby/internal/identity"
@@ -63,30 +62,19 @@ func observabilityPrincipal(r *http.Request) identity.Principal {
 }
 
 // Filesystem work must never retain the catalog owner or actor row locks.
-// Dedicated short transactions also let download revalidation honor cancellation
-// while a catalog writer is holding the owner's independent transaction.
+// Independent single-statement reads also let download revalidation honor
+// cancellation while a catalog writer holds the owner's transaction.
 func (s *Server) checkObservabilityAdministrator(ctx context.Context, principal identity.Principal, audience identity.AdministratorAudience) error {
 	if s.db == nil {
 		return diagnostics.ErrUnavailable
 	}
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
-	tx, err := s.db.BeginTx(ctx, pgx.TxOptions{AccessMode: pgx.ReadOnly})
-	if err != nil {
+	err := identity.CheckAdministratorRead(ctx, s.db, principal, audience)
+	if errors.Is(err, identity.ErrAdministratorReadUnavailable) {
 		return diagnostics.ErrUnavailable
 	}
-	defer func() {
-		cleanup, done := context.WithTimeout(context.WithoutCancel(ctx), 2*time.Second)
-		defer done()
-		_ = tx.Rollback(cleanup)
-	}()
-	if err := identity.CheckAdministrator(ctx, tx, principal, audience, false); err != nil {
-		return err
-	}
-	if err := tx.Commit(ctx); err != nil {
-		return diagnostics.ErrUnavailable
-	}
-	return nil
+	return err
 }
 
 func observabilityQuery(r *http.Request, allowed ...string) (url.Values, error) {

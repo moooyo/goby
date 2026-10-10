@@ -314,12 +314,11 @@ func (m *Manager) authorize(ctx context.Context, actor identity.Principal) error
 	if m == nil || m.pool == nil || !m.lease.Protects(m.pool) {
 		return ErrUnavailable
 	}
-	tx, err := m.pool.BeginTx(ctx, pgx.TxOptions{AccessMode: pgx.ReadOnly})
-	if err != nil {
+	err := identity.CheckAdministratorRead(ctx, m.pool, actor, identity.AdministratorNative)
+	if errors.Is(err, identity.ErrAdministratorReadUnavailable) {
 		return ErrUnavailable
 	}
-	defer rollbackRestore(tx)
-	return identity.CheckAdministrator(ctx, tx, actor, identity.AdministratorNative, false)
+	return err
 }
 
 // grantLocked is called while the manager serializes admission. The local

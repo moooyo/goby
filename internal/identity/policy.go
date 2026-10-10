@@ -61,6 +61,18 @@ type ManagedPolicy struct {
 	EnableAllDevices                 bool
 }
 
+// Policy field names depend only on the compiled type. Keep this lookup private
+// and read-only; policy documents, defaults and returned values remain per call.
+var managedPolicyFieldNames = func() map[string]string {
+	typeOfPolicy := reflect.TypeOf(ManagedPolicy{})
+	known := make(map[string]string, typeOfPolicy.NumField())
+	for index := 0; index < typeOfPolicy.NumField(); index++ {
+		name := typeOfPolicy.Field(index).Name
+		known[strings.ToLower(name)] = name
+	}
+	return known
+}()
+
 // DefaultManagedPolicy preserves existing access for accounts whose stored
 // document predates a supported field. Destructive and cross-user powers remain
 // opt-in; administrator status does not alter these editable facts.
@@ -114,13 +126,7 @@ func parseManagedPolicy(raw json.RawMessage, runtimePlayback bool) (ManagedPolic
 		return ManagedPolicy{}, managedUserFieldError("Policy", "policy must be a JSON object")
 	}
 	policy := DefaultManagedPolicy()
-	typeOfPolicy := reflect.TypeOf(policy)
-	known := make(map[string]string, typeOfPolicy.NumField())
-	for index := 0; index < typeOfPolicy.NumField(); index++ {
-		name := typeOfPolicy.Field(index).Name
-		known[strings.ToLower(name)] = name
-	}
-	cleaned := make(map[string]any, len(known))
+	cleaned := make(map[string]any, len(managedPolicyFieldNames))
 	for name, value := range values {
 		if strings.EqualFold(name, "LockedOutDate") || strings.EqualFold(name, "InvalidLoginAttemptCount") {
 			if name == "LockedOutDate" && value == nil {
@@ -134,7 +140,7 @@ func parseManagedPolicy(raw json.RawMessage, runtimePlayback bool) (ManagedPolic
 			}
 			continue
 		}
-		canonical, found := known[strings.ToLower(name)]
+		canonical, found := managedPolicyFieldNames[strings.ToLower(name)]
 		if !found {
 			continue
 		}

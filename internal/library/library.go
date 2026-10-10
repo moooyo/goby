@@ -165,6 +165,7 @@ type Store struct {
 	prober              Prober
 	imageInspection     artwork.InspectionCache
 	roots               []approvedRoot
+	configuredRoots     []configuredStorageRoot
 	ctx                 context.Context
 	cancel              context.CancelFunc
 	mu                  sync.Mutex

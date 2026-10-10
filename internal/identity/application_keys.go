@@ -597,7 +597,7 @@ func (s *Store) beginApplicationKeyOperation(ctx context.Context, actor Principa
 	return tx, nil
 }
 
-func authorizeApplicationKeyActor(ctx context.Context, tx AuthorizationTx, actor Principal, expectedSelfRevocation *time.Time) error {
+func authorizeApplicationKeyActor(ctx context.Context, tx administratorQuerier, actor Principal, expectedSelfRevocation *time.Time) error {
 	if !actor.IsApplicationKey() {
 		// Ordinary administrators retain their credential audience and current
 		// Emby login policy after every wait. Device authorization delegates only

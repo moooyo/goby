@@ -14,7 +14,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/config"
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
@@ -157,15 +156,7 @@ func (r *mediaOperationsRuntime) authorize(ctx context.Context, actor identity.P
 	if r == nil {
 		return library.ErrUnavailable
 	}
-	tx, err := r.server.db.BeginTx(ctx, pgx.TxOptions{AccessMode: pgx.ReadOnly})
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(context.Background())
-	if err = identity.CheckAdministrator(ctx, tx, actor, identity.AdministratorNative, false); err != nil {
-		return err
-	}
-	return tx.Commit(ctx)
+	return identity.CheckAdministratorRead(ctx, r.server.db, actor, identity.AdministratorNative)
 }
 
 func (r *mediaOperationsRuntime) Capabilities(ctx context.Context, actor identity.Principal) (adminMediaOperationCapabilities, error) {

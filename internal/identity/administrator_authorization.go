@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // AuthorizationTx is the query-only view of the caller's active transaction.
@@ -16,6 +17,17 @@ type AuthorizationTx interface {
 	QueryRow(context.Context, string, ...any) pgx.Row
 }
 
+// administratorQuerier is internal so sharing the single-statement check does
+// not broaden AuthorizationTx's caller-owned transaction contract.
+type administratorQuerier interface {
+	QueryRow(context.Context, string, ...any) pgx.Row
+}
+
+// ErrAdministratorReadUnavailable identifies connection admission, connection
+// loss, or completion cancellation for an independent authorization read. SQL
+// errors, authority denials, and query cancellation retain their original errors.
+var ErrAdministratorReadUnavailable = errors.New("administrator authorization read unavailable")
+
 // AdministratorAudience identifies the authenticated API boundary. Its zero
 // value is invalid, and scheduled system work has no administrator audience.
 type AdministratorAudience uint8
@@ -24,6 +36,47 @@ const (
 	AdministratorNative AdministratorAudience = iota + 1
 	AdministratorEmby
 )
+
+// CheckAdministratorRead checks a previously authenticated principal with one
+// fresh statement on an independently acquired pool connection. It takes no
+// actor locks and neither records activity nor caches authority. Use it only
+// for independent observations; business transactions must use
+// CheckAdministrator on their own transaction, including their final checks.
+func CheckAdministratorRead(ctx context.Context, pool *pgxpool.Pool, actor Principal, audience AdministratorAudience) error {
+	if pool == nil {
+		return ErrAdministratorReadUnavailable
+	}
+	connection, err := pool.Acquire(ctx)
+	if err != nil {
+		return errors.Join(ErrAdministratorReadUnavailable, err)
+	}
+	defer connection.Release()
+	if err := checkAdministratorAuthority(ctx, connection, actor, audience); err != nil {
+		if !errors.Is(err, ErrUnauthorized) && !errors.Is(err, ErrClientSessionForbidden) &&
+			!errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) && connection.Conn().IsClosed() {
+			return errors.Join(ErrAdministratorReadUnavailable, err)
+		}
+		return err
+	}
+	if err := ctx.Err(); err != nil {
+		return errors.Join(ErrAdministratorReadUnavailable, err)
+	}
+	return nil
+}
+
+func checkAdministratorAuthority(ctx context.Context, query administratorQuerier, actor Principal, audience AdministratorAudience) error {
+	if audience != AdministratorNative && audience != AdministratorEmby {
+		return ErrUnauthorized
+	}
+	native := audience == AdministratorNative
+	if !validDeviceActor(actor, native) || query == nil {
+		return ErrUnauthorized
+	}
+	if actor.IsApplicationKey() && (!validRevalidationID(actor.SessionID) || !validRevalidationID(actor.ClientSessionID)) {
+		return ErrUnauthorized
+	}
+	return authorizeDeviceActor(ctx, query, actor, native, nil)
+}
 
 // CheckAdministrator checks the current credential and account in the caller's
 // transaction. Native operations accept only administrator-cookie credentials;
@@ -42,17 +95,7 @@ const (
 // expiring during a wait or write is rejected. There is no self-revocation or
 // system-actor exception, and no activity timestamp or credential is changed.
 func CheckAdministrator(ctx context.Context, tx AuthorizationTx, actor Principal, audience AdministratorAudience, lock bool) error {
-	if audience != AdministratorNative && audience != AdministratorEmby {
-		return ErrUnauthorized
-	}
-	native := audience == AdministratorNative
-	if !validDeviceActor(actor, native) || tx == nil {
-		return ErrUnauthorized
-	}
-	if actor.IsApplicationKey() && (!validRevalidationID(actor.SessionID) || !validRevalidationID(actor.ClientSessionID)) {
-		return ErrUnauthorized
-	}
-	if err := authorizeDeviceActor(ctx, tx, actor, native, nil); err != nil {
+	if err := checkAdministratorAuthority(ctx, tx, actor, audience); err != nil {
 		return err
 	}
 	if !lock {
@@ -90,5 +133,5 @@ func CheckAdministrator(ctx context.Context, tx AuthorizationTx, actor Principal
 			return err
 		}
 	}
-	return authorizeDeviceActor(ctx, tx, actor, native, nil)
+	return authorizeDeviceActor(ctx, tx, actor, audience == AdministratorNative, nil)
 }

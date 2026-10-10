@@ -13,6 +13,12 @@ import (
 )
 
 func (s *Server) adminProviderImagePreview(w http.ResponseWriter, r *http.Request) {
+	s.serveProviderImagePreview(w, r, func(ctx context.Context, selected providers.RemoteImage) ([]byte, error) {
+		return providers.New(s.onlineProviderConfig()).DownloadImage(ctx, selected)
+	})
+}
+
+func (s *Server) serveProviderImagePreview(w http.ResponseWriter, r *http.Request, download func(context.Context, providers.RemoteImage) ([]byte, error)) {
 	actor, detail, ok := s.providerItem(w, r)
 	if !ok {
 		return
@@ -32,18 +38,27 @@ func (s *Server) adminProviderImagePreview(w http.ResponseWriter, r *http.Reques
 	defer cancel()
 	select {
 	case s.images.slots <- struct{}{}:
-		defer func() { <-s.images.slots }()
 	case <-ctx.Done():
 		s.providerError(w, r, ctx.Err())
 		return
 	}
+	processing := true
+	releaseProcessing := func() {
+		if processing {
+			<-s.images.slots
+			processing = false
+		}
+	}
+	defer releaseProcessing()
 	selected := providers.RemoteImage{Selection: providers.Selection{Provider: values.Get("Provider"), ID: values.Get("Id"), Type: detail.Type, Language: values.Get("Language")}, ImageID: values.Get("ImageId"), ImageType: values.Get("ImageType")}
-	data, err := providers.New(s.onlineProviderConfig()).DownloadImage(ctx, selected)
+	data, err := download(ctx, selected)
 	if err != nil {
 		s.providerError(w, r, err)
 		return
 	}
 	preview, err := artwork.Render(ctx, bytes.NewReader(data), artwork.Options{Format: "jpeg", MaxWidth: 320, MaxHeight: 480})
+	// Do not retain the downloaded source during response output.
+	data = nil
 	if err != nil {
 		s.imageError(w, r, err)
 		return
@@ -52,6 +67,18 @@ func (s *Server) adminProviderImagePreview(w http.ResponseWriter, r *http.Reques
 		s.providerError(w, r, err)
 		return
 	}
+	// The response retains preview.Bytes even for HEAD. Reserve its backing
+	// capacity before handing processing ownership to the transfer budget.
+	release, admitted := s.images.beginTransfer(cap(preview.Bytes))
+	if !admitted {
+		preview.Bytes = nil
+		releaseProcessing()
+		w.Header().Set("Retry-After", "2")
+		apiError(w, r, http.StatusTooManyRequests, "image_transfer_limit", "The active image transfer limit has been reached.")
+		return
+	}
+	defer release()
+	releaseProcessing()
 	writer, err := newIdleResponseWriter(w, r.Context(), mediaWriteIdle)
 	if err != nil {
 		return

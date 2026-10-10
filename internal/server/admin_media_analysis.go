@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/notificationjournal"
@@ -45,22 +44,11 @@ func (s *Server) checkAdminMediaAnalysisActor(ctx context.Context, actor identit
 	}
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
-	tx, err := s.db.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted, AccessMode: pgx.ReadOnly})
-	if err != nil {
+	err := identity.CheckAdministratorRead(ctx, s.db, actor, identity.AdministratorNative)
+	if errors.Is(err, identity.ErrAdministratorReadUnavailable) {
 		return library.ErrUnavailable
 	}
-	defer func() {
-		cleanup, done := context.WithTimeout(context.WithoutCancel(ctx), 2*time.Second)
-		defer done()
-		_ = tx.Rollback(cleanup)
-	}()
-	if err := identity.CheckAdministrator(ctx, tx, actor, identity.AdministratorNative, false); err != nil {
-		return err
-	}
-	if err := tx.Commit(ctx); err != nil {
-		return library.ErrUnavailable
-	}
-	return nil
+	return err
 }
 
 func (s *Server) adminMediaAnalysis(w http.ResponseWriter, r *http.Request) {

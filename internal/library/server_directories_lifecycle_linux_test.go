@@ -15,6 +15,11 @@ import (
 	"github.com/moooyo/goby/internal/identity"
 )
 
+type serverDirectoryResult struct {
+	page ServerDirectoryPage
+	err  error
+}
+
 func startDirectoryLifecycleRequest(t *testing.T, ctx context.Context, store *Store, actor identity.Principal, path string, reader serverDirectoryReader) <-chan serverDirectoryResult {
 	t.Helper()
 	caller, cancel := context.WithCancel(ctx)

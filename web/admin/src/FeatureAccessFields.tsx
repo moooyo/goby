@@ -4,6 +4,14 @@ import { adminApi, isAbortError } from './api';
 import type { FeatureInfo } from './api';
 import { ErrorNotice } from './components';
 
+const relatedPermissionHelp = new Map([
+  ['goby_playback', 'Media playback above must also be enabled.'],
+  ['goby_downloads', 'Download media below must also be enabled.'],
+  ['goby_subtitle_downloads', 'Download subtitles below must also be enabled.'],
+  ['goby_subtitle_management', 'Manage subtitles below must also be enabled.'],
+  ['goby_preferences', 'Allow preference changes below must also be enabled.'],
+]);
+
 export function FeatureAccessFields({ restricted, disabled, error, onChange }: { restricted: string[]; disabled: boolean; error?: string; onChange: (value: string[]) => void }) {
   const [features, setFeatures] = useState<FeatureInfo[]>();
   const [loading, setLoading] = useState(true);
@@ -29,7 +37,10 @@ export function FeatureAccessFields({ restricted, disabled, error, onChange }: {
       {loading && !features && <Stack role="status" aria-label="Loading feature choices"><Skeleton height={36} /><Skeleton height={36} /></Stack>}
       {!loading && loadError == null && features?.length === 0 && <Typography variant="body2" color="text.secondary">This server has no configurable user features. Existing restrictions are retained.</Typography>}
       <Box role="group" aria-label="Feature access" sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 0.5 }}>
-        {features?.map((feature) => <FormControlLabel key={feature.Id} label={feature.Name} control={<Checkbox checked={!restricted.includes(feature.Id)} disabled={editingDisabled} onChange={(event) => onChange(event.target.checked ? restricted.filter((id) => id !== feature.Id) : [...new Set([...restricted, feature.Id])])} />} />)}
+        {features?.map((feature) => {
+          const help = relatedPermissionHelp.get(feature.Id);
+          return <Box key={feature.Id}><FormControlLabel label={feature.Name} control={<Checkbox checked={!restricted.includes(feature.Id)} disabled={editingDisabled} onChange={(event) => onChange(event.target.checked ? restricted.filter((id) => id !== feature.Id) : [...new Set([...restricted, feature.Id])])} slotProps={{ input: { 'aria-describedby': help ? `feature-${feature.Id}-help` : undefined } }} />} />{help && <Typography id={`feature-${feature.Id}-help`} variant="body2" color="text.secondary" sx={{ ml: 4, mb: 1 }}>{help}</Typography>}</Box>;
+        })}
         {unavailable.map((id) => <FormControlLabel key={id} label={`Unlisted feature (${id})`} control={<Checkbox checked={false} disabled />} />)}
       </Box>
       {unavailable.length > 0 && <Typography variant="caption" color="text.secondary">Restrictions for unlisted features are retained when you save.</Typography>}

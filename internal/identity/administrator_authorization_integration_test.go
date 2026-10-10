@@ -76,12 +76,18 @@ func TestCheckAdministratorRealTransactionsRespectCredentialAudiences(t *testing
 					t.Fatal(err)
 				}
 			}
+			if err := identity.CheckAdministratorRead(ctx, pool, test.actor, test.audience); !errors.Is(err, test.want) {
+				t.Fatalf("independent administrator audience returned %v, want %v", err, test.want)
+			}
 		})
 	}
 	// A stale display snapshot cannot remove or invent persisted administrator
 	// authority. Current database account state remains the deciding value.
 	emby.User.IsAdministrator, emby.User.IsDisabled = false, true
 	emby.ExpiresAt = time.Unix(1, 0)
+	if err := identity.CheckAdministratorRead(ctx, pool, emby, identity.AdministratorEmby); err != nil {
+		t.Fatalf("independent authority depended on stale principal fields: %v", err)
+	}
 	tx := administratorTestTransaction(t, ctx, pool)
 	if err := identity.CheckAdministrator(ctx, administratorQueryAdapter{tx}, emby, identity.AdministratorEmby, true); err != nil {
 		t.Fatalf("administrator authority depended on stale principal fields: %v", err)

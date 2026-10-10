@@ -48,11 +48,13 @@ func New(pool *pgxpool.Pool, prober Prober, allowedRoots []string, options ...Op
 		if err != nil {
 			return nil, fmt.Errorf("%w: invalid configured root", ErrInvalidInput)
 		}
-		canonical, err := filepath.EvalSymlinks(absolute)
+		configuredPath := absolute
+		canonical, err := canonicalConfiguredStorageRoot(absolute)
 		if err == nil {
 			absolute = canonical
 		}
 		absolute = filepath.Clean(absolute)
+		s.configuredRoots = append(s.configuredRoots, configuredStorageRoot{path: path, absolute: configuredPath, anchor: absolute})
 		if !seen[absolute] {
 			seen[absolute] = true
 			s.roots = append(s.roots, approvedRoot{path: absolute})

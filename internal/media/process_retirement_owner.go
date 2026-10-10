@@ -25,6 +25,10 @@ type conventionalMediaProcessOwner struct {
 }
 
 func (process *mediaProcess) ensureConventionalOwner() error {
+	return process.ensureConventionalOwnerWithCapture(captureConventionalProcess)
+}
+
+func (process *mediaProcess) ensureConventionalOwnerWithCapture(capture conventionalProcessCapture) error {
 	process.ownerOnce.Do(func() {
 		conventionalMediaOwners.mu.Lock()
 		defer conventionalMediaOwners.mu.Unlock()
@@ -38,7 +42,7 @@ func (process *mediaProcess) ensureConventionalOwner() error {
 					process.ownerErr = ErrProcessRetirementUnknown
 					return
 				}
-				owner.identity, owner.pin, process.ownerErr = captureConventionalProcess(process.command)
+				owner.identity, owner.pin, process.ownerErr = capture(process.command)
 				if process.ownerErr != nil {
 					owner.unknown = true
 					process.ownerErr = errors.Join(ErrProcessRetirementUnknown, process.ownerErr)

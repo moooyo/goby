@@ -25,6 +25,8 @@ type conventionalProcessIdentity struct {
 	start                       uint64
 }
 
+type conventionalProcessCapture func(*exec.Cmd) (conventionalProcessIdentity, int, error)
+
 func readConventionalProcessIdentity(pid int) (conventionalProcessIdentity, byte, error) {
 	file, err := os.Open("/proc/" + strconv.Itoa(pid) + "/stat")
 	if err != nil {
@@ -64,28 +66,65 @@ func readConventionalProcessIdentity(pid int) (conventionalProcessIdentity, byte
 }
 
 func captureConventionalProcess(command *exec.Cmd) (conventionalProcessIdentity, int, error) {
-	descriptor, _, errno := syscall.Syscall(unix.SYS_PIDFD_OPEN, uintptr(command.Process.Pid), 0, 0)
-	pin := -1
-	if errno == 0 {
-		pin = int(descriptor)
-	}
-	identity, _, err := readConventionalProcessIdentity(command.Process.Pid)
-	if err != nil || identity.pid != identity.group || identity.parent != os.Getpid() {
-		return identity, pin, errors.Join(ErrProcessRetirementUnknown, err)
-	}
+	return captureConventionalProcessWith(command, openConventionalProcessPin, readConventionalProcessIdentity)
+}
+
+func openConventionalProcessPin(pid int) (int, error) {
+	descriptor, _, errno := syscall.Syscall(unix.SYS_PIDFD_OPEN, uintptr(pid), 0, 0)
 	if errno != 0 {
-		return identity, -1, errors.Join(ErrProcessRetirementUnknown, errno)
+		return -1, errno
 	}
-	current, _, err := readConventionalProcessIdentity(identity.pid)
+	return int(descriptor), nil
+}
+
+func captureConventionalProcessWith(command *exec.Cmd, openPin func(int) (int, error), readIdentity func(int) (conventionalProcessIdentity, byte, error)) (conventionalProcessIdentity, int, error) {
+	pin, pinErr := openPin(command.Process.Pid)
+	identity, _, err := readIdentity(command.Process.Pid)
+	if err != nil || identity.pid != identity.group || identity.parent != os.Getpid() {
+		return identity, pin, errors.Join(ErrProcessRetirementUnknown, pinErr, err)
+	}
+	if pinErr != nil {
+		return identity, -1, errors.Join(ErrProcessRetirementUnknown, pinErr)
+	}
+	current, _, err := readIdentity(identity.pid)
 	if err != nil || current != identity {
 		return identity, pin, ErrProcessRetirementUnknown
 	}
 	return identity, pin, nil
 }
 
+func duplicateConventionalProcessHandle(process *os.Process) (int, error) {
+	var duplicateErr error
+	pin := -1
+	err := process.WithHandle(func(handle uintptr) {
+		pin, duplicateErr = unix.FcntlInt(handle, unix.F_DUPFD_CLOEXEC, 0)
+	})
+	if err != nil {
+		return -1, err
+	}
+	if duplicateErr != nil {
+		return -1, duplicateErr
+	}
+	return pin, nil
+}
+
 func retryConventionalProcessCapture(owner *conventionalMediaProcessOwner) error {
 	if owner.process.command.ProcessState != nil {
 		return ErrProcessRetirementUnknown
+	}
+	if owner.pin < 0 && owner.identity.start == 0 {
+		// Both initial captures can fail under descriptor pressure. The exact
+		// exec-owned handle survives that failure while Wait remains fenced.
+		// Duplicate it without reopening a numeric PID or claiming a new child.
+		// Profiles without an original Go handle remain unknown; the missing
+		// epoch never permits the numeric-PID fallback below.
+		pin, err := duplicateConventionalProcessHandle(owner.process.command.Process)
+		if err != nil {
+			return errors.Join(ErrProcessRetirementUnknown, err)
+		}
+		// Keep this pin even if fdinfo or stat still fails. Later retries use
+		// the same owned handle and do not consume another descriptor.
+		owner.pin = pin
 	}
 	if owner.pin >= 0 {
 		file, err := os.Open("/proc/self/fdinfo/" + strconv.Itoa(owner.pin))

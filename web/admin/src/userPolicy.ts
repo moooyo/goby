@@ -20,6 +20,13 @@ export type UserPolicyDraft = Omit<UserPolicy, PolicyNumberField | 'MaxParentalR
   AccessSchedules: { DayOfWeek: string; StartHour: string; EndHour: string }[];
 };
 
+export function configuredPlaybackPermission(policy: Pick<UserPolicy, 'EnableMediaPlayback' | 'RestrictedFeatures'>): { allowed: boolean; blockers: string[] } {
+  const blockers: string[] = [];
+  if (!policy.EnableMediaPlayback) blockers.push('Media playback is off.');
+  if (policy.RestrictedFeatures.includes('goby_playback')) blockers.push('Play media is restricted in Feature access.');
+  return { allowed: blockers.length === 0, blockers };
+}
+
 export function normalizeUserPolicy(policy: LegacyUserPolicy): UserPolicy {
   const normalized: UserPolicy = {
     ...policyBooleanDefaults, MaxParentalRating: null, AutoRemoteQuality: 0, RemoteClientBitrateLimit: 0, SimultaneousStreamLimit: 0,

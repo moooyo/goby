@@ -9,10 +9,11 @@ import { adminApi, ApiError, isAbortError } from './api';
 import type { DeleteUserResponse, Library, ManagedUser, UpdateUserInput, UserMutationResponse } from './api';
 import { ErrorNotice } from './components';
 import { UserPolicyFields } from './UserPolicyFields';
+import { FeatureAccessFields } from './FeatureAccessFields';
 import { UserPreferencesDialog } from './UserPreferencesDialog';
 import { LocalCredentialsDialog } from './LocalCredentialsDialog';
 import { ArtworkManagerDialog } from './ArtworkManagerDialog';
-import { draftFromUserPolicy, parseUserPolicyDraft } from './userPolicy';
+import { configuredPlaybackPermission, draftFromUserPolicy, parseUserPolicyDraft } from './userPolicy';
 import type { UserPolicyDraft } from './userPolicy';
 import { fieldError, PasswordField } from './formFields';
 import { colors, theme } from './theme';
@@ -344,8 +345,9 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
 
   const unavailableFolderIds = libraries && draft ? draft.Policy.EnabledFolders.filter((id) => !libraries.some((library) => library.Id === id)) : [];
   const librarySummary = draft?.IsAdministrator ? 'All libraries (administrator)' : draft?.Policy.EnableAllFolders ? 'All current and future libraries' : `${draft?.Policy.EnabledFolders.length ?? 0} selected ${draft?.Policy.EnabledFolders.length === 1 ? 'library' : 'libraries'}`;
+  const playbackPermission = draft ? configuredPlaybackPermission(draft.Policy) : undefined;
   const playbackSettings: { key: 'EnableMediaPlayback' | 'EnablePlaybackRemuxing' | 'EnableAudioPlaybackTranscoding' | 'EnableVideoPlaybackTranscoding'; label: string; description: string }[] = [
-    { key: 'EnableMediaPlayback', label: 'Media playback', description: 'Allow this account to play media in compatible clients.' },
+    { key: 'EnableMediaPlayback', label: 'Media playback', description: 'Allow this account to play media in compatible clients. Play media must also be checked in Feature access below.' },
     { key: 'EnablePlaybackRemuxing', label: 'Remuxing', description: 'Allow changing the media container without converting the video.' },
     { key: 'EnableAudioPlaybackTranscoding', label: 'Audio transcoding', description: 'Allow converting audio when a client needs another format.' },
     { key: 'EnableVideoPlaybackTranscoding', label: 'Video transcoding', description: 'Allow converting video when a client needs another format or quality.' },
@@ -366,7 +368,11 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
                   <Paper component="section" aria-label="Permission overview" variant="outlined" sx={{ p: 2, bgcolor: colors.surface }}>
                     <Stack direction="row" sx={{ alignItems: 'flex-start', justifyContent: 'space-between', gap: 1, mb: 1.5 }}><Box sx={{ minWidth: 0 }}><Typography variant="caption" color="text.secondary">Permission overview</Typography><Typography variant="h3" component="h3" sx={{ mt: 0.5, fontSize: 20, lineHeight: '28px', overflowWrap: 'anywhere' }}>{draft.Name || 'Unnamed user'}</Typography></Box><Chip size="small" color={draft.IsDisabled ? 'default' : 'success'} label={draft.IsDisabled ? 'Disabled' : 'Active'} /></Stack>
                     <Box component="dl" sx={{ m: 0, display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1.5fr 1fr' }, gap: { xs: 1.5, sm: 2 } }}>
-                      {[['Account', draft.IsAdministrator ? 'Administrator' : 'Member'], ['Library access', librarySummary], ['Playback', draft.Policy.EnableMediaPlayback ? 'Allowed' : 'Blocked']].map(([label, value]) => <Box key={label}><Typography component="dt" variant="caption" color="text.secondary">{label}</Typography><Typography component="dd" variant="body2" sx={{ m: 0, fontWeight: 650 }}>{value}</Typography></Box>)}
+                      {[['Account', draft.IsAdministrator ? 'Administrator' : 'Member'], ['Library access', librarySummary], ['Configured playback', playbackPermission?.allowed ? 'Allowed' : 'Blocked']].map(([label, value]) => <Box key={label}><Typography component="dt" variant="caption" color="text.secondary">{label}</Typography><Typography component="dd" variant="body2" sx={{ m: 0, fontWeight: 650 }}>{value}</Typography></Box>)}
+                    </Box>
+                    <Box sx={{ mt: 1.5 }}>
+                      {playbackPermission?.blockers.map((reason) => <Typography key={reason} variant="body2">{reason}</Typography>)}
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>Configured playback combines Media playback and Feature access. Item access, access schedules, account state, and service availability still determine whether media can play.</Typography>
                     </Box>
                     {dirty && <Typography variant="caption" color="primary.dark" sx={{ display: 'block', mt: 2 }}>Preview of your unsaved changes</Typography>}
                   </Paper>
@@ -406,6 +412,8 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
                       {!draft.Policy.EnableMediaPlayback && <Typography variant="body2" color="text.secondary">Remuxing and transcoding settings are retained and apply when media playback is enabled.</Typography>}
                     </Stack>
                   </Section>
+                  <Divider />
+                  <FeatureAccessFields restricted={draft.Policy.RestrictedFeatures} disabled={disabled} error={parsedPolicy?.errors['Policy.RestrictedFeatures'] ?? fieldError(error, 'Policy.RestrictedFeatures')} onChange={(value) => changePolicy('RestrictedFeatures', value)} />
                   <Divider />
                   <UserPolicyFields policy={draft.Policy} disabled={disabled} error={error} errors={parsedPolicy?.errors ?? {}} onChange={changePolicy} />
                   <Divider />

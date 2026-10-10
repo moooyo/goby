@@ -13,7 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/transcode"
@@ -134,15 +133,7 @@ func (s *Server) checkMediaDiagnosticActor(ctx context.Context, actor identity.P
 	}
 	bounded, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
-	tx, err := s.db.BeginTx(bounded, pgx.TxOptions{AccessMode: pgx.ReadOnly})
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(bounded)
-	if err := identity.CheckAdministrator(bounded, tx, actor, identity.AdministratorNative, false); err != nil {
-		return err
-	}
-	return tx.Commit(bounded)
+	return identity.CheckAdministratorRead(bounded, s.db, actor, identity.AdministratorNative)
 }
 
 func (s *Server) reserveMediaDiagnostic() (func(), error) {

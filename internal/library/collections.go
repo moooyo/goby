@@ -769,8 +769,11 @@ func (s *Store) RemoveCollectionItems(ctx context.Context, subject Subject, id, 
 }
 
 func normalizeCollectionPositions(ctx context.Context, tx pgx.Tx, id string) error {
+	// Cascaded media deletion can leave gaps. Calculate every ordinal, but do
+	// not rewrite entries that already occupy their canonical positions.
 	_, err := tx.Exec(ctx, `WITH ordered AS (SELECT id,(row_number() OVER (ORDER BY position,id)-1)::integer AS ordinal FROM media_collection_entries WHERE collection_id=$1)
-		UPDATE media_collection_entries e SET position=ordered.ordinal FROM ordered WHERE e.id=ordered.id`, id)
+		UPDATE media_collection_entries e SET position=ordered.ordinal FROM ordered
+		WHERE e.id=ordered.id AND e.position IS DISTINCT FROM ordered.ordinal`, id)
 	return err
 }
 
@@ -829,8 +832,12 @@ func (s *Store) MoveCollectionEntry(ctx context.Context, subject Subject, id, en
 	if index >= visibleCount {
 		return ErrInvalidInput
 	}
-	if _, err := tx.Exec(protected, `UPDATE media_collection_entries SET position=CASE WHEN id=$2::bigint THEN $3::integer WHEN $3::integer<$4::integer AND position >= $3::integer AND position<$4::integer THEN position+1 WHEN $3::integer>$4::integer AND position>$4::integer AND position<=$3::integer THEN position-1 ELSE position END WHERE collection_id=$1::text`, id, entry, destination, old); err != nil {
-		return err
+	if old != destination {
+		if _, err := tx.Exec(protected, `UPDATE media_collection_entries SET position=CASE
+			WHEN id=$2::bigint THEN $3::integer WHEN $3::integer<$4::integer THEN position+1 ELSE position-1 END
+			WHERE collection_id=$1::text AND position BETWEEN LEAST($3::integer,$4::integer) AND GREATEST($3::integer,$4::integer)`, id, entry, destination, old); err != nil {
+			return err
+		}
 	}
 	if err := touchCollection(protected, tx, id); err != nil {
 		return err

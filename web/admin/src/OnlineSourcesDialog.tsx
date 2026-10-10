@@ -17,6 +17,16 @@ function savedProviderId(detail: MetadataDetail | undefined, provider: string) {
   return Object.entries(detail?.Effective.ProviderIds ?? {}).find(([key]) => key.toLowerCase() === provider.toLowerCase())?.[1] ?? '';
 }
 
+function ProviderImagePreview({ src, imageType }: { src: string; imageType: string }) {
+  const [failed, setFailed] = useState(false);
+  const previewSx = { width: '100%', height: 220, bgcolor: 'background.default', borderRadius: 1 };
+  if (failed) return <Stack spacing={1} sx={{ ...previewSx, alignItems: 'center', justifyContent: 'center', p: 2, textAlign: 'center' }}>
+    <Typography role="status" variant="body2" color="text.secondary">Preview could not be loaded. Wait a moment, then try again.</Typography>
+    <Button startIcon={<RefreshRounded />} aria-label={`Retry ${imageType} preview`} onClick={() => setFailed(false)}>Retry preview</Button>
+  </Stack>;
+  return <Box component="img" src={src} alt={`${imageType} candidate`} loading="lazy" referrerPolicy="no-referrer" onError={() => setFailed(true)} sx={{ ...previewSx, objectFit: 'contain' }} />;
+}
+
 export function OnlineSourcesDialog({ itemId, onClose, onSaved, onNavigationGuardChange }: { itemId: string; onClose: () => void; onSaved: () => void; onNavigationGuardChange: UserNavigationGuardChange }) {
   const [detail, setDetail] = useState<MetadataDetail>();
   const [providers, setProviders] = useState<OnlineProviders>();
@@ -134,7 +144,7 @@ export function OnlineSourcesDialog({ itemId, onClose, onSaved, onNavigationGuar
             <TextField type="number" label="Image index" value={imageIndex} disabled={disabled} onChange={(event) => setImageIndex(event.target.value)} helperText="Use 0 for the primary image or the first backdrop. Saving replaces the selected image type and index." slotProps={{ htmlInput: { min: 0, step: 1 } }} />
             {images?.length === 0 && <Typography color="text.secondary">No images found for this provider identifier.</Typography>}
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' }, gap: 2 }}>{images?.map((candidate) => <Paper key={`${candidate.ImageType}:${candidate.ImageId}`} variant="outlined" sx={{ p: 2 }}>
-              {providerImagePreview(candidate.PreviewUrl) && <Box component="img" src={providerImagePreview(candidate.PreviewUrl)} alt={`${candidate.ImageType} candidate`} loading="lazy" referrerPolicy="no-referrer" sx={{ width: '100%', height: 220, objectFit: 'contain', bgcolor: 'background.default', borderRadius: 1 }} />}
+              {providerImagePreview(candidate.PreviewUrl) && <ProviderImagePreview key={candidate.PreviewUrl} src={candidate.PreviewUrl} imageType={candidate.ImageType} />}
               {!providerImagePreview(candidate.PreviewUrl) && providerWebsite(candidate.PreviewUrl) && <Link href={providerWebsite(candidate.PreviewUrl)} target="_blank" rel="noopener noreferrer">Preview image on provider website</Link>}
               <Typography variant="body2" sx={{ mt: 1 }}>{candidate.ImageType} · {candidate.Width} × {candidate.Height}{candidate.Language ? ` · ${candidate.Language}` : ''}</Typography>
               <Button disabled={disabled || !/^\d+$/.test(imageIndex) || !Number.isSafeInteger(Number(imageIndex))} sx={{ mt: 1 }} onClick={() => void run('Saving image', true, async (signal) => { await providersApi.applyImage(itemId, { Provider: candidate.Provider, Id: candidate.Id, Language: candidate.Language || language, ImageId: candidate.ImageId, ImageType: candidate.ImageType, ImageIndex: Number(imageIndex), Revision: detail.Revision }, { signal }); if (!signal.aborted) setNotice(`${candidate.ImageType} image saved.`); })}>Use image</Button>

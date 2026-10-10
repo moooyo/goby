@@ -88,14 +88,14 @@ class ManagementMock {
         if (captured.path === '/admin/v1/session') return json(route, { User: administrator, CSRFToken: csrfToken });
         if (captured.path === '/admin/v1/users') return json(route, { Items: [administrator], TotalRecordCount: 1 });
         if (captured.path === '/admin/v1/features') return json(route, { Items: [
-          { Id: 'playback', Name: 'Playback', FeatureType: 'User' },
-          { Id: 'downloads', Name: 'Downloads', FeatureType: 'User' },
-          { Id: 'playlists', Name: 'Playlists', FeatureType: 'User' },
-          { Id: 'collections', Name: 'Collections', FeatureType: 'User' },
-          { Id: 'subtitle_downloads', Name: 'Subtitle downloads', FeatureType: 'User' },
-          { Id: 'subtitle_management', Name: 'Subtitle management', FeatureType: 'User' },
-          { Id: 'remote_control', Name: 'Remote control', FeatureType: 'User' },
-          { Id: 'preferences', Name: 'Preferences', FeatureType: 'User' },
+          { Id: 'goby_playback', Name: 'Play media', FeatureType: 'User' },
+          { Id: 'goby_downloads', Name: 'Download original media', FeatureType: 'User' },
+          { Id: 'goby_playlists', Name: 'Access and manage playlists', FeatureType: 'User' },
+          { Id: 'goby_collections', Name: 'Access and manage collections', FeatureType: 'User' },
+          { Id: 'goby_subtitle_downloads', Name: 'Download subtitles from providers', FeatureType: 'User' },
+          { Id: 'goby_subtitle_management', Name: 'Manage external subtitles', FeatureType: 'User' },
+          { Id: 'goby_remote_control', Name: 'Control player sessions', FeatureType: 'User' },
+          { Id: 'goby_preferences', Name: 'Manage personal preferences', FeatureType: 'User' },
         ] });
         if (captured.path === '/admin/v1/playlists') return json(route, { Items: [this.collection], TotalRecordCount: 1 });
         if (captured.path === playlistPath) return json(route, this.collection);
@@ -260,6 +260,48 @@ test('selected metadata and image candidates send their own identifiers and the 
   expect(api.reads(`${itemPath}/providers/provenance`).length).toBeGreaterThanOrEqual(3);
 });
 
+test('a rate-limited provider preview retries only on request without applying the image', async ({ page, api }) => {
+  const previewPath = `${itemPath}/providers/image-preview`;
+  const previewQuery = '?Provider=tmdb&Id=movie-retry&ImageId=image-retry&ImageType=Primary&Language=en';
+  const candidate: ImageCandidate = { Provider: 'tmdb', Id: 'movie-retry', Type: 'Movie', Language: 'en', ImageId: 'image-retry', ImageType: 'Primary', Width: 500, Height: 750, PreviewUrl: previewPath + previewQuery };
+  const picture = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64');
+  api.handlers.set(`POST ${itemPath}/providers/images`, async (route) => { await json(route, { Items: [candidate] }); });
+  let previews = 0;
+  api.handlers.set(`GET ${previewPath}`, async (route, request) => {
+    previews += 1;
+    expect(new URL(request.url()).search).toBe(previewQuery);
+    if (previews === 1) {
+      await route.fulfill({ status: 429, contentType: 'application/json', headers: { 'Cache-Control': 'no-store', 'Retry-After': '2' }, body: JSON.stringify({ Error: { Code: 'image_transfer_limit', Message: 'The active image transfer limit has been reached.' } }) });
+      return;
+    }
+    await route.fulfill({ status: 200, contentType: 'image/png', headers: { 'Cache-Control': 'no-store' }, body: picture });
+  });
+  await openSources(page);
+  const dialog = page.getByRole('dialog', { name: 'Online sources · Catalog feature', exact: true });
+  await dialog.getByRole('tab', { name: 'Images', exact: true }).click();
+  await dialog.getByRole('textbox', { name: 'Provider item identifier', exact: true }).fill(candidate.Id);
+  await dialog.getByRole('button', { name: 'Search images', exact: true }).click();
+  const useImage = dialog.getByRole('button', { name: 'Use image', exact: true });
+  await useImage.scrollIntoViewIfNeeded();
+  const retry = dialog.getByRole('button', { name: 'Retry Primary preview', exact: true });
+  await expect(retry).toBeVisible();
+  await expect(dialog.getByRole('status').filter({ hasText: 'Preview could not be loaded. Wait a moment, then try again.' })).toBeVisible();
+  await expect(useImage).toBeEnabled();
+  await dialog.getByRole('spinbutton', { name: 'Image index', exact: true }).fill('2');
+  expect(previews).toBe(1);
+  const writesBeforeRetry = api.writes().map(({ path, body }) => ({ path, body }));
+  await retry.click();
+  const preview = dialog.getByRole('img', { name: 'Primary candidate', exact: true });
+  await expect.poll(async () => preview.evaluate((image) => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0)).toBe(true);
+  await expect(retry).toHaveCount(0);
+  await expect(useImage).toBeEnabled();
+  await expect(dialog.getByRole('spinbutton', { name: 'Image index', exact: true })).toHaveValue('2');
+  expect(previews).toBe(2);
+  expect(api.reads(previewPath)).toHaveLength(2);
+  expect(api.writes().map(({ path, body }) => ({ path, body }))).toEqual(writesBeforeRetry);
+  expect(api.writes().some(({ path }) => path === `${itemPath}/providers/image`)).toBe(false);
+});
+
 test('subtitle selection downloads the chosen provider file and normalized search languages', async ({ page, api }) => {
   const candidates: SubtitleCandidate[] = [
     { Provider: 'opensubtitles', Id: 'subtitle-first', FileId: 101, Language: 'en', Name: 'English subtitle', HearingImpaired: false, DownloadCount: 50, MovieHashMatch: false },
@@ -351,6 +393,105 @@ test('management settings retain every draft field after a rejected save and sub
   expect(api.writes().map((request) => request.body)).toEqual([expectedInput, expectedInput]);
 });
 
+for (const scenario of [
+  { mediaPlayback: true, featureRestricted: false, allowed: true },
+  { mediaPlayback: true, featureRestricted: true, allowed: false },
+  { mediaPlayback: false, featureRestricted: false, allowed: false },
+  { mediaPlayback: false, featureRestricted: true, allowed: false },
+]) {
+  test(`configured playback combines media playback=${scenario.mediaPlayback} and feature restriction=${scenario.featureRestricted}`, async ({ page, api }) => {
+    const userPath = `/admin/v1/users/${administrator.Id}`;
+    const user = {
+      ...administrator, Revision: '1', IsDisabled: true,
+      Policy: {
+        EnableAllFolders: false, EnabledFolders: [], EnableMediaPlayback: scenario.mediaPlayback,
+        EnablePlaybackRemuxing: false, EnableAudioPlaybackTranscoding: false, EnableVideoPlaybackTranscoding: false,
+        RestrictedFeatures: scenario.featureRestricted ? ['goby_playback', 'goby_downloads'] : ['goby_downloads'],
+        AccessSchedules: [{ DayOfWeek: 'Monday', StartHour: 9, EndHour: 10 }],
+      },
+    };
+    api.handlers.set(`GET ${userPath}`, async (route) => { await json(route, { User: user }); });
+    await page.goto('/admin/access/users');
+    await page.getByRole('button', { name: 'Manage Synthetic administrator', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Manage user', exact: true });
+    const overview = dialog.getByRole('region', { name: 'Permission overview', exact: true });
+    await expect(overview.getByText('Configured playback', { exact: true })).toBeVisible();
+    await expect(overview.getByText(scenario.allowed ? 'Allowed' : 'Blocked', { exact: true })).toBeVisible();
+    await expect(overview.getByText('Media playback is off.', { exact: true })).toHaveCount(scenario.mediaPlayback ? 0 : 1);
+    await expect(overview.getByText('Play media is restricted in Feature access.', { exact: true })).toHaveCount(scenario.featureRestricted ? 1 : 0);
+    await expect(overview.getByText('Configured playback combines Media playback and Feature access. Item access, access schedules, account state, and service availability still determine whether media can play.', { exact: true })).toBeVisible();
+    await expect(overview.getByText('Disabled', { exact: true })).toBeVisible();
+    await expect(dialog.getByRole('switch', { name: 'Media playback', exact: true })).toBeChecked({ checked: scenario.mediaPlayback });
+    await expect(dialog.getByRole('group', { name: 'Feature access', exact: true }).getByRole('checkbox', { name: 'Play media', exact: true })).toBeChecked({ checked: !scenario.featureRestricted });
+    await expect(dialog.getByRole('button', { name: 'Save changes', exact: true })).toBeDisabled();
+    expect(api.writes()).toEqual([]);
+  });
+}
+
+test('configured playback previews independent policy edits and preserves unrelated denials when saving', async ({ page, api }) => {
+  const userPath = `/admin/v1/users/${administrator.Id}`;
+  const retainedRestrictions = ['goby_downloads', 'goby_preferences', 'legacy_feature'];
+  let user = {
+    ...administrator, Revision: '1',
+    Policy: {
+      EnableAllFolders: false, EnabledFolders: [library.Id], EnableMediaPlayback: false,
+      EnablePlaybackRemuxing: false, EnableAudioPlaybackTranscoding: false, EnableVideoPlaybackTranscoding: false,
+      EnableContentDownloading: false, EnableSubtitleDownloading: false, EnableSubtitleManagement: false, EnableUserPreferenceAccess: false,
+      RestrictedFeatures: [...retainedRestrictions, 'goby_playback'].sort(),
+    },
+  };
+  api.handlers.set(`GET ${userPath}`, async (route) => { await json(route, { User: user }); });
+  api.handlers.set(`PUT ${userPath}`, async (route, request) => {
+    const input = request.postDataJSON() as UpdateUserInput;
+    expect(input.Revision).toBe(user.Revision);
+    user = { ...administrator, ...input, Revision: (BigInt(user.Revision) + 1n).toString() };
+    await json(route, { User: user, CurrentSessionRevoked: false });
+  });
+  await page.goto('/admin/access/users');
+  await page.getByRole('button', { name: 'Manage Synthetic administrator', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Manage user', exact: true });
+  const overview = dialog.getByRole('region', { name: 'Permission overview', exact: true });
+  const mediaPlayback = dialog.getByRole('switch', { name: 'Media playback', exact: true });
+  const feature = dialog.getByRole('group', { name: 'Feature access', exact: true }).getByRole('checkbox', { name: 'Play media', exact: true });
+  const save = dialog.getByRole('button', { name: 'Save changes', exact: true });
+  await expect(mediaPlayback).toHaveAccessibleDescription('Allow this account to play media in compatible clients. Play media must also be checked in Feature access below.');
+  await expect(feature).toHaveAccessibleDescription('Media playback above must also be enabled.');
+
+  for (const step of [
+    { control: mediaPlayback, checked: true, mediaPlayback: true, featureRestricted: true, allowed: false },
+    { control: feature, checked: true, mediaPlayback: true, featureRestricted: false, allowed: true },
+    { control: mediaPlayback, checked: false, mediaPlayback: false, featureRestricted: false, allowed: false },
+    { control: feature, checked: false, mediaPlayback: false, featureRestricted: true, allowed: false },
+  ]) {
+    const before = structuredClone(user);
+    const writesBefore = api.writes().length;
+    await step.control.setChecked(step.checked);
+    await expect(overview.getByText('Preview of your unsaved changes', { exact: true })).toBeVisible();
+    await expect(overview.getByText(step.allowed ? 'Allowed' : 'Blocked', { exact: true })).toBeVisible();
+    await expect(overview.getByText('Media playback is off.', { exact: true })).toHaveCount(step.mediaPlayback ? 0 : 1);
+    await expect(overview.getByText('Play media is restricted in Feature access.', { exact: true })).toHaveCount(step.featureRestricted ? 1 : 0);
+    await expect(mediaPlayback).toBeChecked({ checked: step.mediaPlayback });
+    await expect(feature).toBeChecked({ checked: !step.featureRestricted });
+    expect(user).toEqual(before);
+    expect(api.writes()).toHaveLength(writesBefore);
+    await save.click();
+    await expect(overview.getByText('Preview of your unsaved changes', { exact: true })).toHaveCount(0);
+    await expect(save).toBeDisabled();
+    expect(api.writes()).toHaveLength(writesBefore + 1);
+    const expectedRestrictions = [...retainedRestrictions, ...(step.featureRestricted ? ['goby_playback'] : [])].sort();
+    expect(api.writes().at(-1)).toMatchObject({
+      method: 'PUT', path: userPath,
+      body: { Policy: {
+        EnableMediaPlayback: step.mediaPlayback, RestrictedFeatures: expectedRestrictions,
+        EnablePlaybackRemuxing: false, EnableAudioPlaybackTranscoding: false, EnableVideoPlaybackTranscoding: false,
+        EnableContentDownloading: false, EnableSubtitleDownloading: false, EnableSubtitleManagement: false, EnableUserPreferenceAccess: false,
+      } },
+    });
+    expect(user.Policy.EnableMediaPlayback).toBe(step.mediaPlayback);
+    expect(user.Policy.RestrictedFeatures).toEqual(expectedRestrictions);
+  }
+});
+
 test('legacy user policies preserve safe defaults and expanded drafts until valid values can be saved', async ({ page, api }) => {
   const userPath = `/admin/v1/users/${administrator.Id}`;
   const legacyPolicy = {
@@ -375,6 +516,7 @@ test('legacy user policies preserve safe defaults and expanded drafts until vali
   await expect(dialog.getByRole('switch', { name: 'Control shared devices', exact: true })).not.toBeChecked();
   await expect(dialog.getByRole('switch', { name: 'Allow remote access', exact: true })).toBeChecked();
   await expect(save).toBeDisabled();
+  await expect(dialog.getByRole('region', { name: 'Permission overview', exact: true }).getByText('Allowed', { exact: true })).toBeVisible();
 
   await rating.fill('16');
   await dialog.getByRole('switch', { name: 'Allow all devices', exact: true }).uncheck();
@@ -383,7 +525,7 @@ test('legacy user policies preserve safe defaults and expanded drafts until vali
   await devices.fill(' living-room \n\nbedroom\nliving-room ');
   await tags.fill(' family \n\nfavorites\nfamily ');
   await remoteQuality.fill('12000000');
-  await dialog.getByRole('group', { name: 'Feature access', exact: true }).getByRole('checkbox', { name: 'Downloads', exact: true }).uncheck();
+  await dialog.getByRole('group', { name: 'Feature access', exact: true }).getByRole('checkbox', { name: 'Download original media', exact: true }).uncheck();
   await dialog.getByRole('button', { name: 'Add access interval', exact: true }).click();
   await dialog.getByRole('combobox', { name: 'Access day 1', exact: true }).click();
   await page.getByRole('option', { name: 'Weekday', exact: true }).click();
@@ -396,7 +538,7 @@ test('legacy user policies preserve safe defaults and expanded drafts until vali
   await expect(devices).toHaveValue(' living-room \n\nbedroom\nliving-room ');
   await expect(tags).toHaveValue(' family \n\nfavorites\nfamily ');
   await expect(remoteQuality).toHaveValue('12000000');
-  await expect(dialog.getByRole('group', { name: 'Feature access', exact: true }).getByRole('checkbox', { name: 'Downloads', exact: true })).not.toBeChecked();
+  await expect(dialog.getByRole('group', { name: 'Feature access', exact: true }).getByRole('checkbox', { name: 'Download original media', exact: true })).not.toBeChecked();
   await expect(dialog.getByLabel('Start hour 1', { exact: true })).toHaveValue('8.5');
   await expect(dialog.getByLabel('End hour 1', { exact: true })).toHaveValue('18.25');
   expect(api.writes()).toEqual([]);
@@ -416,7 +558,7 @@ test('legacy user policies preserve safe defaults and expanded drafts until vali
     BlockedTags: [], IncludeTags: ['family', 'favorites'], BlockUnratedItems: [], EnableUserPreferenceAccess: true,
     AccessSchedules: [{ DayOfWeek: 'Weekday', StartHour: 8.5, EndHour: 18.25 }],
     EnableRemoteControlOfOtherUsers: false, EnableSharedDeviceControl: false, EnableRemoteAccess: true,
-    AutoRemoteQuality: 12000000, EnableContentDeletion: false, RestrictedFeatures: ['downloads'], EnableContentDeletionFromFolders: [],
+    AutoRemoteQuality: 12000000, EnableContentDeletion: false, RestrictedFeatures: ['goby_downloads'], EnableContentDeletionFromFolders: [],
     EnableContentDownloading: true, EnableSubtitleDownloading: true, EnableSubtitleManagement: false,
     RemoteClientBitrateLimit: 0, ExcludedSubFolders: [], SimultaneousStreamLimit: 2,
     EnabledDevices: ['bedroom', 'living-room'], EnableAllDevices: false,
@@ -435,7 +577,7 @@ test('an unavailable feature catalog preserves unlisted restrictions while other
     Policy: {
       EnableAllFolders: true, EnabledFolders: [] as string[], EnableMediaPlayback: true,
       EnablePlaybackRemuxing: true, EnableAudioPlaybackTranscoding: true, EnableVideoPlaybackTranscoding: true,
-      RestrictedFeatures: ['legacy_feature'],
+      RestrictedFeatures: ['goby_playback', 'legacy_feature'],
     },
   };
   api.handlers.set(`GET ${userPath}`, async (route) => { await json(route, { User: user }); });
@@ -453,9 +595,15 @@ test('an unavailable feature catalog preserves unlisted restrictions while other
   await expect(dialog.getByText('Feature choices are unavailable. Existing restrictions are retained, and other account settings can still be edited.', { exact: true })).toBeVisible();
   const features = dialog.getByRole('group', { name: 'Feature access', exact: true });
   const unlisted = features.getByRole('checkbox', { name: 'Unlisted feature (legacy_feature)', exact: true });
-  await expect(features.getByRole('checkbox')).toHaveCount(1);
+  const unlistedPlayback = features.getByRole('checkbox', { name: 'Unlisted feature (goby_playback)', exact: true });
+  await expect(features.getByRole('checkbox')).toHaveCount(2);
   await expect(unlisted).toBeDisabled();
   await expect(unlisted).not.toBeChecked();
+  await expect(unlistedPlayback).toBeDisabled();
+  await expect(unlistedPlayback).not.toBeChecked();
+  const overview = dialog.getByRole('region', { name: 'Permission overview', exact: true });
+  await expect(overview.getByText('Blocked', { exact: true })).toBeVisible();
+  await expect(overview.getByText('Play media is restricted in Feature access.', { exact: true })).toBeVisible();
   await expect(dialog.getByLabel('Maximum parental rating', { exact: true })).toHaveValue('');
   await dialog.getByLabel('Simultaneous stream limit', { exact: true }).fill('3');
   const save = dialog.getByRole('button', { name: 'Save changes', exact: true });
@@ -471,10 +619,10 @@ test('an unavailable feature catalog preserves unlisted restrictions while other
     method: 'PUT', path: userPath,
     body: {
       Revision: '1', Name: administrator.Name, IsAdministrator: true, IsDisabled: false,
-      Policy: { RestrictedFeatures: ['legacy_feature'], SimultaneousStreamLimit: 3, MaxParentalRating: null, AutoRemoteQuality: 0, EnableSharedDeviceControl: false },
+      Policy: { RestrictedFeatures: ['goby_playback', 'legacy_feature'], SimultaneousStreamLimit: 3, MaxParentalRating: null, AutoRemoteQuality: 0, EnableSharedDeviceControl: false },
     },
   });
-  expect(user.Policy.RestrictedFeatures).toEqual(['legacy_feature']);
+  expect(user.Policy.RestrictedFeatures).toEqual(['goby_playback', 'legacy_feature']);
   expect(user.Revision).toBe('2');
   expect(api.reads('/admin/v1/features').length).toBeGreaterThan(0);
 });

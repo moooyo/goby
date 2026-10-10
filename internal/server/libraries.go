@@ -2,9 +2,7 @@ package server
 
 import (
 	"errors"
-	"io"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/moooyo/goby/internal/identity"
@@ -193,18 +191,11 @@ func (s *Server) cancelJob(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) storageRoots(w http.ResponseWriter, r *http.Request) {
-	items := make([]map[string]any, 0, len(s.cfg.MediaRoots))
-	for _, root := range s.cfg.MediaRoots {
-		available := false
-		if anchor, err := os.OpenRoot(root); err == nil {
-			if directory, openErr := anchor.Open("."); openErr == nil {
-				_, readErr := directory.ReadDir(1)
-				available = readErr == nil || errors.Is(readErr, io.EOF)
-				directory.Close()
-			}
-			anchor.Close()
-		}
-		items = append(items, map[string]any{"Path": root, "Available": available})
+	actor := r.Context().Value(principalKey).(identity.Principal)
+	items, err := s.library.StorageRoots(r.Context(), actor, identity.AdministratorNative)
+	if err != nil {
+		s.serverDirectoryError(w, r, err)
+		return
 	}
 	jsonResponse(w, 200, map[string]any{"Items": items, "Configured": len(items) > 0})
 }

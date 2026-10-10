@@ -33,11 +33,6 @@ type ServerDirectoryPage struct {
 	Limit            int
 }
 
-type serverDirectoryResult struct {
-	page ServerDirectoryPage
-	err  error
-}
-
 // The private reader seam keeps authorization, admission and resource ownership
 // in one path while tests gate the completion of real directory reads.
 type serverDirectoryReader func(context.Context, []string, string, int, int, bool) (ServerDirectoryPage, error)
@@ -125,10 +120,32 @@ func (s *Store) serverDirectoriesWithReader(ctx context.Context, administrator *
 }
 
 func (s *Store) runServerDirectoryReader(ctx context.Context, administrator *catalogAdministrator, path string, start, limit int, validateOnly bool, read serverDirectoryReader) (ServerDirectoryPage, error) {
+	var page ServerDirectoryPage
+	err := s.runServerDirectoryWork(ctx, administrator, func(work context.Context, approvedPaths []string) error {
+		var err error
+		page, err = read(work, approvedPaths, path, start, limit, validateOnly)
+		return err
+	})
+	if err != nil {
+		return ServerDirectoryPage{}, err
+	}
+	return page, nil
+}
+
+// The worker owns its actual syscall and phase until completion, independently
+// from the HTTP caller. Browsing and availability share the same finite budget.
+func (s *Store) runServerDirectoryWork(ctx context.Context, administrator *catalogAdministrator, read func(context.Context, []string) error) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	select {
 	case serverDirectoryWorkers <- struct{}{}:
 	case <-ctx.Done():
-		return ServerDirectoryPage{}, ctx.Err()
+		return ctx.Err()
+	}
+	if err := s.checkLibraryRegistrationAdministrator(ctx, administrator); err != nil {
+		<-serverDirectoryWorkers
+		return err
 	}
 	// Keep shutdown aware of admitted filesystem calls. A cancelled HTTP request
 	// does not free the worker slot while a storage syscall is still blocked.
@@ -136,7 +153,7 @@ func (s *Store) runServerDirectoryReader(ctx context.Context, administrator *cat
 	if s.closed || s.closing.Load() {
 		s.mu.Unlock()
 		<-serverDirectoryWorkers
-		return ServerDirectoryPage{}, ErrUnavailable
+		return ErrUnavailable
 	}
 	s.rootOpens.Add(1)
 	approvedPaths := make([]string, 0, len(s.roots))
@@ -148,39 +165,37 @@ func (s *Store) runServerDirectoryReader(ctx context.Context, administrator *cat
 	if err != nil {
 		s.rootOpens.Done()
 		<-serverDirectoryWorkers
-		return ServerDirectoryPage{}, err
+		return err
 	}
-	completed := make(chan serverDirectoryResult, 1)
+	completed := make(chan error, 1)
 	go func() {
 		defer s.rootOpens.Done()
 		defer func() { <-serverDirectoryWorkers }()
 		finished := false
-		var page ServerDirectoryPage
 		var err error
 		defer func() {
 			if recover() != nil || !finished {
-				page, err = ServerDirectoryPage{}, ErrUnavailable
+				err = ErrUnavailable
 				if operation := PrimaryRootIOFromContext(ctx); operation != nil {
 					_ = operation.MarkUnknown(err)
 				}
 			}
 			err = errors.Join(err, releasePhase())
-			completed <- serverDirectoryResult{page: page, err: err}
+			completed <- err
 		}()
-		page, err = read(ctx, approvedPaths, path, start, limit, validateOnly)
+		if err = ctx.Err(); err == nil {
+			err = read(ctx, approvedPaths)
+		}
 		finished = true
 	}()
 	select {
-	case result := <-completed:
-		if result.err != nil {
-			return ServerDirectoryPage{}, result.err
+	case err := <-completed:
+		if err != nil {
+			return err
 		}
-		if err := s.checkLibraryRegistrationAdministrator(ctx, administrator); err != nil {
-			return ServerDirectoryPage{}, err
-		}
-		return result.page, nil
+		return s.checkLibraryRegistrationAdministrator(ctx, administrator)
 	case <-ctx.Done():
-		return ServerDirectoryPage{}, ctx.Err()
+		return ctx.Err()
 	}
 }
 
