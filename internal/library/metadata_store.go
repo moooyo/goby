@@ -26,6 +26,12 @@ type metadataRecord struct {
 	lastEditedAt                                                  *time.Time
 }
 
+type providerMetadataTarget struct {
+	libraryID, parentID, itemType string
+	isFolder                      bool
+	revision                      int64
+}
+
 const metadataRecordColumns = `i.id, i.library_id, COALESCE(i.parent_id, ''),
 	COALESCE(parent.name, ''), i.name, i.type, i.path, i.is_folder,
 	ms.automatic, i.local_metadata, ms.music_source,
@@ -182,17 +188,53 @@ func readMetadataRecord(ctx context.Context, tx pgx.Tx, itemID string, lock bool
 	if len(editableMetadataFields(record.itemType)) == 0 {
 		return metadataRecord{}, ErrNotFound
 	}
-	record.localSource, err = mergeAcceptedMusicSource(record.localSource, musicSource)
+	record.localSource, err = composeAcceptedMetadataSource(record.localSource, musicSource, onlineSource)
 	if err != nil {
 		return metadataRecord{}, err
 	}
+	return record, nil
+}
+
+// Provider targets keep source validation without loading editor or display facts.
+func readProviderMetadataTarget(ctx context.Context, tx pgx.Tx, itemID string, lock bool) (providerMetadataTarget, error) {
+	statement := `SELECT i.library_id, COALESCE(i.parent_id, ''), i.type, i.is_folder, ms.revision,
+		i.local_metadata, ms.music_source,
+		CASE WHEN ms.online_type=i.type THEN ms.online_source ELSE '{}'::jsonb END
+		FROM items i JOIN item_metadata_state ms ON ms.item_id = i.id WHERE i.id = $1`
+	if lock {
+		statement += " FOR UPDATE OF i, ms"
+	}
+	var target providerMetadataTarget
+	var localSource, musicSource, onlineSource []byte
+	err := tx.QueryRow(ctx, statement, itemID).Scan(&target.libraryID, &target.parentID,
+		&target.itemType, &target.isFolder, &target.revision, &localSource, &musicSource, &onlineSource)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return providerMetadataTarget{}, ErrNotFound
+	}
+	if err != nil {
+		return providerMetadataTarget{}, fmt.Errorf("read item metadata state: %w", err)
+	}
+	if len(editableMetadataFields(target.itemType)) == 0 {
+		return providerMetadataTarget{}, ErrNotFound
+	}
+	if _, err := composeAcceptedMetadataSource(localSource, musicSource, onlineSource); err != nil {
+		return providerMetadataTarget{}, err
+	}
+	return target, nil
+}
+
+func composeAcceptedMetadataSource(localSource, musicSource, onlineSource []byte) ([]byte, error) {
+	localSource, err := mergeAcceptedMusicSource(localSource, musicSource)
+	if err != nil {
+		return nil, err
+	}
 	if string(onlineSource) != "{}" {
-		record.localSource, err = mergeOnlineSource(record.localSource, onlineSource)
+		localSource, err = mergeOnlineSource(localSource, onlineSource)
 		if err != nil {
-			return metadataRecord{}, err
+			return nil, err
 		}
 	}
-	return record, nil
+	return localSource, nil
 }
 
 func metadataDetail(record metadataRecord) (ItemMetadataDetail, error) {

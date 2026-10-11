@@ -975,14 +975,17 @@ func (s *Store) publishProviderSubtitleBeforeFinal(ctx context.Context, actor *i
 	if err != nil {
 		return fmt.Errorf("register downloaded subtitle: %w", err)
 	}
-	if _, err := tx.Exec(ctx, `INSERT INTO item_subtitle_provider_sources (item_id, stream_index, provider, provider_id)
-		VALUES ($1,$2,$3,$4) ON CONFLICT (item_id, stream_index) DO NOTHING`, itemID, index, download.Provider, download.RemoteID); err != nil {
-		return fmt.Errorf("record downloaded subtitle source: %w", err)
-	}
 	var recordedProvider, recordedID string
-	if err := tx.QueryRow(ctx, `SELECT provider, provider_id FROM item_subtitle_provider_sources
-		WHERE item_id = $1 AND stream_index = $2`, itemID, index).Scan(&recordedProvider, &recordedID); err != nil {
-		return err
+	err = tx.QueryRow(ctx, `INSERT INTO item_subtitle_provider_sources (item_id, stream_index, provider, provider_id)
+		VALUES ($1,$2,$3,$4) ON CONFLICT (item_id, stream_index) DO NOTHING
+		RETURNING provider, provider_id`, itemID, index, download.Provider, download.RemoteID).Scan(&recordedProvider, &recordedID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		if err := tx.QueryRow(ctx, `SELECT provider, provider_id FROM item_subtitle_provider_sources
+			WHERE item_id = $1 AND stream_index = $2`, itemID, index).Scan(&recordedProvider, &recordedID); err != nil {
+			return err
+		}
+	} else if err != nil {
+		return fmt.Errorf("record downloaded subtitle source: %w", err)
 	}
 	if recordedProvider != download.Provider || recordedID != download.RemoteID {
 		return fmt.Errorf("%w: downloaded subtitle source conflicts with its catalog identity", ErrInvalidInput)

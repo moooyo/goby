@@ -78,6 +78,28 @@ func (s *Store) ValueSnapshot() ValueSnapshot {
 		DesiredNetwork: snapshot.Runtime.DesiredNetwork, Hardware: snapshot.Runtime.Hardware, Execution: snapshot.Runtime.Execution}
 }
 
+// TaskMaxConcurrent observes the current admission limit without copying
+// unrelated settings. Callers read it for each new child admission.
+func (s *Store) TaskMaxConcurrent() int {
+	return s.current.Load().Management.Tasks.MaxConcurrent
+}
+
+// InternetProvidersEnabled observes the current managed provider switch.
+func (s *Store) InternetProvidersEnabled() bool {
+	return s.current.Load().Management.Metadata.EnableInternetProviders
+}
+
+// MetadataValues captures one published revision's provider policy by value.
+func (s *Store) MetadataValues() MetadataOptions {
+	return s.current.Load().Management.Metadata
+}
+
+// ManagementSnapshot captures the options used by one task execution. Its
+// subtitle language slice is owned by the caller, as with a full Snapshot.
+func (s *Store) ManagementSnapshot() Management {
+	return cloneManagement(s.current.Load().Management)
+}
+
 // Get checks current administrator authority and returns the same published
 // state consumed by runtime readers, not an independently read database view.
 func (s *Store) Get(ctx context.Context, actor Actor) (Snapshot, error) {

@@ -105,6 +105,35 @@ const definitionProjection = `to_jsonb(d) || jsonb_build_object(
         WHERE r.task_id = d.id AND r.finished_at IS NOT NULL
         ORDER BY r.finished_at DESC, r.id DESC LIMIT 1))`
 
+// Display reads serialize only their consumed run fields. Invalid omitted
+// execution payloads do not break display, but complete reads still decode them.
+const runSummaryProjection = `jsonb_build_object(
+    'id', r.id, 'task_id', r.task_id, 'task_name', r.task_name,
+    'state', r.state, 'source', r.source, 'request_id', r.request_id,
+    'scheduled_for', r.scheduled_for, 'max_runtime_ticks', r.max_runtime_ticks,
+    'created_at', r.created_at, 'started_at', r.started_at, 'deadline_at', r.deadline_at,
+    'stop_requested_at', r.stop_requested_at, 'stop_reason', r.stop_reason,
+    'finished_at', r.finished_at, 'error_code', r.error_code, 'error_message', r.error_message,
+    'total_children', r.total_children, 'terminal_children', r.terminal_children,
+    'completed_children', r.completed_children, 'failed_children', r.failed_children,
+    'cancelled_children', r.cancelled_children, 'interrupted_children', r.interrupted_children,
+    'unavailable_children', r.unavailable_children, 'scanned', r.scanned, 'added', r.added, 'updated', r.updated)`
+
+const definitionSummaryProjection = `jsonb_build_object(
+    'id', d.id, 'key', d.key, 'emby_key', d.emby_key,
+    'name', d.name, 'description', d.description, 'category', d.category,
+    'is_hidden', d.is_hidden, 'enabled', d.enabled, 'revision', d.revision,
+    'schedule_timezone', d.schedule_timezone, 'created_at', d.created_at, 'updated_at', d.updated_at,
+    'triggers', COALESCE((SELECT jsonb_agg(to_jsonb(t) ORDER BY t.position, t.id)
+        FROM task_triggers t WHERE t.task_id = d.id AND t.retired_at IS NULL), '[]'::jsonb),
+    'current_run', (SELECT ` + runSummaryProjection + ` FROM task_runs r
+        WHERE r.task_id = d.id AND r.state IN ('pending','running','stopping')),
+    'last_run', (SELECT ` + runSummaryProjection + ` FROM task_runs r
+        WHERE r.task_id = d.id AND r.finished_at IS NOT NULL
+        ORDER BY r.finished_at DESC, r.id DESC LIMIT 1))`
+
+const definitionTargetColumns = `d.id, d.key, d.emby_key, d.enabled, d.revision, d.schedule_timezone`
+
 func (s *Store) List(ctx context.Context, options ListOptions) ([]Definition, error) {
 	var raw []byte
 	err := s.pool.QueryRow(ctx, `SELECT COALESCE(jsonb_agg(projection ORDER BY name, id), '[]'::jsonb)
@@ -136,10 +165,64 @@ func (s *Store) GetByKey(ctx context.Context, key string) (Definition, error) {
 	return definition, err
 }
 
+// ListSummaries returns display snapshots without loading execution payloads.
+func (s *Store) ListSummaries(ctx context.Context, options ListOptions) ([]DefinitionSummary, error) {
+	var raw []byte
+	err := s.pool.QueryRow(ctx, `SELECT COALESCE(jsonb_agg(projection ORDER BY name, id), '[]'::jsonb)
+        FROM (SELECT d.id, d.name, `+definitionSummaryProjection+` AS projection FROM task_definitions d
+            WHERE ($1::boolean IS NULL OR d.is_hidden = $1)
+                AND ($2::boolean IS NULL OR d.enabled = $2)) q`, options.IsHidden, options.IsEnabled).Scan(&raw)
+	if err != nil {
+		return nil, fmt.Errorf("list task definitions: %w", err)
+	}
+	var definitions []DefinitionSummary
+	if err := json.Unmarshal(raw, &definitions); err != nil {
+		return nil, fmt.Errorf("decode task definitions: %w", err)
+	}
+	for index := range definitions {
+		normalizeDefinitionSummary(&definitions[index])
+	}
+	return definitions, nil
+}
+
+func (s *Store) GetSummary(ctx context.Context, id string) (DefinitionSummary, error) {
+	var definition DefinitionSummary
+	err := decodeRow(s.pool.QueryRow(ctx, "SELECT "+definitionSummaryProjection+" FROM task_definitions d WHERE d.id = $1", id), &definition)
+	return definition, err
+}
+
+// Target lookups do not decode nested state. The subsequent mutation still
+// reads its live task state and preserves its actor locks and final checks.
+func (s *Store) GetTarget(ctx context.Context, id string) (DefinitionTarget, error) {
+	return scanDefinitionTarget(s.pool.QueryRow(ctx, "SELECT "+definitionTargetColumns+" FROM task_definitions d WHERE d.id = $1", id))
+}
+
+func (s *Store) GetTargetByKey(ctx context.Context, key string) (DefinitionTarget, error) {
+	return scanDefinitionTarget(s.pool.QueryRow(ctx, "SELECT "+definitionTargetColumns+" FROM task_definitions d WHERE d.key = $1", key))
+}
+
+func scanDefinitionTarget(row rowScanner) (DefinitionTarget, error) {
+	var definition DefinitionTarget
+	err := row.Scan(&definition.ID, &definition.Key, &definition.EmbyKey, &definition.Enabled, &definition.Revision, &definition.ScheduleTimezone)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return DefinitionTarget{}, ErrNotFound
+	}
+	if err != nil {
+		return DefinitionTarget{}, fmt.Errorf("read task resource: %w", err)
+	}
+	return definition, nil
+}
+
 func (s *Store) GetRun(ctx context.Context, id string) (Run, error) {
 	var run Run
 	err := decodeRow(s.pool.QueryRow(ctx, `SELECT to_jsonb(r) - 'request_fingerprint'
         FROM task_runs r WHERE id = $1`, id), &run)
+	return run, err
+}
+
+func (s *Store) GetRunSummary(ctx context.Context, id string) (RunSummary, error) {
+	var run RunSummary
+	err := decodeRow(s.pool.QueryRow(ctx, "SELECT "+runSummaryProjection+" FROM task_runs r WHERE r.id = $1", id), &run)
 	return run, err
 }
 
@@ -167,6 +250,36 @@ func (s *Store) ListRuns(ctx context.Context, taskID string, page Page) (RunPage
 		return RunPage{}, fmt.Errorf("decode task runs: %w", err)
 	}
 	normalizeRuns(result.Items)
+	return result, nil
+}
+
+func (s *Store) ListRunSummaries(ctx context.Context, taskID string, page Page) (RunSummaryPage, error) {
+	page, err := normalizePage(page)
+	if err != nil {
+		return RunSummaryPage{}, err
+	}
+	result := RunSummaryPage{Items: []RunSummary{}, StartIndex: page.StartIndex, Limit: page.Limit}
+	var exists bool
+	var raw []byte
+	err = s.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM task_definitions WHERE id = $1),
+        (SELECT count(*) FROM task_runs WHERE task_id = $1),
+        COALESCE((SELECT jsonb_agg(p.projection ORDER BY p.created_at DESC, p.id DESC)
+            FROM (SELECT r.created_at, r.id, `+runSummaryProjection+` AS projection
+                FROM task_runs r WHERE r.task_id = $1 ORDER BY r.created_at DESC, r.id DESC
+                LIMIT $2 OFFSET $3) p), '[]'::jsonb)`, taskID, page.Limit, page.StartIndex).
+		Scan(&exists, &result.TotalRecordCount, &raw)
+	if err != nil {
+		return RunSummaryPage{}, fmt.Errorf("list task runs: %w", err)
+	}
+	if !exists {
+		return RunSummaryPage{}, ErrNotFound
+	}
+	if err := json.Unmarshal(raw, &result.Items); err != nil {
+		return RunSummaryPage{}, fmt.Errorf("decode task runs: %w", err)
+	}
+	for index := range result.Items {
+		normalizeRunSummary(&result.Items[index])
+	}
 	return result, nil
 }
 
@@ -249,8 +362,12 @@ func decodeRow(row rowScanner, value any) error {
 	switch decoded := value.(type) {
 	case *Definition:
 		normalizeDefinition(decoded)
+	case *DefinitionSummary:
+		normalizeDefinitionSummary(decoded)
 	case *Run:
 		normalizeRun(decoded)
+	case *RunSummary:
+		normalizeRunSummary(decoded)
 	case *Child:
 		normalizeChild(decoded)
 	}
@@ -266,23 +383,39 @@ func utcPointer(value **time.Time) {
 
 func normalizeDefinition(value *Definition) {
 	value.CreatedAt, value.UpdatedAt = value.CreatedAt.UTC(), value.UpdatedAt.UTC()
-	if value.Triggers == nil {
-		value.Triggers = []Trigger{}
-	}
-	for index := range value.Triggers {
-		trigger := &value.Triggers[index]
-		trigger.CreatedAt, trigger.UpdatedAt = trigger.CreatedAt.UTC(), trigger.UpdatedAt.UTC()
-		utcPointer(&trigger.AnchorAt)
-		utcPointer(&trigger.NextFireAt)
-		utcPointer(&trigger.LastDueAt)
-		utcPointer(&trigger.RetiredAt)
-	}
+	value.Triggers = normalizeTriggers(value.Triggers)
 	if value.CurrentRun != nil {
 		normalizeRun(value.CurrentRun)
 	}
 	if value.LastRun != nil {
 		normalizeRun(value.LastRun)
 	}
+}
+
+func normalizeDefinitionSummary(value *DefinitionSummary) {
+	value.CreatedAt, value.UpdatedAt = value.CreatedAt.UTC(), value.UpdatedAt.UTC()
+	value.Triggers = normalizeTriggers(value.Triggers)
+	if value.CurrentRun != nil {
+		normalizeRunSummary(value.CurrentRun)
+	}
+	if value.LastRun != nil {
+		normalizeRunSummary(value.LastRun)
+	}
+}
+
+func normalizeTriggers(values []Trigger) []Trigger {
+	if values == nil {
+		return []Trigger{}
+	}
+	for index := range values {
+		trigger := &values[index]
+		trigger.CreatedAt, trigger.UpdatedAt = trigger.CreatedAt.UTC(), trigger.UpdatedAt.UTC()
+		utcPointer(&trigger.AnchorAt)
+		utcPointer(&trigger.NextFireAt)
+		utcPointer(&trigger.LastDueAt)
+		utcPointer(&trigger.RetiredAt)
+	}
+	return values
 }
 
 func normalizeRun(value *Run) {
@@ -296,6 +429,15 @@ func normalizeRun(value *Run) {
 			input.ItemIDs = []string{}
 		}
 	}
+	value.CreatedAt = value.CreatedAt.UTC()
+	utcPointer(&value.ScheduledFor)
+	utcPointer(&value.StartedAt)
+	utcPointer(&value.DeadlineAt)
+	utcPointer(&value.StopRequestedAt)
+	utcPointer(&value.FinishedAt)
+}
+
+func normalizeRunSummary(value *RunSummary) {
 	value.CreatedAt = value.CreatedAt.UTC()
 	utcPointer(&value.ScheduledFor)
 	utcPointer(&value.StartedAt)

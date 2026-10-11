@@ -58,14 +58,15 @@ func changedTaskScheduleFields(definition Definition, timezone string) []activit
 	return changed
 }
 
-// The caller already holds the parent, child, and scan locks. Capture first
-// flag transitions before the existing bulk update so scanner retries can use
-// cancel_requested to suppress duplicate scan activity.
-func taskScanCancellationIDs(tx library.OwnedTx, runID string) ([]string, error) {
-	rows, err := tx.Query(`SELECT j.id FROM scan_jobs j JOIN task_run_children c
-		ON c.scan_job_id = j.id AND j.task_child_id = c.id
-		WHERE c.run_id = $1 AND j.status IN ('Queued','Running') AND NOT j.cancel_requested
-		ORDER BY j.id`, runID)
+// The caller already holds the parent, child, and scan locks. Return only the
+// first flag transitions, in stable order, for the later cancellation audit.
+func cancelTaskScans(tx library.OwnedTx, runID string) ([]string, error) {
+	rows, err := tx.Query(`WITH cancelled AS (
+		UPDATE scan_jobs j SET cancel_requested = true
+		FROM task_run_children c WHERE c.run_id = $1 AND c.scan_job_id = j.id
+			AND j.task_child_id = c.id AND j.status IN ('Queued','Running') AND NOT j.cancel_requested
+		RETURNING j.id)
+		SELECT id FROM cancelled ORDER BY id`, runID)
 	if err != nil {
 		return nil, err
 	}

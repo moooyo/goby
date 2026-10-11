@@ -153,7 +153,7 @@ func (s *Server) startAdminBackgroundPreviewRun(w http.ResponseWriter, r *http.R
 		s.taskError(w, r, tasks.ErrUnavailable)
 		return
 	}
-	definition, err := s.taskStore.GetByKey(r.Context(), library.TaskBackgroundPreviewGenerationKey)
+	definition, err := s.taskStore.GetTargetByKey(r.Context(), library.TaskBackgroundPreviewGenerationKey)
 	if err != nil {
 		s.taskError(w, r, err)
 		return

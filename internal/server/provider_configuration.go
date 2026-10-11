@@ -1,26 +1,32 @@
 package server
 
-import "github.com/moooyo/goby/internal/providers"
+import (
+	"github.com/moooyo/goby/internal/providers"
+	"github.com/moooyo/goby/internal/settings"
+)
 
 // onlineProviderConfig combines private startup credentials with the current
 // managed policy. It is constructed per operation, so disabling providers takes
 // effect for new requests without revealing credentials in administrator DTOs.
 func (s *Server) onlineProviderConfig() providers.Config {
+	metadata := settings.MetadataOptions{PreferredMetadataLanguage: "en", MetadataCountryCode: "US"}
+	if s.settings != nil {
+		metadata = s.settings.MetadataValues()
+	}
+	return s.onlineProviderConfigForMetadata(metadata)
+}
+
+func (s *Server) onlineProviderConfigForMetadata(metadata settings.MetadataOptions) providers.Config {
 	configured := s.cfg.OnlineProviders
-	result := providers.Config{
+	return providers.Config{
+		Enabled:                configured.Enabled && metadata.EnableInternetProviders,
 		TMDBToken:              configured.TMDBToken,
 		MusicBrainzUserAgent:   configured.MusicBrainzUserAgent,
 		OpenSubtitlesAPIKey:    configured.OpenSubtitlesAPIKey,
 		OpenSubtitlesUsername:  configured.OpenSubtitlesUsername,
 		OpenSubtitlesPassword:  configured.OpenSubtitlesPassword,
 		OpenSubtitlesUserAgent: configured.OpenSubtitlesUserAgent,
-		Language:               "en", Country: "US",
+		Language:               metadata.PreferredMetadataLanguage,
+		Country:                metadata.MetadataCountryCode,
 	}
-	if s.settings != nil {
-		settings := s.settings.Snapshot().Management.Metadata
-		result.Enabled = configured.Enabled && settings.EnableInternetProviders
-		result.Language = settings.PreferredMetadataLanguage
-		result.Country = settings.MetadataCountryCode
-	}
-	return result
 }

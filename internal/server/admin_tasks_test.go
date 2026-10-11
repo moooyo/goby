@@ -38,7 +38,7 @@ func TestAdminTaskDTOsPreserveDecimalPrecisionAndExcludePrivateIdentity(t *testi
 		Triggers: []tasks.Trigger{{ID: "later", Kind: "interval", IntervalTicks: &ticks, NextFireAt: &second},
 			{ID: "earlier", Kind: "daily", TimeOfDayTicks: &ticks, NextFireAt: &local},
 			{ID: "blocked", Kind: "weekly", NextFireAt: &blocked, CalculationError: "schedule_out_of_range"}}, CurrentRun: &run}
-	value := wireObject(taskDefinitionDTO(definition))
+	value := wireObject(taskDefinitionDTO(definition.Summary()))
 	encoded, err := json.Marshal(value)
 	if err != nil {
 		t.Fatal(err)
@@ -49,10 +49,10 @@ func TestAdminTaskDTOsPreserveDecimalPrecisionAndExcludePrivateIdentity(t *testi
 	if value["Revision"] != "9007199254740993" || value["NextRunAt"] != first.Format(time.RFC3339Nano) {
 		t.Fatal("task DTO lost exact revision or earliest occurrence")
 	}
-	if wireObject(taskRunDTO(run))["MaxRuntimeTicks"] != "9007199254740993" || wireObject(taskTriggerDTO(definition.Triggers[0]))["IntervalTicks"] != "9007199254740993" {
+	if wireObject(taskRunDTO(run.Summary()))["MaxRuntimeTicks"] != "9007199254740993" || wireObject(taskTriggerDTO(definition.Triggers[0]))["IntervalTicks"] != "9007199254740993" {
 		t.Fatal("task DTO rounded tick values")
 	}
-	empty := wireObject(taskDefinitionDTO(tasks.Definition{}))
+	empty := wireObject(taskDefinitionDTO(tasks.DefinitionSummary{}))
 	for _, field := range []string{"CurrentRun", "LastRun", "NextRunAt"} {
 		if value, exists := empty[field]; !exists || value != nil {
 			t.Errorf("empty task DTO omitted the explicit null field %s", field)
@@ -62,7 +62,7 @@ func TestAdminTaskDTOsPreserveDecimalPrecisionAndExcludePrivateIdentity(t *testi
 		t.Fatal("empty task DTO omitted its empty trigger array")
 	}
 	definition.Enabled = false
-	disabled := wireObject(taskDefinitionDTO(definition))
+	disabled := wireObject(taskDefinitionDTO(definition.Summary()))
 	if next, exists := disabled["NextRunAt"]; !exists || next != nil {
 		t.Fatal("disabled task advertised a next scheduled run")
 	}
@@ -73,7 +73,7 @@ func TestAdminTaskDTOsPreserveDecimalPrecisionAndExcludePrivateIdentity(t *testi
 		populated, empty map[string]any
 		fields           []string
 	}{
-		{wireObject(taskRunDTO(run)), wireObject(taskRunDTO(tasks.Run{})), []string{"ScheduledFor", "StartedAt", "DeadlineAt", "StopRequestedAt", "FinishedAt"}},
+		{wireObject(taskRunDTO(run.Summary())), wireObject(taskRunDTO(tasks.RunSummary{})), []string{"ScheduledFor", "StartedAt", "DeadlineAt", "StopRequestedAt", "FinishedAt"}},
 		{wireObject(taskChildDTO(tasks.Child{StartedAt: &local, FinishedAt: &local})), wireObject(taskChildDTO(tasks.Child{})), []string{"StartedAt", "FinishedAt"}},
 		{wireObject(taskTriggerDTO(definition.Triggers[1])), wireObject(taskTriggerDTO(tasks.Trigger{})), []string{"NextFireAt"}},
 	} {

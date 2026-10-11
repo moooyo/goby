@@ -311,13 +311,13 @@ func (s *Server) serveClientSocket(conn *websocket.Conn, sub *events.Subscriptio
 		case event = <-queuedEvents:
 		}
 		authorizationCtx, stopAuthorization := context.WithTimeout(ctx, 2*time.Second)
-		fresh, err := s.identity.RevalidateSession(authorizationCtx, principal)
+		fresh, err := s.identity.RevalidateSessionAuthority(authorizationCtx, principal)
 		var payload []byte
 		if err == nil {
 			if isSessionRefresh {
 				payload, err = s.socketSessionPayload(authorizationCtx, fresh)
 				if err == nil {
-					current, recheckErr := s.identity.RevalidateSession(authorizationCtx, fresh)
+					current, recheckErr := s.identity.RevalidateSessionAuthority(authorizationCtx, fresh)
 					err = recheckErr
 					if err == nil && !sameSessionSnapshotAuthority(fresh, current) {
 						payload = nil

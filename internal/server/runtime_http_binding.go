@@ -63,8 +63,8 @@ func (s *Server) StartupHTTPBinding() (HTTPBindingStartup, error) {
 	}
 	var selected HTTPBindingStartup
 	if s.settings != nil {
-		snapshot := s.settings.Snapshot()
-		selected = HTTPBindingStartup{Binding: snapshot.Runtime.DesiredNetwork, Revision: snapshot.Revision}
+		snapshot := s.settings.ValueSnapshot()
+		selected = HTTPBindingStartup{Binding: snapshot.DesiredNetwork, Revision: snapshot.Revision}
 	} else {
 		// Direct handler fixtures can omit the settings store. Production owns
 		// one before it calls this method and never substitutes deployment state.

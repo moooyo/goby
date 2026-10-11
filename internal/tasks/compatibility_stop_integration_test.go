@@ -153,7 +153,7 @@ func TestTaskCompatibilityStopRollsBackWhenActorExpiresBeforeCommit(t *testing.T
 	}
 	var reached atomic.Bool
 	delayed, err := New(pool, hookedTransactions{owner: scanner, hook: func(tx library.OwnedTx, statement string) error {
-		if strings.HasPrefix(statement, "UPDATE scan_jobs j SET cancel_requested") && reached.CompareAndSwap(false, true) {
+		if strings.HasPrefix(statement, "WITH cancelled AS (") && strings.Contains(statement, "UPDATE scan_jobs j SET cancel_requested") && reached.CompareAndSwap(false, true) {
 			_, err := tx.Exec(`SELECT pg_sleep((GREATEST(0,EXTRACT(EPOCH FROM
 				(expires_at-clock_timestamp())))+0.03)::double precision) FROM sessions WHERE id=$1`, actor.Principal.SessionID)
 			return err

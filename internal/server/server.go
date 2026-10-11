@@ -250,7 +250,7 @@ func (s *Server) initializeTasks(ctx context.Context) error {
 		return err
 	}
 	manager, err := tasks.NewManager(store, s.library, tasks.ManagerOptions{Logger: s.log,
-		MaxConcurrent: func() int { return s.settings.Snapshot().Management.Tasks.MaxConcurrent }})
+		MaxConcurrent: func() int { return s.settings.TaskMaxConcurrent() }})
 	if err != nil {
 		return err
 	}

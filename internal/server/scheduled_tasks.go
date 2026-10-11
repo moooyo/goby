@@ -139,7 +139,7 @@ func embyTaskTriggerDTO(trigger tasks.Trigger) map[string]any {
 	return result
 }
 
-func embyTaskResultDTO(definition tasks.Definition, run tasks.Run) map[string]any {
+func embyTaskResultDTO(definition tasks.DefinitionSummary, run tasks.RunSummary) map[string]any {
 	started := run.CreatedAt.UTC()
 	if run.StartedAt != nil {
 		started = run.StartedAt.UTC()
@@ -164,7 +164,7 @@ func embyTaskResultDTO(definition tasks.Definition, run tasks.Run) map[string]an
 	return result
 }
 
-func embyTaskDTO(definition tasks.Definition) map[string]any {
+func embyTaskDTO(definition tasks.DefinitionSummary) map[string]any {
 	triggers := make([]map[string]any, 0, len(definition.Triggers))
 	for _, trigger := range definition.Triggers {
 		triggers = append(triggers, embyTaskTriggerDTO(trigger))
@@ -191,21 +191,21 @@ func embyTaskDTO(definition tasks.Definition) map[string]any {
 	return result
 }
 
-func executableEmbyTask(definition tasks.Definition) bool {
-	key := tasks.CompatibilityKey(definition.Key)
-	return key != "" && definition.EmbyKey == key
+func executableEmbyTask(key, embyKey string) bool {
+	compatibilityKey := tasks.CompatibilityKey(key)
+	return compatibilityKey != "" && embyKey == compatibilityKey
 }
 
-func (s *Server) scheduledTaskDefinition(ctx context.Context, id string) (tasks.Definition, error) {
+func (s *Server) scheduledTaskDefinition(ctx context.Context, id string) (tasks.DefinitionSummary, error) {
 	if s.taskStore == nil {
-		return tasks.Definition{}, tasks.ErrUnavailable
+		return tasks.DefinitionSummary{}, tasks.ErrUnavailable
 	}
-	definition, err := s.taskStore.Get(ctx, id)
+	definition, err := s.taskStore.GetSummary(ctx, id)
 	if err != nil {
-		return tasks.Definition{}, err
+		return tasks.DefinitionSummary{}, err
 	}
-	if !executableEmbyTask(definition) {
-		return tasks.Definition{}, tasks.ErrNotFound
+	if !executableEmbyTask(definition.Key, definition.EmbyKey) {
+		return tasks.DefinitionSummary{}, tasks.ErrNotFound
 	}
 	return definition, nil
 }
@@ -222,14 +222,14 @@ func (s *Server) embyScheduledTasks(w http.ResponseWriter, r *http.Request) {
 		s.scheduledTaskError(w, r, err)
 		return
 	}
-	definitions, err := s.taskStore.List(r.Context(), options)
+	definitions, err := s.taskStore.ListSummaries(r.Context(), options)
 	if err != nil {
 		s.scheduledTaskError(w, r, err)
 		return
 	}
 	result := make([]map[string]any, 0, len(definitions))
 	for _, definition := range definitions {
-		if executableEmbyTask(definition) {
+		if executableEmbyTask(definition.Key, definition.EmbyKey) {
 			result = append(result, embyTaskDTO(definition))
 		}
 	}
@@ -246,19 +246,42 @@ func (s *Server) embyScheduledTask(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) loadScheduledTask(w http.ResponseWriter, r *http.Request) (tasks.Definition, bool) {
+func (s *Server) loadScheduledTask(w http.ResponseWriter, r *http.Request) (tasks.DefinitionSummary, bool) {
 	id, err := embyTaskID(r)
 	if err == nil {
 		_, err = parseEmbyTaskQuery(r, false)
 	}
 	if err != nil {
 		s.scheduledTaskError(w, r, err)
-		return tasks.Definition{}, false
+		return tasks.DefinitionSummary{}, false
 	}
 	definition, err := s.scheduledTaskDefinition(r.Context(), id)
 	if err != nil {
 		s.scheduledTaskError(w, r, err)
-		return tasks.Definition{}, false
+		return tasks.DefinitionSummary{}, false
+	}
+	return definition, true
+}
+
+func (s *Server) loadScheduledTaskTarget(w http.ResponseWriter, r *http.Request) (tasks.DefinitionTarget, bool) {
+	id, err := embyTaskID(r)
+	if err == nil {
+		_, err = parseEmbyTaskQuery(r, false)
+	}
+	if err == nil && s.taskStore == nil {
+		err = tasks.ErrUnavailable
+	}
+	if err != nil {
+		s.scheduledTaskError(w, r, err)
+		return tasks.DefinitionTarget{}, false
+	}
+	definition, err := s.taskStore.GetTarget(r.Context(), id)
+	if err == nil && !executableEmbyTask(definition.Key, definition.EmbyKey) {
+		err = tasks.ErrNotFound
+	}
+	if err != nil {
+		s.scheduledTaskError(w, r, err)
+		return tasks.DefinitionTarget{}, false
 	}
 	return definition, true
 }
@@ -377,7 +400,7 @@ func (s *Server) replaceEmbyScheduledTaskTriggers(w http.ResponseWriter, r *http
 	if !s.scheduledTaskManager(w, r) {
 		return
 	}
-	definition, ok := s.loadScheduledTask(w, r)
+	definition, ok := s.loadScheduledTaskTarget(w, r)
 	if !ok {
 		return
 	}
@@ -422,7 +445,7 @@ func (s *Server) startEmbyScheduledTask(w http.ResponseWriter, r *http.Request) 
 	if !s.scheduledTaskManager(w, r) {
 		return
 	}
-	definition, ok := s.loadScheduledTask(w, r)
+	definition, ok := s.loadScheduledTaskTarget(w, r)
 	if !ok {
 		return
 	}
@@ -437,7 +460,7 @@ func (s *Server) stopEmbyScheduledTask(w http.ResponseWriter, r *http.Request) {
 	if !s.scheduledTaskManager(w, r) {
 		return
 	}
-	definition, ok := s.loadScheduledTask(w, r)
+	definition, ok := s.loadScheduledTaskTarget(w, r)
 	if !ok {
 		return
 	}

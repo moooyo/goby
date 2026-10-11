@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
@@ -46,13 +45,12 @@ func (s *Server) embyUserSettings(w http.ResponseWriter, r *http.Request) {
 		// settings even when the URL contains another existing user's ID.
 		userID = actor.User.ID
 	}
-	values, ok := s.userSettingsAccessFor(w, r, userID)
-	if !ok || !userSettingsQuery(w, r) {
-		return
-	}
-	data, err := json.Marshal(values)
+	data, err := s.identity.GetUserSettingsJSON(r.Context(), actor, userID)
 	if err != nil {
 		s.userSettingsError(w, r, err)
+		return
+	}
+	if !userSettingsQuery(w, r) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")

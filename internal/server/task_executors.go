@@ -23,7 +23,7 @@ func (executor managementTaskExecutor) Available() bool {
 	if executor.key == tasks.CacheMaintainKey {
 		return true
 	}
-	if !s.cfg.OnlineProviders.Enabled || !s.settings.Snapshot().Management.Metadata.EnableInternetProviders {
+	if !s.cfg.OnlineProviders.Enabled || !s.settings.InternetProvidersEnabled() {
 		return false
 	}
 	for _, status := range s.onlineProviderConfig().Status() {
@@ -45,11 +45,8 @@ func (executor managementTaskExecutor) Execute(ctx context.Context, work tasks.W
 	if s.library == nil || s.settings == nil || work.TaskKey != executor.key {
 		return tasks.ErrUnavailable
 	}
-	options := s.settings.Snapshot().Management
-	providerConfig := s.onlineProviderConfig()
-	providerConfig.Enabled = s.cfg.OnlineProviders.Enabled && options.Metadata.EnableInternetProviders
-	providerConfig.Language = options.Metadata.PreferredMetadataLanguage
-	providerConfig.Country = options.Metadata.MetadataCountryCode
+	options := s.settings.ManagementSnapshot()
+	providerConfig := s.onlineProviderConfigForMetadata(options.Metadata)
 	client := providers.New(providerConfig)
 	workCtx, cancel := context.WithCancel(ctx)
 	defer cancel()

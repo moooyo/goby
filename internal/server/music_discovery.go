@@ -127,7 +127,7 @@ func (s *Server) embyMusicSimilar(artist bool) http.HandlerFunc {
 			return
 		}
 		attachApplicationCredentialID(r, &query.Query)
-		preferences, err := s.requestUserConfiguration(r.Context(), r, userID)
+		preferences, err := s.requestUserConfigurationDefaults(r.Context(), r, userID, query.IsPlayed == nil)
 		if err != nil {
 			s.identityError(w, r, err)
 			return

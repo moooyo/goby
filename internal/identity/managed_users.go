@@ -113,7 +113,7 @@ func (s *Store) CreateManagedUser(ctx context.Context, actor Principal, name, pa
 	if err != nil {
 		return User{}, err
 	}
-	tx, _, err := s.beginManagedUserMutation(ctx, actor, actor.User.ID, false)
+	tx, err := s.beginManagedUserCreation(ctx, actor)
 	if err != nil {
 		return User{}, err
 	}
@@ -331,12 +331,14 @@ func (s *Store) DeleteManagedUser(ctx context.Context, actor Principal, id strin
 			return ManagedUserDeletion{}, ErrLastAdministrator
 		}
 	}
-	// This value comes from the credential already locked and reauthorized in
-	// this transaction. A Principal expiry snapshot cannot authorize self-deletion.
 	var actorExpiresAt time.Time
 	var actorDeviceID string
-	if err := tx.QueryRow(ctx, "SELECT expires_at, device_id FROM sessions WHERE id = $1 AND user_id = $2", actor.SessionID, actor.User.ID).Scan(&actorExpiresAt, &actorDeviceID); err != nil {
-		return ManagedUserDeletion{}, fmt.Errorf("read locked deletion authority expiry: %w", err)
+	if id == actor.User.ID {
+		// Read before the self-deletion cascade removes the locked credential.
+		// A Principal expiry snapshot cannot authorize the final clock check.
+		if err := tx.QueryRow(ctx, "SELECT expires_at, device_id FROM sessions WHERE id = $1 AND user_id = $2", actor.SessionID, actor.User.ID).Scan(&actorExpiresAt, &actorDeviceID); err != nil {
+			return ManagedUserDeletion{}, fmt.Errorf("read locked deletion authority expiry: %w", err)
+		}
 	}
 	result := ManagedUserDeletion{
 		CurrentSessionRevoked: id == actor.User.ID,
@@ -397,6 +399,53 @@ func (s *Store) DeleteManagedUser(ctx context.Context, actor Principal, id strin
 		return ManagedUserDeletion{}, fmt.Errorf("commit managed user deletion: %w", err)
 	}
 	return result, nil
+}
+
+func (s *Store) beginManagedUserCreation(ctx context.Context, actor Principal) (pgx.Tx, error) {
+	if !validManagedActor(actor) {
+		return nil, ErrUnauthorized
+	}
+	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("begin managed user creation: %w", err)
+	}
+	ok := false
+	defer func() {
+		if !ok {
+			rollback(tx)
+		}
+	}()
+	if _, err := tx.Exec(ctx, "SELECT pg_advisory_xact_lock($1)", managedUsersLockID); err != nil {
+		return nil, fmt.Errorf("lock managed user mutations: %w", err)
+	}
+	// Creation retains management serialization without modifying its actor.
+	// Shared account and credential locks admit other authorization readers.
+	var administrator bool
+	err = tx.QueryRow(ctx, "SELECT is_administrator AND NOT is_disabled FROM users WHERE id = $1 FOR SHARE", actor.User.ID).Scan(&administrator)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrUnauthorized
+	}
+	if err != nil {
+		return nil, fmt.Errorf("lock managed user creation actor: %w", err)
+	}
+	// Managed mutations classify a demoted Emby actor as unauthorized, before
+	// the common administrator check can classify it as a forbidden client.
+	if !administrator {
+		return nil, ErrUnauthorized
+	}
+	var sessionID string
+	err = tx.QueryRow(ctx, "SELECT id FROM sessions WHERE id = $1 AND user_id = $2 FOR SHARE", actor.SessionID, actor.User.ID).Scan(&sessionID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrUnauthorized
+	}
+	if err != nil {
+		return nil, fmt.Errorf("lock managed user creation session: %w", err)
+	}
+	if err := CheckAdministrator(ctx, tx, actor, managedAdministratorAudience(actor), false); err != nil {
+		return nil, err
+	}
+	ok = true
+	return tx, nil
 }
 
 func (s *Store) beginManagedUserMutation(ctx context.Context, actor Principal, id string, lockTargetSessions bool) (pgx.Tx, managedUserMutationLocks, error) {
@@ -483,20 +532,27 @@ func (s *Store) beginManagedUserMutation(ctx context.Context, actor Principal, i
 	// Check the clock after acquiring all authentication locks: a queued session
 	// may expire or be revoked while waiting for its account/session row.
 	var authorized bool
-	if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM sessions
-		WHERE id = $1 AND user_id = $2 AND kind = $3 AND revoked_at IS NULL
-		AND expires_at > clock_timestamp())`, sessionID, actor.User.ID, actor.Kind).Scan(&authorized); err != nil {
+	var deviceID string
+	var observedAt time.Time
+	if actor.Kind == "emby" {
+		err = tx.QueryRow(ctx, `SELECT revoked_at IS NULL AND expires_at > clock_timestamp(),
+			device_id, clock_timestamp() FROM sessions WHERE id = $1 AND user_id = $2 AND kind = $3`,
+			sessionID, actor.User.ID, actor.Kind).Scan(&authorized, &deviceID, &observedAt)
+	} else {
+		err = tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM sessions
+			WHERE id = $1 AND user_id = $2 AND kind = $3 AND revoked_at IS NULL
+			AND expires_at > clock_timestamp())`, sessionID, actor.User.ID, actor.Kind).Scan(&authorized)
+	}
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, managedUserMutationLocks{}, ErrUnauthorized
+	}
+	if err != nil {
 		return nil, managedUserMutationLocks{}, fmt.Errorf("revalidate managed user actor: %w", err)
 	}
 	if !authorized {
 		return nil, managedUserMutationLocks{}, ErrUnauthorized
 	}
 	if actor.Kind == "emby" {
-		var deviceID string
-		var observedAt time.Time
-		if err := tx.QueryRow(ctx, "SELECT device_id, clock_timestamp() FROM sessions WHERE id = $1", sessionID).Scan(&deviceID, &observedAt); err != nil {
-			return nil, managedUserMutationLocks{}, fmt.Errorf("read managed user actor policy context: %w", err)
-		}
 		policy, err := ParseRuntimePolicy(account.User.Policy)
 		if err != nil || !parsedLoginPolicyAllows(policy, account.User.Policy, deviceID, observedAt) ||
 			(!policy.EnableRemoteAccess && !IsLocalPeer(actor.PeerIP)) {

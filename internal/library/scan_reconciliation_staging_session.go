@@ -109,6 +109,9 @@ func (s *Store) withScanStagingTx(ctx context.Context, cleanup bool, operation f
 			return err
 		}
 	}
+	if err := writeCtx.Err(); err != nil {
+		return err
+	}
 	err = raw.Commit(writeCtx)
 	finished = true
 	if err != nil {

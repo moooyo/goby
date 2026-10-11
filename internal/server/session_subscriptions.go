@@ -101,7 +101,7 @@ func (subscription *sessionSubscription) snapshot() sessionSubscriptionState {
 // socketSessionPayload performs the same session and media projection as HTTP.
 // Its default image projection contains tags only, never paths or credentials.
 func (s *Server) socketSessionPayload(ctx context.Context, principal identity.Principal) ([]byte, error) {
-	sessions, err := s.identity.ListClientSessions(ctx, principal, identity.ClientSessionFilter{})
+	sessions, err := s.identity.ListClientSessionSummaries(ctx, principal, identity.ClientSessionFilter{})
 	if err != nil {
 		return nil, err
 	}

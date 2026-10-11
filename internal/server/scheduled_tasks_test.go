@@ -255,7 +255,7 @@ func TestEmbyScheduledTaskExecutorRequiresItsPublishedKey(t *testing.T) {
 		{tasks.LibraryRefreshMediaKey, tasks.LibraryScanEmbyKey, false},
 		{tasks.LibraryScanKey, "", false},
 	} {
-		if executableEmbyTask(tasks.Definition{Key: test.key, EmbyKey: test.embyKey}) != test.allowed {
+		if executableEmbyTask(test.key, test.embyKey) != test.allowed {
 			t.Fatalf("task key %q crossed the declared Emby executor boundary", test.key)
 		}
 	}
@@ -268,7 +268,7 @@ func TestEmbyScheduledTaskDTOUsesDefinitionIdentityAndRetainsTerminalResult(t *t
 	definition := tasks.Definition{ID: "local-task-definition", Key: tasks.LibraryScanKey, EmbyKey: tasks.LibraryScanEmbyKey,
 		Name: "Scan media library", Description: "Scan all registered media libraries.", Category: "Library", Enabled: true,
 		Revision: 37, ScheduleTimezone: "Asia/Shanghai"}
-	empty := embyTaskDTO(definition)
+	empty := embyTaskDTO(definition.Summary())
 	if empty["State"] != "Idle" || empty["LastExecutionResult"] != nil || empty["CurrentProgressPercentage"] != nil || len(empty["Triggers"].([]map[string]any)) != 0 {
 		t.Fatal("idle unexecuted task invented progress, a prior result, or a default trigger")
 	}
@@ -276,7 +276,7 @@ func TestEmbyScheduledTaskDTOUsesDefinitionIdentityAndRetainsTerminalResult(t *t
 		ActorSessionID: "private-actor-credential", ActorKind: "emby", State: tasks.RunCompleted, CreatedAt: started,
 		StartedAt: &started, FinishedAt: &finished}
 	definition.CurrentRun = &tasks.Run{ID: "private-current-run", State: tasks.RunRunning, TotalChildren: 4, TerminalChildren: 1}
-	current := embyTaskDTO(definition)
+	current := embyTaskDTO(definition.Summary())
 	last := current["LastExecutionResult"].(map[string]any)
 	if current["State"] != "Running" || current["CurrentProgressPercentage"] != float64(25) ||
 		last["Id"] != definition.ID || last["Status"] != "Completed" || last["Key"] != tasks.LibraryScanEmbyKey ||
@@ -293,13 +293,13 @@ func TestEmbyScheduledTaskDTOUsesDefinitionIdentityAndRetainsTerminalResult(t *t
 		}
 	}
 	definition.CurrentRun.State = tasks.RunStopping
-	if embyTaskDTO(definition)["State"] != "Cancelling" {
+	if embyTaskDTO(definition.Summary())["State"] != "Cancelling" {
 		t.Fatal("native stopping run did not use the declared compatibility state")
 	}
 	definition.CurrentRun = nil
 	for state, want := range map[tasks.RunState]string{tasks.RunCompleted: "Completed", tasks.RunCancelled: "Cancelled", tasks.RunFailed: "Failed", tasks.RunInterrupted: "Aborted"} {
 		definition.LastRun.State = state
-		value := embyTaskDTO(definition)
+		value := embyTaskDTO(definition.Summary())
 		if value["State"] != "Idle" || value["CurrentProgressPercentage"] != nil || value["LastExecutionResult"].(map[string]any)["Status"] != want {
 			t.Errorf("terminal state %s did not map to %s while omitting idle progress", state, want)
 		}

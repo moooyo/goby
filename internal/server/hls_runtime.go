@@ -528,11 +528,11 @@ func hlsServerLimits(cfg config.TranscodingConfig) playback.ConversionLimits {
 // An application key's explicit profile target supplies conversion permissions,
 // not account authentication. Disabled accounts and the general playback flag
 // do not change these independently controlled negotiation capabilities.
-func hlsApplicationTargetLimits(cfg config.TranscodingConfig, target identity.User) playback.ConversionLimits {
+func hlsApplicationTargetLimits(cfg config.TranscodingConfig, targetPolicy json.RawMessage) playback.ConversionLimits {
 	limits := hlsServerLimits(cfg)
 	limits.AllowRemux, limits.AllowAudioTranscode, limits.AllowVideoTranscode = false, false, false
 	var policy map[string]json.RawMessage
-	if !cfg.Enabled || !utf8.Valid(target.Policy) || json.Unmarshal(target.Policy, &policy) != nil || policy == nil {
+	if !cfg.Enabled || !utf8.Valid(targetPolicy) || json.Unmarshal(targetPolicy, &policy) != nil || policy == nil {
 		return limits
 	}
 	enabled := func(name string) bool {

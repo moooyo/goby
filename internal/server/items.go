@@ -401,7 +401,8 @@ func (s *Server) embyLatest(w http.ResponseWriter, r *http.Request) {
 	latestPreferences := library.LatestPreferences{}
 	principal := r.Context().Value(principalKey).(identity.Principal)
 	if !principal.IsApplicationKey() {
-		preferences, err := s.requestUserConfiguration(r.Context(), r, userID)
+		needsDefaults := query.IsPlayed == nil || query.ParentID == "" && len(query.Ids) == 0
+		preferences, err := s.requestUserConfigurationDefaults(r.Context(), r, userID, needsDefaults)
 		if err != nil {
 			s.identityError(w, r, err)
 			return

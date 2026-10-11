@@ -416,7 +416,7 @@ func metadataJSONObject(raw []byte) (map[string]json.RawMessage, error) {
 		if err := decoder.Decode(&value); err != nil {
 			return nil, fmt.Errorf("must contain valid JSON values")
 		}
-		object[key] = append(json.RawMessage(nil), value...)
+		object[key] = value
 	}
 	if end, err := decoder.Token(); err != nil || end != json.Delim('}') {
 		return nil, fmt.Errorf("must be a complete JSON object")

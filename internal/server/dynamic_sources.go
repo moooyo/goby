@@ -80,7 +80,7 @@ func (s *Server) initializeDynamicSources(_ context.Context) error {
 		return err
 	}
 	s.dynamicSources = manager
-	s.dynamicStreams = &dynamicStreamRuntime{sessions: make(map[string]*dynamicStreamSession), byKey: make(map[dynamicStreamKey]*dynamicStreamSession), revalidate: s.identity.RevalidateSession}
+	s.dynamicStreams = &dynamicStreamRuntime{sessions: make(map[string]*dynamicStreamSession), byKey: make(map[dynamicStreamKey]*dynamicStreamSession), revalidate: s.identity.RevalidateSessionAuthority}
 	if len(definitions) > 0 && s.cfg.Transcoding.Enabled && s.cfg.Timeshift.Enabled {
 		store, err := timeshift.New(s.cfg.Timeshift.Options())
 		if err != nil {
@@ -98,13 +98,13 @@ func (s *Server) dynamicLimits(ctx context.Context, principal identity.Principal
 		if request.UserID == "" {
 			return limits, playback.ErrInvalidRequest
 		}
-		target, err := s.identity.GetUser(ctx, request.UserID)
+		policy, err := s.identity.GetUserPolicy(ctx, request.UserID)
 		if err != nil {
 			return limits, err
 		}
-		limits = hlsApplicationTargetLimits(planning, target)
+		limits = hlsApplicationTargetLimits(planning, policy)
 	}
-	return applyPrincipalRemoteBitrateLimit(limits, principal), nil
+	return limits, nil
 }
 
 // A retained revision is re-evaluated against current source facts, permissions

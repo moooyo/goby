@@ -136,7 +136,7 @@ func (s *Server) clientSessions(w http.ResponseWriter, r *http.Request) {
 		filter.ActiveWithinSeconds = &value
 	}
 	principal := r.Context().Value(principalKey).(identity.Principal)
-	sessions, err := s.identity.ListClientSessions(r.Context(), principal, filter)
+	sessions, err := s.identity.ListClientSessionSummaries(r.Context(), principal, filter)
 	if err != nil {
 		s.clientSessionError(w, r, err)
 		return
@@ -146,7 +146,7 @@ func (s *Server) clientSessions(w http.ResponseWriter, r *http.Request) {
 			s.clientSessionError(w, r, identity.ErrClientSessionForbidden)
 			return
 		}
-		controller, err := s.identity.GetUser(r.Context(), userID)
+		controller, err := s.identity.GetClientSessionController(r.Context(), userID)
 		if errors.Is(err, identity.ErrNotFound) || (err == nil && controller.IsDisabled) {
 			jsonResponse(w, http.StatusOK, []any{})
 			return
@@ -156,8 +156,9 @@ func (s *Server) clientSessions(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		controlled := make([]identity.ClientSession, 0, len(sessions))
+		control := identity.PrepareClientSessionControl(controller)
 		for _, session := range sessions {
-			if identity.CanControlClientSession(controller, session) && session.Capabilities.SupportsMediaControl && s.hasClientControlTransport(session.SessionID) {
+			if control.CanControl(session) && session.Capabilities.SupportsMediaControl && s.hasClientControlTransport(session.SessionID) {
 				controlled = append(controlled, session)
 			}
 		}

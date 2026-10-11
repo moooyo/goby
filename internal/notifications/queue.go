@@ -76,7 +76,7 @@ func (s *Store) currentTargetRevisions(ctx context.Context, id string) (targetRe
 }
 
 func (s *Store) authorizedRefs(ctx context.Context, t target, refs []notificationjournal.Reference) ([]notificationjournal.Reference, error) {
-	fresh, err := s.users.RevalidateSession(ctx, t.principal())
+	fresh, err := s.users.RevalidateSessionAuthority(ctx, t.principal())
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +133,7 @@ func (s *Store) fanoutRegistration(ctx context.Context, id string) error {
 		// Never filter new sources with events from a different registration.
 		return nil
 	}
-	if _, err = identity.RevalidateSessionInTransaction(ctx, tx, t.principal()); err != nil {
+	if _, err = identity.RevalidateSessionAuthorityInTransaction(ctx, tx, t.principal()); err != nil {
 		if errors.Is(err, identity.ErrUnauthorized) {
 			// A new revision may bind the same login to a now-authorized peer.
 			// Retire only the registration whose principal was rejected here.

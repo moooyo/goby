@@ -136,11 +136,12 @@ func (s *Server) adminProviderSearch(w http.ResponseWriter, r *http.Request) {
 	if !providerBody(w, r, &input) {
 		return
 	}
-	actor, detail, ok := s.providerItem(w, r)
+	id, ok := adminMetadataID(w, r)
 	if !ok {
 		return
 	}
-	query, err := s.library.OnlineMetadataQuery(r.Context(), actor, detail.ItemID)
+	actor := r.Context().Value(principalKey).(identity.Principal)
+	query, err := s.library.OnlineMetadataQuery(r.Context(), actor, id)
 	if err != nil {
 		s.providerError(w, r, err)
 		return
@@ -302,13 +303,14 @@ func (s *Server) adminProviderSubtitleSearch(w http.ResponseWriter, r *http.Requ
 	if !providerBody(w, r, &input) {
 		return
 	}
-	actor, detail, ok := s.providerItem(w, r)
+	id, ok := adminMetadataID(w, r)
 	if !ok {
 		return
 	}
+	actor := r.Context().Value(principalKey).(identity.Principal)
 	ctx, cancel := context.WithTimeout(r.Context(), 45*time.Second)
 	defer cancel()
-	query, err := s.library.OnlineMetadataQuery(ctx, actor, detail.ItemID)
+	query, err := s.library.OnlineMetadataQuery(ctx, actor, id)
 	if err != nil {
 		s.providerError(w, r, err)
 		return
@@ -326,15 +328,16 @@ func (s *Server) adminProviderSubtitleDownload(w http.ResponseWriter, r *http.Re
 	if !providerBody(w, r, &input) {
 		return
 	}
-	actor, detail, ok := s.providerItem(w, r)
+	id, ok := adminMetadataID(w, r)
 	if !ok {
 		return
 	}
+	actor := r.Context().Value(principalKey).(identity.Principal)
 	ctx, cancel := context.WithTimeout(r.Context(), 120*time.Second)
 	defer cancel()
 	client := providers.New(s.onlineProviderConfig())
 	// Revalidate the selected file against a fresh search for this catalog item.
-	query, err := s.library.OnlineMetadataQuery(ctx, actor, detail.ItemID)
+	query, err := s.library.OnlineMetadataQuery(ctx, actor, id)
 	if err != nil {
 		s.providerError(w, r, err)
 		return
@@ -356,7 +359,7 @@ func (s *Server) adminProviderSubtitleDownload(w http.ResponseWriter, r *http.Re
 		s.providerError(w, r, providers.ErrNotFound)
 		return
 	}
-	sourceTag, err := s.library.CheckWritableSubtitleTarget(ctx, actor, detail.ItemID, "")
+	sourceTag, err := s.library.CheckWritableSubtitleTarget(ctx, actor, id, "")
 	if err != nil {
 		s.providerError(w, r, err)
 		return
@@ -366,7 +369,7 @@ func (s *Server) adminProviderSubtitleDownload(w http.ResponseWriter, r *http.Re
 		s.providerError(w, r, err)
 		return
 	}
-	if err := s.library.RegisterDownloadedSubtitleForSource(ctx, actor, detail.ItemID, sourceTag, download); err != nil {
+	if err := s.library.RegisterDownloadedSubtitleForSource(ctx, actor, id, sourceTag, download); err != nil {
 		s.providerError(w, r, err)
 		return
 	}

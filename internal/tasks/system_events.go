@@ -127,18 +127,17 @@ func (s *Store) dispatchSystemEvent(ctx context.Context, excluded ...string) (bo
 		if trigger.LastDueAt != nil && !due.After(*trigger.LastDueAt) {
 			due = trigger.LastDueAt.Add(time.Microsecond)
 		}
-		if err := s.admitScheduledOccurrence(tx, definitions[trigger.TaskID], trigger, due, "system_event"); err != nil {
+		receipt, err := s.admitScheduledOccurrence(tx, definitions[trigger.TaskID], trigger, due, "system_event")
+		if err != nil {
 			return err
 		}
-		var runID, disposition string
-		if err := tx.QueryRow(`SELECT run_id,disposition FROM task_occurrences
-            WHERE trigger_id=$1 AND schedule_revision=$2 AND due_at=$3`, trigger.ID, trigger.ScheduleRevision, due).Scan(&runID, &disposition); err != nil {
-			return err
+		if receipt.RunID == nil || (receipt.Disposition != "admitted" && receipt.Disposition != "overlap") {
+			return ErrInconsistent
 		}
 		if _, err := tx.Exec(`INSERT INTO task_system_event_receipts
             (trigger_id,task_id,schedule_revision,system_event,first_sequence,last_sequence,occurred_at,run_id,disposition)
             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`, trigger.ID, trigger.TaskID, trigger.ScheduleRevision,
-			*trigger.SystemEvent, trigger.LastEventSequence+1, sequence, occurred, runID, disposition); err != nil {
+			*trigger.SystemEvent, trigger.LastEventSequence+1, sequence, occurred, *receipt.RunID, receipt.Disposition); err != nil {
 			return fmt.Errorf("record task event range: %w", err)
 		}
 		if _, err := tx.Exec(`UPDATE task_triggers SET last_event_sequence=$2,last_due_at=$3,

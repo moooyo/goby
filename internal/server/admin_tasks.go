@@ -187,7 +187,7 @@ func (s *Server) adminTasks(w http.ResponseWriter, r *http.Request) {
 		s.taskError(w, r, tasks.ErrUnavailable)
 		return
 	}
-	definitions, err := s.taskStore.List(r.Context(), tasks.ListOptions{})
+	definitions, err := s.taskStore.ListSummaries(r.Context(), tasks.ListOptions{})
 	if err != nil {
 		s.taskError(w, r, err)
 		return
@@ -208,7 +208,7 @@ func (s *Server) adminTask(w http.ResponseWriter, r *http.Request) {
 		s.taskError(w, r, tasks.ErrUnavailable)
 		return
 	}
-	definition, err := s.taskStore.Get(r.Context(), id)
+	definition, err := s.taskStore.GetSummary(r.Context(), id)
 	if err != nil {
 		s.taskError(w, r, err)
 		return
@@ -238,7 +238,7 @@ func (s *Server) startAdminTask(w http.ResponseWriter, r *http.Request) {
 		s.taskError(w, r, err)
 		return
 	}
-	jsonResponse(w, http.StatusAccepted, map[string]any{"Run": taskRunDTO(result.Run), "Admitted": result.Admitted})
+	jsonResponse(w, http.StatusAccepted, map[string]any{"Run": taskRunDTO(result.Run.Summary()), "Admitted": result.Admitted})
 }
 
 func (s *Server) adminTaskRuns(w http.ResponseWriter, r *http.Request) {
@@ -254,7 +254,7 @@ func (s *Server) adminTaskRuns(w http.ResponseWriter, r *http.Request) {
 		s.taskError(w, r, tasks.ErrUnavailable)
 		return
 	}
-	result, err := s.taskStore.ListRuns(r.Context(), id, page)
+	result, err := s.taskStore.ListRunSummaries(r.Context(), id, page)
 	if err != nil {
 		s.taskError(w, r, err)
 		return
@@ -275,7 +275,7 @@ func (s *Server) adminTaskRun(w http.ResponseWriter, r *http.Request) {
 		s.taskError(w, r, tasks.ErrUnavailable)
 		return
 	}
-	run, err := s.taskStore.GetRun(r.Context(), id)
+	run, err := s.taskStore.GetRunSummary(r.Context(), id)
 	if err != nil {
 		s.taskError(w, r, err)
 		return
@@ -301,7 +301,7 @@ func (s *Server) cancelAdminTaskRun(w http.ResponseWriter, r *http.Request) {
 		s.taskError(w, r, err)
 		return
 	}
-	jsonResponse(w, http.StatusAccepted, map[string]any{"Run": taskRunDTO(run)})
+	jsonResponse(w, http.StatusAccepted, map[string]any{"Run": taskRunDTO(run.Summary())})
 }
 
 func (s *Server) taskError(w http.ResponseWriter, r *http.Request, err error) {

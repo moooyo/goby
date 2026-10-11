@@ -45,6 +45,10 @@ func userSettingsHTTPMap(t *testing.T, response *httptest.ResponseRecorder) map[
 	if err := json.Unmarshal(response.Body.Bytes(), &result); err != nil || result == nil {
 		t.Fatal("user preferences must be a JSON object containing string values")
 	}
+	canonical, err := json.Marshal(result)
+	if err != nil || !bytes.Equal(response.Body.Bytes(), canonical) || response.Header().Get("Content-Length") != strconv.Itoa(len(canonical)) {
+		t.Fatal("user preferences must use canonical JSON bytes and their exact representation length")
+	}
 	return result
 }
 

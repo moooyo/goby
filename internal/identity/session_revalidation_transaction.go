@@ -16,6 +16,15 @@ func RevalidateSessionInTransaction(ctx context.Context, tx pgx.Tx, previous Pri
 	return revalidateSession(ctx, tx, previous)
 }
 
+// RevalidateSessionAuthorityInTransaction applies the same current session
+// checks through the caller-owned transaction while omitting display fields,
+// password-presence flags and Configuration. Like the full transaction entry,
+// it acquires no row locks and does not commit or change transaction isolation.
+// Callers must retain any required locks across subsequent waits themselves.
+func RevalidateSessionAuthorityInTransaction(ctx context.Context, tx pgx.Tx, previous Principal) (Principal, error) {
+	return revalidateSessionProjection(ctx, tx, previous, false)
+}
+
 // SessionObservation retains parsed policy facts from one successful session
 // revalidation. It is valid only while the caller keeps the observed account,
 // credential and client facts fixed under row locks in that same transaction.

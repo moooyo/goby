@@ -284,6 +284,62 @@ func (value hookedTransaction) Exec(statement string, args ...any) (pgconn.Comma
 	return tag, err
 }
 
+func (value hookedTransaction) QueryRow(statement string, args ...any) library.OwnedRow {
+	return hookedRow{OwnedRow: value.OwnedTx.QueryRow(statement, args...), tx: value.OwnedTx,
+		hook: value.hook, statement: strings.TrimSpace(statement)}
+}
+
+type hookedRow struct {
+	library.OwnedRow
+	tx        library.OwnedTx
+	hook      func(library.OwnedTx, string) error
+	statement string
+}
+
+func (row hookedRow) Scan(dest ...any) error {
+	if err := row.OwnedRow.Scan(dest...); err != nil {
+		return err
+	}
+	return row.hook(row.tx, row.statement)
+}
+
+func (value hookedTransaction) Query(statement string, args ...any) (library.OwnedRows, error) {
+	rows, err := value.OwnedTx.Query(statement, args...)
+	if err != nil {
+		return nil, err
+	}
+	return &hookedRows{OwnedRows: rows, tx: value.OwnedTx, hook: value.hook,
+		statement: strings.TrimSpace(statement)}, nil
+}
+
+type hookedRows struct {
+	library.OwnedRows
+	tx        library.OwnedTx
+	hook      func(library.OwnedTx, string) error
+	statement string
+	observed  bool
+	hookErr   error
+}
+
+func (rows *hookedRows) Next() bool {
+	if rows.OwnedRows.Next() {
+		return true
+	}
+	if !rows.observed {
+		rows.observed = true
+		rows.OwnedRows.Close()
+		if rows.OwnedRows.Err() == nil {
+			// A returning write has completed before the hook issues any SQL.
+			rows.hookErr = rows.hook(rows.tx, rows.statement)
+		}
+	}
+	return false
+}
+
+func (rows *hookedRows) Err() error {
+	return errors.Join(rows.OwnedRows.Err(), rows.hookErr)
+}
+
 func TestTaskRepositoryStopPersistsOnlyOwnedFlagsAfterCallerCancellation(t *testing.T) {
 	ctx, pool, scanner, store, actor, definition := taskRepository(t, 3)
 	admission, err := store.Start(ctx, actor, StartRequest{TaskID: definition.ID})
@@ -314,7 +370,7 @@ func TestTaskRepositoryStopPersistsOnlyOwnedFlagsAfterCallerCancellation(t *test
 	defer cancel()
 	var interrupted atomic.Bool
 	hooked, err := New(pool, hookedTransactions{owner: scanner, hook: func(_ library.OwnedTx, statement string) error {
-		if strings.HasPrefix(statement, "UPDATE scan_jobs j SET cancel_requested") && interrupted.CompareAndSwap(false, true) {
+		if strings.HasPrefix(statement, "WITH cancelled AS (") && strings.Contains(statement, "UPDATE scan_jobs j SET cancel_requested") && interrupted.CompareAndSwap(false, true) {
 			cancel()
 		}
 		return nil

@@ -57,7 +57,7 @@ func (r *mediaAnalysisRuntime) OpenPreview(ctx context.Context, principal identi
 		ctx, stopKnownExpiry = context.WithCancel(ctx)
 	}
 	cleanup := func() { stopKnownExpiry(); <-r.previewSlots; leave() }
-	fresh, err := r.server.identity.RevalidateSession(ctx, principal)
+	fresh, err := r.server.identity.RevalidateSessionAuthority(ctx, principal)
 	if err != nil {
 		cleanup()
 		return nil, err

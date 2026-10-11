@@ -115,7 +115,7 @@ func (s *Server) replaceAdminTaskTriggers(w http.ResponseWriter, r *http.Request
 		return
 	}
 	s.taskManager.Wake()
-	jsonResponse(w, http.StatusOK, map[string]any{"Task": taskDefinitionDTO(definition)})
+	jsonResponse(w, http.StatusOK, map[string]any{"Task": taskDefinitionDTO(definition.Summary())})
 }
 
 func (s *Server) previewAdminTaskTriggers(w http.ResponseWriter, r *http.Request) {

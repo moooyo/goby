@@ -129,7 +129,7 @@ func (s *Server) audioStream(w http.ResponseWriter, r *http.Request) {
 	}
 	if decision.Original {
 		if universal {
-			fresh, err := s.identity.RevalidateSession(prepare, principal)
+			fresh, err := s.identity.RevalidateSessionAuthority(prepare, principal)
 			if err != nil {
 				s.audioError(w, r, err)
 				return

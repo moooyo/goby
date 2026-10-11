@@ -227,6 +227,18 @@ func (s *Store) TouchClientSessionFromAddress(ctx context.Context, principal Pri
 // see their own sessions; the current stored administrator role permits all
 // enabled accounts. Admin cookie sessions are never included or accepted.
 func (s *Store) ListClientSessions(ctx context.Context, principal Principal, filter ClientSessionFilter) ([]ClientSession, error) {
+	return s.listClientSessions(ctx, principal, filter, false)
+}
+
+// ListClientSessionSummaries applies the same visibility and activity rules as
+// ListClientSessions. Capabilities includes only PlayableMediaTypes,
+// SupportedCommands, and SupportsMediaControl; its other fields are zero values.
+// Stored fields omitted from this projection are not validated on this path.
+func (s *Store) ListClientSessionSummaries(ctx context.Context, principal Principal, filter ClientSessionFilter) ([]ClientSession, error) {
+	return s.listClientSessions(ctx, principal, filter, true)
+}
+
+func (s *Store) listClientSessions(ctx context.Context, principal Principal, filter ClientSessionFilter, summary bool) ([]ClientSession, error) {
 	if err := validateClient(Client{DeviceID: filter.DeviceID, Name: filter.SessionID}); err != nil {
 		return nil, err
 	}
@@ -253,6 +265,15 @@ func (s *Store) ListClientSessions(ctx context.Context, principal Principal, fil
 	if err != nil {
 		return nil, err
 	}
+	capabilityProjection := "client_capabilities"
+	if summary {
+		// Optional nulls already mean omission. Remove them before the byte
+		// bound so absent fields cannot enlarge an otherwise valid document.
+		capabilityProjection = `jsonb_strip_nulls(jsonb_build_object(
+			'PlayableMediaTypes', client_capabilities->'PlayableMediaTypes',
+			'SupportedCommands', client_capabilities->'SupportedCommands',
+			'SupportsMediaControl', client_capabilities->'SupportsMediaControl'))`
+	}
 	rows, err := tx.Query(ctx, `WITH clients AS (
 		SELECT a.id, a.id AS credential_id, u.id AS user_id, u.name AS user_name,
 			a.client_name, a.device_id, COALESCE(d.custom_name, a.device_name) AS device_name, a.client_version, a.created_at,
@@ -273,7 +294,7 @@ func (s *Store) ListClientSessions(ctx context.Context, principal Principal, fil
 		AND a.expires_at IS NULL AND a.revoked_at IS NULL
 	)
 	SELECT id, credential_id, user_id, user_name, client_name, device_id, device_name,
-		client_version, created_at, last_seen_at, expires_at, client_capabilities, kind, key_id, last_used_at
+		client_version, created_at, last_seen_at, expires_at, `+capabilityProjection+`, kind, key_id, last_used_at
 	FROM clients WHERE ($3 = '' OR id = $3) AND ($4 = '' OR device_id = $4)
 	AND ($5::bigint = 0 OR last_seen_at >= now() - ($5::bigint * interval '1 second'))
 	ORDER BY last_seen_at DESC, id LIMIT $6`, authority.administrator, principal.User.ID,

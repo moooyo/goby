@@ -150,7 +150,7 @@ func (s *Server) authorizeOriginal(ctx context.Context, principal identity.Princ
 }
 
 func (s *Server) authorizeOriginalPolicy(ctx context.Context, principal identity.Principal, source library.MediaFile) (identity.Principal, error) {
-	fresh, err := s.identity.RevalidateSession(ctx, principal)
+	fresh, err := s.identity.RevalidateSessionAuthority(ctx, principal)
 	if err != nil {
 		return fresh, err
 	}

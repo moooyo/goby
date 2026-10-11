@@ -290,20 +290,54 @@ func (policy ManagedPolicy) AllowsDevice(deviceID string) bool {
 // target command capabilities. A userless server credential is handled by its
 // existing application-principal authority rather than a fabricated User.
 func CanControlClientSession(controller User, target ClientSession) bool {
+	return PrepareClientSessionControl(ClientSessionController{
+		ID: controller.ID, IsAdministrator: controller.IsAdministrator,
+		IsDisabled: controller.IsDisabled, Policy: controller.Policy,
+	}).CanControl(target)
+}
+
+// ClientSessionControl is a response-local policy decision. Its zero value
+// denies control. It retains no mutable policy document and must not be cached
+// across requests or used in place of independent delivery-time authorization.
+type ClientSessionControl struct {
+	userID               string
+	allowed              bool
+	administrator        bool
+	controlOtherUsers    bool
+	controlSharedDevices bool
+}
+
+// PrepareClientSessionControl parses the controller policy once for a session
+// list. Invalid policy denies control without becoming a response error. The
+// RemoteControl feature restriction is evaluated before administrator authority.
+func PrepareClientSessionControl(controller ClientSessionController) ClientSessionControl {
 	if controller.ID == "" || controller.IsDisabled {
-		return false
+		return ClientSessionControl{}
 	}
 	policy, err := ParseRuntimePolicy(controller.Policy)
 	if err != nil || !policy.AllowsFeature(FeatureRemoteControl) {
+		return ClientSessionControl{}
+	}
+	return ClientSessionControl{
+		userID: controller.ID, allowed: true, administrator: controller.IsAdministrator,
+		controlOtherUsers:    policy.EnableRemoteControlOfOtherUsers,
+		controlSharedDevices: policy.EnableSharedDeviceControl,
+	}
+}
+
+// CanControl applies the prepared decision to a session projection. Command
+// capability and live transport checks remain separate responsibilities.
+func (control ClientSessionControl) CanControl(target ClientSession) bool {
+	if !control.allowed {
 		return false
 	}
-	if controller.IsAdministrator {
+	if control.administrator {
 		return true
 	}
 	if target.Kind == "emby" && target.UserID != "" {
-		return target.UserID == controller.ID || policy.EnableRemoteControlOfOtherUsers
+		return target.UserID == control.userID || control.controlOtherUsers
 	}
-	return target.Kind == ApplicationKeyKind && target.UserID == "" && policy.EnableSharedDeviceControl
+	return target.Kind == ApplicationKeyKind && target.UserID == "" && control.controlSharedDevices
 }
 
 // AllowsAccessAt evaluates the union of explicit access intervals. An empty

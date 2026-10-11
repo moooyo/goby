@@ -168,6 +168,23 @@ func similarRelationSQL(seedID, seedType string, query SimilarQuery, access libr
 	} else {
 		prefix = strings.TrimSpace(prefix) + ", "
 	}
+	scopeJoin := ""
+	if seedType == "Movie" {
+		// Movie has no album bonus: a candidate with no shared seed entity cannot
+		// qualify. Find its possible IDs before expanding full candidate credits.
+		// Keep the seed outside every candidate-only predicate, including IDs,
+		// parent, state, and excluded artists; scoring still uses complete credits.
+		prefix += fmt.Sprintf(`similar_seed_entities AS MATERIALIZED (
+			SELECT DISTINCT entity.id AS entity_id FROM item_entities association
+			JOIN catalog_entities entity ON entity.id = association.entity_id
+			WHERE association.item_id = $%d::text AND (`+similarOrdinaryCreditSQL+` OR `+similarArtistCreditSQL+`)
+		), similar_movie_scope_ids AS MATERIALIZED (
+			SELECT $%d::text AS id UNION
+			SELECT association.item_id FROM similar_seed_entities seed_entity
+			JOIN item_entities association ON association.entity_id = seed_entity.entity_id
+		), `, seedParameter, seedParameter)
+		scopeJoin = " JOIN similar_movie_scope_ids matching ON matching.id = i.id"
+	}
 	album := "NULL::text"
 	if seedType == "MusicAlbum" {
 		album = "CASE WHEN i.is_folder THEN i.id END"
@@ -175,7 +192,7 @@ func similarRelationSQL(seedID, seedType string, query SimilarQuery, access libr
 		album = access.scopeSQL(physicalMusicAlbumIDSQL)
 	}
 	prefix += fmt.Sprintf(`similar_scope_albums AS MATERIALIZED (
-		SELECT i.id, i.type, `+album+` AS album_id FROM items i
+		SELECT i.id, i.type, `+album+` AS album_id FROM items i`+scopeJoin+`
 		WHERE `+access.ordinarySQL("i")+` AND (i.id = $%d::text OR (`+filter+`))
 	), `, seedParameter)
 	artistOwner := "NULL::text"
@@ -201,10 +218,14 @@ func similarRelationSQL(seedID, seedType string, query SimilarQuery, access libr
 	prefix += fmt.Sprintf(`
 	), similar_seed AS MATERIALIZED (
 		SELECT id, album_id FROM similar_scope WHERE id = $%d::text
-	), similar_seed_entities AS MATERIALIZED (
+	), `, seedParameter)
+	if seedType != "Movie" {
+		prefix += fmt.Sprintf(`similar_seed_entities AS MATERIALIZED (
 		SELECT DISTINCT entity_id FROM similar_credits WHERE item_id = $%d::text
-	), similar_candidates AS MATERIALIZED (
-		SELECT i.id, i.type, i.album_id FROM similar_scope i WHERE i.id <> $%d::text`, seedParameter, seedParameter, seedParameter)
+	), `, seedParameter)
+	}
+	prefix += fmt.Sprintf(`similar_candidates AS MATERIALIZED (
+		SELECT i.id, i.type, i.album_id FROM similar_scope i WHERE i.id <> $%d::text`, seedParameter)
 	if len(query.AlbumIds) != 0 {
 		args = append(args, query.AlbumIds)
 		prefix += fmt.Sprintf(" AND i.album_id = ANY($%d::text[])", len(args))

@@ -99,7 +99,7 @@ func (s *Server) startAdminSubtitleTimelineRun(w http.ResponseWriter, r *http.Re
 		s.taskError(w, r, tasks.ErrUnavailable)
 		return
 	}
-	definition, err := s.taskStore.GetByKey(r.Context(), library.TaskSubtitleTimelineGenerationKey)
+	definition, err := s.taskStore.GetTargetByKey(r.Context(), library.TaskSubtitleTimelineGenerationKey)
 	if err != nil {
 		s.taskError(w, r, err)
 		return

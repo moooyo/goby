@@ -475,13 +475,13 @@ func remoteCommandEnvelope(messageType string, data map[string]any, actor identi
 
 func (s *Server) acceptRemoteCommand(w http.ResponseWriter, r *http.Request, messageType string, data map[string]any, includeTargetID bool) {
 	actor := r.Context().Value(principalKey).(identity.Principal)
-	actor, err := s.identity.RevalidateSession(r.Context(), actor)
+	actor, err := s.identity.RevalidateSessionAuthority(r.Context(), actor)
 	if err != nil {
 		s.identityError(w, r, err)
 		return
 	}
 	noPresenceFilter := 0
-	targets, err := s.identity.ListClientSessions(r.Context(), actor, identity.ClientSessionFilter{
+	targets, err := s.identity.ListClientSessionSummaries(r.Context(), actor, identity.ClientSessionFilter{
 		SessionID: r.PathValue("Id"), ActiveWithinSeconds: &noPresenceFilter, Limit: 1,
 	})
 	if err != nil {
@@ -637,7 +637,7 @@ func (s *Server) authorizeRemoteSocketEvent(ctx context.Context, receiver identi
 		return false, err
 	}
 	noPresenceFilter := 0
-	targets, err := s.identity.ListClientSessions(ctx, receiver, identity.ClientSessionFilter{
+	targets, err := s.identity.ListClientSessionSummaries(ctx, receiver, identity.ClientSessionFilter{
 		SessionID: clientSessionID(receiver), ActiveWithinSeconds: &noPresenceFilter, Limit: 1,
 	})
 	if errors.Is(err, identity.ErrUnauthorized) || errors.Is(err, identity.ErrClientSessionForbidden) {

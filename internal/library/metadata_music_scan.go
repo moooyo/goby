@@ -266,16 +266,13 @@ func refreshAcceptedMusicAlbum(ctx context.Context, tx pgx.Tx, libraryID, albumI
 	if err != nil || !ready {
 		return false, err
 	}
-	var changed bool
-	if err := tx.QueryRow(ctx, "SELECT music_source IS DISTINCT FROM $2::jsonb FROM item_metadata_state WHERE item_id = $1",
-		albumID, encoded).Scan(&changed); err != nil {
-		return false, fmt.Errorf("compare accepted album source: %w", err)
-	}
-	if !changed {
-		return true, nil
-	}
-	if _, err := tx.Exec(ctx, "UPDATE item_metadata_state SET music_source = $2::jsonb WHERE item_id = $1", albumID, encoded); err != nil {
+	result, err := tx.Exec(ctx, `UPDATE item_metadata_state SET music_source = $2::jsonb
+		WHERE item_id = $1 AND music_source IS DISTINCT FROM $2::jsonb`, albumID, encoded)
+	if err != nil {
 		return false, fmt.Errorf("store accepted album source: %w", err)
+	}
+	if result.RowsAffected() == 0 {
+		return true, nil
 	}
 	physicalPath := path
 	if physicalPath == "" {

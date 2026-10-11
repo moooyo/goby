@@ -293,7 +293,7 @@ func (s *Server) embyRefreshLibraries(w http.ResponseWriter, r *http.Request) {
 		s.scheduledTaskError(w, r, tasks.ErrUnavailable)
 		return
 	}
-	definition, err := s.taskStore.GetByKey(r.Context(), tasks.LibraryScanKey)
+	definition, err := s.taskStore.GetTargetByKey(r.Context(), tasks.LibraryScanKey)
 	if err != nil {
 		s.scheduledTaskError(w, r, err)
 		return

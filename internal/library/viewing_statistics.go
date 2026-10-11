@@ -39,7 +39,8 @@ func (s *Store) ViewingStatisticsFor(ctx context.Context, subject Subject) (View
 			THEN CASE WHEN (i.media->>'DurationTicks')::numeric <= 9223372036854775807
 				THEN (i.media->>'DurationTicks')::numeric ELSE 0 END
 			ELSE 0 END AS ticks) duration
-		WHERE state.user_id=$1 AND i.type IN ('Movie', 'Episode') AND NOT i.is_folder
+		WHERE state.user_id=$1 AND (state.played OR state.playback_position_ticks > 0)
+			AND i.type IN ('Movie', 'Episode') AND NOT i.is_folder
 			AND duration.ticks > 0 AND ` + access.ordinarySQL("i")
 	var ticks string
 	if err := tx.QueryRow(ctx, statement, subject.UserID).Scan(&ticks); err != nil {

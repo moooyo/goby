@@ -72,7 +72,8 @@ type Snapshot struct {
 }
 
 // ValueSnapshot projects one published revision without mutable references.
-// Readers that need overrides or management fields must use Snapshot instead.
+// Readers that need overrides must use Snapshot; management options have
+// their own projections.
 type ValueSnapshot struct {
 	Revision       int64
 	Effective      Values

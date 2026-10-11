@@ -57,6 +57,39 @@ func TestViewingStatisticsAggregatesContentOnceAndBoundsProgress(t *testing.T) {
 	}
 }
 
+func TestViewingStatisticsIgnoresFavoriteOnlyAndClearedProgress(t *testing.T) {
+	ctx, store := libraryQueryTestStore(t)
+	seedLibraryQueryFixture(t, ctx, store.pool)
+	if _, err := store.pool.Exec(ctx, `UPDATE items SET media='{"DurationTicks":36000000000}';
+		INSERT INTO user_item_data(user_id,item_id,is_favorite,play_count,playback_position_ticks) VALUES
+		('restricted','movie-b',true,0,0),
+		('restricted','episode-b1',false,0,18000000000),
+		('restricted','episode-b2',false,5,0)`); err != nil {
+		t.Fatal(err)
+	}
+	subject := Subject{UserID: "restricted"}
+	got, err := store.ViewingStatisticsFor(ctx, subject)
+	if err != nil || got != (ViewingStatistics{EstimatedContentHours: 1, EstimatedContentTicks: "18000000000", IsEstimate: true}) {
+		t.Fatalf("favorite and historical play count changed the current progress estimate: %+v, %v", got, err)
+	}
+	if _, err := store.pool.Exec(ctx, `UPDATE user_item_data SET playback_position_ticks=0
+		WHERE user_id='restricted' AND item_id='episode-b1'`); err != nil {
+		t.Fatal(err)
+	}
+	got, err = store.ViewingStatisticsFor(ctx, subject)
+	if err != nil || got != (ViewingStatistics{EstimatedContentTicks: "0", IsEstimate: true}) {
+		t.Fatalf("cleared progress or favorite-only state contributed watched content: %+v, %v", got, err)
+	}
+	if _, err := store.pool.Exec(ctx, `UPDATE user_item_data SET played=true
+		WHERE user_id='restricted' AND item_id='movie-b'`); err != nil {
+		t.Fatal(err)
+	}
+	got, err = store.ViewingStatisticsFor(ctx, subject)
+	if err != nil || got != (ViewingStatistics{EstimatedContentHours: 1, EstimatedContentTicks: "36000000000", IsEstimate: true}) {
+		t.Fatalf("completed favorite with zero progress lost its full runtime: %+v, %v", got, err)
+	}
+}
+
 func TestViewingStatisticsRechecksLibraryAndInheritedItemPolicy(t *testing.T) {
 	ctx, store := libraryQueryTestStore(t)
 	seedLibraryQueryFixture(t, ctx, store.pool)

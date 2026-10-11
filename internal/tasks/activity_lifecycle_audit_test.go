@@ -161,6 +161,11 @@ func TestTaskActivityStopOnlyRecordsFirstRequestWhileStopping(t *testing.T) {
 	}
 	cancelled := taskLifecycleUserEntry("task.cancel_requested", "native", admission.Run.ID, actor, 0, 2)
 	assertTaskLifecycleAudit(t, ctx, pool, admission.Run.ID, admitted, cancelled)
+	var runVersion, scanVersion string
+	if err := pool.QueryRow(ctx, `SELECT r.xmin::text,j.xmin::text FROM task_runs r,scan_jobs j
+		WHERE r.id=$1 AND j.id='activity-owned-scan'`, admission.Run.ID).Scan(&runVersion, &scanVersion); err != nil {
+		t.Fatal(err)
+	}
 	for range 2 {
 		if repeated, err := store.Stop(ctx, actor, admission.Run.ID); err != nil || repeated.State != RunStopping || repeated.StopReason != "administrator" {
 			t.Fatalf("repeat stopping request changed its first reason: %+v, %v", repeated, err)
@@ -173,6 +178,14 @@ func TestTaskActivityStopOnlyRecordsFirstRequestWhileStopping(t *testing.T) {
 		}
 	}
 	assertTaskLifecycleAudit(t, ctx, pool, admission.Run.ID, admitted, cancelled)
+	var repeatedRunVersion, repeatedScanVersion string
+	if err := pool.QueryRow(ctx, `SELECT r.xmin::text,j.xmin::text FROM task_runs r,scan_jobs j
+		WHERE r.id=$1 AND j.id='activity-owned-scan'`, admission.Run.ID).Scan(&repeatedRunVersion, &repeatedScanVersion); err != nil {
+		t.Fatal(err)
+	}
+	if runVersion != repeatedRunVersion || scanVersion != repeatedScanVersion {
+		t.Fatal("repeated stop rewrote an unchanged parent or scan cancellation flag")
+	}
 	var scanCancellationCount int
 	var scanSource, scanActor, scanActorID, scanCredential string
 	if err := pool.QueryRow(ctx, `SELECT count(*),min(source),min(actor_kind),min(actor_id),min(actor_credential_id)

@@ -98,7 +98,7 @@ func (s *Server) startAdminAudioWaveformRun(w http.ResponseWriter, r *http.Reque
 		s.taskError(w, r, tasks.ErrUnavailable)
 		return
 	}
-	definition, err := s.taskStore.GetByKey(r.Context(), library.TaskAudioWaveformGenerationKey)
+	definition, err := s.taskStore.GetTargetByKey(r.Context(), library.TaskAudioWaveformGenerationKey)
 	if err != nil {
 		s.taskError(w, r, err)
 		return

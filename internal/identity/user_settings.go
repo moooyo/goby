@@ -28,28 +28,45 @@ var ErrStoredUserSettings = errors.New("stored user settings are invalid")
 // These preferences belong to the user across login sessions and devices.
 type UserSettingsPatch map[string]*string
 
+type validatedUserSettings struct {
+	values    map[string]string
+	canonical json.RawMessage
+}
+
 // GetUserSettings reads the persisted user-wide preferences. Missing rows are
 // the actual empty default; reading does not create or update a preference row.
 func (s *Store) GetUserSettings(ctx context.Context, actor Principal, userID string) (map[string]string, error) {
+	document, err := s.getUserSettingsDocument(ctx, actor, userID)
+	return document.values, err
+}
+
+// GetUserSettingsJSON reads the persisted user-wide preferences as validated
+// canonical JSON. Each read owns its returned bytes, including empty defaults.
+func (s *Store) GetUserSettingsJSON(ctx context.Context, actor Principal, userID string) (json.RawMessage, error) {
+	document, err := s.getUserSettingsDocument(ctx, actor, userID)
+	return document.canonical, err
+}
+
+func (s *Store) getUserSettingsDocument(ctx context.Context, actor Principal, userID string) (validatedUserSettings, error) {
 	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
 	if err != nil {
-		return nil, fmt.Errorf("begin user settings read: %w", err)
+		return validatedUserSettings{}, fmt.Errorf("begin user settings read: %w", err)
 	}
 	defer rollback(tx)
 	if err := authorizeUserSettings(ctx, tx, actor, userID, true); err != nil {
-		return nil, err
+		return validatedUserSettings{}, err
 	}
-	values, err := readUserSettings(ctx, tx, userID, false)
+	document, err := readUserSettings(ctx, tx, userID, false)
 	if err != nil {
-		return nil, err
+		return validatedUserSettings{}, err
 	}
 	if err := authorizeUserSettings(ctx, tx, actor, userID, false); err != nil {
-		return nil, err
+		return validatedUserSettings{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {
-		return nil, fmt.Errorf("commit user settings read: %w", err)
+		return validatedUserSettings{}, fmt.Errorf("commit user settings read: %w", err)
 	}
-	return values, nil
+	return document, nil
 }
 
 // PatchUserSettings merges only supplied keys into the latest locked document.
@@ -77,14 +94,14 @@ func (s *Store) PatchUserSettings(ctx context.Context, actor Principal, userID s
 		ON CONFLICT(user_id) DO NOTHING`, userID); err != nil {
 		return fmt.Errorf("initialize user settings: %w", err)
 	}
-	values, err := readUserSettings(ctx, tx, userID, true)
+	document, err := readUserSettings(ctx, tx, userID, true)
 	if err != nil {
 		return err
 	}
 	if err := authorizeUserSettings(ctx, tx, actor, userID, false); err != nil {
 		return err
 	}
-	before, _ := json.Marshal(values)
+	values := document.values
 	for key, value := range patch {
 		for existing := range values {
 			if strings.EqualFold(existing, key) {
@@ -102,7 +119,7 @@ func (s *Store) PatchUserSettings(ctx context.Context, actor Principal, userID s
 	if err != nil {
 		return err
 	}
-	if bytes.Equal(before, encoded) {
+	if bytes.Equal(document.canonical, encoded) {
 		return authorizeUserSettings(ctx, tx, actor, userID, false)
 	}
 	if _, err := tx.Exec(ctx, `UPDATE user_settings SET settings=$2::jsonb,
@@ -199,7 +216,7 @@ func authorizeUserSettings(ctx context.Context, tx pgx.Tx, actor Principal, user
 	return check()
 }
 
-func readUserSettings(ctx context.Context, tx pgx.Tx, userID string, lock bool) (map[string]string, error) {
+func readUserSettings(ctx context.Context, tx pgx.Tx, userID string, lock bool) (validatedUserSettings, error) {
 	query := `SELECT settings FROM user_settings WHERE user_id=$1`
 	if lock {
 		query += ` FOR UPDATE`
@@ -207,29 +224,28 @@ func readUserSettings(ctx context.Context, tx pgx.Tx, userID string, lock bool) 
 	var data []byte
 	err := tx.QueryRow(ctx, query, userID).Scan(&data)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return map[string]string{}, nil
+		return validatedUserSettings{values: map[string]string{}, canonical: json.RawMessage("{}")}, nil
 	}
 	if err != nil {
-		return nil, fmt.Errorf("read user settings: %w", err)
+		return validatedUserSettings{}, fmt.Errorf("read user settings: %w", err)
 	}
-	var values map[string]string
-	// A JSON null cannot be accepted as the empty string by Go's string decoder.
-	var members map[string]json.RawMessage
+	// Nullable strings reject JSON null without decoding the document twice.
+	var members map[string]*string
 	if json.Unmarshal(data, &members) != nil || members == nil {
-		return nil, ErrStoredUserSettings
+		return validatedUserSettings{}, ErrStoredUserSettings
 	}
-	for _, member := range members {
-		if len(member) == 0 || member[0] != '"' {
-			return nil, ErrStoredUserSettings
+	values := make(map[string]string, len(members))
+	for key, member := range members {
+		if member == nil {
+			return validatedUserSettings{}, ErrStoredUserSettings
 		}
+		values[key] = *member
 	}
-	if json.Unmarshal(data, &values) != nil {
-		return nil, ErrStoredUserSettings
+	canonical, err := encodeUserSettings(values)
+	if err != nil {
+		return validatedUserSettings{}, ErrStoredUserSettings
 	}
-	if _, err := encodeUserSettings(values); err != nil {
-		return nil, ErrStoredUserSettings
-	}
-	return values, nil
+	return validatedUserSettings{values: values, canonical: canonical}, nil
 }
 
 func cloneUserSettingsPatch(input UserSettingsPatch) (UserSettingsPatch, error) {

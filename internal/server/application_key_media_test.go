@@ -19,19 +19,17 @@ func TestApplicationKeyMediaTargetLimitsUseOnlyConversionPermissions(t *testing.
 	for _, test := range []struct {
 		name                string
 		policy              string
-		disabled            bool
 		remux, audio, video bool
 	}{
-		{"defaults", `{}`, false, true, true, true},
-		{"only-account-disabled", `{}`, true, true, true, true},
-		{"only-media-playback-disabled", `{"EnableMediaPlayback":false}`, false, true, true, true},
-		{"all-conversion-disabled", `{"EnablePlaybackRemuxing":false,"EnableAudioPlaybackTranscoding":false,"EnableVideoPlaybackTranscoding":false}`, false, false, false, false},
-		{"mixed-conversion-permissions", `{"EnablePlaybackRemuxing":false,"EnableAudioPlaybackTranscoding":true,"EnableVideoPlaybackTranscoding":false}`, false, false, true, false},
-		{"malformed-permission", `{"EnablePlaybackRemuxing":null,"EnableAudioPlaybackTranscoding":"true","EnableVideoPlaybackTranscoding":0}`, false, false, false, false},
-		{"malformed-policy", `null`, false, false, false, false},
+		{"defaults", `{}`, true, true, true},
+		{"only-media-playback-disabled", `{"EnableMediaPlayback":false}`, true, true, true},
+		{"all-conversion-disabled", `{"EnablePlaybackRemuxing":false,"EnableAudioPlaybackTranscoding":false,"EnableVideoPlaybackTranscoding":false}`, false, false, false},
+		{"mixed-conversion-permissions", `{"EnablePlaybackRemuxing":false,"EnableAudioPlaybackTranscoding":true,"EnableVideoPlaybackTranscoding":false}`, false, true, false},
+		{"malformed-permission", `{"EnablePlaybackRemuxing":null,"EnableAudioPlaybackTranscoding":"true","EnableVideoPlaybackTranscoding":0}`, false, false, false},
+		{"malformed-policy", `null`, false, false, false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			limits := hlsApplicationTargetLimits(cfg, identity.User{IsDisabled: test.disabled, Policy: json.RawMessage(test.policy)})
+			limits := hlsApplicationTargetLimits(cfg, json.RawMessage(test.policy))
 			if limits.AllowRemux != test.remux || limits.AllowAudioTranscode != test.audio || limits.AllowVideoTranscode != test.video {
 				t.Fatal("application target conversion permissions did not match the independently controlled flags")
 			}
@@ -42,7 +40,7 @@ func TestApplicationKeyMediaTargetLimitsUseOnlyConversionPermissions(t *testing.
 		})
 	}
 	cfg.Enabled = false
-	limits := hlsApplicationTargetLimits(cfg, identity.User{Policy: json.RawMessage(`{}`)})
+	limits := hlsApplicationTargetLimits(cfg, json.RawMessage(`{}`))
 	if limits.AllowRemux || limits.AllowAudioTranscode || limits.AllowVideoTranscode {
 		t.Fatal("target policy enabled conversion while the server disabled it")
 	}

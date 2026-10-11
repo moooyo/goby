@@ -356,6 +356,17 @@ func (s *Server) applyDisplayPreferenceDefaults(w http.ResponseWriter, r *http.R
 	return true
 }
 
+// requestUserConfigurationDefaults skips the self-user projection when parsed
+// query values already determine every consumed default. Cross-user reads keep
+// their existence check and error ordering even when no defaults are needed.
+func (s *Server) requestUserConfigurationDefaults(ctx context.Context, r *http.Request, userID string, needed bool) (identity.UserConfiguration, error) {
+	actor := r.Context().Value(principalKey).(identity.Principal)
+	if !needed && !actor.IsApplicationKey() && userID != "" && actor.User.ID == userID {
+		return identity.UserConfiguration{}, nil
+	}
+	return s.requestUserConfiguration(ctx, r, userID)
+}
+
 func (s *Server) requestUserConfiguration(ctx context.Context, r *http.Request, userID string) (identity.UserConfiguration, error) {
 	actor := r.Context().Value(principalKey).(identity.Principal)
 	if actor.IsApplicationKey() {
@@ -371,9 +382,9 @@ func (s *Server) requestUserConfiguration(ctx context.Context, r *http.Request, 
 	if actor.User.ID == userID {
 		return identity.ProjectUserConfiguration(actor.User.Configuration), nil
 	}
-	user, err := s.identity.GetUser(ctx, userID)
+	configuration, err := s.identity.GetUserConfiguration(ctx, userID)
 	if err != nil {
 		return identity.UserConfiguration{}, err
 	}
-	return identity.ProjectUserConfiguration(user.Configuration), nil
+	return identity.ProjectUserConfiguration(configuration), nil
 }

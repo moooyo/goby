@@ -301,8 +301,10 @@ func (tx *ownedTx) Commit(_ context.Context) error {
 		return pgx.ErrTxClosed
 	}
 	if err := tx.flushSystemEvent(); err != nil {
-		_ = tx.Rollback(context.Background())
-		return errors.Join(pgx.ErrTxCommitRollback, err)
+		return tx.rollbackBeforeCommit(err)
+	}
+	if err := tx.ctx.Err(); err != nil {
+		return tx.rollbackBeforeCommit(err)
 	}
 	err := tx.Tx.Commit(tx.ctx)
 	tx.cancel()
@@ -314,6 +316,16 @@ func (tx *ownedTx) Commit(_ context.Context) error {
 		tx.store.notifyCatalogChanges(notification)
 	}
 	return err
+}
+
+// A known failure before Commit can still be rolled back independently of the
+// write budget. Only confirmed rollback permits callers to treat ErrTxClosed
+// as successful cleanup when they finalize the transaction again.
+func (tx *ownedTx) rollbackBeforeCommit(cause error) error {
+	if err := tx.Rollback(context.Background()); err != nil {
+		return errors.Join(cause, err)
+	}
+	return errors.Join(pgx.ErrTxCommitRollback, cause)
 }
 
 // Flush before subsequent statements so a final authorization query remains

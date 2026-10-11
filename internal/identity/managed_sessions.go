@@ -170,29 +170,37 @@ func (s *Store) ListManagedSessions(ctx context.Context, actor Principal, filter
 	// The count and page must share one snapshot even under READ COMMITTED.
 	// LEFT JOIN retains the total when the requested page is empty. One captured
 	// clock value also gives every status decision the same expiration boundary.
+	// Retain only ordering and status keys for the count; fetch account and client
+	// details for the selected page before the outer join preserves empty pages.
 	rows, err := tx.Query(ctx, `WITH observation AS MATERIALIZED (
 		SELECT clock_timestamp() AS observed_at
-	), states AS MATERIALIZED (
-		SELECT a.id AS session_id, u.id AS user_id, u.name AS user_name,
-			u.is_administrator, u.is_disabled, a.kind, a.client_name, a.device_id,
-			a.device_name, a.client_version, a.created_at, a.last_seen_at,
-			a.expires_at, a.revoked_at,
+	), filtered AS MATERIALIZED (
+		SELECT a.id AS session_id, a.created_at, classification.status
+		FROM sessions a JOIN users u ON u.id = a.user_id CROSS JOIN observation
+		CROSS JOIN LATERAL (VALUES (
 			CASE WHEN a.revoked_at IS NOT NULL THEN 'revoked'
 				WHEN u.is_disabled OR (a.kind = 'admin' AND NOT u.is_administrator) THEN 'disabled'
 				WHEN a.expires_at <= observation.observed_at THEN 'expired'
-				ELSE 'active' END AS status
-		FROM sessions a JOIN users u ON u.id = a.user_id CROSS JOIN observation
+				ELSE 'active' END
+		)) classification(status)
 		WHERE ($1 = '' OR a.user_id = $1) AND ($2 = '' OR a.kind = $2)
 		AND ($3 = '' OR a.device_id = $3)
+		AND ($5 = 'all' OR classification.status = $5)
 		AND ($4 = '' OR strpos(lower(u.name), lower($4)) > 0
 			OR strpos(lower(a.client_name), lower($4)) > 0
 			OR strpos(lower(a.device_id), lower($4)) > 0
 			OR strpos(lower(a.device_name), lower($4)) > 0
 			OR strpos(lower(a.client_version), lower($4)) > 0)
-	), filtered AS MATERIALIZED (
-		SELECT * FROM states WHERE $5 = 'all' OR status = $5
+	), page_ids AS MATERIALIZED (
+		SELECT session_id, created_at, status FROM filtered
+		ORDER BY created_at DESC, session_id DESC LIMIT $6 OFFSET $7
 	), page AS (
-		SELECT * FROM filtered ORDER BY created_at DESC, session_id DESC LIMIT $6 OFFSET $7
+		SELECT page_ids.session_id, u.id AS user_id, u.name AS user_name,
+			u.is_administrator, u.is_disabled, a.kind, a.client_name, a.device_id,
+			a.device_name, a.client_version, page_ids.created_at, a.last_seen_at,
+			a.expires_at, a.revoked_at, page_ids.status
+		FROM page_ids JOIN sessions a ON a.id = page_ids.session_id
+		JOIN users u ON u.id = a.user_id
 	)
 	SELECT (SELECT count(*) FROM filtered), page.session_id, page.user_id,
 		page.user_name, page.is_administrator, page.is_disabled, page.kind,

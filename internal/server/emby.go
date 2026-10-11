@@ -162,7 +162,7 @@ func (s *Server) embyLoginByID(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	user, err := s.identity.GetUser(r.Context(), r.PathValue("Id"))
+	name, err := s.identity.GetUserName(r.Context(), r.PathValue("Id"))
 	if err != nil {
 		if errors.Is(err, identity.ErrNotFound) {
 			embyTextError(w, r, http.StatusUnauthorized, embyInvalidLoginMessage)
@@ -171,7 +171,7 @@ func (s *Server) embyLoginByID(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	s.authenticateEmby(w, r, user.Name, body.Pw)
+	s.authenticateEmby(w, r, name, body.Pw)
 }
 
 func (s *Server) authenticateEmby(w http.ResponseWriter, r *http.Request, name, password string) {

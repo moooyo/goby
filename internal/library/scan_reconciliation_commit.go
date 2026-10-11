@@ -445,7 +445,7 @@ func (s *Store) reconcileMissingScanItemsAttempt(task *scanTask, library Library
 		if err != nil {
 			return err
 		}
-		albums, err = scanReconciliationAlbums(members, ancestors)
+		albums, err = scanReconciliationAlbumsWithBudget(members, ancestors, budget)
 		if err != nil {
 			return err
 		}
@@ -523,7 +523,7 @@ func (s *Store) reconcileMissingScanItemsAttempt(task *scanTask, library Library
 			}
 		}
 		stage = "remove_publication"
-		if err := recordCollectionSourceRemovals(raw, facts); err != nil {
+		if err := recordScanCollectionSourceRemovals(raw, facts, ancestors, budget); err != nil {
 			return err
 		}
 		if err := recordCatalogChanges(raw, facts...); err != nil {

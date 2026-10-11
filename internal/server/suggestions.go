@@ -25,7 +25,7 @@ func (s *Server) embySuggestions(w http.ResponseWriter, r *http.Request) {
 	if _, supplied := r.URL.Query()["Limit"]; !supplied {
 		query.Limit = 20
 	}
-	preferences, err := s.requestUserConfiguration(r.Context(), r, userID)
+	preferences, err := s.requestUserConfigurationDefaults(r.Context(), r, userID, query.IsPlayed == nil)
 	if err != nil {
 		s.identityError(w, r, err)
 		return

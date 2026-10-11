@@ -89,6 +89,57 @@ type Definition struct {
 	LastRun          *Run      `json:"last_run"`
 }
 
+// DefinitionSummary retains the display snapshot without execution payloads.
+type DefinitionSummary struct {
+	ID               string      `json:"id"`
+	Key              string      `json:"key"`
+	EmbyKey          string      `json:"emby_key"`
+	Name             string      `json:"name"`
+	Description      string      `json:"description"`
+	Category         string      `json:"category"`
+	IsHidden         bool        `json:"is_hidden"`
+	Enabled          bool        `json:"enabled"`
+	Revision         int64       `json:"revision"`
+	ScheduleTimezone string      `json:"schedule_timezone"`
+	CreatedAt        time.Time   `json:"created_at"`
+	UpdatedAt        time.Time   `json:"updated_at"`
+	Triggers         []Trigger   `json:"triggers"`
+	CurrentRun       *RunSummary `json:"current_run"`
+	LastRun          *RunSummary `json:"last_run"`
+}
+
+// DefinitionTarget identifies a task before a separately authorized mutation.
+// It carries no trigger, run, or execution authority state.
+type DefinitionTarget struct {
+	ID               string `json:"id"`
+	Key              string `json:"key"`
+	EmbyKey          string `json:"emby_key"`
+	Enabled          bool   `json:"enabled"`
+	Revision         int64  `json:"revision"`
+	ScheduleTimezone string `json:"schedule_timezone"`
+}
+
+// Summary projects a complete mutation result for display without making its
+// execution payload or authority available to display consumers.
+func (definition Definition) Summary() DefinitionSummary {
+	result := DefinitionSummary{
+		ID: definition.ID, Key: definition.Key, EmbyKey: definition.EmbyKey,
+		Name: definition.Name, Description: definition.Description, Category: definition.Category,
+		IsHidden: definition.IsHidden, Enabled: definition.Enabled, Revision: definition.Revision,
+		ScheduleTimezone: definition.ScheduleTimezone, CreatedAt: definition.CreatedAt,
+		UpdatedAt: definition.UpdatedAt, Triggers: definition.Triggers,
+	}
+	if definition.CurrentRun != nil {
+		run := definition.CurrentRun.Summary()
+		result.CurrentRun = &run
+	}
+	if definition.LastRun != nil {
+		run := definition.LastRun.Summary()
+		result.LastRun = &run
+	}
+	return result
+}
+
 // Trigger uses Goby's typed schedule model, not unobserved Emby write fields.
 type Trigger struct {
 	ID                string     `json:"id"`
@@ -154,6 +205,52 @@ type Run struct {
 	Updated             int64      `json:"updated"`
 }
 
+// RunSummary is a display value and cannot be used as an execution Run.
+// Analysis selections and execution identities belong only to complete reads.
+type RunSummary struct {
+	ID                  string     `json:"id"`
+	TaskID              string     `json:"task_id"`
+	TaskName            string     `json:"task_name"`
+	State               RunState   `json:"state"`
+	Source              string     `json:"source"`
+	RequestID           *string    `json:"request_id"`
+	ScheduledFor        *time.Time `json:"scheduled_for"`
+	MaxRuntimeTicks     *int64     `json:"max_runtime_ticks"`
+	CreatedAt           time.Time  `json:"created_at"`
+	StartedAt           *time.Time `json:"started_at"`
+	DeadlineAt          *time.Time `json:"deadline_at"`
+	StopRequestedAt     *time.Time `json:"stop_requested_at"`
+	StopReason          string     `json:"stop_reason"`
+	FinishedAt          *time.Time `json:"finished_at"`
+	ErrorCode           string     `json:"error_code"`
+	ErrorMessage        string     `json:"error_message"`
+	TotalChildren       int64      `json:"total_children"`
+	TerminalChildren    int64      `json:"terminal_children"`
+	CompletedChildren   int64      `json:"completed_children"`
+	FailedChildren      int64      `json:"failed_children"`
+	CancelledChildren   int64      `json:"cancelled_children"`
+	InterruptedChildren int64      `json:"interrupted_children"`
+	UnavailableChildren int64      `json:"unavailable_children"`
+	Scanned             int64      `json:"scanned"`
+	Added               int64      `json:"added"`
+	Updated             int64      `json:"updated"`
+}
+
+// Summary exposes the same fields as a committed display query after a mutation.
+func (run Run) Summary() RunSummary {
+	return RunSummary{
+		ID: run.ID, TaskID: run.TaskID, TaskName: run.TaskName, State: run.State,
+		Source: run.Source, RequestID: run.RequestID, ScheduledFor: run.ScheduledFor,
+		MaxRuntimeTicks: run.MaxRuntimeTicks, CreatedAt: run.CreatedAt, StartedAt: run.StartedAt,
+		DeadlineAt: run.DeadlineAt, StopRequestedAt: run.StopRequestedAt, StopReason: run.StopReason,
+		FinishedAt: run.FinishedAt, ErrorCode: run.ErrorCode, ErrorMessage: run.ErrorMessage,
+		TotalChildren: run.TotalChildren, TerminalChildren: run.TerminalChildren,
+		CompletedChildren: run.CompletedChildren, FailedChildren: run.FailedChildren,
+		CancelledChildren: run.CancelledChildren, InterruptedChildren: run.InterruptedChildren,
+		UnavailableChildren: run.UnavailableChildren, Scanned: run.Scanned, Added: run.Added, Updated: run.Updated,
+	}
+}
+
 type Child struct {
 	ID               string     `json:"id"`
 	RunID            string     `json:"run_id"`
@@ -185,6 +282,13 @@ type Page struct {
 
 type RunPage struct {
 	Items            []Run
+	TotalRecordCount int64
+	StartIndex       int
+	Limit            int
+}
+
+type RunSummaryPage struct {
+	Items            []RunSummary
 	TotalRecordCount int64
 	StartIndex       int
 	Limit            int

@@ -123,7 +123,7 @@ func (s *Store) initializeSchedule(ctx context.Context, id, key string, startupA
 			if err := ValidateSchedule(triggerScheduleRule(trigger)); err != nil {
 				return pauseSchedule(tx, trigger.ID, err)
 			}
-			if err := s.admitScheduledOccurrence(tx, definition, trigger, startupAt, "startup"); err != nil {
+			if _, err := s.admitScheduledOccurrence(tx, definition, trigger, startupAt, "startup"); err != nil {
 				return err
 			}
 			_, err := tx.Exec(`UPDATE task_triggers SET last_due_at = $2, updated_at = clock_timestamp() WHERE id = $1`, trigger.ID, startupAt)
@@ -258,7 +258,7 @@ func (s *Store) dispatchOneSchedule(ctx context.Context, excluded ...string) (bo
 				return err
 			}
 		}
-		if err := s.admitScheduledOccurrence(tx, definition, trigger, due.Last, "schedule"); err != nil {
+		if _, err := s.admitScheduledOccurrence(tx, definition, trigger, due.Last, "schedule"); err != nil {
 			return err
 		}
 		return advanceSchedule(tx, trigger.ID, due)
@@ -403,60 +403,69 @@ func recordMissedOccurrences(tx library.OwnedTx, trigger Trigger, first, last ti
 	return nil
 }
 
+type scheduledOccurrenceReceipt struct {
+	RunID       *string
+	Disposition string
+}
+
 // The caller holds the definition and trigger locks, in that order. Admission,
 // occurrence identity, library snapshot, and rule advancement share its fenced
 // transaction; no public Start call can open a second owner transaction.
-func (s *Store) admitScheduledOccurrence(tx library.OwnedTx, definition Definition, trigger Trigger, due time.Time, source string) error {
-	var exists bool
-	if err := tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM task_occurrences
-        WHERE trigger_id = $1 AND schedule_revision = $2 AND due_at = $3)`,
-		trigger.ID, trigger.ScheduleRevision, due).Scan(&exists); err != nil {
-		return fmt.Errorf("read task occurrence receipt: %w", err)
-	}
-	if exists {
+func (s *Store) admitScheduledOccurrence(tx library.OwnedTx, definition Definition, trigger Trigger, due time.Time, source string) (scheduledOccurrenceReceipt, error) {
+	var receipt scheduledOccurrenceReceipt
+	err := tx.QueryRow(`SELECT run_id,disposition FROM task_occurrences
+        WHERE trigger_id = $1 AND schedule_revision = $2 AND due_at = $3`,
+		trigger.ID, trigger.ScheduleRevision, due).Scan(&receipt.RunID, &receipt.Disposition)
+	if err == nil {
 		// Startup retries must not create a second run after the first one has
 		// already completed (including an empty-library run).
-		return nil
+		return receipt, nil
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return scheduledOccurrenceReceipt{}, fmt.Errorf("read task occurrence receipt: %w", err)
 	}
 	input, err := normalizedTaskAnalysis(definition.Key, nil)
 	if err != nil {
-		return err
+		return scheduledOccurrenceReceipt{}, err
 	}
 	binding, selectedLibraries, err := s.prepareAnalysisAdmission(tx, definition.Key, source, input, nil)
 	if err != nil {
-		return err
+		return scheduledOccurrenceReceipt{}, err
 	}
 	var runID string
-	err = tx.QueryRow(`SELECT id FROM task_runs WHERE task_id = $1
+	var activeRaw []byte
+	if isAnalysisTask(definition.Key) && source != "system_event" {
+		err = tx.QueryRow(`SELECT id,to_jsonb(r) - 'request_fingerprint' FROM task_runs r WHERE task_id = $1
+        AND state IN ('pending','running','stopping') FOR UPDATE`, definition.ID).Scan(&runID, &activeRaw)
+	} else {
+		err = tx.QueryRow(`SELECT id FROM task_runs WHERE task_id = $1
         AND state IN ('pending','running','stopping') FOR UPDATE`, definition.ID).Scan(&runID)
+	}
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-		return fmt.Errorf("read overlapping scheduled run: %w", err)
+		return scheduledOccurrenceReceipt{}, fmt.Errorf("read overlapping scheduled run: %w", err)
 	}
 	disposition := "overlap"
-	if runID != "" && (definition.Key == library.TaskBackgroundPreviewGenerationKey || definition.Key == library.TaskAudioWaveformGenerationKey || definition.Key == library.TaskSubtitleTimelineGenerationKey) && source == "system_event" {
+	if runID != "" && isMediaAnalysisExecution(definition.Key) && source == "system_event" {
 		// Keep the event unconsumed until a fresh child snapshot can include
 		// late requests, including a library absent from the active run.
-		return &analysisAdmissionDeferred{AnalysisDeferral: AnalysisDeferral{TaskID: definition.ID, TaskKey: definition.Key, TriggerID: trigger.ID, Source: source}}
+		return scheduledOccurrenceReceipt{}, &analysisAdmissionDeferred{AnalysisDeferral: AnalysisDeferral{TaskID: definition.ID, TaskKey: definition.Key, TriggerID: trigger.ID, Source: source}}
 	}
 	if runID != "" && isAnalysisTask(definition.Key) {
-		active, err := readRun(tx, runID, false)
+		active, err := decodeRunData(activeRaw)
 		if err != nil {
-			return err
+			return scheduledOccurrenceReceipt{}, err
 		}
-		if source == "system_event" ||
-			!sameAnalysisInput(active.AnalysisInput, input) || active.AnalysisConfigFingerprint != binding.ConfigurationFingerprint {
+		if !sameAnalysisInput(active.AnalysisInput, input) || active.AnalysisConfigFingerprint != binding.ConfigurationFingerprint {
 			// Retain this due occurrence for a later bounded scheduler retry;
-			// never claim that a differently scoped run consumed it. Analysis events
-			// also need a fresh snapshot after an otherwise identical active run:
-			// a scan may have committed new media since that run was admitted.
-			return &analysisAdmissionDeferred{AnalysisDeferral: AnalysisDeferral{TaskID: definition.ID, TaskKey: definition.Key, TriggerID: trigger.ID, Source: source}}
+			// never claim that a differently scoped run consumed it.
+			return scheduledOccurrenceReceipt{}, &analysisAdmissionDeferred{AnalysisDeferral: AnalysisDeferral{TaskID: definition.ID, TaskKey: definition.Key, TriggerID: trigger.ID, Source: source}}
 		}
 	}
 	if runID == "" {
 		disposition = "admitted"
 		runID, err = randomID()
 		if err != nil {
-			return err
+			return scheduledOccurrenceReceipt{}, err
 		}
 		actorKind := ""
 		if _, generic := s.executors.lookup(definition.Key); generic {
@@ -469,32 +478,34 @@ func (s *Store) admitScheduledOccurrence(tx library.OwnedTx, definition Definiti
             VALUES ($1,$2,'pending',$3,$4,$5,$6,$11,$12,$13,$7,$8,$9,$10)`, runID, definition.ID,
 			source, definition.Key, definition.EmbyKey, definition.Name, trigger.ID,
 			trigger.ScheduleRevision, due, trigger.MaxRuntimeTicks, actorKind, analysisDatabaseInput(input), binding.ConfigurationFingerprint); err != nil {
-			return fmt.Errorf("admit scheduled task run: %w", err)
+			return scheduledOccurrenceReceipt{}, fmt.Errorf("admit scheduled task run: %w", err)
 		}
 		childCount, err := s.bindAnalysisChildren(tx, runID, definition.Key, input, binding, selectedLibraries)
 		if err != nil {
-			return fmt.Errorf("snapshot scheduled task libraries: %w", err)
+			return scheduledOccurrenceReceipt{}, fmt.Errorf("snapshot scheduled task libraries: %w", err)
 		}
-		if _, err := tx.Exec(`UPDATE task_runs SET total_children = $2 WHERE id = $1`, runID, childCount); err != nil {
-			return fmt.Errorf("record scheduled task child count: %w", err)
+		var run Run
+		if err := decodeRow(tx.QueryRow(`UPDATE task_runs SET total_children = $2 WHERE id = $1
+            RETURNING to_jsonb(task_runs) - 'request_fingerprint'`, runID, childCount), &run); err != nil {
+			return scheduledOccurrenceReceipt{}, fmt.Errorf("record scheduled task child count: %w", err)
 		}
 		if err := recordTaskActivity(tx, nil, activity.ActionTaskAdmitted, runID,
 			trigger.ScheduleRevision, childCount, ""); err != nil {
-			return err
+			return scheduledOccurrenceReceipt{}, err
 		}
-		if _, err := refreshRun(tx, runID); err != nil {
-			return err
+		if _, err := refreshLockedRun(tx, run); err != nil {
+			return scheduledOccurrenceReceipt{}, err
 		}
 	}
 	id, err := randomID()
 	if err != nil {
-		return err
+		return scheduledOccurrenceReceipt{}, err
 	}
 	if _, err := tx.Exec(`INSERT INTO task_occurrences
         (id,task_id,trigger_id,schedule_revision,due_at,disposition,run_id)
         VALUES ($1,$2,$3,$4,$5,$6,$7)`, id, definition.ID, trigger.ID, trigger.ScheduleRevision,
 		due, disposition, runID); err != nil {
-		return fmt.Errorf("record scheduled task admission: %w", err)
+		return scheduledOccurrenceReceipt{}, fmt.Errorf("record scheduled task admission: %w", err)
 	}
-	return nil
+	return scheduledOccurrenceReceipt{RunID: &runID, Disposition: disposition}, nil
 }

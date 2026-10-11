@@ -204,6 +204,51 @@ type catalogChangeKey struct {
 	libraryID string
 }
 
+// Each completed path can be reused by later descendants in this immutable
+// batch. The returned visit count measures graph work independently of encoding.
+func validateCatalogChangeParents(byKey map[catalogChangeKey]library.CatalogChange) (int, error) {
+	const (
+		visiting = 1
+		complete = 2
+	)
+	states := make(map[catalogChangeKey]uint8, len(byKey))
+	path := make([]catalogChangeKey, 0, len(byKey))
+	for key, change := range byKey {
+		path = path[:0]
+	walk:
+		for {
+			switch states[key] {
+			case visiting:
+				return len(states), events.ErrResyncRequired
+			case complete:
+				break walk
+			}
+			states[key] = visiting
+			path = append(path, key)
+			if previous, exists := byKey[catalogChangeKey{change.PreviousParentID, change.LibraryID}]; change.PreviousParentID != "" && exists && !previous.IsFolder {
+				return len(states), events.ErrResyncRequired
+			}
+			if change.ParentID == "" {
+				break
+			}
+			parentKey := catalogChangeKey{change.ParentID, change.LibraryID}
+			parent, exists := byKey[parentKey]
+			if !exists {
+				break
+			}
+			// A completed parent still needs to be a folder for this edge.
+			if !parent.IsFolder {
+				return len(states), events.ErrResyncRequired
+			}
+			key, change = parentKey, parent
+		}
+		for _, key := range path {
+			states[key] = complete
+		}
+	}
+	return len(states), nil
+}
+
 // A notification is a committed batch, not a stream to reorder or coalesce.
 // Same-kind duplicates and shared-library scopes are representable. Different
 // kinds for one ID, conflicting facts in one library, and cycles require a
@@ -228,25 +273,8 @@ func catalogNotificationEnvelope(notification library.CatalogNotification) (even
 		}
 		byKey[key], byItem[change.ItemID] = change, change
 	}
-	for _, change := range notification.Changes {
-		if previous, exists := byKey[catalogChangeKey{change.PreviousParentID, change.LibraryID}]; change.PreviousParentID != "" && exists && !previous.IsFolder {
-			return events.Envelope{}, events.ErrResyncRequired
-		}
-		seen := map[string]bool{change.ItemID: true}
-		for parentID := change.ParentID; parentID != ""; {
-			if seen[parentID] {
-				return events.Envelope{}, events.ErrResyncRequired
-			}
-			seen[parentID] = true
-			parent, exists := byKey[catalogChangeKey{parentID, change.LibraryID}]
-			if !exists {
-				break
-			}
-			if !parent.IsFolder {
-				return events.Envelope{}, events.ErrResyncRequired
-			}
-			parentID = parent.ParentID
-		}
+	if _, err := validateCatalogChangeParents(byKey); err != nil {
+		return events.Envelope{}, err
 	}
 	data := libraryChangedData{FoldersAddedTo: []string{}, FoldersRemovedFrom: []string{}, ItemsAdded: []string{},
 		ItemsRemoved: []string{}, ItemsUpdated: []string{}, CollectionFolders: []string{}}
@@ -274,24 +302,7 @@ func catalogNotificationEnvelope(notification library.CatalogNotification) (even
 	}
 	for _, change := range notification.Changes {
 		if change.Kind == library.CatalogRemoved {
-			parentID, suppressed := change.ParentID, false
-			seen := map[string]bool{change.ItemID: true}
-			for parentID != "" {
-				if seen[parentID] {
-					return events.Envelope{}, events.ErrResyncRequired
-				}
-				seen[parentID] = true
-				parent, exists := byKey[catalogChangeKey{parentID, change.LibraryID}]
-				if !exists || parent.Kind != library.CatalogRemoved {
-					break
-				}
-				if !parent.IsFolder {
-					return events.Envelope{}, events.ErrResyncRequired
-				}
-				suppressed = true
-				parentID = parent.ParentID
-			}
-			if suppressed {
+			if parent, exists := byKey[catalogChangeKey{change.ParentID, change.LibraryID}]; exists && parent.Kind == library.CatalogRemoved {
 				continue
 			}
 		}

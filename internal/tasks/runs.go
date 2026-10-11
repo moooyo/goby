@@ -3,6 +3,7 @@ package tasks
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -79,8 +80,9 @@ func (s *Store) Start(ctx context.Context, actor Actor, request StartRequest) (A
 			return err
 		}
 		var activeID string
-		err = tx.QueryRow(`SELECT id FROM task_runs WHERE task_id = $1
-            AND state IN ('pending','running','stopping') FOR UPDATE`, definition.ID).Scan(&activeID)
+		var activeRaw []byte
+		err = tx.QueryRow(`SELECT id, to_jsonb(r) - 'request_fingerprint' FROM task_runs r WHERE task_id = $1
+            AND state IN ('pending','running','stopping') FOR UPDATE`, definition.ID).Scan(&activeID, &activeRaw)
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			return fmt.Errorf("read active task run: %w", err)
 		}
@@ -88,7 +90,7 @@ func (s *Store) Start(ctx context.Context, actor Actor, request StartRequest) (A
 			return err
 		}
 		if activeID != "" {
-			run, err := readRun(tx, activeID, false)
+			run, err := decodeRunData(activeRaw)
 			if err != nil {
 				return err
 			}
@@ -123,14 +125,16 @@ func (s *Store) Start(ctx context.Context, actor Actor, request StartRequest) (A
 			if err != nil {
 				return fmt.Errorf("snapshot task libraries: %w", err)
 			}
-			if _, err := tx.Exec(`UPDATE task_runs SET total_children = $2 WHERE id = $1`, id, childCount); err != nil {
+			var run Run
+			if err := decodeRow(tx.QueryRow(`UPDATE task_runs SET total_children = $2 WHERE id = $1
+				RETURNING to_jsonb(task_runs) - 'request_fingerprint'`, id, childCount), &run); err != nil {
 				return fmt.Errorf("record task child count: %w", err)
 			}
 			if err := recordTaskActivity(tx, &actor, activity.ActionTaskAdmitted, id,
 				definition.Revision, childCount, ""); err != nil {
 				return err
 			}
-			run, err := refreshRun(tx, id)
+			run, err = refreshLockedRun(tx, run)
 			if err != nil {
 				return err
 			}
@@ -247,7 +251,7 @@ func stopLocked(tx library.OwnedTx, actor *Actor, run Run, reason string) (Run, 
 	if !run.State.Active() {
 		return run, nil
 	}
-	if err := lockRunChildrenAndScans(tx, run.ID); err != nil {
+	if err := lockRunChildrenAndScans(tx, run.ID, run.TaskKey); err != nil {
 		return Run{}, err
 	}
 	if actor != nil {
@@ -256,18 +260,19 @@ func stopLocked(tx library.OwnedTx, actor *Actor, run Run, reason string) (Run, 
 		}
 	}
 	var cancellationCount int64
+	stoppingRun := run
 	if run.State != RunStopping {
 		counts, err := totals(tx, run.ID)
 		if err != nil {
 			return Run{}, err
 		}
 		cancellationCount = counts.total - counts.terminal
-	}
-	if _, err := tx.Exec(`UPDATE task_runs SET state = 'stopping',
-		stop_requested_at = COALESCE(stop_requested_at, clock_timestamp()),
-		stop_reason = CASE WHEN stop_requested_at IS NULL THEN $2 ELSE stop_reason END
-		WHERE id = $1`, run.ID, reason); err != nil {
-		return Run{}, fmt.Errorf("request task stop: %w", err)
+		if err := decodeRow(tx.QueryRow(`UPDATE task_runs SET state = 'stopping',
+			stop_requested_at = COALESCE(stop_requested_at, clock_timestamp()),
+			stop_reason = CASE WHEN stop_requested_at IS NULL THEN $2 ELSE stop_reason END
+			WHERE id = $1 RETURNING to_jsonb(task_runs) - 'request_fingerprint'`, run.ID, reason), &stoppingRun); err != nil {
+			return Run{}, fmt.Errorf("request task stop: %w", err)
+		}
 	}
 	effectiveReason := run.StopReason
 	if effectiveReason == "" {
@@ -284,13 +289,8 @@ func stopLocked(tx library.OwnedTx, actor *Actor, run Run, reason string) (Run, 
 		WHERE run_id = $1 AND state = 'waiting'`, run.ID, childState, childCode, childMessage); err != nil {
 		return Run{}, fmt.Errorf("cancel unadmitted task children: %w", err)
 	}
-	scanIDs, err := taskScanCancellationIDs(tx, run.ID)
+	scanIDs, err := cancelTaskScans(tx, run.ID)
 	if err != nil {
-		return Run{}, fmt.Errorf("read owned scan cancellation transitions: %w", err)
-	}
-	if _, err := tx.Exec(`UPDATE scan_jobs j SET cancel_requested = true
-		FROM task_run_children c WHERE c.run_id = $1 AND c.scan_job_id = j.id
-			AND j.task_child_id = c.id AND j.status IN ('Queued','Running')`, run.ID); err != nil {
 		return Run{}, fmt.Errorf("persist owned scan cancellation: %w", err)
 	}
 	if run.State != RunStopping {
@@ -310,7 +310,7 @@ func stopLocked(tx library.OwnedTx, actor *Actor, run Run, reason string) (Run, 
 			return Run{}, err
 		}
 	}
-	return refreshRun(tx, run.ID)
+	return refreshLockedRun(tx, stoppingRun)
 }
 
 func automaticAnalysisRun(run Run) bool {
@@ -452,41 +452,51 @@ func refreshLockedRun(tx library.OwnedTx, run Run) (Run, error) {
 }
 
 func persistTotals(tx library.OwnedTx, runID string, state RunState, code, message string, counts childTotals) (Run, error) {
-	updated, err := tx.Exec(`UPDATE task_runs SET state = $2, error_code = $3, error_message = $4,
+	statement := `UPDATE task_runs SET state = $2, error_code = $3, error_message = $4,
         total_children = $5, terminal_children = $6, completed_children = $7,
         failed_children = $8, cancelled_children = $9, interrupted_children = $10,
         unavailable_children = $11, scanned = $12, added = $13, updated = $14,
         started_at = CASE WHEN $2 = 'completed' AND started_at IS NULL THEN clock_timestamp() ELSE started_at END,
         finished_at = CASE WHEN $2 IN ('pending','running','stopping') THEN NULL
             ELSE COALESCE(finished_at,clock_timestamp()) END
-        WHERE id = $1 AND state IN ('pending','running','stopping')`, runID, state, code, message,
+        WHERE id = $1 AND state IN ('pending','running','stopping')`
+	args := []any{runID, state, code, message,
 		counts.total, counts.terminal, counts.completed, counts.failed, counts.cancelled,
-		counts.interrupted, counts.unavailable, counts.scanned, counts.added, counts.updated)
+		counts.interrupted, counts.unavailable, counts.scanned, counts.added, counts.updated}
+	if state.Active() {
+		if _, err := tx.Exec(statement, args...); err != nil {
+			return Run{}, fmt.Errorf("persist task aggregate: %w", err)
+		}
+		// This may be the transaction's final SQL observation. Retain its
+		// protected-context failure boundary before owned transaction commit.
+		return readRun(tx, runID, false)
+	}
+	var run Run
+	err := decodeRow(tx.QueryRow(statement+` RETURNING to_jsonb(task_runs) - 'request_fingerprint'`, args...), &run)
+	if errors.Is(err, ErrNotFound) {
+		// No transition occurred. Preserve the existing read result without
+		// settling queues or recording a second completion event.
+		return readRun(tx, runID, false)
+	}
 	if err != nil {
 		return Run{}, fmt.Errorf("persist task aggregate: %w", err)
 	}
-	run, err := readRun(tx, runID, false)
-	if err != nil {
+	if err := settleBackgroundPreviewQueue(tx, run); err != nil {
 		return Run{}, err
 	}
-	if updated.RowsAffected() > 0 && !state.Active() {
-		if err := settleBackgroundPreviewQueue(tx, run); err != nil {
-			return Run{}, err
-		}
-		if err := settleAudioWaveformQueue(tx, run); err != nil {
-			return Run{}, err
-		}
-		if err := settleSubtitleTimelineQueue(tx, run); err != nil {
-			return Run{}, err
-		}
-		var revision int64
-		if run.TriggerRevision != nil {
-			revision = *run.TriggerRevision
-		}
-		if err := recordTaskActivity(tx, nil, activity.ActionTaskFinished, runID,
-			revision, run.TerminalChildren, activity.State(run.State)); err != nil {
-			return Run{}, err
-		}
+	if err := settleAudioWaveformQueue(tx, run); err != nil {
+		return Run{}, err
+	}
+	if err := settleSubtitleTimelineQueue(tx, run); err != nil {
+		return Run{}, err
+	}
+	var revision int64
+	if run.TriggerRevision != nil {
+		revision = *run.TriggerRevision
+	}
+	if err := recordTaskActivity(tx, nil, activity.ActionTaskFinished, runID,
+		revision, run.TerminalChildren, activity.State(run.State)); err != nil {
+		return Run{}, err
 	}
 	return run, nil
 }
@@ -496,24 +506,45 @@ func persistTotals(tx library.OwnedTx, runID string, state RunState, code, messa
 // automatic analysis work requests a new admission with current library policy.
 func (s *Store) RecoverRuns(ctx context.Context) error {
 	return s.owner.WithOwnedTx(ctx, func(tx library.OwnedTx) error {
-		rows, err := tx.Query(`SELECT id FROM task_runs WHERE state IN ('pending','running','stopping')
+		rows, err := tx.Query(`SELECT id, task_key,
+			source IN ('schedule','startup','system_event') AND actor_kind='system'
+				AND stop_reason IN ('','shutdown') AS restart_automatic_analysis
+			FROM task_runs WHERE state IN ('pending','running','stopping')
             ORDER BY id FOR UPDATE`)
 		if err != nil {
 			return fmt.Errorf("lock abandoned task runs: %w", err)
 		}
-		ids, err := collectIDs(rows)
+		runs, err := collectAbandonedRuns(rows)
 		if err != nil {
 			return err
 		}
 		var requestIntro, requestPreview, requestCredits bool
-		if err := tx.QueryRow(`SELECT COALESCE(bool_or(task_key=$2),false),COALESCE(bool_or(task_key=$3),false),COALESCE(bool_or(task_key=$4),false)
-			FROM task_runs WHERE id=ANY($1::text[])
-			AND source IN ('schedule','startup','system_event') AND actor_kind='system'
-			AND stop_reason IN ('','shutdown')`, ids, library.TaskIntroAnalysisKey, library.TaskPreviewGenerationKey, library.TaskCreditsAnalysisKey).Scan(&requestIntro, &requestPreview, &requestCredits); err != nil {
-			return fmt.Errorf("inspect abandoned automatic analysis work: %w", err)
+		for _, run := range runs {
+			if !run.restartAutomaticAnalysis {
+				continue
+			}
+			switch run.taskKey {
+			case library.TaskIntroAnalysisKey:
+				requestIntro = true
+			case library.TaskPreviewGenerationKey:
+				requestPreview = true
+			case library.TaskCreditsAnalysisKey:
+				requestCredits = true
+			}
 		}
-		for _, id := range ids {
-			if err := lockRunChildrenAndScans(tx, id); err != nil {
+		if len(runs) == 0 {
+			// An empty recovery has no later SQL. Retain the final observation
+			// that can fail before an expired owned transaction reaches Commit.
+			if err := tx.QueryRow(`SELECT COALESCE(bool_or(task_key=$2),false),COALESCE(bool_or(task_key=$3),false),COALESCE(bool_or(task_key=$4),false)
+				FROM task_runs WHERE id=ANY($1::text[])
+				AND source IN ('schedule','startup','system_event') AND actor_kind='system'
+				AND stop_reason IN ('','shutdown')`, []string{}, library.TaskIntroAnalysisKey, library.TaskPreviewGenerationKey, library.TaskCreditsAnalysisKey).Scan(&requestIntro, &requestPreview, &requestCredits); err != nil {
+				return fmt.Errorf("inspect abandoned automatic analysis work: %w", err)
+			}
+		}
+		for _, run := range runs {
+			id := run.id
+			if err := lockRunChildrenAndScans(tx, id, run.taskKey); err != nil {
 				return err
 			}
 			var activeLinked bool
@@ -560,6 +591,36 @@ func (s *Store) RecoverRuns(ctx context.Context) error {
 	})
 }
 
+type abandonedRun struct {
+	id, taskKey              string
+	restartAutomaticAnalysis bool
+}
+
+func collectAbandonedRuns(rows library.OwnedRows) ([]abandonedRun, error) {
+	defer rows.Close()
+	runs := make([]abandonedRun, 0)
+	for rows.Next() {
+		var run abandonedRun
+		if err := rows.Scan(&run.id, &run.taskKey, &run.restartAutomaticAnalysis); err != nil {
+			return nil, fmt.Errorf("read locked task identity: %w", err)
+		}
+		runs = append(runs, run)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("read task identities: %w", err)
+	}
+	return runs, nil
+}
+
+func decodeRunData(raw []byte) (Run, error) {
+	var run Run
+	if err := json.Unmarshal(raw, &run); err != nil {
+		return Run{}, fmt.Errorf("decode task resource: %w", err)
+	}
+	normalizeRun(&run)
+	return run, nil
+}
+
 func readRun(tx library.OwnedTx, id string, lock bool) (Run, error) {
 	statement := `SELECT to_jsonb(r) - 'request_fingerprint' FROM task_runs r WHERE id = $1`
 	if lock {
@@ -572,13 +633,9 @@ func readRun(tx library.OwnedTx, id string, lock bool) (Run, error) {
 
 // The parent run is already locked. Child and scan locks follow in a stable
 // order; cancelled scans from another run or a standalone request are excluded.
-func lockRunChildrenAndScans(tx library.OwnedTx, runID string) error {
+func lockRunChildrenAndScans(tx library.OwnedTx, runID, taskKey string) error {
 	// The caller holds the parent lock. Cancellation and startup recovery must
 	// not relabel a normal scan as a forced refresh, or the reverse.
-	var taskKey string
-	if err := tx.QueryRow(`SELECT task_key FROM task_runs WHERE id=$1`, runID).Scan(&taskKey); err != nil {
-		return fmt.Errorf("read task execution mode: %w", err)
-	}
 	options, supported := library.TaskScanOptions(taskKey)
 	rows, err := tx.Query(`SELECT id FROM task_run_children WHERE run_id = $1 ORDER BY id FOR UPDATE`, runID)
 	if err != nil {

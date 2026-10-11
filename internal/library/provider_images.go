@@ -51,7 +51,7 @@ func (s *Store) SelectProviderImage(ctx context.Context, actor identity.Principa
 	if err := lockMetadataActor(ctx, tx, actor); err != nil {
 		return ProviderImageResult{}, err
 	}
-	record, err := readMetadataRecord(ctx, tx, itemID, true)
+	record, err := readProviderMetadataTarget(ctx, tx, itemID, true)
 	if err != nil {
 		return ProviderImageResult{}, err
 	}

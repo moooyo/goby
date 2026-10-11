@@ -72,32 +72,26 @@ func (s *Store) ProviderSources(ctx context.Context, actor identity.Principal, i
 		return nil, err
 	}
 	defer rollback(tx)
-	if _, err := readMetadataRecord(ctx, tx, itemID, false); err != nil {
+	if _, err := readProviderMetadataTarget(ctx, tx, itemID, false); err != nil {
 		return nil, err
 	}
-	rows, err := tx.Query(ctx, `SELECT provider, provider_id, source_url, language, fetched_at, fields FROM item_provider_sources WHERE item_id = $1 ORDER BY provider`, itemID)
+	rows, err := tx.Query(ctx, `SELECT provider, provider_id, source_url, language, fetched_at,
+		ARRAY(SELECT jsonb_object_keys(sources.fields)) FROM item_provider_sources sources
+		WHERE item_id = $1 ORDER BY provider`, itemID)
 	if err != nil {
 		return nil, fmt.Errorf("read online provider sources: %w", err)
 	}
 	result := make([]ProviderSource, 0)
 	for rows.Next() {
 		var source ProviderSource
-		var fields []byte
-		if err := rows.Scan(&source.Provider, &source.ProviderID, &source.SourceURL, &source.Language, &source.FetchedAt, &fields); err != nil {
+		if err := rows.Scan(&source.Provider, &source.ProviderID, &source.SourceURL, &source.Language, &source.FetchedAt, &source.Fields); err != nil {
 			rows.Close()
 			return nil, err
 		}
-		values, err := metadataSourceObject(fields)
-		if err != nil {
-			rows.Close()
-			return nil, err
-		}
-		source.Fields = make([]string, 0, len(values))
-		for key := range values {
+		for index, key := range source.Fields {
 			if key == "ProviderIDs" {
-				key = "ProviderIds"
+				source.Fields[index] = "ProviderIds"
 			}
-			source.Fields = append(source.Fields, key)
 		}
 		sort.Strings(source.Fields)
 		result = append(result, source)

@@ -2,10 +2,12 @@ package tasks
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -18,6 +20,7 @@ type executionRefreshObserver struct {
 	owner      library.OwnedTransactions
 	statements []string
 	fail       func(string) error
+	afterScan  func(string, []any) error
 }
 
 func (observer *executionRefreshObserver) WithOwnedTx(ctx context.Context, callback func(library.OwnedTx) error) error {
@@ -74,7 +77,31 @@ func (tx executionRefreshTx) QueryRow(statement string, args ...any) library.Own
 	if err := tx.observer.observe(statement); err != nil {
 		return executionRefreshErrorRow{err: err}
 	}
-	return tx.OwnedTx.QueryRow(statement, args...)
+	return executionRefreshObservedRow{OwnedRow: tx.OwnedTx.QueryRow(statement, args...),
+		observer: tx.observer, statement: strings.Join(strings.Fields(statement), " ")}
+}
+
+func (tx executionRefreshTx) Query(statement string, args ...any) (library.OwnedRows, error) {
+	if err := tx.observer.observe(statement); err != nil {
+		return nil, err
+	}
+	return tx.OwnedTx.Query(statement, args...)
+}
+
+type executionRefreshObservedRow struct {
+	library.OwnedRow
+	observer  *executionRefreshObserver
+	statement string
+}
+
+func (row executionRefreshObservedRow) Scan(dest ...any) error {
+	if err := row.OwnedRow.Scan(dest...); err != nil {
+		return err
+	}
+	if row.observer.afterScan != nil {
+		return row.observer.afterScan(row.statement, dest)
+	}
+	return nil
 }
 
 type executionRefreshErrorRow struct{ err error }
@@ -230,7 +257,11 @@ func TestExecutionRefreshReusesParentAndReadsFreshDurableTotals(t *testing.T) {
 		if err := f.store.finishExecution(f.ctx, f.run.ID, child.ID, f.tokens[index], nil, false); err != nil {
 			t.Fatal(err)
 		}
-		f.observer.assertQueries(t, 1, 1, 1, 1)
+		readbacks := 0
+		if index+1 < len(f.children) {
+			readbacks = 1
+		}
+		f.observer.assertQueries(t, 1, readbacks, 1, 1)
 		run, err = f.store.GetRun(f.ctx, f.run.ID)
 		if err != nil || run.TerminalChildren != int64(index+1) || run.CompletedChildren != int64(index+1) || run.Scanned != 12 {
 			t.Fatalf("completion lost fresh child results: %+v %v", run, err)
@@ -259,25 +290,33 @@ func TestExecutionRefreshFailuresRollBackChildParentAndQueue(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, test := range []struct {
-		name     string
-		progress bool
-		prefix   string
+		name      string
+		progress  bool
+		prefix    string
+		afterScan bool
 	}{
 		{name: "progress totals", progress: true, prefix: "SELECT count(*),"},
 		{name: "progress readback", progress: true, prefix: executionRefreshRunRead},
 		{name: "finish totals", prefix: "SELECT count(*),"},
-		{name: "finish readback", prefix: executionRefreshRunRead},
+		{name: "finish returned row", prefix: "UPDATE task_runs SET state = $2,", afterScan: true},
 		{name: "finish queue", prefix: "UPDATE background_preview_queue"},
 		{name: "finish activity", prefix: "INSERT INTO activity_entries"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			before := f.snapshot(t)
 			injected := errors.New("injected execution refresh failure")
-			f.observer.fail = func(statement string) error {
+			reached := false
+			fail := func(statement string) error {
 				if strings.HasPrefix(statement, test.prefix) && !strings.HasSuffix(statement, " FOR UPDATE") {
+					reached = true
 					return injected
 				}
 				return nil
+			}
+			if test.afterScan {
+				f.observer.afterScan = func(statement string, _ []any) error { return fail(statement) }
+			} else {
+				f.observer.fail = fail
 			}
 			var err error
 			if test.progress {
@@ -286,7 +325,8 @@ func TestExecutionRefreshFailuresRollBackChildParentAndQueue(t *testing.T) {
 				err = f.store.finishExecution(f.ctx, f.run.ID, f.children[0].ID, f.tokens[0], nil, false)
 			}
 			f.observer.fail = nil
-			if !errors.Is(err, injected) || f.snapshot(t) != before {
+			f.observer.afterScan = nil
+			if !reached || !errors.Is(err, injected) || f.snapshot(t) != before {
 				t.Fatalf("failed execution refresh changed durable state or lost its error: %v", err)
 			}
 			assertTaskLifecycleAudit(t, f.ctx, f.pool, f.run.ID,
@@ -297,7 +337,7 @@ func TestExecutionRefreshFailuresRollBackChildParentAndQueue(t *testing.T) {
 	if err := f.store.finishExecution(f.ctx, f.run.ID, f.children[0].ID, f.tokens[0], nil, false); err != nil {
 		t.Fatal(err)
 	}
-	f.observer.assertQueries(t, 1, 1, 1, 1)
+	f.observer.assertQueries(t, 1, 0, 1, 1)
 	var state, code string
 	if err := f.pool.QueryRow(f.ctx, "SELECT state,error_code FROM background_preview_queue WHERE item_id='refresh-queue-item'").Scan(&state, &code); err != nil || state != "pending" || code != "server_interrupted" {
 		t.Fatalf("terminal refresh did not settle the retained queue using its persisted Run: state=%s code=%s error=%v", state, code, err)
@@ -334,7 +374,7 @@ func TestExecutionRefreshRetainsStopShutdownAndClaimPredicates(t *testing.T) {
 		if err := f.store.finishExecution(f.ctx, f.run.ID, f.children[0].ID, f.tokens[0], nil, reason == "shutdown"); err != nil {
 			t.Fatal(err)
 		}
-		f.observer.assertQueries(t, 1, 1, 1, 1)
+		f.observer.assertQueries(t, 1, 0, 1, 1)
 		run, err := f.store.GetRun(f.ctx, f.run.ID)
 		wantState, wantCode := RunCancelled, "cancelled"
 		if reason == "max_runtime" {
@@ -346,4 +386,76 @@ func TestExecutionRefreshRetainsStopShutdownAndClaimPredicates(t *testing.T) {
 			t.Fatalf("completion replaced the locked stop decision: %+v %v", run, err)
 		}
 	}
+}
+
+func TestTerminalAggregateReturningPreservesAuthorityAndRollback(t *testing.T) {
+	f := newExecutionRefreshFixture(t, MetadataRefreshKey, 1)
+	authority := executionAuthority{ApplicationKeyID: 73, ClientSessionID: "retained-client", PeerIP: "198.51.100.23"}
+	if _, err := f.pool.Exec(f.ctx, `UPDATE task_runs SET actor_application_key_id=$2,
+		actor_client_session_id=$3,actor_peer_ip=$4 WHERE id=$1`, f.run.ID,
+		authority.ApplicationKeyID, authority.ClientSessionID, authority.PeerIP); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.pool.Exec(f.ctx, `UPDATE task_run_children SET state='completed',
+		finished_at=clock_timestamp(),scanned=11,added=4,updated=2 WHERE id=$1`, f.children[0].ID); err != nil {
+		t.Fatal(err)
+	}
+	before := f.snapshot(t)
+	reached := false
+	f.observer.afterScan = func(statement string, dest []any) error {
+		if strings.HasPrefix(statement, "UPDATE task_runs SET state = $2,") && strings.Contains(statement, " RETURNING ") {
+			reached = true
+			raw := dest[0].(*[]byte)
+			var document map[string]json.RawMessage
+			if err := json.Unmarshal(*raw, &document); err != nil {
+				return err
+			}
+			// Corrupt only the returned private authority after the actual
+			// UPDATE, proving that the complete Run still has to decode.
+			document["actor_application_key_id"] = json.RawMessage(`"invalid"`)
+			var err error
+			*raw, err = json.Marshal(document)
+			return err
+		}
+		return nil
+	}
+	_, err := f.store.RefreshRun(f.ctx, f.run.ID)
+	f.observer.afterScan = nil
+	var decodeError *json.UnmarshalTypeError
+	if !reached || !errors.As(err, &decodeError) || f.snapshot(t) != before {
+		t.Fatalf("invalid returning authority did not roll back the transition: reached=%t error=%v", reached, err)
+	}
+	assertTaskLifecycleAudit(t, f.ctx, f.pool, f.run.ID,
+		taskLifecycleUserEntry("task.admitted", "native", f.run.ID, f.actor, f.definition.Revision, 1))
+	f.observer.statements = nil
+	run, err := f.store.RefreshRun(f.ctx, f.run.ID)
+	if err != nil || run.State != RunCompleted || run.authority != authority || run.Scanned != 11 || run.Added != 4 || run.Updated != 2 ||
+		run.FinishedAt == nil || run.FinishedAt.Location() != time.UTC || !reflect.DeepEqual(run.StartedAt, f.run.StartedAt) {
+		t.Fatalf("terminal returning projection lost persisted state or private authority: %+v %v", run, err)
+	}
+	f.observer.assertQueries(t, 1, 0, 1, 1)
+	before = f.snapshot(t)
+	for _, state := range []RunState{RunCompleted, RunRunning} {
+		var unchanged Run
+		err := f.store.owner.WithOwnedTx(f.ctx, func(tx library.OwnedTx) error {
+			if _, err := readRun(tx, run.ID, true); err != nil {
+				return err
+			}
+			var err error
+			unchanged, err = persistTotals(tx, run.ID, state, "unused", "unused", childTotals{})
+			return err
+		})
+		if err != nil || !reflect.DeepEqual(unchanged, run) || f.snapshot(t) != before {
+			t.Fatalf("zero-update aggregate changed an already terminal run: state=%s run=%+v error=%v", state, unchanged, err)
+		}
+	}
+	if err := f.store.owner.WithOwnedTx(f.ctx, func(tx library.OwnedTx) error {
+		_, err := persistTotals(tx, "missing-run", RunCompleted, "", "", childTotals{})
+		return err
+	}); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("zero-update aggregate did not preserve the missing-run error: %v", err)
+	}
+	assertTaskLifecycleAudit(t, f.ctx, f.pool, f.run.ID,
+		taskLifecycleUserEntry("task.admitted", "native", f.run.ID, f.actor, f.definition.Revision, 1),
+		taskLifecycleFinishedEntry(f.run.ID, RunCompleted, 1))
 }

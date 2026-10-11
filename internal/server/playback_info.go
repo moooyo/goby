@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -155,9 +156,9 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 	limits := hlsPrincipalLimits(planning, principal)
 	targetConversionDisabled := false
 	if principal.IsApplicationKey() {
-		var target identity.User
+		var targetPolicy json.RawMessage
 		if request.UserID != "" {
-			target, err = s.identity.GetUser(ctx, request.UserID)
+			targetPolicy, err = s.identity.GetUserPolicy(ctx, request.UserID)
 			if err != nil {
 				s.identityError(w, r, err)
 				return
@@ -171,7 +172,7 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			if request.UserID != "" {
-				limits = hlsApplicationTargetLimits(planning, target)
+				limits = hlsApplicationTargetLimits(planning, targetPolicy)
 				targetConversionDisabled = !limits.AllowRemux && !limits.AllowAudioTranscode && !limits.AllowVideoTranscode
 			}
 		}
