@@ -32,28 +32,31 @@ func (s *Server) entityList(kind string) http.HandlerFunc {
 		if !ok {
 			return
 		}
-		zeroLimit := query.Limit == 0
-		if zeroLimit {
-			query.Limit = 1
+		if kind == "tag" {
+			query.Projection.ImagesDisabled = true
+			query.Projection.UserDataDisabled = true
 		}
 		attachApplicationCredentialID(r, &query)
-		result, err := s.library.ListEntities(r.Context(), kind, query)
+		readEntities := s.library.ListEntities
+		if query.Limit == 0 {
+			readEntities = s.library.CountEntities
+		}
+		result, err := readEntities(r.Context(), kind, query)
 		if err != nil {
 			s.libraryError(w, r, err)
 			return
 		}
+		presentation := readItemPresentation(r)
 		items := make([]map[string]any, 0, len(result.Items))
-		if !zeroLimit {
-			for _, entity := range result.Items {
-				// Tag lists use UserLibrary.TagItem rather than BaseItemDto.
-				if kind == "tag" {
-					items = append(items, map[string]any{"Name": entity.Name, "Id": strconv.FormatInt(entity.ID, 10)})
-					continue
-				}
-				dto := s.entityDTO(entity, queryValues(r.URL.Query()["Fields"]), false)
-				applyItemSwitches(dto, r)
-				items = append(items, dto)
+		for _, entity := range result.Items {
+			// Tag lists use UserLibrary.TagItem rather than BaseItemDto.
+			if kind == "tag" {
+				items = append(items, map[string]any{"Name": entity.Name, "Id": strconv.FormatInt(entity.ID, 10)})
+				continue
 			}
+			dto := s.entityDTO(entity, presentation.fields, false)
+			presentation.applySwitches(dto)
+			items = append(items, dto)
 		}
 		jsonResponse(w, 200, map[string]any{"Items": items, "TotalRecordCount": result.TotalRecordCount})
 	}
@@ -70,8 +73,9 @@ func (s *Server) entityByName(kind string) http.HandlerFunc {
 			s.libraryError(w, r, err)
 			return
 		}
-		dto := s.entityDTO(entity, queryValues(r.URL.Query()["Fields"]), true)
-		applyItemSwitches(dto, r)
+		presentation := readItemPresentation(r)
+		dto := s.entityDTO(entity, presentation.fields, true)
+		presentation.applySwitches(dto)
 		jsonResponse(w, 200, dto)
 	}
 }

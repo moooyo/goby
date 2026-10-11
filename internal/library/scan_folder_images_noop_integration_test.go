@@ -57,9 +57,9 @@ func TestScanFolderImageAbsenceSkipsNewAndExistingImageTransactions(t *testing.T
 		if err := observer.QueryRow(ctx, "SELECT count(*) FROM item_images WHERE item_id=ANY($1::text[])", []string{folderID, itemID}).Scan(&images); err != nil {
 			t.Fatal(err)
 		}
-		if images != 0 || trace.snapshots.Load() != 0 || trace.deletes.Load() != 0 || trace.inserts.Load() != 0 {
-			t.Fatalf("%s empty folder images entered publication: images=%d snapshots=%d deletes=%d inserts=%d",
-				phase, images, trace.snapshots.Load(), trace.deletes.Load(), trace.inserts.Load())
+		if images != 0 || trace.comparisons.Load() != 0 || trace.snapshots.Load() != 0 || trace.deletes.Load() != 0 || trace.inserts.Load() != 0 {
+			t.Fatalf("%s empty folder images entered catalog comparison or publication: images=%d comparisons=%d snapshots=%d deletes=%d inserts=%d",
+				phase, images, trace.comparisons.Load(), trace.snapshots.Load(), trace.deletes.Load(), trace.inserts.Load())
 		}
 	}
 }

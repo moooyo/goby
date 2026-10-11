@@ -56,8 +56,9 @@ func TestNotificationReferenceAppendPathsShareOneTransactionIndex(t *testing.T) 
 	var committedID string
 	err = store.WithOwnedTx(ctx, func(tx OwnedTx) error {
 		view := tx.(*ownedCallbackTx)
-		if len(view.catalog.notificationReferences) != 0 || len(view.catalog.notificationReferenceSet) != 0 {
-			return errors.New("new transaction inherited rolled-back notification references")
+		if len(view.catalog.notificationReferences) != 0 || len(view.catalog.notificationReferenceSet) != 0 ||
+			view.catalog.notificationJournalRecorded || view.catalog.notificationJournalLength != 0 || view.catalog.notificationJournalResync {
+			return errors.New("new transaction inherited rolled-back notification references or journal marker")
 		}
 		if err := analysisRecordChanges(tx, change); err != nil {
 			return err

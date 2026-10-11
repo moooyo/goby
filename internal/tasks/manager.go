@@ -245,13 +245,13 @@ func (m *Manager) loop() {
 	updates := m.scans.ScanUpdates()
 	for {
 		scheduleCtx, stopSchedule := context.WithTimeout(m.ctx, managerCycleTimeout)
-		scheduleErr := m.schedule(scheduleCtx)
+		ownerProbed, scheduleErr := m.schedulePass(scheduleCtx)
 		stopSchedule()
 		m.observeFailure(scheduleErr)
 		// Initialization can fail or consume its own database budget. Admitted
 		// manual runs still receive a separate reconciliation opportunity.
 		ctx, cancel := context.WithTimeout(m.ctx, managerCycleTimeout)
-		_, err := m.reconcile(ctx, false)
+		_, err := m.reconcilePass(ctx, false, ownerProbed)
 		cancel()
 		m.observeFailure(err)
 		if err != nil && m.ctx.Err() == nil {
@@ -319,9 +319,16 @@ func (m *Manager) shutdown() {
 	}
 }
 
-func (m *Manager) schedule(ctx context.Context) (err error) {
+func (m *Manager) schedule(ctx context.Context) error {
+	_, err := m.schedulePass(ctx)
+	return err
+}
+
+// A successful backoff return is not an ownership observation. Only a completed
+// explicit probe may cover the later idle reconciliation in this loop pass.
+func (m *Manager) schedulePass(ctx context.Context) (ownerProbed bool, err error) {
 	if time.Now().Before(m.nextScheduleAttempt) {
-		return nil
+		return false, nil
 	}
 	deferred := []AnalysisDeferral{}
 	defer func() {
@@ -341,18 +348,19 @@ func (m *Manager) schedule(ctx context.Context) (err error) {
 		}
 	}()
 	if err = m.checkOwnership(ctx); err != nil {
-		return err
+		return false, err
 	}
+	ownerProbed = true
 	if m.startupAt.IsZero() {
 		m.startupAt, err = m.store.ScheduleClock(ctx)
 		if err != nil {
-			return err
+			return ownerProbed, err
 		}
 	}
 	initializedThisPass := !m.schedulesInitialized
 	if initializedThisPass {
 		if !m.enter() {
-			return context.Canceled
+			return ownerProbed, context.Canceled
 		}
 		var pending []AnalysisDeferral
 		err = m.store.InitializeSystemEvents(ctx, m.startupAt)
@@ -361,7 +369,7 @@ func (m *Manager) schedule(ctx context.Context) (err error) {
 		}
 		m.operations.Done()
 		if err != nil {
-			return err
+			return ownerProbed, err
 		}
 		m.pendingAnalysisStartups = pending
 		m.schedulesInitialized = true
@@ -382,7 +390,7 @@ func (m *Manager) schedule(ctx context.Context) (err error) {
 	// Initialization itself can admit startup runs. A second admission fence
 	// prevents a concurrent BeginClose from allowing subsequent due dispatch.
 	if !m.enter() {
-		return context.Canceled
+		return ownerProbed, context.Canceled
 	}
 	_, dueErr := m.store.DispatchDue(ctx, managerScheduleBatch)
 	err = collectDeferrals(dueErr)
@@ -392,27 +400,27 @@ func (m *Manager) schedule(ctx context.Context) (err error) {
 	}
 	m.operations.Done()
 	if err != nil {
-		return err
+		return ownerProbed, err
 	}
 	// A backlog of deferred startup rules must not consume the next pass's
 	// budget before ordinary timed and event providers receive their turn.
 	if !initializedThisPass && len(m.pendingAnalysisStartups) > 0 {
 		if !m.enter() {
-			return context.Canceled
+			return ownerProbed, context.Canceled
 		}
 		var pending []AnalysisDeferral
 		pending, err = splitAnalysisDeferrals(m.store.retryAnalysisStartups(ctx, m.startupAt, m.pendingAnalysisStartups))
 		m.operations.Done()
 		if err != nil {
-			return err
+			return ownerProbed, err
 		}
 		m.pendingAnalysisStartups = pending
 	}
 	if err = collectDeferrals(analysisDeferralResult(m.pendingAnalysisStartups)); err != nil {
-		return err
+		return ownerProbed, err
 	}
 	m.nextDue, err = m.store.NextDue(ctx)
-	return err
+	return ownerProbed, err
 }
 
 // Absolute due timestamps are wake-up hints only: DispatchDue compares the
@@ -505,8 +513,20 @@ func (m *Manager) logRetry(err error) {
 // terminal prefix or a full first page of running scans from hiding later work.
 // Active sets can shrink between pages; wrapping provides eventual coverage.
 func (m *Manager) reconcile(ctx context.Context, shutdown bool) (bool, error) {
-	if err := m.checkOwnership(ctx); err != nil {
-		return false, err
+	return m.reconcilePass(ctx, shutdown, false)
+}
+
+func (m *Manager) reconcilePass(ctx context.Context, shutdown, ownerProbed bool) (bool, error) {
+	// Active workers and shutdown retain a fresh check before any result is
+	// reaped. Only an idle pass may reuse scheduling's explicit observation;
+	// an unobserved disconnect between phases is detected by the next probe.
+	checked := !ownerProbed || shutdown || len(m.executions) != 0
+	if checked {
+		if err := m.checkOwnership(ctx); err != nil {
+			return false, err
+		}
+	} else if !m.scans.Available() {
+		return false, library.ErrUnavailable
 	}
 	if err := m.reapExecutions(ctx, shutdown); err != nil {
 		return false, err
@@ -520,6 +540,13 @@ func (m *Manager) reconcile(ctx context.Context, shutdown bool) (bool, error) {
 		clear(m.childOffsets)
 		clear(m.runtimeDeadlines)
 		return true, nil
+	}
+	if !checked {
+		// A schedule or manual caller may have admitted durable work since
+		// the earlier probe. Check again before coordinating those runs.
+		if err := m.checkOwnership(ctx); err != nil {
+			return false, err
+		}
 	}
 	if len(page.Items) == 0 {
 		m.runOffset = 0

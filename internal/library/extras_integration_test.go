@@ -86,7 +86,7 @@ func TestStoreExtraQueriesSeparateCompletePopulationsAndDirectAttributes(t *test
 		t.Fatal("extra list borrowed or lost the resource's own user state")
 	}
 	for _, owner := range []string{"theme-all", "theme-series", "theme-episode1"} {
-		for _, query := range []func(context.Context, string, Subject) ([]Item, error){store.QuerySpecialFeatures, store.QueryLocalTrailers} {
+		for _, query := range []func(context.Context, string, Subject, ...QueryProjection) ([]Item, error){store.QuerySpecialFeatures, store.QueryLocalTrailers} {
 			items, err := query(ctx, owner, subject)
 			if err != nil || items == nil || len(items) != 0 {
 				t.Fatalf("authorized empty existing owner %s was not an empty array: %v", owner, err)
@@ -116,7 +116,7 @@ func TestStoreExtraQueriesApplyCurrentUserAndApplicationAuthority(t *testing.T) 
 		{"theme-hidden", "restricted", ErrNotFound},
 		{"theme-seed", "none", ErrNotFound}, {"theme-seed", "disabled", ErrForbidden},
 	} {
-		for _, query := range []func(context.Context, string, Subject) ([]Item, error){store.QuerySpecialFeatures, store.QueryLocalTrailers} {
+		for _, query := range []func(context.Context, string, Subject, ...QueryProjection) ([]Item, error){store.QuerySpecialFeatures, store.QueryLocalTrailers} {
 			if _, err := query(ctx, test.owner, Subject{UserID: test.user}); !errors.Is(err, test.want) {
 				t.Fatalf("extra owner/subject authorization differs: %v", err)
 			}
@@ -227,7 +227,7 @@ func TestStoreExtraQueriesRetainInactiveIdentityAndRejectInvalidActivePopulation
 			if _, err := store.pool.Exec(ctx, test.corrupt); err != nil {
 				t.Fatal(err)
 			}
-			for _, query := range []func(context.Context, string, Subject) ([]Item, error){store.QuerySpecialFeatures, store.QueryLocalTrailers} {
+			for _, query := range []func(context.Context, string, Subject, ...QueryProjection) ([]Item, error){store.QuerySpecialFeatures, store.QueryLocalTrailers} {
 				if items, err := query(ctx, "theme-seed", subject); !errors.Is(err, ErrUnavailable) || items != nil {
 					t.Fatalf("invalid sibling produced a partial successful population: %v", err)
 				}
@@ -261,7 +261,7 @@ func TestStoreExtraQueriesRejectCombinedOverflowWithoutEndpointBypass(t *testing
 		t.Fatalf("boundary population was silently truncated: %v", err)
 	}
 	extraTestResource(t, ctx, store, "extra-overflow", "theme-seed", "library-b", "Seed/trailers/Overflow.mp4", ExtraKindTrailer)
-	for _, query := range []func(context.Context, string, Subject) ([]Item, error){store.QuerySpecialFeatures, store.QueryLocalTrailers} {
+	for _, query := range []func(context.Context, string, Subject, ...QueryProjection) ([]Item, error){store.QuerySpecialFeatures, store.QueryLocalTrailers} {
 		if items, err := query(ctx, "theme-seed", Subject{UserID: "restricted"}); !errors.Is(err, ErrUnavailable) || items != nil {
 			t.Fatalf("endpoint selection bypassed combined overflow: %v", err)
 		}
@@ -349,7 +349,7 @@ func TestStoreExtraQueriesAuthorizeOwnerResourcesAndUserDataInOneSnapshot(t *tes
 func TestExtraQueriesRejectInvalidIdentifiersBeforeDatabaseAccess(t *testing.T) {
 	for _, id := range []string{"", " seed", "seed ", "bad\x00seed", "bad\nseed", string([]byte{0xff}), strings.Repeat("x", 257)} {
 		t.Run(fmt.Sprintf("%q", id), func(t *testing.T) {
-			for _, query := range []func(context.Context, string, Subject) ([]Item, error){(&Store{}).QuerySpecialFeatures, (&Store{}).QueryLocalTrailers} {
+			for _, query := range []func(context.Context, string, Subject, ...QueryProjection) ([]Item, error){(&Store{}).QuerySpecialFeatures, (&Store{}).QueryLocalTrailers} {
 				if _, err := query(context.Background(), id, Subject{UserID: "user"}); !errors.Is(err, ErrInvalidInput) {
 					t.Fatalf("invalid owner reached database access: %v", err)
 				}

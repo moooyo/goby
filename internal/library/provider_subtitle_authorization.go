@@ -56,15 +56,14 @@ func checkSubtitleProviderActor(ctx context.Context, tx pgx.Tx, actor *identity.
 	if err != nil {
 		return fmt.Errorf("read subtitle provider account: %w", err)
 	}
-	statement = `SELECT id FROM sessions WHERE id = $1 AND user_id = $2 AND kind = 'emby'`
 	if lock {
-		statement += " FOR SHARE"
-	}
-	var sessionID string
-	if err := tx.QueryRow(ctx, statement, actor.SessionID, actor.User.ID).Scan(&sessionID); errors.Is(err, pgx.ErrNoRows) {
-		return ErrForbidden
-	} else if err != nil {
-		return fmt.Errorf("read subtitle provider session: %w", err)
+		var sessionID string
+		if err := tx.QueryRow(ctx, `SELECT id FROM sessions WHERE id = $1 AND user_id = $2 AND kind = 'emby' FOR SHARE`,
+			actor.SessionID, actor.User.ID).Scan(&sessionID); errors.Is(err, pgx.ErrNoRows) {
+			return ErrForbidden
+		} else if err != nil {
+			return fmt.Errorf("read subtitle provider session: %w", err)
+		}
 	}
 	// This separate statement evaluates expiry after any account or session lock
 	// wait and reads the persisted device identity rather than principal metadata.

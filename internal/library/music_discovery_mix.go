@@ -133,8 +133,10 @@ func (s *Store) QueryInstantMix(ctx context.Context, seed MusicMixSeed, query In
 	if err != nil {
 		return ItemResult{}, fmt.Errorf("finish instant mix rows: %w", err)
 	}
-	if err := attachUserData(ctx, tx, query.UserID, result.Items, access); err != nil {
-		return ItemResult{}, err
+	if !query.Projection.UserDataDisabled {
+		if err := attachUserData(ctx, tx, query.UserID, result.Items, access); err != nil {
+			return ItemResult{}, err
+		}
 	}
 	if err := attachSubtitles(ctx, tx, result.Items); err != nil {
 		return ItemResult{}, err

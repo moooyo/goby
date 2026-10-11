@@ -21,14 +21,15 @@ func (s *Store) CollectionItems(ctx context.Context, subject Subject, id, kind s
 		return ItemResult{}, err
 	}
 	defer rollback(tx)
-	if _, err := readCollection(ctx, tx, access, id, kind, false); err != nil {
+	collection, err := readCollection(ctx, tx, access, id, kind, false)
+	if err != nil {
 		return ItemResult{}, err
 	}
 	query := Query{UserID: subject.UserID, ApplicationCredentialID: subject.ApplicationCredentialID, ParentID: id, StartIndex: start, Limit: limit}
 	if len(projections) != 0 {
 		query.Projection = projections[0]
 	}
-	result, _, err := queryCollectionItems(ctx, tx, query, access, false)
+	result, err := queryCollectionMembers(ctx, tx, query, access, collection, false)
 	if err != nil {
 		return ItemResult{}, err
 	}
@@ -57,6 +58,13 @@ func queryCollectionItems(ctx context.Context, tx pgx.Tx, query Query, access li
 	if err != nil {
 		return ItemResult{}, true, err
 	}
+	result, err := queryCollectionMembers(ctx, tx, query, access, collection, countOnly)
+	return result, true, err
+}
+
+// queryCollectionMembers reuses a parent authorized in the caller's current
+// read snapshot. Member visibility and response projections remain independent.
+func queryCollectionMembers(ctx context.Context, tx pgx.Tx, query Query, access libraryAccess, collection CollectionInfo, countOnly bool) (ItemResult, error) {
 	memberQuery := query
 	memberQuery.ParentID = ""
 	memberQuery.Recursive = true
@@ -64,7 +72,7 @@ func queryCollectionItems(ctx context.Context, tx pgx.Tx, query Query, access li
 	args = append(args, collection.ID)
 	containerParameter := fmt.Sprintf("$%d", len(args))
 	from := " FROM media_collection_entries e JOIN items i ON i.id=e.item_id WHERE " + filter + " AND e.collection_id=" + containerParameter
-	recursiveBoxSet := kind == BoxSetKind && query.Recursive
+	recursiveBoxSet := collection.Kind == BoxSetKind && query.Recursive
 	if recursiveBoxSet {
 		// UNION bounds both corrupt physical cycles and repeated membership.
 		// Collection edges remain references; they never rewrite source parents.
@@ -82,10 +90,10 @@ func queryCollectionItems(ctx context.Context, tx pgx.Tx, query Query, access li
 	}
 	result := ItemResult{Items: []Item{}}
 	if err := tx.QueryRow(ctx, prefix+"SELECT count(*)"+from, args...).Scan(&result.TotalRecordCount); err != nil {
-		return ItemResult{}, true, err
+		return ItemResult{}, err
 	}
 	if countOnly {
-		return result, true, nil
+		return result, nil
 	}
 	order := "e.position,e.id"
 	if recursiveBoxSet {
@@ -102,17 +110,17 @@ func queryCollectionItems(ctx context.Context, tx pgx.Tx, query Query, access li
 	args = append(args, query.Limit, query.StartIndex)
 	rows, err := tx.Query(ctx, prefix+"SELECT "+access.scopeSQL(itemQueryColumns(query))+",e.id::text"+from+" ORDER BY "+access.scopeSQL(order)+fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)-1, len(args)), args...)
 	if err != nil {
-		return ItemResult{}, true, err
+		return ItemResult{}, err
 	}
 	for rows.Next() {
 		var entryID string
 		item, err := scanItem(rows, &entryID)
 		if err != nil {
 			rows.Close()
-			return ItemResult{}, true, err
+			return ItemResult{}, err
 		}
 		item.CanPlay = access.canPlay
-		if kind == PlaylistKind {
+		if collection.Kind == PlaylistKind {
 			item.PlaylistItemID = entryID
 		}
 		result.Items = append(result.Items, item)
@@ -120,18 +128,20 @@ func queryCollectionItems(ctx context.Context, tx pgx.Tx, query Query, access li
 	err = rows.Err()
 	rows.Close()
 	if err != nil {
-		return ItemResult{}, true, err
+		return ItemResult{}, err
 	}
-	if err := attachUserData(ctx, tx, query.UserID, result.Items, access); err != nil {
-		return ItemResult{}, true, err
+	if !query.Projection.UserDataDisabled {
+		if err := attachUserData(ctx, tx, query.UserID, result.Items, access); err != nil {
+			return ItemResult{}, err
+		}
 	}
 	if err := attachSubtitles(ctx, tx, result.Items); err != nil {
-		return ItemResult{}, true, err
+		return ItemResult{}, err
 	}
 	if err := attachCollectionInfo(ctx, tx, access, result.Items); err != nil {
-		return ItemResult{}, true, err
+		return ItemResult{}, err
 	}
-	return result, true, nil
+	return result, nil
 }
 
 // collectionMembershipSQL selects containers that contain requested media.

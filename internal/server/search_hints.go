@@ -110,6 +110,7 @@ func (s *Server) embySearchHints(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	query.Projection = requestQueryProjection(r)
+	query.Projection.UserDataDisabled = true
 	result, err := s.library.SearchHints(r.Context(), requestLibrarySubject(r, userID), query)
 	if err != nil {
 		s.libraryError(w, r, err)
@@ -138,10 +139,11 @@ func (s *Server) embySearchEntity(w http.ResponseWriter, r *http.Request) {
 		s.libraryError(w, r, err)
 		return
 	}
-	dto := s.entityDTO(entity, queryValues(r.URL.Query()["Fields"]), true)
+	p := readItemPresentation(r)
+	dto := s.entityDTO(entity, p.fields, true)
 	dto["GobyReference"] = map[string]string{"Kind": "Entity", "Id": strconv.FormatInt(entity.ID, 10)}
 	dto["GobyNavigationUrl"] = searchHintURL("/emby/Search/Entities/"+strconv.FormatInt(entity.ID, 10), userID, "")
-	applyItemSwitches(dto, r)
+	p.applySwitches(dto)
 	jsonResponse(w, http.StatusOK, dto)
 }
 

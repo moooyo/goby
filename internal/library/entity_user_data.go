@@ -148,21 +148,28 @@ func populateEntityProjections(ctx context.Context, tx pgx.Tx, subject Subject, 
 	if len(entities) == 0 {
 		return nil
 	}
+	includeUserData := subject.UserID != "" && !projection.UserDataDisabled
+	for index := range entities {
+		entities[index].Images = []Image{}
+		entities[index].UserData = nil
+		if includeUserData {
+			entities[index].UserData = &UserData{ItemID: strconv.FormatInt(entities[index].ID, 10)}
+		}
+	}
+	if projection.ImagesDisabled && !includeUserData {
+		return nil
+	}
 	ids := make([]int64, len(entities))
 	byID := make(map[int64]*Entity, len(entities))
 	for index := range entities {
 		ids[index], byID[entities[index].ID] = entities[index].ID, &entities[index]
-		entities[index].Images = []Image{}
-		if subject.UserID != "" {
-			entities[index].UserData = &UserData{ItemID: strconv.FormatInt(entities[index].ID, 10)}
-		}
 	}
 	if !projection.ImagesDisabled {
 		if err := populateEntityImages(ctx, tx, access, entities, ids, byID); err != nil {
 			return err
 		}
 	}
-	if subject.UserID == "" {
+	if !includeUserData {
 		return nil
 	}
 	rows, err := tx.Query(ctx, "SELECT "+entityUserDataColumns+" FROM entity_user_data WHERE user_id=$1 AND entity_id=ANY($2::bigint[])", subject.UserID, ids)

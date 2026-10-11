@@ -57,6 +57,14 @@ type GenerationFiles struct {
 	Master     []byte
 }
 
+// GenerationSnapshot captures one requested generation's files and optional
+// master path under a single verified store gate, including retained images.
+// It is an observation, not a persisted record or a path authority token.
+type GenerationSnapshot struct {
+	Files         GenerationFiles
+	MasterKeyPath string
+}
+
 // Snapshot captures the current state and its generation under one store gate.
 // Files is empty for revision zero. Its byte slices belong to the caller and
 // follow GenerationFiles' sensitive-material contract. MasterKeyPath is set

@@ -31,7 +31,7 @@ func (m *Manager) Plan(ctx context.Context, actor identity.Principal, request Pl
 	if err := m.healthyLocked(ctx); err != nil {
 		return OperationView{}, err
 	}
-	if m.engine == nil || m.cfg.Recovery.DatabaseURL == "" {
+	if !m.engine.canRestore() || m.cfg.Recovery.DatabaseURL == "" {
 		return OperationView{}, ErrUnavailable
 	}
 	if expected != m.current.Revision {
@@ -129,8 +129,7 @@ func (m *Manager) openSlot(ctx context.Context, cfg config.Config, slot lifecycl
 		pool.Close()
 		return nil, nil, nil, err
 	}
-	options := m.engine.options
-	options.SourceURL = cfg.DatabaseURL
+	options := recoveryPostgresOptions(cfg)
 	store, err := recoverydb.New(pool, lease, recoverydb.Config{Postgres: options, DeploymentID: m.current.DeploymentID, Slot: slot})
 	if err != nil {
 		lease.Close()
@@ -359,7 +358,7 @@ func (m *Manager) Rollback(ctx context.Context, actor identity.Principal, reques
 	if err := m.healthyLocked(ctx); err != nil {
 		return OperationView{}, err
 	}
-	if generation != m.current.Revision || m.engine == nil {
+	if generation != m.current.Revision {
 		return OperationView{}, ErrConflict
 	}
 	fingerprint := requestFingerprint(struct{ Kind, Generation string }{"rollback", m.current.Digest})

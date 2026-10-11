@@ -1,12 +1,49 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
+	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/transcode"
 )
+
+func TestPlaybackStopRecoveryMaintenanceBudgetMatchesEligibleReservations(t *testing.T) {
+	for _, reservations := range []int{0, 1, 4} {
+		t.Run(fmt.Sprint(reservations), func(t *testing.T) {
+			runtime := &hlsRuntime{server: &Server{
+				library: &library.Store{}, correlatedHLSOwnershipEnabled: true, correlatedHLSEarlyStopEnabled: true,
+			}}
+			for index := 0; index < reservations; index++ {
+				stop, err := runtime.server.playbackStopIntents.acceptValidatedStop(playbackStopIntentTestScope(fmt.Sprint("budget-", index)))
+				if err != nil {
+					t.Fatal(err)
+				}
+				stop.finish(false)
+			}
+			cycle, cancelCycle := context.WithTimeout(context.Background(), 4*time.Second)
+			defer cancelCycle()
+			checks, cancelChecks := runtime.sessionMaintenanceBeforeStopRecovery(cycle)
+			defer cancelChecks()
+			cycleDeadline, _ := cycle.Deadline()
+			checksDeadline, bounded := checks.Deadline()
+			if !bounded || cycleDeadline.Sub(checksDeadline) != time.Duration(reservations)*750*time.Millisecond {
+				t.Fatalf("eligible reservations did not retain their statement budget: reservations=%d reserved=%v bounded=%v",
+					reservations, cycleDeadline.Sub(checksDeadline), bounded)
+			}
+			if reservations == 0 && checks != cycle {
+				t.Fatal("an empty recovery set changed the active-session context")
+			}
+			cancelChecks()
+			if cycle.Err() != nil {
+				t.Fatal("finishing active-session checks cancelled the recovery opportunity")
+			}
+		})
+	}
+}
 
 func TestPlaybackStopRecoveryCommitFencesCurrentLateOwnersWithoutMint(t *testing.T) {
 	var gate playbackStopIntentGate

@@ -82,11 +82,12 @@ func (s *Store) CreateManagedUserCopy(ctx context.Context, actor Principal, name
 	if err != nil {
 		return User{}, err
 	}
-	tx, source, err := s.beginManagedUserMutation(ctx, actor, sourceID, false)
+	tx, locked, err := s.beginManagedUserMutation(ctx, actor, sourceID, false)
 	if err != nil {
 		return User{}, err
 	}
 	defer rollback(tx)
+	source := locked.target
 	policyJSON, configurationJSON := []byte(`{}`), []byte(`{}`)
 	if selected.policy {
 		policy, err := ParseManagedPolicy(source.User.Policy)

@@ -10,9 +10,11 @@ import (
 // applyItemCapabilities belongs before final ExcludeFields projection. It uses
 // the real actor rather than a UserId selected for another account's state.
 // No filesystem observation or operation admission occurs while listing items.
-func (s *Server) applyItemCapabilities(w http.ResponseWriter, r *http.Request, items []map[string]any, detail bool) bool {
-	fields := queryValues(r.URL.Query()["Fields"])
-	wantDelete, wantDownload := detail || hasField(fields, "CanDelete"), detail || hasField(fields, "CanDownload")
+func (s *Server) applyItemCapabilities(w http.ResponseWriter, r *http.Request, items []map[string]any, detail bool, presentation itemPresentation) bool {
+	// Excluded display facts do not need an optional capability observation.
+	// Download and deletion retain their own current operation authorization.
+	wantDelete := (detail || hasField(presentation.fields, "CanDelete")) && !hasField(presentation.excludedFields, "CanDelete")
+	wantDownload := (detail || hasField(presentation.fields, "CanDownload")) && !hasField(presentation.excludedFields, "CanDownload")
 	if !wantDelete && !wantDownload || len(items) == 0 {
 		return true
 	}

@@ -229,5 +229,9 @@ func parseLibraryPolicy(data []byte) (libraryAccess, error) {
 	if err != nil {
 		return libraryAccess{}, ErrForbidden
 	}
-	return libraryAccess{all: policy.EnableAllFolders, folders: append([]string{}, policy.EnabledFolders...), canPlay: policy.EnableMediaPlayback && policy.AllowsFeature(identity.FeaturePlayback), policy: policy}, nil
+	return libraryAccessFromPolicy(policy), nil
+}
+
+func libraryAccessFromPolicy(policy identity.ManagedPolicy) libraryAccess {
+	return libraryAccess{all: policy.EnableAllFolders, folders: append([]string{}, policy.EnabledFolders...), canPlay: policy.EnableMediaPlayback && policy.AllowsFeature(identity.FeaturePlayback), policy: policy}
 }

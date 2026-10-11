@@ -70,13 +70,18 @@ func ExportCatalog(ctx context.Context, pool *pgxpool.Pool, schema string, versi
 }
 
 func loadCatalog(version int64, schema string) (Catalog, []backupformat.MigrationFact, error) {
-	if version < 1 || version > 9999 || !identifierPattern.MatchString(schema) {
-		return Catalog{}, nil, ErrConfiguration
-	}
+	return embeddedCatalogs.load(version, schema)
+}
+
+func readCatalogBaseline(version int64) (Catalog, []backupformat.MigrationFact, error) {
 	data, err := catalogFiles.ReadFile(fmt.Sprintf("catalogs/schema-%d-postgresql-17.json", version))
 	if err != nil {
 		return Catalog{}, nil, ErrUnsupported
 	}
+	return decodeCatalogBaseline(version, data)
+}
+
+func decodeCatalogBaseline(version int64, data []byte) (Catalog, []backupformat.MigrationFact, error) {
 	var baseline catalogBaseline
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.DisallowUnknownFields()
@@ -97,7 +102,7 @@ func loadCatalog(version int64, schema string) (Catalog, []backupformat.Migratio
 	if hex.EncodeToString(digest[:]) != baseline.Catalog.SHA256 || len(baseline.Catalog.Tables) == 0 {
 		return Catalog{}, nil, ErrSchema
 	}
-	baseline.Catalog.Schema = schema
+	baseline.Catalog.Schema = ""
 	return baseline.Catalog, expected, nil
 }
 

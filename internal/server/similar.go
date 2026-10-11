@@ -73,14 +73,14 @@ func (s *Server) embySimilar(w http.ResponseWriter, r *http.Request) {
 		s.libraryError(w, r, err)
 		return
 	}
-	fields := queryValues(r.URL.Query()["Fields"])
+	p := readItemPresentation(r)
 	items := make([]map[string]any, 0, len(result.Items))
 	for _, entry := range result.Items {
-		item := s.itemDTOForRequest(r, entry, fields, false)
-		applyItemSwitches(item, r)
+		item := s.itemDTOWithToken(entry, p.fields, false, p.deliveryToken)
+		p.applySwitches(item)
 		items = append(items, item)
 	}
-	if !s.applyIndexedImages(w, r, userID, items, false) {
+	if !s.applyIndexedImages(w, r, userID, items, false, p) {
 		return
 	}
 	jsonResponse(w, http.StatusOK, map[string]any{"Items": items, "TotalRecordCount": result.TotalRecordCount})

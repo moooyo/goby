@@ -50,20 +50,27 @@ const validEntityAssociationSQL = `(entity.kind <> 'MusicArtist' OR
 	(association.credit_group = 1 AND association.credit_type = 'Artist') OR
 	(association.credit_group = 2 AND association.credit_type = 'AlbumArtist'))`
 
-// ListEntities counts distinct authorized source items before entity pagination.
+// ListEntities returns unique entities with distinct authorized source counts by default.
 // SearchTerm searches entity names; other item filters scope the source catalog.
 func (s *Store) ListEntities(ctx context.Context, kind string, query Query) (EntityResult, error) {
-	return s.listEntities(ctx, kind, query, nil)
+	return s.listEntities(ctx, kind, query, nil, false)
+}
+
+// CountEntities applies the list's validation, authorization, and filters but
+// returns an empty Items slice without reading a page or its attachments.
+// ListEntities retains its default page size when Query.Limit is zero.
+func (s *Store) CountEntities(ctx context.Context, kind string, query Query) (EntityResult, error) {
+	return s.listEntities(ctx, kind, query, nil, true)
 }
 
 // QueryArtworkEntities retains the native administrator credential while
 // selecting entity membership, images and preferences in one catalog snapshot.
 func (s *Store) QueryArtworkEntities(ctx context.Context, actor identity.Principal, kind string, query Query) (EntityResult, error) {
 	query.UserID, query.ApplicationCredentialID = actor.User.ID, ""
-	return s.listEntities(ctx, kind, query, &actor)
+	return s.listEntities(ctx, kind, query, &actor, false)
 }
 
-func (s *Store) listEntities(ctx context.Context, kind string, query Query, actor *identity.Principal) (EntityResult, error) {
+func (s *Store) listEntities(ctx context.Context, kind string, query Query, actor *identity.Principal, countOnly bool) (EntityResult, error) {
 	kind, err := normalizeEntityKind(kind)
 	if err != nil {
 		return EntityResult{}, err
@@ -133,8 +140,12 @@ func (s *Store) listEntities(ctx context.Context, kind string, query Query, acto
 	} else {
 		prefix = strings.TrimSpace(prefix) + ", "
 	}
+	projection := query.Projection
+	if countOnly {
+		projection.EntitySourceCountsDisabled = true
+	}
 	prefix += `eligible_entities AS (
-		SELECT entity.id, entity.name, entity.kind, count(DISTINCT i.id) AS item_count
+		SELECT entity.id, entity.name, entity.kind, ` + entitySourceCountSQL(projection) + ` AS item_count
 		FROM items i JOIN item_entities association ON association.item_id = i.id
 		JOIN catalog_entities entity ON entity.id = association.entity_id
 		WHERE ` + filter + ` GROUP BY entity.id, entity.name, entity.kind
@@ -143,27 +154,29 @@ func (s *Store) listEntities(ctx context.Context, kind string, query Query, acto
 	if err := tx.QueryRow(ctx, prefix+"SELECT count(*) FROM eligible_entities", args...).Scan(&result.TotalRecordCount); err != nil {
 		return EntityResult{}, fmt.Errorf("count visible catalog entities: %w", err)
 	}
-	args = append(args, query.Limit, query.StartIndex)
-	statement := prefix + `SELECT id, name, kind, item_count FROM eligible_entities
-		ORDER BY lower(name) ` + query.SortOrder + ", id " + query.SortOrder + fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)-1, len(args))
-	rows, err := tx.Query(ctx, statement, args...)
-	if err != nil {
-		return EntityResult{}, fmt.Errorf("list visible catalog entities: %w", err)
-	}
-	defer rows.Close()
-	for rows.Next() {
-		entity, err := scanEntity(rows)
+	if !countOnly {
+		args = append(args, query.Limit, query.StartIndex)
+		statement := prefix + `SELECT id, name, kind, item_count FROM eligible_entities
+			ORDER BY lower(name) ` + query.SortOrder + ", id " + query.SortOrder + fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)-1, len(args))
+		rows, err := tx.Query(ctx, statement, args...)
 		if err != nil {
-			return EntityResult{}, fmt.Errorf("read visible catalog entity: %w", err)
+			return EntityResult{}, fmt.Errorf("list visible catalog entities: %w", err)
 		}
-		result.Items = append(result.Items, entity)
-	}
-	if err := rows.Err(); err != nil {
-		return EntityResult{}, fmt.Errorf("read visible catalog entities: %w", err)
-	}
-	rows.Close()
-	if err := populateEntityProjections(ctx, tx, Subject{UserID: query.UserID, ApplicationCredentialID: query.ApplicationCredentialID}, access, result.Items, query.Projection); err != nil {
-		return EntityResult{}, err
+		defer rows.Close()
+		for rows.Next() {
+			entity, err := scanEntity(rows)
+			if err != nil {
+				return EntityResult{}, fmt.Errorf("read visible catalog entity: %w", err)
+			}
+			result.Items = append(result.Items, entity)
+		}
+		if err := rows.Err(); err != nil {
+			return EntityResult{}, fmt.Errorf("read visible catalog entities: %w", err)
+		}
+		rows.Close()
+		if err := populateEntityProjections(ctx, tx, Subject{UserID: query.UserID, ApplicationCredentialID: query.ApplicationCredentialID}, access, result.Items, query.Projection); err != nil {
+			return EntityResult{}, err
+		}
 	}
 	if actor != nil {
 		if err := authorizeMetadataActor(ctx, tx, *actor); err != nil {
@@ -222,7 +235,7 @@ func (s *Store) getEntity(ctx context.Context, subject Subject, projection Query
 	}
 	defer rollback(tx)
 	args := append([]any{access.all, access.folders}, values...)
-	entity, err := scanEntity(tx.QueryRow(ctx, `SELECT entity.id, entity.name, entity.kind, count(DISTINCT i.id)
+	entity, err := scanEntity(tx.QueryRow(ctx, `SELECT entity.id, entity.name, entity.kind, `+entitySourceCountSQL(projection)+`
 		FROM catalog_entities entity JOIN item_entities association ON association.entity_id = entity.id
 		JOIN items i ON i.id = association.item_id
 		WHERE ($1::boolean OR i.library_id = ANY($2::text[])) AND i.type <> 'CollectionFolder'

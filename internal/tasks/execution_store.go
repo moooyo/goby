@@ -146,7 +146,7 @@ func (s *Store) updateExecutionProgress(ctx context.Context, runID, childID, tok
 		if changed.RowsAffected() != 1 {
 			return ErrInconsistent
 		}
-		_, err = refreshRun(tx, runID)
+		_, err = refreshLockedRun(tx, run)
 		return err
 	})
 }
@@ -195,7 +195,7 @@ func (s *Store) finishExecution(ctx context.Context, runID, childID, token strin
 		if changed.RowsAffected() != 1 {
 			return ErrInconsistent
 		}
-		_, err = refreshRun(tx, runID)
+		_, err = refreshLockedRun(tx, run)
 		return err
 	})
 }

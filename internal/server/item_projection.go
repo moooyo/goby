@@ -14,6 +14,60 @@ const (
 	maxItemProjectionFields = 128
 )
 
+// itemPresentation contains immutable response-local formatting inputs. Build it
+// after the caller's existing authentication and projection normalization.
+// Parsing here neither authenticates the request nor adds input validation.
+type itemPresentation struct {
+	fields                []string
+	excludedFields        []string
+	enableImages          bool
+	enableUserData        bool
+	imageTypeLimit        int
+	invalidImageTypeLimit bool
+	enabledImageTypes     map[string]bool
+	deliveryToken         string
+}
+
+func readItemPresentation(r *http.Request) itemPresentation {
+	values := r.URL.Query()
+	presentation := itemPresentation{
+		fields: queryValues(values["Fields"]), excludedFields: queryValues(values["ExcludeFields"]),
+		enableImages: true, enableUserData: true, imageTypeLimit: 32,
+		enabledImageTypes: make(map[string]bool),
+	}
+	if raw := values.Get("EnableImages"); raw != "" {
+		presentation.enableImages, _ = strconv.ParseBool(raw)
+	}
+	if raw := values.Get("EnableUserData"); raw != "" {
+		presentation.enableUserData, _ = strconv.ParseBool(raw)
+	}
+	if raw := values.Get("ImageTypeLimit"); raw != "" {
+		value, err := strconv.Atoi(raw)
+		presentation.invalidImageTypeLimit = err != nil || value < 0
+		if !presentation.invalidImageTypeLimit {
+			presentation.imageTypeLimit = min(value, 32)
+		}
+	}
+	for _, name := range queryValues(values["EnableImageTypes"]) {
+		presentation.enabledImageTypes[strings.ToLower(name)] = true
+	}
+	// The formatter has always ignored extraction errors. Admission remains at
+	// the caller, including its existing credential conflict and carrier rules.
+	presentation.deliveryToken, _, _ = parseEmbyCredentials(r)
+	return presentation
+}
+
+func (presentation itemPresentation) applySwitches(item map[string]any) {
+	presentation.applyFieldExclusions(item)
+	if !presentation.enableImages {
+		delete(item, "ImageTags")
+		delete(item, "BackdropImageTags")
+	}
+	if !presentation.enableUserData {
+		delete(item, "UserData")
+	}
+}
+
 // normalizeItemProjectionQuery accepts the casing used by ordinary clients
 // without changing identifiers, credentials or unrelated business parameters.
 // It runs after authentication and before catalog access. Case aliases must
@@ -121,7 +175,12 @@ func validItemProjectionField(value string) bool {
 // never catalog membership, authorization, original media or playback planning.
 // Unknown names remain forward-compatible hints, like unknown Fields values.
 func applyItemFieldExclusions(item map[string]any, r *http.Request) {
-	fields := queryValues(r.URL.Query()["ExcludeFields"])
+	presentation := itemPresentation{excludedFields: queryValues(r.URL.Query()["ExcludeFields"])}
+	presentation.applyFieldExclusions(item)
+}
+
+func (presentation itemPresentation) applyFieldExclusions(item map[string]any) {
+	fields := presentation.excludedFields
 	if len(fields) == 0 {
 		return
 	}

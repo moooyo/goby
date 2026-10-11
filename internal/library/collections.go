@@ -671,21 +671,36 @@ func (s *Store) PreviewCollectionItems(ctx context.Context, subject Subject, id,
 	if err != nil {
 		return CollectionPreview{}, err
 	}
-	seen, err := collectionMemberSet(ctx, tx, id)
-	if err != nil {
-		return CollectionPreview{}, err
-	}
 	result := CollectionPreview{ItemCount: len(resolved)}
+	seen := make(map[string]bool, len(resolved))
+	unique := make([]string, 0, len(resolved))
 	for _, member := range resolved {
 		if seen[member] {
 			result.ContainsDuplicates = true
+			continue
 		}
 		seen[member] = true
+		unique = append(unique, member)
 	}
+	// Keep the overlap observation even for an empty or repeated proposal so
+	// query failures and transaction completion retain their original ordering.
+	overlaps, err := collectionMembersOverlap(ctx, tx, id, unique)
+	if err != nil {
+		return CollectionPreview{}, err
+	}
+	result.ContainsDuplicates = result.ContainsDuplicates || overlaps
 	if err := tx.Commit(ctx); err != nil {
 		return CollectionPreview{}, err
 	}
 	return result, nil
+}
+
+// collectionMembersOverlap checks raw membership after proposal authorization.
+// Resolved folder members may exceed the original request's smaller input limit.
+func collectionMembersOverlap(ctx context.Context, tx pgx.Tx, id string, members []string) (bool, error) {
+	var overlaps bool
+	err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM media_collection_entries WHERE collection_id=$1 AND item_id=ANY($2::text[]))`, id, members).Scan(&overlaps)
+	return overlaps, err
 }
 
 func collectionMemberSet(ctx context.Context, tx pgx.Tx, id string) (map[string]bool, error) {

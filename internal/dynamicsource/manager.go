@@ -425,42 +425,59 @@ func (m *Manager) connect(ctx context.Context, state *leaseState) (*Connection, 
 }
 
 func (m *Manager) Info(ctx context.Context, owner Owner, id string) (Lease, error) {
+	var lease Lease
+	if err := m.validateLease(ctx, owner, id, &lease); err != nil {
+		return Lease{}, err
+	}
+	return lease, nil
+}
+
+// Validate rechecks current lease authority and records activity without
+// copying media facts that the caller does not consume.
+func (m *Manager) Validate(ctx context.Context, owner Owner, id string) error {
+	return m.validateLease(ctx, owner, id, nil)
+}
+
+func (m *Manager) validateLease(ctx context.Context, owner Owner, id string, snapshot *Lease) error {
 	if m == nil || !validOwner(owner) || !validID(id, false) {
-		return Lease{}, ErrNotFound
+		return ErrNotFound
 	}
 	m.mu.Lock()
 	state := m.leases[id]
 	if m.closing || state == nil || state.closed || state.key.owner != owner.Identity() {
 		m.mu.Unlock()
-		return Lease{}, ErrNotFound
+		return ErrNotFound
 	}
 	// A reconnect keeps the last committed generation readable while its new
 	// connection is opening. Authorization still runs below on every request.
 	// Initial opening has no committed media facts to describe yet.
 	if state.opening && len(state.lease.Info.Streams) == 0 {
 		m.mu.Unlock()
-		return Lease{}, ErrBusy
+		return ErrBusy
 	}
-	lease := cloneLease(state.lease)
+	itemID, playSessionID := state.lease.ItemID, state.lease.PlaySessionID
+	if snapshot != nil {
+		*snapshot = cloneLease(state.lease)
+	}
 	m.mu.Unlock()
-	if err := m.options.Authorize(ctx, owner, lease.ItemID, lease.PlaySessionID); err != nil {
+	if err := m.options.Authorize(ctx, owner, itemID, playSessionID); err != nil {
 		_ = m.CloseLease(ctx, owner, id)
-		return Lease{}, err
+		return err
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if state.closed {
-		return Lease{}, ErrNotFound
+		return ErrNotFound
 	}
 	state.accessed = time.Now()
-	return lease, nil
+	return nil
 }
 
 // Acquire gives one reader exclusive ownership of the current connection.
 // Reopening never silently joins unrelated byte timelines: it returns a new
 // generation and stamp, which the caller must use for a fresh encoder job.
 func (m *Manager) Acquire(ctx context.Context, owner Owner, id string) (*Input, error) {
-	if _, err := m.Info(ctx, owner, id); err != nil {
+	if err := m.Validate(ctx, owner, id); err != nil {
 		return nil, err
 	}
 	m.mu.Lock()

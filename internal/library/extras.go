@@ -23,19 +23,23 @@ const (
 
 // QuerySpecialFeatures returns the owner's active non-trailer attachments.
 // Resource identifiers remain ordinary item IDs, never theme-owner numbers.
-func (s *Store) QuerySpecialFeatures(ctx context.Context, ownerID string, subject Subject) ([]Item, error) {
-	return s.queryExtraItems(ctx, ownerID, subject, false)
+func (s *Store) QuerySpecialFeatures(ctx context.Context, ownerID string, subject Subject, projections ...QueryProjection) ([]Item, error) {
+	return s.queryExtraItems(ctx, ownerID, subject, false, projections...)
 }
 
 // QueryLocalTrailers returns the separately indexed local trailer population.
-func (s *Store) QueryLocalTrailers(ctx context.Context, ownerID string, subject Subject) ([]Item, error) {
-	return s.queryExtraItems(ctx, ownerID, subject, true)
+func (s *Store) QueryLocalTrailers(ctx context.Context, ownerID string, subject Subject, projections ...QueryProjection) ([]Item, error) {
+	return s.queryExtraItems(ctx, ownerID, subject, true, projections...)
 }
 
-func (s *Store) queryExtraItems(ctx context.Context, ownerID string, subject Subject, trailers bool) ([]Item, error) {
+func (s *Store) queryExtraItems(ctx context.Context, ownerID string, subject Subject, trailers bool, projections ...QueryProjection) ([]Item, error) {
 	if ownerID == "" || len(ownerID) > 256 || !utf8.ValidString(ownerID) || strings.TrimSpace(ownerID) != ownerID ||
 		strings.IndexFunc(ownerID, unicode.IsControl) >= 0 {
 		return nil, ErrInvalidInput
+	}
+	projection := QueryProjection{}
+	if len(projections) != 0 {
+		projection = projections[0]
 	}
 	tx, access, err := s.beginSubjectRead(ctx, subject)
 	if err != nil {
@@ -107,8 +111,10 @@ func (s *Store) queryExtraItems(ctx context.Context, ownerID string, subject Sub
 		return nil, fmt.Errorf("read extra resources: %w", err)
 	}
 	rows.Close()
-	if err := attachUserData(ctx, tx, subject.UserID, items); err != nil {
-		return nil, err
+	if !projection.UserDataDisabled {
+		if err := attachUserData(ctx, tx, subject.UserID, items); err != nil {
+			return nil, err
+		}
 	}
 	if err := attachSubtitles(ctx, tx, items); err != nil {
 		return nil, err

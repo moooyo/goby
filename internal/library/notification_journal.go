@@ -1,11 +1,6 @@
 package library
 
-import (
-	"crypto/sha256"
-	"encoding/json"
-
-	"github.com/moooyo/goby/internal/notificationjournal"
-)
+import "github.com/moooyo/goby/internal/notificationjournal"
 
 // Retain one extra reference so RecordCatalog preserves its overflow behavior.
 const notificationReferenceOverflow = 4097
@@ -16,20 +11,17 @@ func (tx *ownedTx) recordNotificationJournal() error {
 		return nil
 	}
 	refs := tx.notificationReferences
-	raw, _ := json.Marshal(struct {
-		Refs   []notificationjournal.Reference
-		Resync bool
-	}{refs, batch.resync})
-	stamp := sha256.Sum256(raw)
-	if tx.notificationJournalRecorded && tx.notificationJournalStamp == stamp {
+	// References only append, so an unchanged length preserves the full prefix.
+	if tx.notificationJournalRecorded && tx.notificationJournalLength == len(refs) && tx.notificationJournalResync == batch.resync {
 		return nil
 	}
 	if tx.notificationMutationID == "" {
 		tx.notificationMutationID = notificationjournal.NewID()
 	}
-	err := notificationjournal.RecordCatalog(tx.ctx, tx.Tx, tx.notificationMutationID, refs, tx.catalogChanges.resync)
+	err := notificationjournal.RecordCatalog(tx.ctx, tx.Tx, tx.notificationMutationID, refs, batch.resync)
 	if err == nil {
-		tx.notificationJournalStamp = stamp
+		tx.notificationJournalLength = len(refs)
+		tx.notificationJournalResync = batch.resync
 		tx.notificationJournalRecorded = true
 	}
 	return err

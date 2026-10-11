@@ -31,6 +31,9 @@ func TestPackedHLSPublicationWaitsForClosedSegments(t *testing.T) {
 			}
 			packedTestAbsent(t, directory, "main.m3u8")
 			packedTestAbsent(t, directory, first)
+			if publisher.manifestPublished || publisher.lastRender != (packedHLSRenderState{}) {
+				t.Fatal("an open first segment acquired a successful manifest marker")
+			}
 
 			packedTestWrite(t, directory, second+".tmp", payload)
 			if err := publisher.publish(false); err != nil {
@@ -83,6 +86,193 @@ func TestPackedHLSPublicationWaitsForClosedSegments(t *testing.T) {
 			}
 			if data := packedTestRead(t, directory, "main.m3u8"); !bytes.Equal(data, complete) {
 				t.Fatalf("repeat publication changed the playlist: %s", data)
+			}
+		})
+	}
+}
+
+func TestPackedHLSUnchangedPollsSkipManifestRendering(t *testing.T) {
+	for _, count := range []int{10, 100, 1000} {
+		t.Run(fmt.Sprintf("segments-%d", count), func(t *testing.T) {
+			publisher, _ := packedTestPendingPublisher(t, "aac", count)
+			original := packedTestRead(t, publisher.directory, "main.m3u8")
+			before, err := os.Stat(filepath.Join(publisher.directory, "main.m3u8"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			state := publisher.lastRender
+			packedTestWrite(t, publisher.directory, "main.m3u8.publish.tmp", []byte("unchanged polls must not publish"))
+			for range 3 {
+				if err := publisher.publish(false); err != nil {
+					t.Fatalf("unchanged poll: %v", err)
+				}
+				if output, err := publisher.renderManifest(state); err != nil || output != "" {
+					t.Fatalf("unchanged inputs still rendered a manifest: bytes=%d error=%v", len(output), err)
+				}
+			}
+			after, err := os.Stat(filepath.Join(publisher.directory, "main.m3u8"))
+			if err != nil || !os.SameFile(before, after) || publisher.lastRender != state || len(publisher.published) != count {
+				t.Fatalf("unchanged polls replaced the manifest or advanced publication: state=%+v error=%v", publisher.lastRender, err)
+			}
+			if data := packedTestRead(t, publisher.directory, "main.m3u8"); !bytes.Equal(data, original) {
+				t.Fatal("unchanged polls changed the manifest contents")
+			}
+			packedTestAbsent(t, publisher.directory, fmt.Sprintf("segment-%06d.aac", count))
+		})
+	}
+}
+
+func TestPackedHLSUnchangedListObservesNewClosureEvidence(t *testing.T) {
+	for _, extension := range []string{"aac", "mp3"} {
+		for _, symlink := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/symlink-%t", extension, symlink), func(t *testing.T) {
+				publisher, private := packedTestPendingPublisher(t, extension, 1)
+				original := packedTestRead(t, publisher.directory, "main.m3u8")
+				state := publisher.lastRender
+				next := "segment-000002." + extension + ".tmp"
+				if symlink {
+					if err := os.Symlink(filepath.Join(publisher.directory, "segment-000001."+extension+".tmp"), filepath.Join(publisher.directory, next)); err != nil {
+						t.Fatal(err)
+					}
+				} else {
+					packedTestWrite(t, publisher.directory, next, packedTestAudio(extension))
+				}
+				err := publisher.publish(false)
+				if symlink {
+					if err == nil || publisher.lastRender != state || len(publisher.published) != 1 {
+						t.Fatalf("unchanged private bytes bypassed unsafe closure evidence: state=%+v error=%v", publisher.lastRender, err)
+					}
+					if data := packedTestRead(t, publisher.directory, "main.m3u8"); !bytes.Equal(data, original) {
+						t.Fatal("unsafe closure evidence changed the manifest")
+					}
+					packedTestAbsent(t, publisher.directory, "segment-000001."+extension)
+				} else {
+					list, parseErr := ParseMediaPlaylist(packedTestRead(t, publisher.directory, "main.m3u8"))
+					if err != nil || parseErr != nil || len(list.Segments) != 2 || list.Ended || publisher.lastRender.segments != 2 {
+						t.Fatalf("new closure did not publish the next segment: list=%+v error=%v parse=%v", list, err, parseErr)
+					}
+					packedTestSegment(t, publisher.directory, "segment-000001."+extension, packedTestAudio(extension), 90_000)
+				}
+				if data := packedTestRead(t, publisher.directory, "segment-list.m3u8"); !bytes.Equal(data, private) {
+					t.Fatal("closure fixture unexpectedly changed the private playlist")
+				}
+			})
+		}
+	}
+}
+
+func TestPackedHLSRenderStateTracksTargetDurationAndSuccessfulEnd(t *testing.T) {
+	for _, extension := range []string{"aac", "mp3"} {
+		t.Run(extension, func(t *testing.T) {
+			publisher, private := packedTestPendingPublisher(t, extension, 1)
+			packedTestWrite(t, publisher.directory, "segment-000002."+extension+".tmp", packedTestAudio(extension))
+			if err := publisher.publish(false); err != nil {
+				t.Fatal(err)
+			}
+			private = bytes.Replace(private, []byte("#EXT-X-TARGETDURATION:3"), []byte("#EXT-X-TARGETDURATION:4"), 1)
+			packedTestWrite(t, publisher.directory, "segment-list.m3u8", private)
+			if err := publisher.publish(false); err != nil {
+				t.Fatal(err)
+			}
+			partial := packedTestRead(t, publisher.directory, "main.m3u8")
+			list, err := ParseMediaPlaylist(partial)
+			if err != nil || list.TargetDuration != 4 || list.Ended || len(list.Segments) != 2 || publisher.lastRender.targetDuration != 4 {
+				t.Fatalf("unchanged segment count lost the new target duration: list=%+v error=%v", list, err)
+			}
+			before, err := os.Stat(filepath.Join(publisher.directory, "main.m3u8"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			packedTestWrite(t, publisher.directory, "segment-list.m3u8", append(private, []byte("#EXT-X-ENDLIST\n")...))
+			if err := publisher.publish(false); err != nil {
+				t.Fatal(err)
+			}
+			after, err := os.Stat(filepath.Join(publisher.directory, "main.m3u8"))
+			if err != nil || !os.SameFile(before, after) || publisher.lastRender.ended {
+				t.Fatalf("private ENDLIST changed the manifest before successful completion: %v", err)
+			}
+			if data := packedTestRead(t, publisher.directory, "main.m3u8"); !bytes.Equal(data, partial) {
+				t.Fatal("private ENDLIST escaped before successful completion")
+			}
+			if err := publisher.publish(true); err != nil {
+				t.Fatal(err)
+			}
+			list, err = ParseMediaPlaylist(packedTestRead(t, publisher.directory, "main.m3u8"))
+			if err != nil || !list.Ended || list.TargetDuration != 4 || len(list.Segments) != 2 || !publisher.lastRender.ended {
+				t.Fatalf("successful completion did not publish ENDLIST at the same segment count: list=%+v error=%v", list, err)
+			}
+			packedTestWrite(t, publisher.directory, "main.m3u8.publish.tmp", []byte("repeat completion must not publish"))
+			if err := publisher.publish(true); err != nil {
+				t.Fatalf("repeat completion rendered or published again: %v", err)
+			}
+		})
+	}
+}
+
+func TestPackedHLSFailedCompletionRetainsPublishedState(t *testing.T) {
+	publisher, private := packedTestPendingPublisher(t, "aac", 1)
+	original := packedTestRead(t, publisher.directory, "main.m3u8")
+	state := publisher.lastRender
+	failure := publisher.publish(true)
+	if !errors.Is(failure, ErrInvalidPlaylist) || publisher.lastRender != state || !publisher.manifestPublished || len(publisher.published) != 1 {
+		t.Fatalf("completion without ENDLIST changed publication: state=%+v error=%v", publisher.lastRender, failure)
+	}
+	packedTestWrite(t, publisher.directory, "segment-list.m3u8", append(private, []byte("#EXT-X-ENDLIST\n")...))
+	if err := publisher.publish(true); err != failure {
+		t.Fatalf("a later ENDLIST cleared the completion failure: %v", err)
+	}
+	if data := packedTestRead(t, publisher.directory, "main.m3u8"); !bytes.Equal(data, original) {
+		t.Fatal("failed completion changed the last successful manifest")
+	}
+	packedTestAbsent(t, publisher.directory, "segment-000001.aac")
+}
+
+func TestPackedHLSManifestFailureDoesNotAdvanceRenderState(t *testing.T) {
+	for _, change := range []string{"first publication", "target duration", "completed end"} {
+		t.Run(change, func(t *testing.T) {
+			directory := t.TempDir()
+			publisher := &packedHLSPublisher{directory: directory, plan: packedTestPlan("aac")}
+			private := []byte(packedTestPlaylist("#EXTINF:1.000000,\nsegment-000000.aac.tmp\n"))
+			packedTestWrite(t, directory, "segment-000000.aac.tmp", packedTestAudio("aac"))
+			packedTestWrite(t, directory, "segment-000001.aac.tmp", packedTestAudio("aac"))
+			packedTestWrite(t, directory, "segment-list.m3u8", private)
+			var original []byte
+			if change != "first publication" {
+				if err := publisher.publish(false); err != nil {
+					t.Fatal(err)
+				}
+				original = packedTestRead(t, directory, "main.m3u8")
+			}
+			state, published := publisher.lastRender, publisher.manifestPublished
+			finished := change == "completed end"
+			if finished {
+				private = append(private, []byte("#EXT-X-ENDLIST\n")...)
+			} else if change == "target duration" {
+				private = bytes.Replace(private, []byte("#EXT-X-TARGETDURATION:3"), []byte("#EXT-X-TARGETDURATION:4"), 1)
+			}
+			packedTestWrite(t, directory, "segment-list.m3u8", private)
+			packedTestWrite(t, directory, "main.m3u8.publish.tmp", []byte("publication obstruction"))
+			failure := publisher.publish(finished)
+			if failure == nil || publisher.err != failure || publisher.lastRender != state || publisher.manifestPublished != published {
+				t.Fatalf("failed publication acquired a successful render marker: state=%+v published=%t error=%v", publisher.lastRender, publisher.manifestPublished, failure)
+			}
+			if len(publisher.published) != 1 {
+				t.Fatal("fixture did not reach manifest publication after publishing its segment")
+			}
+			if err := os.Remove(filepath.Join(directory, "main.m3u8.publish.tmp")); err != nil {
+				t.Fatal(err)
+			}
+			for _, complete := range []bool{false, true} {
+				if err := publisher.publish(complete); err != failure {
+					t.Fatalf("publication failure was not sticky: complete=%t error=%v", complete, err)
+				}
+			}
+			if published {
+				if data := packedTestRead(t, directory, "main.m3u8"); !bytes.Equal(data, original) {
+					t.Fatal("failed publication changed the last successful manifest")
+				}
+			} else {
+				packedTestAbsent(t, directory, "main.m3u8")
 			}
 		})
 	}
@@ -222,10 +412,12 @@ func TestPackedHLSRejectsPublishedPlaylistChanges(t *testing.T) {
 	first := "#EXTINF:1.024000,\nsegment-000000.aac.tmp\n"
 	second := "#EXTINF:0.976000,\nsegment-000001.aac.tmp\n"
 	for name, entries := range map[string]string{
-		"duration mutation": strings.Replace(first, "1.024000", "1.025000", 1) + second,
-		"segment rollback":  first,
-		"empty rollback":    "",
-		"name mutation":     strings.Replace(first, "000000", "000001", 1) + second,
+		"duration mutation":       strings.Replace(first, "1.024000", "1.025000", 1) + second,
+		"later duration mutation": first + strings.Replace(second, "0.976000", "0.977000", 1),
+		"discontinuity mutation":  "#EXT-X-DISCONTINUITY\n" + first + second,
+		"segment rollback":        first,
+		"empty rollback":          "",
+		"name mutation":           strings.Replace(first, "000000", "000001", 1) + second,
 	} {
 		t.Run(name, func(t *testing.T) {
 			directory := t.TempDir()
@@ -242,9 +434,15 @@ func TestPackedHLSRejectsPublishedPlaylistChanges(t *testing.T) {
 			if err != nil || len(list.Segments) != 2 {
 				t.Fatalf("initial publication: %+v, %v", list, err)
 			}
+			state := publisher.lastRender
 			packedTestWrite(t, directory, "segment-list.m3u8", []byte(packedTestPlaylist(entries)))
-			if err := publisher.publish(false); err == nil {
-				t.Fatal("published playlist history was changed")
+			failure := publisher.publish(false)
+			if !errors.Is(failure, ErrInvalidPlaylist) || publisher.lastRender != state || !publisher.manifestPublished {
+				t.Fatalf("published playlist history changed or acquired a render marker: state=%+v error=%v", publisher.lastRender, failure)
+			}
+			packedTestWrite(t, directory, "segment-list.m3u8", []byte(packedTestPlaylist(first+second)+"#EXT-X-ENDLIST\n"))
+			if err := publisher.publish(true); err != failure {
+				t.Fatalf("restored history cleared the sticky publication failure: %v", err)
 			}
 			if data := packedTestRead(t, directory, "main.m3u8"); !bytes.Equal(data, original) {
 				t.Fatalf("rejected private list changed the public playlist: %s", data)
@@ -348,6 +546,57 @@ func TestPackedHLSRejectsPublicationStagingSymlinks(t *testing.T) {
 			})
 		}
 	}
+}
+
+// This benchmark isolates formatting and its unchanged-state guard. Private-list
+// parsing, source validation, and filesystem publication are intentionally absent.
+func BenchmarkPackedHLSManifestRendering(b *testing.B) {
+	for _, count := range []int{10, 100, 1000} {
+		segments := make([]MediaSegment, count)
+		for number := range segments {
+			segments[number] = MediaSegment{Number: int64(number), Name: fmt.Sprintf("segment-%06d.aac", number), DurationTicks: 10_240_000}
+		}
+		state := packedHLSRenderState{segments: count, targetDuration: 3}
+		for _, unchanged := range []bool{false, true} {
+			b.Run(fmt.Sprintf("segments-%d/unchanged-%t", count, unchanged), func(b *testing.B) {
+				publisher := &packedHLSPublisher{plan: packedTestPlan("aac"), published: segments, lastRender: state, manifestPublished: unchanged}
+				b.ReportAllocs()
+				b.ResetTimer()
+				for index := 0; index < b.N; index++ {
+					output, err := publisher.renderManifest(state)
+					if err != nil || (output == "") != unchanged {
+						b.Fatalf("manifest rendering: bytes=%d error=%v", len(output), err)
+					}
+					packedHLSBenchmarkManifest = output
+				}
+			})
+		}
+	}
+}
+
+var packedHLSBenchmarkManifest string
+
+func packedTestPendingPublisher(t *testing.T, extension string, closed int) (*packedHLSPublisher, []byte) {
+	t.Helper()
+	directory := t.TempDir()
+	plan := packedTestPlan(extension)
+	plan.DurationTicks = int64(closed+2) * ticksPerSecond
+	publisher := &packedHLSPublisher{directory: directory, plan: plan}
+	var entries strings.Builder
+	for number := 0; number <= closed; number++ {
+		name := fmt.Sprintf("segment-%06d.%s", number, extension)
+		packedTestWrite(t, directory, name+".tmp", packedTestAudio(extension))
+		fmt.Fprintf(&entries, "#EXTINF:1.000000,\n%s.tmp\n", name)
+	}
+	private := []byte(packedTestPlaylist(entries.String()))
+	packedTestWrite(t, directory, "segment-list.m3u8", private)
+	if err := publisher.publish(false); err != nil {
+		t.Fatal(err)
+	}
+	if len(publisher.published) != closed || !publisher.manifestPublished || publisher.lastRender != (packedHLSRenderState{segments: closed, targetDuration: 3}) {
+		t.Fatalf("pending segment fixture did not publish its closed prefix: segments=%d state=%+v", len(publisher.published), publisher.lastRender)
+	}
+	return publisher, private
 }
 
 func packedTestPlan(extension string) Plan {

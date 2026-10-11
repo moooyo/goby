@@ -26,7 +26,7 @@ func (m *Manager) Create(ctx context.Context, actor identity.Principal, request 
 	if err := m.healthyLocked(ctx); err != nil {
 		return OperationView{}, err
 	}
-	if m.engine == nil {
+	if !m.engine.canCreate() {
 		return OperationView{}, ErrUnavailable
 	}
 	fingerprint := requestFingerprint(struct{ Kind, Generation string }{"create", m.current.Digest})

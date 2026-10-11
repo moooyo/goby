@@ -93,8 +93,10 @@ func (s *Store) EpisodePlaybackQueue(ctx context.Context, subject Subject, serie
 		return ItemResult{}, fmt.Errorf("read episode playback queue result: %w", err)
 	}
 	rows.Close()
-	if err := attachUserData(ctx, tx, subject.UserID, result.Items, access); err != nil {
-		return ItemResult{}, err
+	if !projection.UserDataDisabled {
+		if err := attachUserData(ctx, tx, subject.UserID, result.Items, access); err != nil {
+			return ItemResult{}, err
+		}
 	}
 	if err := attachSubtitles(ctx, tx, result.Items); err != nil {
 		return ItemResult{}, err

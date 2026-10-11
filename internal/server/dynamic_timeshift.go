@@ -378,7 +378,7 @@ func (s *Server) heartbeatDynamicPlayback(ctx context.Context, principal identit
 	}
 	s.dynamicStreams.mu.Unlock()
 	for _, session := range sessions {
-		if _, err := s.dynamicSources.Info(ctx, owner, session.key.liveID); err != nil {
+		if err := s.dynamicSources.Validate(ctx, owner, session.key.liveID); err != nil {
 			s.retireDynamicSession(session)
 			continue
 		}

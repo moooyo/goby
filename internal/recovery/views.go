@@ -17,9 +17,10 @@ func (m *Manager) Status(ctx context.Context, actor identity.Principal) (StatusV
 	defer m.mu.Unlock()
 	storage := m.runtime.backups.Status()
 	cfg := m.cfg.Recovery.WithDefaults()
+	ready := !m.closed && !m.fault && storage.Healthy
 	view := StatusView{
-		Available:          !m.closed && !m.fault && storage.Healthy && m.engine != nil,
-		RestoreAvailable:   cfg.DatabaseURL != "" && m.engine != nil && !m.fault && !m.closed,
+		Available:          ready && m.engine.canCreate(),
+		RestoreAvailable:   ready && cfg.DatabaseURL != "" && m.engine.canRestore(),
 		GenerationRevision: decimal(m.current.Revision),
 		Limits: LimitsView{MaxBackupBytes: strconv.FormatInt(cfg.Backups.MaxObjectBytes, 10),
 			MaxStoredBytes: strconv.FormatInt(cfg.Backups.MaxTotalBytes, 10), MaxBackups: cfg.Backups.MaxObjects,
@@ -33,13 +34,18 @@ func (m *Manager) Status(ctx context.Context, actor identity.Principal) (StatusV
 		view.UnavailableReason = "storage_unavailable"
 	case m.engine == nil:
 		view.UnavailableReason = "tools_unavailable"
+	case m.operator:
+		view.UnavailableReason = "database_unavailable"
+	case !m.engine.canCreate():
+		view.UnavailableReason = "tools_unavailable"
 	}
 	if cfg.DatabaseURL == "" {
 		view.RestoreUnavailableReason = "recovery_database_not_configured"
-	} else if !view.Available {
+	} else if !ready {
 		view.RestoreUnavailableReason = view.UnavailableReason
+	} else if !m.engine.canRestore() {
+		view.RestoreUnavailableReason = "tools_unavailable"
 	}
-	view.RestoreAvailable = view.Available && cfg.DatabaseURL != ""
 	for _, op := range m.data.Operations {
 		if !terminalOperation(op.State) {
 			view.Busy, view.ActiveOperationId = true, op.ID

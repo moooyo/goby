@@ -25,11 +25,18 @@ const (
 // A subsequent private segment proves that FFmpeg closed the preceding one;
 // only successful process completion permits publication of the final segment.
 type packedHLSPublisher struct {
-	directory string
-	plan      Plan
-	published []MediaSegment
-	lastList  string
-	err       error
+	directory         string
+	plan              Plan
+	published         []MediaSegment
+	lastRender        packedHLSRenderState
+	manifestPublished bool
+	err               error
+}
+
+type packedHLSRenderState struct {
+	segments       int
+	targetDuration int
+	ended          bool
 }
 
 func (p *packedHLSPublisher) publish(finished bool) (publishErr error) {
@@ -149,28 +156,43 @@ func (p *packedHLSPublisher) publish(finished bool) (publishErr error) {
 	if len(p.published) == 0 {
 		return nil
 	}
+	state := packedHLSRenderState{
+		segments:       len(p.published),
+		targetDuration: list.TargetDuration,
+		ended:          finished && list.Ended && len(p.published) == len(list.Segments),
+	}
+	output, err := p.renderManifest(state)
+	if err != nil || output == "" {
+		return err
+	}
+	if err := publishPackedManifest(dir, output); err != nil {
+		return err
+	}
+	p.lastRender, p.manifestPublished = state, true
+	return nil
+}
+
+// The fixed plan and freshly validated published prefix determine all other
+// output fields. Call only after private-list and next-file closure checks.
+func (p *packedHLSPublisher) renderManifest(state packedHLSRenderState) (string, error) {
+	if p.manifestPublished && state == p.lastRender {
+		return "", nil
+	}
 	var output strings.Builder
-	fmt.Fprintf(&output, "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-MEDIA-SEQUENCE:%d\n#EXT-X-TARGETDURATION:%d\n#EXT-X-PLAYLIST-TYPE:EVENT\n", firstNumber, list.TargetDuration)
+	fmt.Fprintf(&output, "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-MEDIA-SEQUENCE:%d\n#EXT-X-TARGETDURATION:%d\n#EXT-X-PLAYLIST-TYPE:EVENT\n", generatedHLSStartNumber(p.plan), state.targetDuration)
 	for _, segment := range p.published {
 		if segment.Discontinuity {
 			output.WriteString("#EXT-X-DISCONTINUITY\n")
 		}
 		fmt.Fprintf(&output, "#EXTINF:%s,\n%s\n", tickSeconds(segment.DurationTicks), segment.Name)
 	}
-	if finished && list.Ended && len(p.published) == len(list.Segments) {
+	if state.ended {
 		output.WriteString("#EXT-X-ENDLIST\n")
 	}
 	if output.Len() > MaxPlaylistBytes {
-		return ErrInvalidPlaylist
+		return "", ErrInvalidPlaylist
 	}
-	if output.String() == p.lastList {
-		return nil
-	}
-	if err := publishPackedManifest(dir, output.String()); err != nil {
-		return err
-	}
-	p.lastList = output.String()
-	return nil
+	return output.String(), nil
 }
 
 func parsePrivatePackedList(data []byte, sequence int, extension string) (MediaPlaylist, error) {

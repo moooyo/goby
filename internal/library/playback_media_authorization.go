@@ -81,7 +81,7 @@ func (s *Store) readPlaybackMediaAuthorizationPrepared(ctx context.Context, prin
 	if err := lockPlaybackMediaAuthorityBatch(ctx, tx, principal, owner); err != nil {
 		return indexedMediaSource{}, PlaybackMediaAuthorization{}, err
 	}
-	fresh, access, err := readPlaybackMediaPrincipal(ctx, tx, principal)
+	fresh, access, observation, err := readPlaybackMediaPrincipal(ctx, tx, principal)
 	if err != nil {
 		return indexedMediaSource{}, PlaybackMediaAuthorization{}, err
 	}
@@ -105,7 +105,7 @@ func (s *Store) readPlaybackMediaAuthorizationPrepared(ctx context.Context, prin
 		(play.State != "Prepared" && play.State != "Playing" && play.State != "Paused") {
 		return indexedMediaSource{}, PlaybackMediaAuthorization{}, ErrNotFound
 	}
-	if err := identity.ValidateRevalidatedSessionAt(fresh, observedAt); err != nil {
+	if err := observation.ValidateAt(observedAt); err != nil {
 		return indexedMediaSource{}, PlaybackMediaAuthorization{}, err
 	}
 	if expectedBinding != nil {
@@ -281,25 +281,25 @@ func readIndexedPlaybackMediaBatch(ctx context.Context, tx pgx.Tx, access librar
 	return completeIndexedMediaSource(ctx, tx, access, snapshot, sourceID, modified, includeSubtitles)
 }
 
-func readPlaybackMediaPrincipal(ctx context.Context, tx pgx.Tx, previous identity.Principal) (identity.Principal, libraryAccess, error) {
-	fresh, err := identity.RevalidateSessionInTransaction(ctx, tx, previous)
+func readPlaybackMediaPrincipal(ctx context.Context, tx pgx.Tx, previous identity.Principal) (identity.Principal, libraryAccess, identity.SessionObservation, error) {
+	fresh, observation, err := identity.RevalidateSessionObservationInTransaction(ctx, tx, previous)
 	if err != nil {
-		return identity.Principal{}, libraryAccess{}, err
+		return identity.Principal{}, libraryAccess{}, identity.SessionObservation{}, err
 	}
 	if fresh.Client.DeviceID != previous.Client.DeviceID {
-		return identity.Principal{}, libraryAccess{}, ErrForbidden
+		return identity.Principal{}, libraryAccess{}, identity.SessionObservation{}, ErrForbidden
 	}
 	fresh.PeerIP = previous.PeerIP
 	if fresh.IsApplicationKey() {
-		return fresh, unrestrictedLibraryAccess(), nil
+		return fresh, unrestrictedLibraryAccess(), observation, nil
 	}
-	access, err := parseLibraryPolicy(fresh.User.Policy)
-	if err != nil || !access.canPlay {
-		return identity.Principal{}, libraryAccess{}, ErrForbidden
+	access := libraryAccessFromPolicy(observation.Policy())
+	if !access.canPlay {
+		return identity.Principal{}, libraryAccess{}, identity.SessionObservation{}, ErrForbidden
 	}
 	access.userID, access.administrator = fresh.User.ID, fresh.User.IsAdministrator
 	if fresh.User.IsAdministrator {
 		access.all = true
 	}
-	return fresh, access, nil
+	return fresh, access, observation, nil
 }

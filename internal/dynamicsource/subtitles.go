@@ -133,7 +133,7 @@ func (m *Manager) Subtitle(ctx context.Context, owner Owner, leaseID string, gen
 	if err := ctx.Err(); err != nil {
 		return SubtitleDefinition{}, err
 	}
-	if _, err := m.Info(ctx, owner, leaseID); err != nil {
+	if err := m.Validate(ctx, owner, leaseID); err != nil {
 		return SubtitleDefinition{}, err
 	}
 	m.mu.Lock()

@@ -47,10 +47,14 @@ func parseAdditionalPart(relative string) (additionalPartIdentity, bool) {
 // indexed directory/root. It returns later parts in numeric order; mixed naming,
 // duplicate ordinals or conflicting provider identities never create a stack.
 // Each source is safely reopened without reading its media body before return.
-func (s *Store) AdditionalParts(ctx context.Context, subject Subject, itemID string) (ItemResult, error) {
+func (s *Store) AdditionalParts(ctx context.Context, subject Subject, itemID string, projections ...QueryProjection) (ItemResult, error) {
 	result := ItemResult{Items: make([]Item, 0)}
 	if !metadataIdentifier(itemID) {
 		return result, ErrInvalidInput
+	}
+	projection := QueryProjection{}
+	if len(projections) != 0 {
+		projection = projections[0]
 	}
 	tx, access, err := s.beginSubjectRead(ctx, subject)
 	if err != nil {
@@ -160,8 +164,10 @@ func (s *Store) AdditionalParts(ctx context.Context, subject Subject, itemID str
 			result.Items = append(result.Items, item)
 		}
 	}
-	if err := attachUserData(ctx, tx, subject.UserID, result.Items, access); err != nil {
-		return result, err
+	if !projection.UserDataDisabled {
+		if err := attachUserData(ctx, tx, subject.UserID, result.Items, access); err != nil {
+			return result, err
+		}
 	}
 	if err := attachSubtitles(ctx, tx, result.Items); err != nil {
 		return result, err

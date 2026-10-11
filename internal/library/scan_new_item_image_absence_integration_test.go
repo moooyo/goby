@@ -18,11 +18,15 @@ import (
 
 type scanNewItemImageTrace struct {
 	snapshots, deletes, inserts atomic.Int64
+	comparisons                 atomic.Int64
 }
 
 func (trace *scanNewItemImageTrace) TraceQueryStart(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
 	if strings.Contains(data.SQL, imageCatalogSnapshotProjection) {
 		trace.snapshots.Add(1)
+	}
+	if strings.Contains(data.SQL, "/* image_catalog_unchanged */") {
+		trace.comparisons.Add(1)
 	}
 	statement := strings.ToLower(strings.TrimSpace(data.SQL))
 	if strings.HasPrefix(statement, "delete from item_images") {
@@ -40,6 +44,7 @@ func (trace *scanNewItemImageTrace) reset() {
 	trace.snapshots.Store(0)
 	trace.deletes.Store(0)
 	trace.inserts.Store(0)
+	trace.comparisons.Store(0)
 }
 
 func scanNewItemImageFixture(t *testing.T) (context.Context, *pgxpool.Pool, *Store, Library, string, *scanNewItemImageTrace) {

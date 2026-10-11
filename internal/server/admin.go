@@ -160,7 +160,7 @@ func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) users(w http.ResponseWriter, r *http.Request) {
-	users, err := s.identity.ListUsers(r.Context())
+	users, err := s.identity.ListUserSummaries(r.Context())
 	if err != nil {
 		s.identityError(w, r, err)
 		return

@@ -63,10 +63,6 @@ func OpenSnapshot(ctx context.Context, pool *pgxpool.Pool, options Options) (*Sn
 		return nil, ErrConfiguration
 	}
 	jobCtx, cancel := context.WithTimeout(ctx, options.Timeout)
-	if err := checkToolVersions(jobCtx, options); err != nil {
-		cancel()
-		return nil, err
-	}
 	tx, err := pool.BeginTx(jobCtx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
 	if err != nil {
 		cancel()
@@ -189,6 +185,9 @@ func (snapshot *Snapshot) Dump(ctx context.Context, out io.Writer) error {
 	if _, err := snapshot.Facts(ctx); err != nil {
 		return err
 	}
+	if err := checkDumpVersion(ctx, snapshot.plan.options); err != nil {
+		return err
+	}
 	if err := dumpCommand(ctx, snapshot.plan.options, snapshot.exported, out); err != nil {
 		return err
 	}
@@ -260,17 +259,32 @@ func configureTransaction(ctx context.Context, tx pgx.Tx, schema string) error {
 	if deadline, ok := ctx.Deadline(); ok {
 		remaining = time.Until(deadline)
 		if remaining <= 0 {
-			return ctx.Err()
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			return context.DeadlineExceeded
 		}
 	}
 	settings := map[string]string{"search_path": `pg_catalog,` + pgx.Identifier{schema}.Sanitize(), "statement_timeout": "0",
 		"idle_in_transaction_session_timeout": strconv.FormatInt(remaining.Milliseconds()+1000, 10),
 		"TimeZone":                            "UTC", "DateStyle": "ISO, YMD", "IntervalStyle": "postgres", "bytea_output": "hex",
 		"extra_float_digits": "3", "client_encoding": "UTF8", "row_security": "off", "standard_conforming_strings": "on"}
+	batch := &pgx.Batch{}
 	for name, value := range settings {
-		if _, err := tx.Exec(ctx, `SELECT pg_catalog.set_config($1,$2,true)`, name, value); err != nil {
-			return ErrDatabase
+		batch.Queue(`SELECT pg_catalog.set_config($1,$2,true)`, name, value)
+	}
+	results := tx.SendBatch(ctx, batch)
+	failed := false
+	for range settings {
+		if _, err := results.Exec(); err != nil {
+			failed = true
 		}
+	}
+	if err := results.Close(); err != nil {
+		failed = true
+	}
+	if failed {
+		return ErrDatabase
 	}
 	return nil
 }

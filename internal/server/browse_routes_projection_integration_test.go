@@ -24,8 +24,9 @@ type browseRouteProjectionTrace struct {
 }
 
 func (trace *browseRouteProjectionTrace) TraceQueryStart(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
+	// Episode queues select bounded IDs before materializing their item rows.
 	if strings.Contains(data.SQL, "i.created_at,") &&
-		(strings.Contains(data.SQL, "FROM media_collection_entries e JOIN items i") || strings.Contains(data.SQL, "FROM episode_queue queue")) {
+		(strings.Contains(data.SQL, "FROM media_collection_entries e JOIN items i") || strings.Contains(data.SQL, "FROM unnest($1::text[]) WITH ORDINALITY AS queue(id, ordinal)")) {
 		trace.mu.Lock()
 		trace.statements = append(trace.statements, data.SQL)
 		trace.mu.Unlock()

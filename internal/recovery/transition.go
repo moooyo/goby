@@ -237,7 +237,7 @@ func (m *Manager) PrepareSwitch(ctx context.Context, id string) (_ *SwitchCandid
 	if err := m.healthyLocked(ctx); err != nil {
 		return nil, err
 	}
-	if len(m.jobs) != 0 || m.engine == nil {
+	if len(m.jobs) != 0 {
 		return nil, ErrBusy
 	}
 	j, err := loadSwitchJournal(ctx, m.runtime)
@@ -389,7 +389,7 @@ func (m *Manager) PrepareSwitch(ctx context.Context, id string) (_ *SwitchCandid
 }
 
 func (m *Manager) captureRetiring(ctx context.Context) (recoverydb.Retained, []byte, lifecycle.MasterSource, error) {
-	if m.operator || m.engine == nil || m.vault == nil || !m.lease.Protects(m.pool) {
+	if m.operator || m.vault == nil || !m.lease.Protects(m.pool) {
 		return recoverydb.Retained{}, nil, "", ErrUnavailable
 	}
 	binding, _, err := m.runtime.databaseBinding(ctx, m.cfg, m.pool, m.lease)
@@ -401,7 +401,7 @@ func (m *Manager) captureRetiring(ctx context.Context) (recoverydb.Retained, []b
 		return recoverydb.Retained{}, nil, "", err
 	}
 	defer finish()
-	snapshot, err := backuppg.OpenSnapshot(bound, m.pool, m.engine.options)
+	snapshot, err := backuppg.OpenSnapshot(bound, m.pool, recoveryPostgresOptions(m.cfg))
 	if err != nil {
 		return recoverydb.Retained{}, nil, "", err
 	}
@@ -765,10 +765,11 @@ func (r *Runtime) imageConfig(ctx context.Context, slot lifecycle.DatabaseSlot, 
 	} else if slot != lifecycle.DatabasePrimary {
 		return config.Config{}, nil, "", ErrInvalid
 	}
-	files, err := r.lifecycle.ReadGeneration(ctx, image)
+	snapshot, err := r.lifecycle.ReadGenerationSnapshot(ctx, image)
 	if err != nil {
 		return config.Config{}, nil, "", err
 	}
+	files := snapshot.Files
 	keep := false
 	defer func() {
 		if !keep {
@@ -786,10 +787,7 @@ func (r *Runtime) imageConfig(ctx context.Context, slot lifecycle.DatabaseSlot, 
 	master := lifecycle.MasterDefault
 	if len(files.Master) != 0 {
 		master = lifecycle.MasterGeneration
-		cfg.APIKeyMasterKeyFile, err = r.lifecycle.MasterKeyPath(ctx, image)
-		if err != nil {
-			return config.Config{}, nil, "", err
-		}
+		cfg.APIKeyMasterKeyFile = snapshot.MasterKeyPath
 	}
 	keep = true
 	return cfg, files.Master, master, nil

@@ -66,8 +66,10 @@ func (s *Store) QuerySuggestions(ctx context.Context, query Query) (ItemResult, 
 		return ItemResult{}, fmt.Errorf("read suggestions: %w", err)
 	}
 	rows.Close()
-	if err := attachUserData(ctx, tx, query.UserID, result.Items, access); err != nil {
-		return ItemResult{}, err
+	if !query.Projection.UserDataDisabled {
+		if err := attachUserData(ctx, tx, query.UserID, result.Items, access); err != nil {
+			return ItemResult{}, err
+		}
 	}
 	if err := attachSubtitles(ctx, tx, result.Items); err != nil {
 		return ItemResult{}, err

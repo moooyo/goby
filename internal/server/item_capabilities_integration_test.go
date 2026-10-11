@@ -51,4 +51,21 @@ func TestHTTPItemCapabilitiesFollowProjectionAndCurrentDownloadPolicy(t *testing
 	if _, exists := excluded["CanDownload"]; exists || excluded["CanDelete"] != false {
 		t.Fatalf("final exclusion was lost after capabilities: %#v", excluded)
 	}
+	for _, request := range []struct {
+		path   string
+		detail bool
+	}{
+		{list + "&Fields=CanDownload&ExcludeFields=CanDownload", false},
+		{list + "&Fields=CanDelete,CanDownload&ExcludeFields=candelete,CANDOWNLOAD&EnableImages=false", false},
+		{"/emby/Users/" + s.viewerID + "/Items/" + s.video.id + "?ExcludeFields=CanDelete,CanDownload", true},
+	} {
+		item := read(request.path, request.detail)
+		for _, name := range []string{"CanDelete", "CanDownload"} {
+			if _, exists := item[name]; exists {
+				t.Fatalf("unobservable capability %s survived projection: %#v", name, item)
+			}
+		}
+	}
+	expectStreamStatus(t, s.request(t, http.MethodGet, "/emby/Items/"+s.video.id+"/Download", s.token, nil, nil), http.StatusForbidden)
+	expectStreamStatus(t, s.request(t, http.MethodDelete, "/emby/Items/"+s.video.id, s.token, nil, nil), http.StatusForbidden)
 }

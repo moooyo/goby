@@ -217,8 +217,12 @@ func subtitleAttachmentURL(itemID string, index int, token string) string {
 }
 
 func (s *Server) itemDTOForRequest(r *http.Request, item library.Item, fields []string, detail bool) map[string]any {
-	dto := s.itemDTO(item, fields, detail)
 	token, _, _ := parseEmbyCredentials(r)
+	return s.itemDTOWithToken(item, fields, detail, token)
+}
+
+func (s *Server) itemDTOWithToken(item library.Item, fields []string, detail bool, token string) map[string]any {
+	dto := s.itemDTO(item, fields, detail)
 	addSubtitleDeliveryCredentials(dto, item.ID, token, nil)
 	return dto
 }

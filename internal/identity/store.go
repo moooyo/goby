@@ -396,6 +396,29 @@ func (s *Store) ListUsers(ctx context.Context) ([]User, error) {
 	return users, nil
 }
 
+// ListUserSummaries returns the six account fields consumed by native user
+// listings. Policy, configuration and local credential state require ListUsers.
+func (s *Store) ListUserSummaries(ctx context.Context) ([]User, error) {
+	rows, err := s.pool.Query(ctx, `SELECT id, name, is_administrator, is_disabled, has_password, created_at
+		FROM users ORDER BY normalized_name, id`)
+	if err != nil {
+		return nil, fmt.Errorf("list user summaries: %w", err)
+	}
+	defer rows.Close()
+	users := make([]User, 0)
+	for rows.Next() {
+		var user User
+		if err := rows.Scan(&user.ID, &user.Name, &user.IsAdministrator, &user.IsDisabled, &user.HasPassword, &user.CreatedAt); err != nil {
+			return nil, fmt.Errorf("read listed user summary: %w", err)
+		}
+		users = append(users, user)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("read user summary list: %w", err)
+	}
+	return users, nil
+}
+
 func (s *Store) GetUser(ctx context.Context, id string) (User, error) {
 	user, err := scanUser(s.pool.QueryRow(ctx, "SELECT "+userColumns+" FROM users WHERE id = $1", id))
 	if errors.Is(err, pgx.ErrNoRows) {

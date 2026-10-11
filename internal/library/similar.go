@@ -127,8 +127,10 @@ func (s *Store) querySimilar(ctx context.Context, seedID string, query SimilarQu
 		return ItemResult{}, fmt.Errorf("read similar items: %w", err)
 	}
 	rows.Close()
-	if err := attachUserData(ctx, tx, query.UserID, result.Items); err != nil {
-		return ItemResult{}, err
+	if !query.Projection.UserDataDisabled {
+		if err := attachUserData(ctx, tx, query.UserID, result.Items); err != nil {
+			return ItemResult{}, err
+		}
 	}
 	if err := attachSubtitles(ctx, tx, result.Items); err != nil {
 		return ItemResult{}, err

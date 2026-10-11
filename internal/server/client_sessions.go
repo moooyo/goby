@@ -168,7 +168,8 @@ func (s *Server) clientSessions(w http.ResponseWriter, r *http.Request) {
 		s.clientSessionSnapshotError(w, r, err)
 		return
 	}
-	if len(itemDTOs) > 0 && !s.applyIndexedImages(w, r, principal.User.ID, itemDTOs, false) {
+	p := readItemPresentation(r)
+	if len(itemDTOs) > 0 && !s.applyIndexedImages(w, r, principal.User.ID, itemDTOs, false, p) {
 		return
 	}
 	jsonResponse(w, http.StatusOK, result)

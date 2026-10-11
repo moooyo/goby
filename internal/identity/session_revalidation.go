@@ -44,9 +44,14 @@ func revalidateSession(ctx context.Context, query sessionRevalidationQuerier, pr
 }
 
 func revalidateSessionProjection(ctx context.Context, query sessionRevalidationQuerier, previouslyAuthenticated Principal, fullUser bool) (Principal, error) {
+	principal, _, err := revalidateSessionObservation(ctx, query, previouslyAuthenticated, fullUser)
+	return principal, err
+}
+
+func revalidateSessionObservation(ctx context.Context, query sessionRevalidationQuerier, previouslyAuthenticated Principal, fullUser bool) (Principal, SessionObservation, error) {
 	if previouslyAuthenticated.IsApplicationKey() {
 		if !validRevalidationID(previouslyAuthenticated.SessionID) || !validRevalidationID(previouslyAuthenticated.ClientSessionID) {
-			return Principal{}, ErrUnauthorized
+			return Principal{}, SessionObservation{}, ErrUnauthorized
 		}
 		principal, err := scanApplicationKeyPrincipal(query.QueryRow(ctx, `SELECT k.id, a.id, c.id,
 			c.client_name, c.device_id, c.device_name, c.client_version, c.last_seen_at
@@ -56,15 +61,15 @@ func revalidateSessionProjection(ctx context.Context, query sessionRevalidationQ
 			AND a.user_id IS NULL AND a.expires_at IS NULL AND a.revoked_at IS NULL`,
 			previouslyAuthenticated.SessionID, previouslyAuthenticated.ApplicationKeyID, previouslyAuthenticated.ClientSessionID))
 		if err != nil {
-			return Principal{}, err
+			return Principal{}, SessionObservation{}, err
 		}
 		principal.PeerIP = previouslyAuthenticated.PeerIP
-		return principal, nil
+		return principal, SessionObservation{valid: true, applicationKey: true}, nil
 	}
 	if previouslyAuthenticated.Kind != "emby" || previouslyAuthenticated.ApplicationKeyID != 0 || previouslyAuthenticated.ClientSessionID != "" ||
 		!validRevalidationID(previouslyAuthenticated.SessionID) ||
 		!validRevalidationID(previouslyAuthenticated.User.ID) {
-		return Principal{}, ErrUnauthorized
+		return Principal{}, SessionObservation{}, ErrUnauthorized
 	}
 	var principal Principal
 	var observedAt time.Time
@@ -92,16 +97,17 @@ func revalidateSessionProjection(ctx context.Context, query sessionRevalidationQ
 		previouslyAuthenticated.SessionID, previouslyAuthenticated.User.ID, IsLocalPeer(previouslyAuthenticated.PeerIP)).
 		Scan(destinations...)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return Principal{}, ErrUnauthorized
+		return Principal{}, SessionObservation{}, ErrUnauthorized
 	}
 	if err != nil {
-		return Principal{}, fmt.Errorf("revalidate authenticated Emby session: %w", err)
+		return Principal{}, SessionObservation{}, fmt.Errorf("revalidate authenticated Emby session: %w", err)
 	}
 	principal.PeerIP = previouslyAuthenticated.PeerIP
-	if err := ValidateRevalidatedSessionAt(principal, observedAt); err != nil {
-		return Principal{}, err
+	observation, err := observeRevalidatedSessionAt(principal, observedAt)
+	if err != nil {
+		return Principal{}, SessionObservation{}, err
 	}
-	return principal, nil
+	return principal, observation, nil
 }
 
 func validRevalidationID(value string) bool {

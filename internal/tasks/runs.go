@@ -395,10 +395,19 @@ func totals(tx library.OwnedTx, runID string) (childTotals, error) {
 
 func refreshRun(tx library.OwnedTx, runID string) (Run, error) {
 	run, err := readRun(tx, runID, true)
-	if err != nil || !run.State.Active() {
+	if err != nil {
 		return run, err
 	}
-	counts, err := totals(tx, runID)
+	return refreshLockedRun(tx, run)
+}
+
+// The caller holds this Run's lock in the same transaction and has not changed
+// the parent since reading it. Child mutations still require fresh totals.
+func refreshLockedRun(tx library.OwnedTx, run Run) (Run, error) {
+	if !run.State.Active() {
+		return run, nil
+	}
+	counts, err := totals(tx, run.ID)
 	if err != nil {
 		return Run{}, err
 	}
@@ -439,7 +448,7 @@ func refreshRun(tx library.OwnedTx, runID string) (Run, error) {
 		counts.added == run.Added && counts.updated == run.Updated {
 		return run, nil
 	}
-	return persistTotals(tx, runID, state, code, message, counts)
+	return persistTotals(tx, run.ID, state, code, message, counts)
 }
 
 func persistTotals(tx library.OwnedTx, runID string, state RunState, code, message string, counts childTotals) (Run, error) {

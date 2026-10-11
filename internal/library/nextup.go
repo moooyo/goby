@@ -11,7 +11,7 @@ import (
 )
 
 // NextUpQuery contains the catalog filters declared by the pinned TvShowsService
-// contract. Fields and image/user-data switches belong to the HTTP projection.
+// contract. Projection controls only attachments after candidate selection.
 type NextUpQuery struct {
 	UserID, SeriesID, ParentID string
 	ApplicationCredentialID    string
@@ -107,8 +107,10 @@ func (s *Store) NextUp(ctx context.Context, query NextUpQuery) (ItemResult, erro
 		return ItemResult{}, fmt.Errorf("read next-up result: %w", err)
 	}
 	rows.Close()
-	if err := attachUserData(ctx, tx, query.UserID, result.Items); err != nil {
-		return ItemResult{}, err
+	if !query.Projection.UserDataDisabled {
+		if err := attachUserData(ctx, tx, query.UserID, result.Items); err != nil {
+			return ItemResult{}, err
+		}
 	}
 	if err := attachSubtitles(ctx, tx, result.Items); err != nil {
 		return ItemResult{}, err

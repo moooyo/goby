@@ -72,8 +72,10 @@ func (s *Store) QueryLatest(ctx context.Context, query Query, group bool, prefer
 	for index := range items {
 		selectedItems[index] = items[index].Item
 	}
-	if err := attachUserData(ctx, tx, query.UserID, selectedItems); err != nil {
-		return nil, err
+	if !query.Projection.UserDataDisabled {
+		if err := attachUserData(ctx, tx, query.UserID, selectedItems); err != nil {
+			return nil, err
+		}
 	}
 	if err := attachSubtitles(ctx, tx, selectedItems); err != nil {
 		return nil, err

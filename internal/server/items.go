@@ -114,6 +114,7 @@ func (s *Server) embyViews(w http.ResponseWriter, r *http.Request) {
 			return a < b
 		})
 	}
+	presentation := readItemPresentation(r)
 	items := make([]map[string]any, 0, len(libraries))
 	for _, entry := range libraries {
 		item := s.itemDTO(library.Item{ID: entry.ID, LibraryID: entry.ID, Name: entry.Name, SortName: entry.Name, Type: "CollectionFolder", IsFolder: true, CreatedAt: entry.CreatedAt}, nil, false)
@@ -124,11 +125,11 @@ func (s *Server) embyViews(w http.ResponseWriter, r *http.Request) {
 		}
 		items = append(items, item)
 	}
-	if !s.applyIndexedImages(w, r, userID, items, false) {
+	if !s.applyIndexedImages(w, r, userID, items, false, presentation) {
 		return
 	}
 	for _, item := range items {
-		applyItemSwitches(item, r)
+		presentation.applySwitches(item)
 	}
 	jsonResponse(w, 200, map[string]any{"Items": items, "TotalRecordCount": len(items)})
 }
@@ -145,7 +146,7 @@ func (s *Server) embyRoot(w http.ResponseWriter, r *http.Request) {
 	}
 	dto := map[string]any{"Id": virtualRootID(), "Name": "Media libraries", "Type": "Folder", "IsFolder": true,
 		"ServerId": s.serverID, "ChildCount": len(libraries), "CanDelete": false, "CanDownload": false}
-	applyItemSwitches(dto, r)
+	readItemPresentation(r).applySwitches(dto)
 	jsonResponse(w, 200, dto)
 }
 
@@ -299,11 +300,11 @@ func (s *Server) sendItemQuery(w http.ResponseWriter, r *http.Request, query lib
 		s.libraryError(w, r, err)
 		return
 	}
-	fields := queryValues(r.URL.Query()["Fields"])
+	presentation := readItemPresentation(r)
 	items := make([]map[string]any, 0, len(result.Items))
 	if !zeroLimit {
 		for _, entry := range result.Items {
-			item := s.itemDTOForRequest(r, entry, fields, false)
+			item := s.itemDTOWithToken(entry, presentation.fields, false, presentation.deliveryToken)
 			if entry.Type == "CollectionFolder" {
 				if entry.CollectionType == "mixed" {
 					item["CollectionType"] = nil
@@ -311,11 +312,11 @@ func (s *Server) sendItemQuery(w http.ResponseWriter, r *http.Request, query lib
 					item["CollectionType"] = entry.CollectionType
 				}
 			}
-			applyItemSwitches(item, r)
+			presentation.applySwitches(item)
 			items = append(items, item)
 		}
 	}
-	if !s.applyIndexedImages(w, r, query.UserID, items, false) {
+	if !s.applyIndexedImages(w, r, query.UserID, items, false, presentation) {
 		return
 	}
 	if bare {
@@ -335,7 +336,7 @@ func (s *Server) embyItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	subject := requestLibrarySubject(r, userID)
-	item, err := s.library.GetItemFor(r.Context(), subject, r.PathValue("Id"))
+	item, err := s.library.GetItemProjectionFor(r.Context(), subject, r.PathValue("Id"), requestQueryProjection(r))
 	if err != nil {
 		if errors.Is(err, library.ErrNotFound) {
 			if id, valid := positiveEntityID(r.PathValue("Id")); valid {
@@ -344,11 +345,12 @@ func (s *Server) embyItem(w http.ResponseWriter, r *http.Request) {
 					s.libraryError(w, r, entityErr)
 					return
 				}
-				dto := s.entityDTO(entity, queryValues(r.URL.Query()["Fields"]), true)
+				presentation := readItemPresentation(r)
+				dto := s.entityDTO(entity, presentation.fields, true)
 				if entity.Type == "Person" {
 					dto["TagItems"] = []map[string]any{}
 				}
-				applyItemSwitches(dto, r)
+				presentation.applySwitches(dto)
 				jsonResponse(w, 200, dto)
 				return
 			}
@@ -358,7 +360,8 @@ func (s *Server) embyItem(w http.ResponseWriter, r *http.Request) {
 	}
 	s.resolveItemAnalysisIntro(r.Context(), subject, &item, "")
 	s.resolveItemAnalysisCredits(r.Context(), subject, &item, "")
-	dto := s.itemDTOForRequest(r, item, queryValues(r.URL.Query()["Fields"]), true)
+	presentation := readItemPresentation(r)
+	dto := s.itemDTOWithToken(item, presentation.fields, true, presentation.deliveryToken)
 	if item.Type == "CollectionFolder" {
 		lib, err := s.library.GetLibrary(r.Context(), item.LibraryID)
 		if err != nil {
@@ -376,10 +379,10 @@ func (s *Server) embyItem(w http.ResponseWriter, r *http.Request) {
 			dto["Subviews"] = []string{"movies", "movies", "folders"}
 		}
 	}
-	if !s.applyIndexedImages(w, r, userID, []map[string]any{dto}, true) {
+	if !s.applyIndexedImages(w, r, userID, []map[string]any{dto}, true, presentation) {
 		return
 	}
-	applyItemSwitches(dto, r)
+	presentation.applySwitches(dto)
 	jsonResponse(w, 200, dto)
 }
 
@@ -439,18 +442,19 @@ func (s *Server) embyLatest(w http.ResponseWriter, r *http.Request) {
 		s.libraryError(w, r, err)
 		return
 	}
+	presentation := readItemPresentation(r)
 	items := make([]map[string]any, 0, len(result))
 	if !zeroLimit {
 		for _, entry := range result {
-			dto := s.itemDTOForRequest(r, entry.Item, queryValues(r.URL.Query()["Fields"]), false)
+			dto := s.itemDTOWithToken(entry.Item, presentation.fields, false, presentation.deliveryToken)
 			if group && entry.Item.IsFolder {
 				dto["ChildCount"] = entry.ChildCount
 			}
-			applyItemSwitches(dto, r)
+			presentation.applySwitches(dto)
 			items = append(items, dto)
 		}
 	}
-	if !s.applyIndexedImages(w, r, userID, items, false) {
+	if !s.applyIndexedImages(w, r, userID, items, false, presentation) {
 		return
 	}
 	jsonResponse(w, 200, items)
@@ -461,7 +465,7 @@ func (s *Server) embySeasons(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	series, err := s.library.GetItemFor(r.Context(), requestLibrarySubject(r, userID), r.PathValue("Id"))
+	series, err := s.library.GetItemProjectionFor(r.Context(), requestLibrarySubject(r, userID), r.PathValue("Id"), requestQueryProjection(r))
 	if err != nil {
 		s.libraryError(w, r, err)
 		return
@@ -489,7 +493,7 @@ func (s *Server) embyEpisodes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	subject := requestLibrarySubject(r, userID)
-	series, err := s.library.GetItemFor(r.Context(), subject, r.PathValue("Id"))
+	series, err := s.library.GetItemProjectionFor(r.Context(), subject, r.PathValue("Id"), requestQueryProjection(r))
 	if err != nil {
 		s.libraryError(w, r, err)
 		return
@@ -520,7 +524,7 @@ func (s *Server) embyEpisodes(w http.ResponseWriter, r *http.Request) {
 		query.ParentIndexNumber = &number
 	}
 	if seasonID := r.URL.Query().Get("SeasonId"); seasonID != "" {
-		season, err := s.library.GetItemFor(r.Context(), subject, seasonID)
+		season, err := s.library.GetItemProjectionFor(r.Context(), subject, seasonID, requestQueryProjection(r))
 		if err != nil {
 			s.libraryError(w, r, err)
 			return
@@ -746,29 +750,21 @@ func metadataEntityDTOs(entities []library.EntityRef) []map[string]any {
 }
 
 func requestQueryProjection(r *http.Request) library.QueryProjection {
-	projection := library.QueryProjection{Browse: true}
-	if value := r.URL.Query().Get("EnableImages"); value != "" {
+	values := r.URL.Query()
+	projection := library.QueryProjection{Browse: true, EntitySourceCountsDisabled: true}
+	if value := values.Get("EnableImages"); value != "" {
 		enabled, err := strconv.ParseBool(value)
 		projection.ImagesDisabled = err == nil && !enabled
+	}
+	if value := values.Get("EnableUserData"); value != "" {
+		enabled, err := strconv.ParseBool(value)
+		projection.UserDataDisabled = err == nil && !enabled
 	}
 	return projection
 }
 
 func applyItemSwitches(item map[string]any, r *http.Request) {
-	applyItemFieldExclusions(item, r)
-	if value := r.URL.Query().Get("EnableImages"); value != "" {
-		enabled, _ := strconv.ParseBool(value)
-		if !enabled {
-			delete(item, "ImageTags")
-			delete(item, "BackdropImageTags")
-		}
-	}
-	if value := r.URL.Query().Get("EnableUserData"); value != "" {
-		enabled, _ := strconv.ParseBool(value)
-		if !enabled {
-			delete(item, "UserData")
-		}
-	}
+	readItemPresentation(r).applySwitches(item)
 }
 
 func hasField(fields []string, name string) bool {

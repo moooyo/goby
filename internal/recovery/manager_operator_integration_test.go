@@ -103,6 +103,7 @@ func TestRecoveryOperatorUsesOnlyTrustedOfflineAuthority(t *testing.T) {
 	}
 	original.Host = "127.0.0.1:1"
 	offlineConfig.DatabaseURL = original.String()
+	offlineConfig.Recovery.PGDumpPath = filepath.Join(t.TempDir(), "missing-offline-pg-dump")
 	offlineConfig.APIKeyMasterKeyFile = filepath.Join(filepath.Dir(offlineConfig.APIKeyMasterKeyFile), "missing-offline-source-master.key")
 	f.runtime, err = Open(ctx, offlineConfig)
 	if err != nil {
@@ -144,7 +145,7 @@ func TestRecoveryOperatorUsesOnlyTrustedOfflineAuthority(t *testing.T) {
 		}
 	}
 	status, err := f.manager.OperatorStatus(ctx)
-	if err != nil || !status.Available || !status.RestoreAvailable || status.GenerationRevision != "0" {
+	if err != nil || status.Available || status.UnavailableReason != "database_unavailable" || !status.RestoreAvailable || status.GenerationRevision != "0" {
 		t.Fatal("explicit offline authority cannot inspect its deployment")
 	}
 	importID := recoveryEngineTestID(t)

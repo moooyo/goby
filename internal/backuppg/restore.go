@@ -136,7 +136,7 @@ func restoreTarget(ctx context.Context, target *pgxpool.Pool, archive io.Reader,
 	}
 	ctx, cancel := context.WithTimeout(ctx, options.Timeout)
 	defer cancel()
-	if err := checkToolVersions(ctx, options); err != nil {
+	if err := checkRestoreVersion(ctx, options); err != nil {
 		return result, err
 	}
 	sourceIdentity, identityErr := identifySource(ctx, options.Schema)
@@ -263,8 +263,15 @@ func restoreTarget(ctx context.Context, target *pgxpool.Pool, archive io.Reader,
 	if err := validateOwnership(ctx, tx, options.Schema); err != nil {
 		return result, err
 	}
-	if err := validateResourceState(ctx, tx, current); err != nil {
+	// Without an upgrade, the raw resource rows remain locked and unchanged.
+	// Cancellation must still stop before a side-effecting finalizer begins.
+	if err := ctx.Err(); err != nil {
 		return result, err
+	}
+	if current > facts.SchemaVersion {
+		if err := validateResourceState(ctx, tx, current); err != nil {
+			return result, err
+		}
 	}
 	completed := RestoreResult{SourceVersion: facts.SchemaVersion, CurrentVersion: current, Tables: append([]backupformat.TableFact(nil), tables...)}
 	if finalizer != nil {

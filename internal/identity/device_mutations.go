@@ -38,6 +38,23 @@ func (s *Store) beginDeviceMutation(ctx context.Context, actor Principal, native
 	return tx, nil
 }
 
+// Ordinary options lock only their actor and target device. Deletion retains
+// the management lock before acquiring its registration and credential set.
+func (s *Store) beginDeviceOptionsMutation(ctx context.Context, actor Principal, native bool) (pgx.Tx, error) {
+	if !validDeviceActor(actor, native) {
+		return nil, ErrUnauthorized
+	}
+	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("begin device options mutation: %w", err)
+	}
+	if err := authorizeDeviceActor(ctx, tx, actor, native, nil); err != nil {
+		rollback(tx)
+		return nil, err
+	}
+	return tx, nil
+}
+
 func (s *Store) UpdateManagedDeviceOptions(ctx context.Context, actor Principal, id, revision int64, customName string) (ManagedDevice, error) {
 	reference, err := nativeDeviceReference(id)
 	if err != nil {
@@ -62,7 +79,7 @@ func (s *Store) updateDeviceOptions(ctx context.Context, actor Principal, refere
 	if err != nil {
 		return ManagedDevice{}, err
 	}
-	tx, err := s.beginDeviceMutation(ctx, actor, native)
+	tx, err := s.beginDeviceOptionsMutation(ctx, actor, native)
 	if err != nil {
 		return ManagedDevice{}, err
 	}

@@ -191,6 +191,48 @@ function jobCard(page: Page, id = operationId) {
   return page.getByTestId(`operation-${id}`);
 }
 
+for (const readiness of [
+  { name: 'healthy services', status: {}, create: true, manage: true, download: true, plan: true, rollback: true },
+  { name: 'missing backup creation tools', status: { Available: false, UnavailableReason: 'tools_unavailable' }, create: false, manage: true, download: true, plan: true, rollback: true },
+  { name: 'missing archive decoder', status: { Available: false, UnavailableReason: 'tools_unavailable', RestoreAvailable: false, RestoreUnavailableReason: 'tools_unavailable' }, create: false, manage: true, download: true, plan: false, rollback: true },
+  { name: 'missing source database', status: { Available: false, UnavailableReason: 'database_unavailable' }, create: false, manage: true, download: true, plan: true, rollback: true },
+  { name: 'missing recovery database', status: { RestoreAvailable: false, RestoreUnavailableReason: 'recovery_database_not_configured' }, create: true, manage: true, download: true, plan: false, rollback: false },
+  { name: 'missing decoder and recovery database', status: { Available: false, UnavailableReason: 'tools_unavailable', RestoreAvailable: false, RestoreUnavailableReason: 'recovery_database_not_configured' }, create: false, manage: true, download: true, plan: false, rollback: false },
+  { name: 'unavailable storage', status: { Available: false, UnavailableReason: 'storage_unavailable', RestoreAvailable: false, RestoreUnavailableReason: 'storage_unavailable' }, create: false, manage: false, download: false, plan: false, rollback: false },
+  { name: 'required recovery attention', status: { Available: false, UnavailableReason: 'recovery_required', RestoreAvailable: false, RestoreUnavailableReason: 'recovery_required' }, create: false, manage: false, download: false, plan: false, rollback: false },
+  { name: 'a busy recovery manager without tools', status: { Available: false, UnavailableReason: 'tools_unavailable', RestoreAvailable: false, RestoreUnavailableReason: 'tools_unavailable', Busy: true, ActiveOperationId: operationId }, create: false, manage: false, download: true, plan: false, rollback: false },
+]) {
+  test(`backup actions respect ${readiness.name}`, async ({ page, api }) => {
+    const current = status({ ...readiness.status, Rollback: { Available: true, MustReplace: true, CreatedAt: timestamp, ServerName: 'Retained server', Generation: rollbackGeneration, UnavailableReason: '' } });
+    api.status = current;
+    api.backups = [backup()];
+    if (current.Busy) api.operations = [operation()];
+    await openBackups(page);
+    await expect(backupCard(page)).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Reconnect', exact: true })).toBeEnabled();
+    for (const [button, enabled] of [
+      [page.getByRole('button', { name: 'Create backup', exact: true }), readiness.create],
+      [page.getByRole('button', { name: 'Import backup', exact: true }), readiness.manage],
+      [backupCard(page).getByRole('button', { name: 'Download', exact: true }), readiness.download],
+      [backupCard(page).getByRole('button', { name: 'Delete backup', exact: true }), readiness.manage],
+      [backupCard(page).getByRole('button', { name: 'Plan restore', exact: true }), readiness.plan],
+      [page.getByRole('button', { name: 'Roll back', exact: true }), readiness.rollback],
+    ] as const) {
+      if (enabled) await expect(button).toBeEnabled();
+      else await expect(button).toBeDisabled();
+    }
+    expect(api.mutations()).toHaveLength(0);
+  });
+}
+
+test('a missing decoder does not offer rollback without a retained generation', async ({ page, api }) => {
+  api.status = status({ Available: false, UnavailableReason: 'tools_unavailable', RestoreAvailable: false, RestoreUnavailableReason: 'tools_unavailable' });
+  await openBackups(page);
+  await expect(page.getByRole('button', { name: 'Reconnect', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Roll back', exact: true })).toBeDisabled();
+  expect(api.mutations()).toHaveLength(0);
+});
+
 function gate(): { reached: Promise<void>; release: () => void } {
   let release!: () => void;
   const reached = new Promise<void>((resolve) => { release = resolve; });
@@ -345,7 +387,8 @@ test('create validates confirmation and UTF-8 byte limits before sending a reque
   expect(api.mutations()).toHaveLength(0);
 });
 
-test('import sends file bytes with admission and CSRF headers without multipart encoding', async ({ page, api }) => {
+test('import works without recovery tools and sends raw file bytes with admission and CSRF headers', async ({ page, api }) => {
+  api.status = status({ Available: false, UnavailableReason: 'tools_unavailable', RestoreAvailable: false, RestoreUnavailableReason: 'tools_unavailable' });
   const bytes = Buffer.from([0x61, 0x67, 0x65, 0x2d, 0x65, 0x6e, 0x63, 0x00, 0xff, 0x0d, 0x0a]);
   api.on('POST', '/admin/v1/backups/import', async (route, _request, captured) => {
     const admitted = operation({ Kind: 'import', State: 'pending', Phase: 'upload', RequestId: captured.headers['x-backup-request-id'] });
@@ -483,9 +526,9 @@ test('cancel sends the unrounded revision of the operation whose CanCancel flag 
   expect(api.mutations()).toHaveLength(1);
 });
 
-test('restore planning uses the selected digest, generation, exact secret, and explicit replacement consent', async ({ page, api }) => {
+test('restore planning without creation tools preserves the selected digest, generation, exact secret, and replacement consent', async ({ page, api }) => {
   api.backups = [backup({ Kind: 'imported', Verified: false, Source: null })];
-  api.status = status({ Rollback: { Available: true, MustReplace: true, CreatedAt: timestamp, ServerName: 'Previous server', Generation: rollbackGeneration, UnavailableReason: '' } });
+  api.status = status({ Available: false, UnavailableReason: 'tools_unavailable', Rollback: { Available: true, MustReplace: true, CreatedAt: timestamp, ServerName: 'Previous server', Generation: rollbackGeneration, UnavailableReason: '' } });
   api.on('POST', '/admin/v1/restores/plans', async (route, _request, captured) => {
     const admitted = operation({ Kind: 'restore', State: 'running', Phase: 'validation', RequestId: captured.json!.RequestId as string, RestoreDefaults: true, ReplaceRollback: true });
     api.operations = [admitted];
@@ -532,7 +575,8 @@ test('planning keeps both optional restore flags false when no consent is select
   });
 });
 
-test('a ready plan must be inspected and confirmed before applying its current revisions', async ({ page, api }) => {
+test('a ready plan without recovery tools must be inspected and confirmed before applying its current revisions', async ({ page, api }) => {
+  api.status = status({ Available: false, UnavailableReason: 'tools_unavailable', RestoreAvailable: false, RestoreUnavailableReason: 'tools_unavailable', Busy: true, ActiveOperationId: operationId });
   const ready = operation({ Kind: 'restore', State: 'ready', Phase: 'ready', CanApply: true, Source: source(), RestoreDefaults: true });
   api.operations = [{ ...ready, Revision: '8' }];
   api.on('GET', `/admin/v1/backup-operations/${operationId}`, async (route) => json(route, { Operation: ready }));
@@ -567,6 +611,7 @@ test('a ready plan must be inspected and confirmed before applying its current r
 });
 
 test('a lost apply response remains uncertain while the old plan is still ready and is never replayed', async ({ page, api }) => {
+  api.status = status({ Available: false, UnavailableReason: 'tools_unavailable', RestoreAvailable: false, RestoreUnavailableReason: 'tools_unavailable' });
   const ready = operation({ Kind: 'restore', State: 'ready', Phase: 'ready', CanApply: true, Source: source() });
   api.operations = [ready];
   api.on('POST', `/admin/v1/restores/${operationId}/apply`, async (route) => route.abort('connectionreset'));
@@ -751,10 +796,20 @@ test('recovery requests are not sent when their non-secret receipt cannot be sto
   expect(api.mutations()).toHaveLength(0);
 });
 
-for (const blockedBy of ['server capability', 'changed generation'] as const) {
+for (const blockedBy of ['server capability', 'changed generation', 'restore readiness', 'unavailable storage', 'recovery attention', 'another recovery job'] as const) {
   test(`a ready plan cannot be applied when blocked by ${blockedBy}`, async ({ page, api }) => {
     api.operations = [operation({ Kind: 'restore', State: 'ready', Phase: 'ready', Source: source(), CanCancel: false, CanApply: blockedBy !== 'server capability' })];
-    if (blockedBy === 'changed generation') api.status = status({ GenerationRevision: '9007199254740996' });
+    const current = status({ Available: false, UnavailableReason: 'tools_unavailable', RestoreAvailable: false, RestoreUnavailableReason: 'tools_unavailable' });
+    if (blockedBy === 'changed generation') current.GenerationRevision = '9007199254740996';
+    if (blockedBy === 'restore readiness') current.RestoreUnavailableReason = 'recovery_database_not_configured';
+    if (blockedBy === 'unavailable storage') current.UnavailableReason = current.RestoreUnavailableReason = 'storage_unavailable';
+    if (blockedBy === 'recovery attention') current.UnavailableReason = current.RestoreUnavailableReason = 'recovery_required';
+    if (blockedBy === 'another recovery job') {
+      current.Busy = true;
+      current.ActiveOperationId = '77777777777777777777777777777777';
+      api.operations.push(operation({ Id: current.ActiveOperationId, RequestId: '99999999999999999999999999999999' }));
+    }
+    api.status = current;
     await openBackups(page);
     await expect(jobCard(page).getByRole('button', { name: 'Cancel job', exact: true })).not.toBeVisible();
     await jobCard(page).getByRole('button', { name: 'Inspect plan', exact: true }).click();
@@ -765,8 +820,8 @@ for (const blockedBy of ['server capability', 'changed generation'] as const) {
   });
 }
 
-test('rollback requires sign-in consent and submits the exact current generation', async ({ page, api }) => {
-  api.status = status({ Rollback: { Available: true, MustReplace: true, CreatedAt: timestamp, ServerName: 'Retained server', Generation: rollbackGeneration, UnavailableReason: '' } });
+test('rollback without recovery tools requires sign-in consent and submits the exact current generation', async ({ page, api }) => {
+  api.status = status({ Available: false, UnavailableReason: 'tools_unavailable', RestoreAvailable: false, RestoreUnavailableReason: 'tools_unavailable', Rollback: { Available: true, MustReplace: true, CreatedAt: timestamp, ServerName: 'Retained server', Generation: rollbackGeneration, UnavailableReason: '' } });
   api.on('POST', '/admin/v1/restores/rollback', async (route, _request, captured) => {
     const admitted = operation({ Kind: 'rollback', State: 'applying', Phase: 'rollback', BackupId: '', CanCancel: false, RequestId: captured.json!.RequestId as string });
     api.operations = [admitted];
@@ -789,7 +844,8 @@ test('rollback requires sign-in consent and submits the exact current generation
   expect(request.json).toEqual({ RequestId: expect.stringMatching(/^[0-9a-f]{32}$/), GenerationRevision: generation });
 });
 
-test('delete requires explicit consent and sends the selected backup digest', async ({ page, api }) => {
+test('delete without recovery tools requires explicit consent and sends the selected backup digest', async ({ page, api }) => {
+  api.status = status({ Available: false, UnavailableReason: 'tools_unavailable', RestoreAvailable: false, RestoreUnavailableReason: 'tools_unavailable' });
   api.backups = [backup()];
   api.on('DELETE', `/admin/v1/backups/${backupId}`, async (route, _request, captured) => {
     const admitted = operation({ Kind: 'delete', State: 'pending', Phase: 'admission', RequestId: captured.json!.RequestId as string });
@@ -812,7 +868,8 @@ test('delete requires explicit consent and sends the selected backup digest', as
   expect(request.json).toEqual({ RequestId: expect.stringMatching(/^[0-9a-f]{32}$/), SHA256: digest });
 });
 
-test('ready downloads use an authenticated browser attachment without buffering a Blob', async ({ page, api }) => {
+test('ready downloads without recovery tools use an authenticated browser attachment without buffering a Blob', async ({ page, api }) => {
+  api.status = status({ Available: false, UnavailableReason: 'tools_unavailable', RestoreAvailable: false, RestoreUnavailableReason: 'tools_unavailable' });
   const bytes = Buffer.from('mock encrypted archive');
   api.backups = [backup({ SizeBytes: String(bytes.length) })];
   const headers = {

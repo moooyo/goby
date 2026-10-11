@@ -197,8 +197,10 @@ func (s *Store) queryCatalogItems(ctx context.Context, query Query, resumeOrder,
 		return ItemResult{}, fmt.Errorf("read library items: %w", err)
 	}
 	rows.Close()
-	if err := attachUserData(ctx, tx, query.UserID, result.Items, access); err != nil {
-		return ItemResult{}, err
+	if !query.Projection.UserDataDisabled {
+		if err := attachUserData(ctx, tx, query.UserID, result.Items, access); err != nil {
+			return ItemResult{}, err
+		}
 	}
 	if err := attachSubtitles(ctx, tx, result.Items); err != nil {
 		return ItemResult{}, err
@@ -224,18 +226,28 @@ func (s *Store) GetItem(ctx context.Context, userID, id string) (Item, error) {
 
 // GetItemFor reads a catalog item using the credential's independent authority.
 func (s *Store) GetItemFor(ctx context.Context, subject Subject, id string) (Item, error) {
+	return s.GetItemProjectionFor(ctx, subject, id, QueryProjection{})
+}
+
+// GetItemProjectionFor keeps direct-item authority and all catalog fields while
+// allowing response callers to suppress explicitly unrequested attachments.
+func (s *Store) GetItemProjectionFor(ctx context.Context, subject Subject, id string, projection QueryProjection) (Item, error) {
 	if strings.TrimSpace(id) == "" || strings.ContainsRune(id, '\x00') {
 		return Item{}, ErrInvalidInput
 	}
 	if s == nil {
 		return Item{}, ErrUnavailable
 	}
-	return s.getItemForOnPool(ctx, subject, id, s.pool)
+	return s.getItemForOnPool(ctx, subject, id, s.pool, projection)
 }
 
-func (s *Store) getItemForOnPool(ctx context.Context, subject Subject, id string, pool *pgxpool.Pool) (Item, error) {
+func (s *Store) getItemForOnPool(ctx context.Context, subject Subject, id string, pool *pgxpool.Pool, projections ...QueryProjection) (Item, error) {
 	if strings.TrimSpace(id) == "" || strings.ContainsRune(id, '\x00') {
 		return Item{}, ErrInvalidInput
+	}
+	projection := QueryProjection{}
+	if len(projections) != 0 {
+		projection = projections[0]
 	}
 	tx, access, err := s.beginSubjectReadOnPool(ctx, subject, pool)
 	if err != nil {
@@ -271,8 +283,10 @@ func (s *Store) getItemForOnPool(ctx context.Context, subject Subject, id string
 	if err := attachExtraItemAttributes(ctx, tx, items, access); err != nil {
 		return Item{}, err
 	}
-	if err := attachUserData(ctx, tx, subject.UserID, items, access); err != nil {
-		return Item{}, err
+	if !projection.UserDataDisabled {
+		if err := attachUserData(ctx, tx, subject.UserID, items, access); err != nil {
+			return Item{}, err
+		}
 	}
 	if err := attachSubtitles(ctx, tx, items); err != nil {
 		return Item{}, err

@@ -286,7 +286,16 @@ func normalizeDefinition(value *Definition) {
 }
 
 func normalizeRun(value *Run) {
-	value.AnalysisInput = cloneAnalysisSelection(value.AnalysisInput)
+	// Run decoding owns fresh selection storage, including nested definition
+	// runs. Normalize its wire shape without crossing another copy boundary.
+	if input := value.AnalysisInput; input != nil {
+		if input.LibraryIDs == nil {
+			input.LibraryIDs = []string{}
+		}
+		if input.ItemIDs == nil {
+			input.ItemIDs = []string{}
+		}
+	}
 	value.CreatedAt = value.CreatedAt.UTC()
 	utcPointer(&value.ScheduledFor)
 	utcPointer(&value.StartedAt)

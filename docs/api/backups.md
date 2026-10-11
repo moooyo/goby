@@ -77,7 +77,8 @@ strings. UTC timestamps use RFC 3339. Page counts and limits are bounded integer
   `cancelled`, `interrupted`. Phases describe actual work: `admission`, `upload`,
   `snapshot`, `encryption`, `publication`, `validation`, `staging`, `ready`,
   `activation`, `rollback`, `cleanup`, `finished`.
-- `StatusView`: availability and fixed reason codes, restore availability,
+- `StatusView`: `Available` and `UnavailableReason` for backup creation,
+  `RestoreAvailable` and `RestoreUnavailableReason` for new restore planning,
   `Busy`, `ActiveOperationId`, `GenerationRevision`, `Limits`, `Storage`, and
   `Rollback`. Limits contain `MaxBackupBytes`, `MaxStoredBytes`, `MaxBackups`,
   `MinPassphraseBytes`, and `MaxPassphraseBytes`. Storage contains `Bytes` and
@@ -92,6 +93,20 @@ Availability reasons are fixed codes, never database URLs or paths:
 Operation error codes additionally include `invalid_archive`, `capacity_exceeded`,
 `target_not_ready`, `source_changed`, `authority_changed`, `audit_unavailable`,
 `operation_cancelled`, `operation_interrupted`, and `activation_failed`.
+
+Creation requires both `pg_dump` and the archive decoder `pg_restore`; planning
+a restore requires only the decoder. Offline operation cannot create a backup.
+Missing tools do not disable importing, downloading, or deleting stored objects;
+those operations retain their authorization, health, capacity, and busy checks.
+
+Applying an already verified ready plan and selecting a retained rollback copy
+do not decode an archive again. They can proceed when planning is unavailable
+only because of `tools_unavailable`. Clients must still require the relevant
+`CanApply` or `Rollback.Available` state, current generation, configured recovery
+database, healthy service, and normal operation/confirmation guards. Missing
+recovery configuration and service/storage failures take precedence over the
+tool reason. These status fields describe readiness; they do not grant authority
+or replace the server's final transactional checks.
 
 ## Workflow
 

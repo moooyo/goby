@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net"
 	"net/url"
+	"path/filepath"
 	"strconv"
 	"syscall"
 	"testing"
@@ -97,6 +98,7 @@ func TestPostgreSQLOfflineRestoreWithUnavailableSource(t *testing.T) {
 	before, sequences := unchangedSourceWitness(t, ctx, source, options)
 	offline := options
 	offline.SourceURL = unavailableSourceURL(t, options.SourceURL)
+	offline.PGDump = filepath.Join(t.TempDir(), "missing-offline-pg-dump")
 	// Existing Restore retains its live-source contract. An unavailable source
 	// must still fail before changing the target, rather than silently opting in
 	// to the offline identity policy.

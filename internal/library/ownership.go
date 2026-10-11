@@ -252,7 +252,8 @@ type ownedTx struct {
 	catalogChanges              catalogChangeBatch
 	systemEventRecorded         bool
 	notificationMutationID      string
-	notificationJournalStamp    [32]byte
+	notificationJournalLength   int
+	notificationJournalResync   bool
 	notificationJournalRecorded bool
 	notificationReferences      []notificationjournal.Reference
 	notificationReferenceSet    map[notificationjournal.Reference]struct{}

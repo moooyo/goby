@@ -5,6 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	"github.com/jackc/pgx/v5"
@@ -39,7 +40,7 @@ func notificationSecretAAD(purpose, binding string) ([]byte, error) {
 // lock order. Personal registrations accept only an ordinary Emby login.
 func LockNotificationMutation(ctx context.Context, tx pgx.Tx, actor Principal, native bool) error {
 	if _, err := tx.Exec(ctx, "SELECT pg_advisory_xact_lock($1)", managedUsersLockID); err != nil {
-		return ErrUnauthorized
+		return fmt.Errorf("lock notification management: %w", err)
 	}
 	if native {
 		return CheckAdministrator(ctx, tx, actor, AdministratorNative, true)
@@ -125,9 +126,12 @@ func notificationSecretsExist(ctx context.Context, tx pgx.Tx) (bool, error) {
 	err := tx.QueryRow(ctx, `SELECT to_regclass('notification_transport') IS NOT NULL`).Scan(&found)
 	return found, err
 }
+
+const notificationSecretRowsQuery = `SELECT 'receiver',ARRAY['receiver',credential_generation::text],CASE WHEN octet_length(credential_ciphertext) BETWEEN 48 AND 2080 THEN credential_ciphertext END FROM notification_transport WHERE credential_ciphertext IS NOT NULL
+	UNION ALL SELECT 'target',ARRAY[id,session_id,user_id,device_id,token_generation::text],CASE WHEN octet_length(token_ciphertext) BETWEEN 48 AND 2080 THEN token_ciphertext END FROM notification_registrations ORDER BY 1,2`
+
 func notificationSecretRows(ctx context.Context, tx pgx.Tx) (pgx.Rows, error) {
-	return tx.Query(ctx, `SELECT 'receiver',ARRAY['receiver',credential_generation::text],CASE WHEN octet_length(credential_ciphertext) BETWEEN 48 AND 2080 THEN credential_ciphertext END FROM notification_transport WHERE credential_ciphertext IS NOT NULL
-	UNION ALL SELECT 'target',ARRAY[id,session_id,user_id,device_id,token_generation::text],CASE WHEN octet_length(token_ciphertext) BETWEEN 48 AND 2080 THEN token_ciphertext END FROM notification_registrations ORDER BY 1,2`)
+	return tx.Query(ctx, notificationSecretRowsQuery)
 }
 func validateNotificationRecovery(ctx context.Context, tx pgx.Tx, gcm cipher.AEAD) (int64, error) {
 	exists, err := notificationSecretsExist(ctx, tx)
@@ -162,7 +166,8 @@ func (s *Store) allowNotificationMasterCreation(ctx context.Context, tx pgx.Tx) 
 	if err != nil || !exists {
 		return !exists, err
 	}
-	rows, err := notificationSecretRows(ctx, tx)
+	// Admission needs one ordered witness; recovery still validates every row.
+	rows, err := tx.Query(ctx, notificationSecretRowsQuery+" LIMIT 1")
 	if err != nil {
 		return false, ErrApplicationKeyVaultUnavailable
 	}

@@ -2,8 +2,9 @@ package library
 
 import (
 	"context"
-	"github.com/moooyo/goby/internal/notificationjournal"
 	"strconv"
+
+	"github.com/moooyo/goby/internal/notificationjournal"
 )
 
 // FilterNotificationReferences applies one current Subject snapshot to explicit
@@ -37,40 +38,44 @@ func (s *Store) FilterNotificationReferences(ctx context.Context, subject Subjec
 		}
 	}
 	visibleItems := map[string]string{}
-	rows, err := tx.Query(ctx, `SELECT i.id,i.library_id FROM items i WHERE i.id=ANY($1::text[]) AND `+access.ordinarySQL("i"), items)
-	if err != nil {
-		return nil, err
-	}
-	for rows.Next() {
-		var id, lib string
-		if err = rows.Scan(&id, &lib); err != nil {
-			rows.Close()
+	if len(items) > 0 {
+		rows, err := tx.Query(ctx, `SELECT i.id,i.library_id FROM items i WHERE i.id=ANY($1::text[]) AND `+access.ordinarySQL("i"), items)
+		if err != nil {
 			return nil, err
 		}
-		visibleItems[id] = lib
-	}
-	err = rows.Err()
-	rows.Close()
-	if err != nil {
-		return nil, err
+		for rows.Next() {
+			var id, lib string
+			if err = rows.Scan(&id, &lib); err != nil {
+				rows.Close()
+				return nil, err
+			}
+			visibleItems[id] = lib
+		}
+		err = rows.Err()
+		rows.Close()
+		if err != nil {
+			return nil, err
+		}
 	}
 	visibleEntities := map[string]bool{}
-	rows, err = tx.Query(ctx, `SELECT DISTINCT entity.id::text FROM catalog_entities entity JOIN item_entities association ON association.entity_id=entity.id JOIN items i ON i.id=association.item_id WHERE entity.id=ANY($1::bigint[]) AND `+validEntityAssociationSQL+` AND `+access.ordinarySQL("i"), entities)
-	if err != nil {
-		return nil, err
-	}
-	for rows.Next() {
-		var id string
-		if err = rows.Scan(&id); err != nil {
-			rows.Close()
+	if len(entities) > 0 {
+		rows, err := tx.Query(ctx, `SELECT DISTINCT entity.id::text FROM catalog_entities entity JOIN item_entities association ON association.entity_id=entity.id JOIN items i ON i.id=association.item_id WHERE entity.id=ANY($1::bigint[]) AND `+validEntityAssociationSQL+` AND `+access.ordinarySQL("i"), entities)
+		if err != nil {
 			return nil, err
 		}
-		visibleEntities[id] = true
-	}
-	err = rows.Err()
-	rows.Close()
-	if err != nil {
-		return nil, err
+		for rows.Next() {
+			var id string
+			if err = rows.Scan(&id); err != nil {
+				rows.Close()
+				return nil, err
+			}
+			visibleEntities[id] = true
+		}
+		err = rows.Err()
+		rows.Close()
+		if err != nil {
+			return nil, err
+		}
 	}
 	result := []notificationjournal.Reference{}
 	seen := map[notificationjournal.Reference]bool{}

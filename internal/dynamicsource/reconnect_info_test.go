@@ -60,8 +60,11 @@ func TestInfoDuringReconnectKeepsCommittedGenerationAndReauthorizes(t *testing.T
 			current.Stamp != first.Stamp || current.Info.Streams[0].Width != 1280 {
 			t.Fatalf("pending reconnect did not preserve committed facts: generation=%d stamp=%q err=%v", current.Generation, current.Stamp, err)
 		}
+		if err := manager.Validate(context.Background(), owner, first.ID); err != nil {
+			t.Fatalf("pending reconnect rejected committed lease validation: %v", err)
+		}
 	}
-	if authorizations.Load() != before+3 {
+	if authorizations.Load() != before+6 {
 		t.Fatal("committed metadata reads bypassed current authorization while reconnecting")
 	}
 	foreign := owner
@@ -69,7 +72,10 @@ func TestInfoDuringReconnectKeepsCommittedGenerationAndReauthorizes(t *testing.T
 	if _, err := manager.Info(context.Background(), foreign, first.ID); !errors.Is(err, ErrNotFound) {
 		t.Fatal("a foreign credential read the committed reconnect metadata")
 	}
-	if authorizations.Load() != before+3 {
+	if err := manager.Validate(context.Background(), foreign, first.ID); !errors.Is(err, ErrNotFound) {
+		t.Fatal("a foreign credential validated the committed reconnect lease")
+	}
+	if authorizations.Load() != before+6 {
 		t.Fatal("a foreign credential reached the owner's authorization path")
 	}
 	close(release)
@@ -204,6 +210,9 @@ func TestInfoDuringInitialOpeningRemainsBusyWithoutCommittedFacts(t *testing.T) 
 	}
 	if _, err := manager.Info(context.Background(), owner, id); !errors.Is(err, ErrBusy) {
 		t.Fatal("initial opening exposed uncommitted media facts", err)
+	}
+	if err := manager.Validate(context.Background(), owner, id); !errors.Is(err, ErrBusy) {
+		t.Fatal("initial opening validated uncommitted media facts", err)
 	}
 	close(release)
 	select {

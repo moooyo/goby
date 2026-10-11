@@ -57,11 +57,14 @@ func (s *Store) bindApplicationClient(ctx context.Context, principal Principal, 
 	if err != nil {
 		return Principal{}, fmt.Errorf("lock application client credential: %w", err)
 	}
-	if err := CheckApplicationKey(ctx, tx, credentialID, false); err != nil {
-		return Principal{}, err
+	if !validRevalidationID(credentialID) {
+		return Principal{}, ErrUnauthorized
 	}
 	var keyID int64
-	err = tx.QueryRow(ctx, "SELECT id FROM application_keys WHERE credential_id = $1 FOR UPDATE", credentialID).Scan(&keyID)
+	err = tx.QueryRow(ctx, `SELECT k.id FROM sessions a
+		JOIN application_keys k ON k.credential_id = a.id
+		WHERE a.id = $1 AND a.kind = 'application_key' AND a.user_id IS NULL
+		AND a.expires_at IS NULL AND a.revoked_at IS NULL FOR UPDATE OF k`, credentialID).Scan(&keyID)
 	if errors.Is(err, pgx.ErrNoRows) || (err == nil && keyID != principal.ApplicationKeyID) {
 		return Principal{}, ErrUnauthorized
 	}

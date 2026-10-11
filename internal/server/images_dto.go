@@ -2,7 +2,6 @@ package server
 
 import (
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/moooyo/goby/internal/library"
@@ -10,30 +9,19 @@ import (
 
 // applyIndexedImages batches the authorized catalog reads after item projection.
 // It does not expose image paths or make filesystem requests while listing items.
-func (s *Server) applyIndexedImages(w http.ResponseWriter, r *http.Request, userID string, items []map[string]any, detail bool) bool {
-	if !s.applyItemCapabilities(w, r, items, detail) {
+func (s *Server) applyIndexedImages(w http.ResponseWriter, r *http.Request, userID string, items []map[string]any, detail bool, presentation itemPresentation) bool {
+	if !s.applyItemCapabilities(w, r, items, detail, presentation) {
 		return false
 	}
-	if raw := r.URL.Query().Get("EnableImages"); raw != "" {
-		if enabled, _ := strconv.ParseBool(raw); !enabled {
-			for _, item := range items {
-				applyItemFieldExclusions(item, r)
-			}
-			return true
+	if !presentation.enableImages {
+		for _, item := range items {
+			presentation.applyFieldExclusions(item)
 		}
+		return true
 	}
-	limit := 32
-	if raw := r.URL.Query().Get("ImageTypeLimit"); raw != "" {
-		value, err := strconv.Atoi(raw)
-		if err != nil || value < 0 {
-			apiError(w, r, http.StatusBadRequest, "invalid_input", "ImageTypeLimit must be a non-negative integer.")
-			return false
-		}
-		limit = min(value, 32)
-	}
-	enabledTypes := make(map[string]bool)
-	for _, name := range queryValues(r.URL.Query()["EnableImageTypes"]) {
-		enabledTypes[strings.ToLower(name)] = true
+	if presentation.invalidImageTypeLimit {
+		apiError(w, r, http.StatusBadRequest, "invalid_input", "ImageTypeLimit must be a non-negative integer.")
+		return false
 	}
 	byID := make(map[string][]library.Image)
 	subject := requestLibrarySubject(r, userID)
@@ -58,27 +46,31 @@ func (s *Server) applyIndexedImages(w http.ResponseWriter, r *http.Request, user
 	}
 	for _, item := range items {
 		id, _ := item["Id"].(string)
-		tags := make(map[string]string)
-		backdrops := make([]string, 0)
-		for _, source := range byID[id] {
-			if limit == 0 || (len(enabledTypes) > 0 && !enabledTypes[strings.ToLower(source.ImageType)]) {
-				continue
-			}
-			if source.ImageType == "Backdrop" {
-				if len(backdrops) < limit {
-					backdrops = append(backdrops, source.Tag)
-				}
-			} else if _, found := tags[source.ImageType]; !found {
-				tags[source.ImageType] = source.Tag
-				if source.ImageType == "Primary" && source.Height > 0 &&
-					(detail || hasField(queryValues(r.URL.Query()["Fields"]), "PrimaryImageAspectRatio")) {
-					item["PrimaryImageAspectRatio"] = float64(source.Width) / float64(source.Height)
-				}
-			}
-		}
-		item["ImageTags"] = tags
-		item["BackdropImageTags"] = backdrops
-		applyItemFieldExclusions(item, r)
+		presentation.applyIndexedImageTags(item, byID[id], detail)
 	}
 	return true
+}
+
+func (presentation itemPresentation) applyIndexedImageTags(item map[string]any, images []library.Image, detail bool) {
+	tags := make(map[string]string)
+	backdrops := make([]string, 0)
+	for _, source := range images {
+		if presentation.imageTypeLimit == 0 || (len(presentation.enabledImageTypes) > 0 && !presentation.enabledImageTypes[strings.ToLower(source.ImageType)]) {
+			continue
+		}
+		if source.ImageType == "Backdrop" {
+			if len(backdrops) < presentation.imageTypeLimit {
+				backdrops = append(backdrops, source.Tag)
+			}
+		} else if _, found := tags[source.ImageType]; !found {
+			tags[source.ImageType] = source.Tag
+			if source.ImageType == "Primary" && source.Height > 0 &&
+				(detail || hasField(presentation.fields, "PrimaryImageAspectRatio")) {
+				item["PrimaryImageAspectRatio"] = float64(source.Width) / float64(source.Height)
+			}
+		}
+	}
+	item["ImageTags"] = tags
+	item["BackdropImageTags"] = backdrops
+	presentation.applyFieldExclusions(item)
 }

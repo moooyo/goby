@@ -35,13 +35,14 @@ func (s *Server) nextUpItems(w http.ResponseWriter, r *http.Request) {
 		s.libraryError(w, r, err)
 		return
 	}
+	p := readItemPresentation(r)
 	items := make([]map[string]any, 0, len(result.Items))
 	for _, item := range result.Items {
-		dto := s.itemDTOForRequest(r, item, queryValues(r.URL.Query()["Fields"]), false)
-		applyItemSwitches(dto, r)
+		dto := s.itemDTOWithToken(item, p.fields, false, p.deliveryToken)
+		p.applySwitches(dto)
 		items = append(items, dto)
 	}
-	if !s.applyIndexedImages(w, r, userID, items, false) {
+	if !s.applyIndexedImages(w, r, userID, items, false, p) {
 		return
 	}
 	jsonResponse(w, http.StatusOK, map[string]any{"Items": items, "TotalRecordCount": result.TotalRecordCount})

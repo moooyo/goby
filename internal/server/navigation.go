@@ -42,14 +42,15 @@ func (s *Server) itemAncestors(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	items, err := s.library.Ancestors(r.Context(), requestLibrarySubject(r, userID), r.PathValue("Id"))
+	items, err := s.library.Ancestors(r.Context(), requestLibrarySubject(r, userID), r.PathValue("Id"), requestQueryProjection(r))
 	if err != nil {
 		s.libraryError(w, r, err)
 		return
 	}
+	p := readItemPresentation(r)
 	result := make([]map[string]any, 0, len(items))
 	for _, item := range items {
-		dto := s.itemDTOForRequest(r, item, nil, false)
+		dto := s.itemDTOWithToken(item, nil, false, p.deliveryToken)
 		if item.Type == "CollectionFolder" {
 			root, err := s.library.GetLibrary(r.Context(), item.LibraryID)
 			if err != nil {
@@ -60,7 +61,7 @@ func (s *Server) itemAncestors(w http.ResponseWriter, r *http.Request) {
 		}
 		result = append(result, dto)
 	}
-	if !s.applyIndexedImages(w, r, userID, result, false) {
+	if !s.applyIndexedImages(w, r, userID, result, false, p) {
 		return
 	}
 	jsonResponse(w, http.StatusOK, result)
@@ -99,18 +100,19 @@ func (s *Server) additionalParts(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	result, err := s.library.AdditionalParts(r.Context(), requestLibrarySubject(r, userID), r.PathValue("Id"))
+	result, err := s.library.AdditionalParts(r.Context(), requestLibrarySubject(r, userID), r.PathValue("Id"), requestQueryProjection(r))
 	if err != nil {
 		s.libraryError(w, r, err)
 		return
 	}
+	p := readItemPresentation(r)
 	items := make([]map[string]any, 0, len(result.Items))
 	for _, item := range result.Items {
-		dto := s.itemDTOForRequest(r, item, queryValues(r.URL.Query()["Fields"]), false)
-		applyItemSwitches(dto, r)
+		dto := s.itemDTOWithToken(item, p.fields, false, p.deliveryToken)
+		p.applySwitches(dto)
 		items = append(items, dto)
 	}
-	if !s.applyIndexedImages(w, r, userID, items, false) {
+	if !s.applyIndexedImages(w, r, userID, items, false, p) {
 		return
 	}
 	jsonResponse(w, http.StatusOK, map[string]any{"Items": items, "TotalRecordCount": result.TotalRecordCount})

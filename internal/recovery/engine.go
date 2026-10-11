@@ -91,27 +91,46 @@ func newEngine(cfg config.Config, pool *pgxpool.Pool, vault *identity.Applicatio
 		}
 		return path, nil
 	}
-	dump, err := resolve(rc.PGDumpPath)
-	if err != nil {
-		return nil, err
-	}
 	restore, err := resolve(rc.PGRestorePath)
 	if err != nil {
 		return nil, err
+	}
+	// Restore admission resolves its required decoder before any target can be
+	// reset. An unavailable dump tool only disables online backup creation.
+	var dump string
+	if pool != nil {
+		dump, _ = resolve(rc.PGDumpPath)
 	}
 	limits := backupformat.DefaultLimits()
 	limits.MaxDatabaseBytes = min(limits.MaxDatabaseBytes, rc.Backups.MaxObjectBytes)
 	limits.MaxConfigurationBytes = config.MaxBackupDefaultsBytes
 	limits.MaxEncryptedBytes = min(limits.MaxEncryptedBytes, rc.Backups.MaxObjectBytes)
+	options := recoveryPostgresOptions(cfg)
+	options.PGDump, options.PGRestore = dump, restore
 	return &Engine{
 		pool: pool, vault: vault, store: store, configuration: configuration,
 		version: version, gate: make(chan struct{}, 1), limits: limits,
-		options: backuppg.Options{
-			SourceURL: cfg.DatabaseURL, PGDump: dump, PGRestore: restore,
-			Schema: "public", Timeout: rc.OperationTimeout,
-			MaxDumpBytes: limits.MaxDatabaseBytes, ProbeVersion: media.CurrentProbeVersion,
-		},
+		options: options,
 	}, nil
+}
+
+func (e *Engine) canCreate() bool {
+	return e != nil && e.pool != nil && e.vault != nil && e.options.PGDump != "" && e.canRestore()
+}
+
+func (e *Engine) canRestore() bool {
+	return e != nil && e.options.PGRestore != ""
+}
+
+// SQL-only captures retain deployment connection policy without resolving or
+// executing either PostgreSQL command-line tool.
+func recoveryPostgresOptions(cfg config.Config) backuppg.Options {
+	rc := cfg.Recovery.WithDefaults()
+	return backuppg.Options{
+		SourceURL: cfg.DatabaseURL, PGDump: rc.PGDumpPath, PGRestore: rc.PGRestorePath,
+		Schema: "public", Timeout: rc.OperationTimeout,
+		MaxDumpBytes: min(backupformat.DefaultLimits().MaxDatabaseBytes, rc.Backups.MaxObjectBytes), ProbeVersion: media.CurrentProbeVersion,
+	}
 }
 
 func ValidatePassphrase(passphrase []byte) error {
@@ -145,6 +164,9 @@ func (e *Engine) release() { <-e.gate }
 func (e *Engine) Create(ctx context.Context, writer *backupstore.Writer, passphrase []byte) (manifest backupformat.Manifest, resultErr error) {
 	if e == nil || e.pool == nil || e.vault == nil || writer == nil || ValidatePassphrase(passphrase) != nil {
 		return manifest, ErrInvalid
+	}
+	if !e.canCreate() {
+		return manifest, ErrUnavailable
 	}
 	if err := e.acquire(ctx); err != nil {
 		return manifest, err

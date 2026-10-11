@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"net"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -38,6 +39,19 @@ func TestRecoveryManagerApplyRestartAndRollback(t *testing.T) {
 	originalHistory := recoveryEngineRetainedState(t, ctx, f.seed.source)
 	originalPreferences := recoveryEnginePreferenceState(t, ctx, f.seed.source)
 	plan := createTransitionPlan(t, f)
+	// The archive is already decoded and its target is validated. Restart with
+	// both command paths unavailable before applying or returning that image.
+	f.seed.configuration.Recovery.PGDumpPath = filepath.Join(t.TempDir(), "missing-pg-dump")
+	f.seed.configuration.Recovery.PGRestorePath = filepath.Join(t.TempDir(), "missing-pg-restore")
+	f.reopen(t)
+	status, err := f.manager.Status(ctx, f.seed.actor)
+	if err != nil || f.manager.engine != nil || status.Available || status.RestoreAvailable || status.RestoreUnavailableReason != "tools_unavailable" {
+		t.Fatalf("missing tools did not leave an inspectable SQL-only manager: %v", err)
+	}
+	plan, err = f.manager.Operation(ctx, f.seed.actor, plan.Id)
+	if err != nil || !plan.CanApply {
+		t.Fatalf("missing decoder retired an already validated plan: %v", err)
+	}
 	if _, err := f.manager.Apply(ctx, f.seed.actor, plan.Id, ApplyRequest{Revision: plan.Revision, GenerationRevision: "0"}); err != nil {
 		t.Fatal("authorize exact ready plan application")
 	}
@@ -147,8 +161,8 @@ func TestRecoveryManagerApplyRestartAndRollback(t *testing.T) {
 	if err != nil {
 		t.Fatal("resolve newly issued target administrator")
 	}
-	status, err := f.manager.Status(ctx, actor)
-	if err != nil || !status.Rollback.Available || !status.Rollback.MustReplace || status.GenerationRevision != "1" {
+	status, err = f.manager.Status(ctx, actor)
+	if err != nil || f.manager.engine != nil || status.RestoreAvailable || status.RestoreUnavailableReason != "tools_unavailable" || !status.Rollback.Available || !status.Rollback.MustReplace || status.GenerationRevision != "1" {
 		t.Fatal("accepted target did not retain an explicit original rollback image")
 	}
 	rollback, err := f.manager.Rollback(ctx, actor, RollbackRequest{RequestId: recoveryEngineTestID(t), GenerationRevision: "1"})

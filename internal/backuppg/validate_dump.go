@@ -34,7 +34,7 @@ func ValidateDump(ctx context.Context, archive io.Reader, facts backupformat.Sou
 	}
 	ctx, cancel := context.WithTimeout(ctx, options.Timeout)
 	defer cancel()
-	if err := checkToolVersions(ctx, options); err != nil {
+	if err := checkRestoreVersion(ctx, options); err != nil {
 		return err
 	}
 	expected := make(map[string]int64, len(facts.Tables))

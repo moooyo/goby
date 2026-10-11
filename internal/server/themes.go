@@ -46,12 +46,13 @@ func (s *Server) embyThemeMedia(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	query.Subject = requestLibrarySubject(r, userID)
+	query.Projection = requestQueryProjection(r)
 	result, err := s.library.QueryThemeMedia(r.Context(), r.PathValue("Id"), query)
 	if err != nil {
 		s.libraryError(w, r, err)
 		return
 	}
-	fields := queryValues(r.URL.Query()["Fields"])
+	p := readItemPresentation(r)
 	response := make(map[string]any, 3)
 	for _, group := range []struct {
 		name   string
@@ -65,11 +66,11 @@ func (s *Server) embyThemeMedia(w http.ResponseWriter, r *http.Request) {
 		for _, entry := range group.result.Items {
 			// Positive reference captures explicitly selected their detailed
 			// fields. A Theme request alone does not imply detail projection.
-			item := s.itemDTOForRequest(r, entry, fields, false)
-			applyItemSwitches(item, r)
+			item := s.itemDTOWithToken(entry, p.fields, false, p.deliveryToken)
+			p.applySwitches(item)
 			items = append(items, item)
 		}
-		if !s.applyIndexedImages(w, r, userID, items, false) {
+		if !s.applyIndexedImages(w, r, userID, items, false, p) {
 			return
 		}
 		response[group.name] = map[string]any{

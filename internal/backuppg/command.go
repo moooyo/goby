@@ -166,7 +166,15 @@ func sourceCommandConfig(options Options) (map[string]string, error) {
 	return values, nil
 }
 
-func checkToolVersions(ctx context.Context, options Options) error {
+func checkDumpVersion(ctx context.Context, options Options) error {
+	return checkToolVersion(ctx, options, options.PGDump, "pg_dump")
+}
+
+func checkRestoreVersion(ctx context.Context, options Options) error {
+	return checkToolVersion(ctx, options, options.PGRestore, "pg_restore")
+}
+
+func checkToolVersion(ctx context.Context, options Options, path, name string) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -177,17 +185,15 @@ func checkToolVersions(ctx context.Context, options Options) error {
 	if timeout > 5*time.Second {
 		timeout = 5 * time.Second
 	}
-	for _, tool := range []struct{ path, name string }{{options.PGDump, "pg_dump"}, {options.PGRestore, "pg_restore"}} {
-		if err := checkBackupExecutable(tool.path); err != nil {
-			return err
-		}
-		var output bytes.Buffer
-		if err := runBackupOutput(ctx, timeout, commandVersionBytes, tool.path, commandEnvironment(nil), nil, &output, "--version"); err != nil {
-			return err
-		}
-		if !backupVersion.Match(output.Bytes()) || !strings.HasPrefix(output.String(), tool.name+" ") {
-			return ErrUnsupported
-		}
+	if err := checkBackupExecutable(path); err != nil {
+		return err
+	}
+	var output bytes.Buffer
+	if err := runBackupOutput(ctx, timeout, commandVersionBytes, path, commandEnvironment(nil), nil, &output, "--version"); err != nil {
+		return err
+	}
+	if !backupVersion.Match(output.Bytes()) || !strings.HasPrefix(output.String(), name+" ") {
+		return ErrUnsupported
 	}
 	return nil
 }

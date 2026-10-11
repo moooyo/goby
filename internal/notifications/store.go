@@ -204,9 +204,13 @@ func (s *Store) UpdateConfig(ctx context.Context, actor identity.Principal, upda
 	}
 	return result, nil
 }
-func readRegistration(ctx context.Context, tx pgx.Tx, session string) (Registration, error) {
+func scanRegistration(row pgx.Row) (Registration, error) {
 	result := Registration{Revision: "0", Transport: Transport, EventIds: []string{}}
-	err := tx.QueryRow(ctx, `SELECT id,revision::text,enabled,event_ids,true,last_outcome FROM notification_registrations WHERE session_id=$1`, session).Scan(&result.Id, &result.Revision, &result.Enabled, &result.EventIds, &result.HasTargetToken, &result.LastOutcome)
+	err := row.Scan(&result.Id, &result.Revision, &result.Enabled, &result.EventIds, &result.HasTargetToken, &result.LastOutcome)
+	return result, err
+}
+func readRegistration(ctx context.Context, tx pgx.Tx, session string) (Registration, error) {
+	result, err := scanRegistration(tx.QueryRow(ctx, `SELECT id,revision::text,enabled,event_ids,true,last_outcome FROM notification_registrations WHERE session_id=$1`, session))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return result, nil
 	}
@@ -302,16 +306,14 @@ func (s *Store) PutRegistration(ctx context.Context, actor identity.Principal, i
 	if len(sealed) == 0 {
 		return Registration{}, ErrInvalid
 	}
-	if _, err = tx.Exec(ctx, `INSERT INTO notification_registrations(id,session_id,user_id,device_id,peer_ip,revision,event_ids,token_ciphertext,token_generation,source_cursor)
+	result, err := scanRegistration(tx.QueryRow(ctx, `INSERT INTO notification_registrations(id,session_id,user_id,device_id,peer_ip,revision,event_ids,token_ciphertext,token_generation,source_cursor)
 	VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,(SELECT sequence FROM notification_journal_state WHERE id=1))
-	ON CONFLICT(session_id) DO UPDATE SET revision=EXCLUDED.revision,enabled=true,event_ids=EXCLUDED.event_ids,token_ciphertext=EXCLUDED.token_ciphertext,token_generation=EXCLUDED.token_generation,source_cursor=EXCLUDED.source_cursor,peer_ip=EXCLUDED.peer_ip,last_outcome='',updated_at=clock_timestamp()`, id, actor.SessionID, actor.User.ID, device, actor.PeerIP, current+1, events, sealed, generation); err != nil {
+	ON CONFLICT(session_id) DO UPDATE SET revision=EXCLUDED.revision,enabled=true,event_ids=EXCLUDED.event_ids,token_ciphertext=EXCLUDED.token_ciphertext,token_generation=EXCLUDED.token_generation,source_cursor=EXCLUDED.source_cursor,peer_ip=EXCLUDED.peer_ip,last_outcome='',updated_at=clock_timestamp()
+	RETURNING id,revision::text,enabled,event_ids,true,last_outcome`, id, actor.SessionID, actor.User.ID, device, actor.PeerIP, current+1, events, sealed, generation))
+	if err != nil {
 		return Registration{}, ErrUnavailable
 	}
 	if err = cancelDeliveries(ctx, tx, `UPDATE notification_deliveries SET state='cancelled',refs='[]',outcome='registration_changed',lease_id='',lease_until=NULL,updated_at=clock_timestamp() WHERE registration_id=$1 AND state IN ('pending','sending')`, id); err != nil {
-		return Registration{}, ErrUnavailable
-	}
-	result, err := readRegistration(ctx, tx, actor.SessionID)
-	if err != nil {
 		return Registration{}, ErrUnavailable
 	}
 	if err = identity.CheckNotificationSession(ctx, tx, actor); err != nil {
@@ -335,19 +337,15 @@ func (s *Store) DeleteRegistration(ctx context.Context, actor identity.Principal
 	if err = identity.LockNotificationMutation(ctx, tx, actor, false); err != nil {
 		return Registration{}, err
 	}
-	var id string
-	err = tx.QueryRow(ctx, `UPDATE notification_registrations SET enabled=false,revision=revision+1,last_outcome='revoked',updated_at=clock_timestamp() WHERE session_id=$1 AND revision=$2 RETURNING id`, actor.SessionID, v).Scan(&id)
+	result, err := scanRegistration(tx.QueryRow(ctx, `UPDATE notification_registrations SET enabled=false,revision=revision+1,last_outcome='revoked',updated_at=clock_timestamp() WHERE session_id=$1 AND revision=$2
+		RETURNING id,revision::text,enabled,event_ids,true,last_outcome`, actor.SessionID, v))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Registration{}, ErrConflict
 	}
 	if err != nil {
 		return Registration{}, ErrUnavailable
 	}
-	if err = cancelDeliveries(ctx, tx, `UPDATE notification_deliveries SET state='cancelled',refs='[]',outcome='revoked',lease_id='',lease_until=NULL,updated_at=clock_timestamp() WHERE registration_id=$1 AND state IN ('pending','sending')`, id); err != nil {
-		return Registration{}, ErrUnavailable
-	}
-	result, err := readRegistration(ctx, tx, actor.SessionID)
-	if err != nil {
+	if err = cancelDeliveries(ctx, tx, `UPDATE notification_deliveries SET state='cancelled',refs='[]',outcome='revoked',lease_id='',lease_until=NULL,updated_at=clock_timestamp() WHERE registration_id=$1 AND state IN ('pending','sending')`, result.Id); err != nil {
 		return Registration{}, ErrUnavailable
 	}
 	if err = identity.CheckNotificationSession(ctx, tx, actor); err != nil {

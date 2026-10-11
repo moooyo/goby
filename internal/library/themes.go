@@ -28,6 +28,7 @@ const (
 // value disables both groups; it does not silently enable inheritance or media.
 type ThemeQuery struct {
 	Subject           Subject
+	Projection        QueryProjection
 	InheritFromParent bool
 	EnableThemeSongs  bool
 	EnableThemeVideos bool
@@ -135,7 +136,7 @@ func (s *Store) QueryThemeMedia(ctx context.Context, seedID string, query ThemeQ
 			}
 		}
 		if songOwner != "" || videoOwner != "" {
-			if err := readThemeItems(ctx, tx, query.Subject, access, seed.libraryID, songOwner, videoOwner, &result); err != nil {
+			if err := readThemeItems(ctx, tx, query.Subject, access, seed.libraryID, songOwner, videoOwner, query.Projection, &result); err != nil {
 				return ThemeMediaResult{}, err
 			}
 		}
@@ -270,7 +271,7 @@ func readThemePopulations(ctx context.Context, tx pgx.Tx, owners []themeOwner, a
 	return result, nil
 }
 
-func readThemeItems(ctx context.Context, tx pgx.Tx, subject Subject, access libraryAccess, libraryID, songOwner, videoOwner string, result *ThemeMediaResult) error {
+func readThemeItems(ctx context.Context, tx pgx.Tx, subject Subject, access libraryAccess, libraryID, songOwner, videoOwner string, projection QueryProjection, result *ThemeMediaResult) error {
 	rows, err := tx.Query(ctx, "SELECT "+access.itemColumnsSQL()+`, association.kind FROM item_theme_resources association
 		JOIN items i ON i.id = association.resource_item_id
 		WHERE association.active AND ((association.kind = 'song' AND association.owner_item_id = $1)
@@ -298,8 +299,10 @@ func readThemeItems(ctx context.Context, tx pgx.Tx, subject Subject, access libr
 		return fmt.Errorf("read theme resources: %w", err)
 	}
 	rows.Close()
-	if err := attachUserData(ctx, tx, subject.UserID, items); err != nil {
-		return err
+	if !projection.UserDataDisabled {
+		if err := attachUserData(ctx, tx, subject.UserID, items); err != nil {
+			return err
+		}
 	}
 	if err := attachSubtitles(ctx, tx, items); err != nil {
 		return err

@@ -84,6 +84,12 @@ function bytes(value: string): string {
   return `${(amount / divisor).toLocaleString()}${decimal ? `.${decimal}` : ''} ${units[unit]}`;
 }
 function activeOperation(operation: OperationView): boolean { return ['pending', 'running', 'applying'].includes(operation.State); }
+function recoverySwitchAvailable(status: StatusView): boolean {
+  // Configuration and health failures take precedence over missing tools in
+  // status. Switching a checked candidate does not decode an archive again.
+  return status.UnavailableReason !== 'storage_unavailable' && status.UnavailableReason !== 'recovery_required'
+    && (status.RestoreAvailable || status.RestoreUnavailableReason === 'tools_unavailable');
+}
 function uncertain(error: unknown): boolean {
   return !(error instanceof ApiError) || ['network_error', 'invalid_response', 'session_changed'].includes(error.code) || error.status >= 500;
 }
@@ -289,7 +295,8 @@ function InspectPlanDialog({ operationId, applicationUncertain, onAttempt, onRej
     }).catch((cause: unknown) => { if (!controller.signal.aborted && !isAbortError(cause)) setError(safeError(cause)); }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [operationId, refresh]);
-  const canApply = Boolean(!applicationUncertain && !loading && !error && details?.operation.CanApply && details.operation.State === 'ready' && details.operation.Source && details.operation.GenerationRevision === details.status.GenerationRevision && details.status.RestoreAvailable);
+  const canApply = Boolean(!applicationUncertain && !loading && !error && details?.operation.CanApply && details.operation.State === 'ready' && details.operation.Source && details.operation.GenerationRevision === details.status.GenerationRevision && recoverySwitchAvailable(details.status)
+    && (!details.status.Busy || details.status.ActiveOperationId === details.operation.Id));
   async function apply() {
     if (!details || !canApply || !confirmed || mutation.current) return;
     const controller = new AbortController(); mutation.current = controller; setBusy(true); setError(undefined);
@@ -557,7 +564,9 @@ export function BackupsPage({ currentUserId, onNavigationGuardChange }: { curren
     } catch (cause) { if (!controller.signal.aborted && !isAbortError(cause)) setActionError(safeError(cause)); }
     finally { if (action.current === controller) action.current = undefined; if (!controller.signal.aborted) setActionBusy(''); }
   }
-  const unavailable = !receiptScope || !snapshot?.status.Available || Boolean(loadError) || Boolean(actionBusy) || Boolean(unknownAttempt) || loading;
+  // Tool availability gates creation and restore planning. Managing stored
+  // archives only requires the common service and interaction guards.
+  const unavailable = !receiptScope || !snapshot || snapshot.status.UnavailableReason === 'storage_unavailable' || snapshot.status.UnavailableReason === 'recovery_required' || Boolean(loadError) || Boolean(actionBusy) || Boolean(unknownAttempt) || loading;
   const admissionBusy = unavailable || Boolean(snapshot?.status.Busy);
   const operations = snapshot ? [ ...(tracked && !snapshot.operations.Items.some((operation) => operation.Id === tracked.Id) ? [tracked] : []), ...snapshot.operations.Items.map((operation) => tracked?.Id === operation.Id ? tracked : operation) ] : [];
   const recovering = operations.some((operation) => (operation.Kind === 'restore' || operation.Kind === 'rollback') && (operation.State === 'applying' || operation.Phase === 'activation' || operation.Phase === 'rollback')) || unknownAttempt?.Kind === 'restore' || unknownAttempt?.Kind === 'rollback';
@@ -566,7 +575,7 @@ export function BackupsPage({ currentUserId, onNavigationGuardChange }: { curren
   const partialBackupList = Boolean(snapshot && snapshot.backups.TotalRecordCount > snapshot.backups.Items.length);
   const callbacks: AdmissionCallbacks = { onAttempt: beginAttempt, onRejected: clearAttempt, onAccepted: accepted, onUnknown: unknown, onClose: () => setDialog(undefined), onNavigationGuardChange };
   return <>
-    <PageHeading title="Backups & recovery" description="Keep encrypted server backups and review recovery changes before applying them." action={<Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}><Button variant="outlined" startIcon={<UploadFileRounded />} disabled={admissionBusy} onClick={() => setDialog({ kind: 'import' })}>Import backup</Button><Button variant="contained" startIcon={<AddRounded />} disabled={admissionBusy} onClick={() => setDialog({ kind: 'create' })}>Create backup</Button></Stack>} />
+    <PageHeading title="Backups & recovery" description="Keep encrypted server backups and review recovery changes before applying them." action={<Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}><Button variant="outlined" startIcon={<UploadFileRounded />} disabled={admissionBusy} onClick={() => setDialog({ kind: 'import' })}>Import backup</Button><Button variant="contained" startIcon={<AddRounded />} disabled={admissionBusy || !snapshot?.status.Available} onClick={() => setDialog({ kind: 'create' })}>Create backup</Button></Stack>} />
     <Stack spacing={2.5}>
       {loadError != null && <ErrorNotice error={loadError} retry={reload} />}
       {actionError != null && <ErrorNotice error={actionError} retry={reload} />}
@@ -583,8 +592,8 @@ export function BackupsPage({ currentUserId, onNavigationGuardChange }: { curren
                 <Typography id="backup-status-heading" variant="h3" component="h2">Recovery readiness</Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>Encrypted backups include server data and settings, without media files. Keep copies outside this server.</Typography>
                 <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.75, mt: 1 }}>
-                  <Chip size="small" color={snapshot.status.Available ? 'success' : 'warning'} label={snapshot.status.Available ? 'Backups available' : 'Backups unavailable'} />
-                  <Chip size="small" color={snapshot.status.RestoreAvailable ? 'success' : 'warning'} label={snapshot.status.RestoreAvailable ? 'Restore configured' : 'Restore unavailable'} />
+                  <Chip size="small" color={snapshot.status.Available ? 'success' : 'warning'} label={snapshot.status.Available ? 'Backup creation available' : 'Backup creation unavailable'} />
+                  <Chip size="small" color={snapshot.status.RestoreAvailable ? 'success' : 'warning'} label={snapshot.status.RestoreAvailable ? 'Restore planning available' : 'Restore planning unavailable'} />
                   {snapshot.status.Busy && <Chip size="small" color="primary" label="Recovery job in progress" />}
                   {loadError != null && <Chip size="small" color="warning" label="Last confirmed data" />}
                 </Stack>
@@ -602,8 +611,8 @@ export function BackupsPage({ currentUserId, onNavigationGuardChange }: { curren
             </Box>
             <Tooltip title="Reconnect"><span><IconButton aria-label="Reconnect" onClick={reload} disabled={loading}><RefreshRounded /></IconButton></span></Tooltip>
           </Box>
-          {!snapshot.status.Available && <Alert severity="warning" sx={{ mt: 2 }}>{recoveryMessages[snapshot.status.UnavailableReason] || 'Backup service is unavailable. Ask the server operator to check its configuration.'}</Alert>}
-          {!snapshot.status.RestoreAvailable && <Alert severity="info" sx={{ mt: 2 }}>{recoveryMessages[snapshot.status.RestoreUnavailableReason] || 'Restore is currently unavailable. Ask the server operator to check recovery setup.'}</Alert>}
+          {!snapshot.status.Available && <Alert severity="warning" sx={{ mt: 2 }}>{recoveryMessages[snapshot.status.UnavailableReason] || 'Backup creation is unavailable. Ask the server operator to check its configuration.'}</Alert>}
+          {!snapshot.status.RestoreAvailable && <Alert severity="info" sx={{ mt: 2 }}>{recoveryMessages[snapshot.status.RestoreUnavailableReason] || 'Restore planning is currently unavailable. Ask the server operator to check recovery setup.'}</Alert>}
         </Paper>
         <Paper component="section" aria-labelledby="backups-heading" variant="outlined" aria-busy={loading} sx={{ overflow: 'hidden' }}>
           <Box sx={sectionSpacing}>
@@ -679,7 +688,7 @@ export function BackupsPage({ currentUserId, onNavigationGuardChange }: { curren
               {snapshot.status.Rollback.CreatedAt && <Typography variant="caption" component="div" color="text.secondary" sx={{ mt: 0.75 }}>{dateTime(snapshot.status.Rollback.CreatedAt)}</Typography>}
               <Typography variant="caption" component="div" className="mono" color="text.secondary" sx={{ mt: 0.75, overflowWrap: 'anywhere' }}>{snapshot.status.Rollback.Generation}</Typography>
             </Box>}
-            <Button variant="outlined" startIcon={<RestoreRounded />} disabled={admissionBusy || !snapshot.status.Rollback.Available || !snapshot.status.RestoreAvailable} onClick={() => setDialog({ kind: 'rollback', status: snapshot.status })} sx={{ mt: 2 }}>Roll back</Button>
+            <Button variant="outlined" startIcon={<RestoreRounded />} disabled={admissionBusy || !snapshot.status.Rollback.Available || !recoverySwitchAvailable(snapshot.status)} onClick={() => setDialog({ kind: 'rollback', status: snapshot.status })} sx={{ mt: 2 }}>Roll back</Button>
           </Paper>
         </Box>
       </>}

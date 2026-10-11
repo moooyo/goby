@@ -101,21 +101,22 @@ func TestBackupCommandChecksActualPostgreSQL17ToolVersions(t *testing.T) {
 		t.Run(fixture.name, func(t *testing.T) {
 			dump := commandFixture(t, "print("+pythonString("pg_dump (PostgreSQL) "+fixture.version)+")")
 			restore := commandFixture(t, "print("+pythonString("pg_restore (PostgreSQL) "+fixture.version)+")")
-			err := checkToolVersions(context.Background(), Options{PGDump: dump, PGRestore: restore})
-			if !errors.Is(err, fixture.want) {
-				t.Fatalf("version check = %v, want %v", err, fixture.want)
+			for _, check := range []func(context.Context, Options) error{checkDumpVersion, checkRestoreVersion} {
+				if err := check(context.Background(), Options{PGDump: dump, PGRestore: restore}); !errors.Is(err, fixture.want) {
+					t.Fatalf("version check = %v, want %v", err, fixture.want)
+				}
 			}
 		})
 	}
 	t.Run("wrong_program", func(t *testing.T) {
 		tool := commandFixture(t, "print('pg_restore (PostgreSQL) 17.11')")
-		if err := checkToolVersions(context.Background(), Options{PGDump: tool, PGRestore: tool}); err != ErrUnsupported {
+		if err := checkDumpVersion(context.Background(), Options{PGDump: tool, PGRestore: tool}); err != ErrUnsupported {
 			t.Fatalf("wrong tool identity was accepted: %v", err)
 		}
 	})
 	t.Run("bounded_version_output", func(t *testing.T) {
 		tool := commandFixture(t, "import os\nos.write(1, b'x' * 8192)")
-		if err := checkToolVersions(context.Background(), Options{PGDump: tool, PGRestore: tool}); err != ErrLimit {
+		if err := checkRestoreVersion(context.Background(), Options{PGDump: tool, PGRestore: tool}); err != ErrLimit {
 			t.Fatalf("unbounded version output was accepted: %v", err)
 		}
 	})
@@ -462,8 +463,10 @@ func TestBackupCommandConfigurationAndPrecancelledContextNeverLaunch(t *testing.
 	if err := decodeCommand(ctx, base, strings.NewReader("input"), commandConsumeAll); !errors.Is(err, context.Canceled) {
 		t.Fatal(err)
 	}
-	if err := checkToolVersions(ctx, base); !errors.Is(err, context.Canceled) {
-		t.Fatal(err)
+	for _, check := range []func(context.Context, Options) error{checkDumpVersion, checkRestoreVersion} {
+		if err := check(ctx, base); !errors.Is(err, context.Canceled) {
+			t.Fatal(err)
+		}
 	}
 	for name, mutate := range map[string]func(*Options){
 		"relative_executable":  func(o *Options) { o.PGDump = "pg_dump" },

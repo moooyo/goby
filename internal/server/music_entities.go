@@ -66,23 +66,22 @@ func (s *Server) musicEntityList(family string) http.HandlerFunc {
 		if !ok {
 			return
 		}
-		zeroLimit := query.Limit == 0
-		if zeroLimit {
-			query.Limit = 1
-		}
 		attachApplicationCredentialID(r, &query)
-		result, err := s.library.ListMusicEntities(r.Context(), selected, query)
+		readEntities := s.library.ListMusicEntities
+		if query.Limit == 0 {
+			readEntities = s.library.CountMusicEntities
+		}
+		result, err := readEntities(r.Context(), selected, query)
 		if err != nil {
 			s.libraryError(w, r, err)
 			return
 		}
+		presentation := readItemPresentation(r)
 		items := make([]map[string]any, 0, len(result.Items))
-		if !zeroLimit {
-			for _, entity := range result.Items {
-				dto := s.musicEntityDTO(entity, selected, queryValues(r.URL.Query()["Fields"]), false)
-				applyItemSwitches(dto, r)
-				items = append(items, dto)
-			}
+		for _, entity := range result.Items {
+			dto := s.musicEntityDTO(entity, selected, presentation.fields, false)
+			presentation.applySwitches(dto)
+			items = append(items, dto)
 		}
 		jsonResponse(w, http.StatusOK, map[string]any{"Items": items, "TotalRecordCount": result.TotalRecordCount})
 	}
@@ -99,8 +98,9 @@ func (s *Server) musicEntityByName(family string) http.HandlerFunc {
 			s.libraryError(w, r, err)
 			return
 		}
-		dto := s.musicEntityDTO(entity, family, queryValues(r.URL.Query()["Fields"]), true)
-		applyItemSwitches(dto, r)
+		presentation := readItemPresentation(r)
+		dto := s.musicEntityDTO(entity, family, presentation.fields, true)
+		presentation.applySwitches(dto)
 		jsonResponse(w, http.StatusOK, dto)
 	}
 }

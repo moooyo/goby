@@ -122,6 +122,11 @@ func subtitleTimelineHTTPDescriptor(t *testing.T, f *adminMetadataHTTPFixture, q
 
 func TestHTTPSubtitleTimelinesExposeBoundedVersionedCoverageWithoutPlayback(t *testing.T) {
 	f := newSubtitleTimelineHTTPFixture(t)
+	// Artifacts are published explicitly below. Join the event consumer so its
+	// asynchronous task admissions cannot change the read-only count snapshots.
+	if err := f.app.taskManager.Close(f.ctx); err != nil {
+		t.Fatal(err)
+	}
 	headers := http.Header{"X-Emby-Token": {f.viewerToken}}
 	base := "/emby/Items/" + f.itemID + "/SubtitleTimelines"
 	before := subtitleTimelineHTTPCounts(t, f)
@@ -204,8 +209,8 @@ func TestHTTPSubtitleTimelinesExposeBoundedVersionedCoverageWithoutPlayback(t *t
 	if invalid := subtitleTimelineHTTPDescriptor(t, f, "", headers); invalid["Available"] != false || invalid["Streams"] != nil {
 		t.Fatal("invalid optional material failed to hide its timeline")
 	}
-	if subtitleTimelineHTTPCounts(t, f) != before {
-		t.Fatal("stale or invalid lookup regenerated material or wrote playback state")
+	if after := subtitleTimelineHTTPCounts(t, f); after != before {
+		t.Fatalf("stale or invalid lookup regenerated material or wrote playback state: before=%v after=%v", before, after)
 	}
 }
 

@@ -77,7 +77,7 @@ func musicEntityQuerySQL(query Query, access libraryAccess, parentLibraryID, fam
 		prefix = strings.TrimSpace(prefix) + ", "
 	}
 	prefix += `eligible_entities AS (
-		SELECT entity.id,entity.name,entity.kind,count(DISTINCT i.id) AS item_count
+		SELECT entity.id,entity.name,entity.kind,` + entitySourceCountSQL(query.Projection) + ` AS item_count
 		FROM items i JOIN item_entities association ON association.item_id=` + owner + `
 		JOIN catalog_entities entity ON entity.id=association.entity_id
 		WHERE ` + filter + ` GROUP BY entity.id,entity.name,entity.kind
@@ -98,17 +98,24 @@ func normalizeMusicEntityQuery(query Query) (Query, error) {
 }
 
 func (s *Store) ListMusicEntities(ctx context.Context, family string, query Query) (EntityResult, error) {
-	return s.listMusicEntities(ctx, family, query, nil)
+	return s.listMusicEntities(ctx, family, query, nil, false)
+}
+
+// CountMusicEntities retains the list's validation, source membership, and
+// authorization while omitting the result page and all entity attachments.
+// A zero Query.Limit continues to use the default page size in ListMusicEntities.
+func (s *Store) CountMusicEntities(ctx context.Context, family string, query Query) (EntityResult, error) {
+	return s.listMusicEntities(ctx, family, query, nil, true)
 }
 
 // QueryMusicMetadataEntities revalidates the native administrator in the same
 // snapshot as source membership, counts, images and independent entity state.
 func (s *Store) QueryMusicMetadataEntities(ctx context.Context, actor identity.Principal, family string, query Query) (EntityResult, error) {
 	query.UserID, query.ApplicationCredentialID = actor.User.ID, ""
-	return s.listMusicEntities(ctx, family, query, &actor)
+	return s.listMusicEntities(ctx, family, query, &actor, false)
 }
 
-func (s *Store) listMusicEntities(ctx context.Context, family string, query Query, actor *identity.Principal) (EntityResult, error) {
+func (s *Store) listMusicEntities(ctx context.Context, family string, query Query, actor *identity.Principal, countOnly bool) (EntityResult, error) {
 	query, err := normalizeMusicEntityQuery(query)
 	if err != nil {
 		return EntityResult{}, err
@@ -129,7 +136,11 @@ func (s *Store) listMusicEntities(ctx context.Context, family string, query Quer
 	if err != nil {
 		return EntityResult{}, err
 	}
-	prefix, args, err := musicEntityQuerySQL(query, access, parent, family)
+	population := query
+	if countOnly {
+		population.Projection.EntitySourceCountsDisabled = true
+	}
+	prefix, args, err := musicEntityQuerySQL(population, access, parent, family)
 	if err != nil {
 		return EntityResult{}, err
 	}
@@ -137,28 +148,30 @@ func (s *Store) listMusicEntities(ctx context.Context, family string, query Quer
 	if err := tx.QueryRow(ctx, prefix+"SELECT count(*) FROM eligible_entities", args...).Scan(&result.TotalRecordCount); err != nil {
 		return EntityResult{}, fmt.Errorf("count music entities: %w", err)
 	}
-	args = append(args, query.Limit, query.StartIndex)
-	rows, err := tx.Query(ctx, prefix+`SELECT id,name,kind,item_count FROM eligible_entities
-		ORDER BY lower(name) `+query.SortOrder+`,id `+query.SortOrder+fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)-1, len(args)), args...)
-	if err != nil {
-		return EntityResult{}, fmt.Errorf("list music entities: %w", err)
-	}
-	for rows.Next() {
-		entity, err := scanEntity(rows)
+	if !countOnly {
+		args = append(args, query.Limit, query.StartIndex)
+		rows, err := tx.Query(ctx, prefix+`SELECT id,name,kind,item_count FROM eligible_entities
+			ORDER BY lower(name) `+query.SortOrder+`,id `+query.SortOrder+fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)-1, len(args)), args...)
 		if err != nil {
-			rows.Close()
-			return EntityResult{}, fmt.Errorf("read music entity: %w", err)
+			return EntityResult{}, fmt.Errorf("list music entities: %w", err)
 		}
-		result.Items = append(result.Items, entity)
-	}
-	err = rows.Err()
-	rows.Close()
-	if err != nil {
-		return EntityResult{}, fmt.Errorf("finish music entities: %w", err)
-	}
-	subject := Subject{UserID: query.UserID, ApplicationCredentialID: query.ApplicationCredentialID, Actor: actor}
-	if err := populateEntityProjections(ctx, tx, subject, access, result.Items, query.Projection); err != nil {
-		return EntityResult{}, err
+		for rows.Next() {
+			entity, err := scanEntity(rows)
+			if err != nil {
+				rows.Close()
+				return EntityResult{}, fmt.Errorf("read music entity: %w", err)
+			}
+			result.Items = append(result.Items, entity)
+		}
+		err = rows.Err()
+		rows.Close()
+		if err != nil {
+			return EntityResult{}, fmt.Errorf("finish music entities: %w", err)
+		}
+		subject := Subject{UserID: query.UserID, ApplicationCredentialID: query.ApplicationCredentialID, Actor: actor}
+		if err := populateEntityProjections(ctx, tx, subject, access, result.Items, query.Projection); err != nil {
+			return EntityResult{}, err
+		}
 	}
 	if actor != nil {
 		if err := authorizeMetadataActor(ctx, tx, *actor); err != nil {
@@ -175,7 +188,11 @@ func (s *Store) GetMusicEntityFor(ctx context.Context, subject Subject, family, 
 	if strings.TrimSpace(name) == "" || len(name) > 1024 || !utf8.ValidString(name) || strings.ContainsRune(name, '\x00') {
 		return Entity{}, ErrInvalidInput
 	}
-	query, err := normalizeMusicEntityQuery(Query{UserID: subject.UserID, ApplicationCredentialID: subject.ApplicationCredentialID})
+	projection := QueryProjection{}
+	if len(projections) != 0 {
+		projection = projections[0]
+	}
+	query, err := normalizeMusicEntityQuery(Query{UserID: subject.UserID, ApplicationCredentialID: subject.ApplicationCredentialID, Projection: projection})
 	if err != nil {
 		return Entity{}, err
 	}
@@ -203,10 +220,6 @@ func (s *Store) GetMusicEntityFor(ctx context.Context, subject Subject, family, 
 		return Entity{}, fmt.Errorf("read music entity by name: %w", err)
 	}
 	entities := []Entity{entity}
-	projection := QueryProjection{}
-	if len(projections) != 0 {
-		projection = projections[0]
-	}
 	if err := populateEntityProjections(ctx, tx, subject, access, entities, projection); err != nil {
 		return Entity{}, err
 	}

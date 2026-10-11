@@ -613,19 +613,20 @@ func (s *Server) collectionItems(w http.ResponseWriter, r *http.Request, kind st
 		s.libraryError(w, r, err)
 		return
 	}
+	p := readItemPresentation(r)
 	items := make([]map[string]any, 0, len(result.Items))
 	for _, entry := range result.Items {
 		if limit == 0 {
 			break
 		}
-		dto := s.itemDTOForRequest(r, entry, queryValues(values["Fields"]), false)
+		dto := s.itemDTOWithToken(entry, p.fields, false, p.deliveryToken)
 		if kind == library.PlaylistKind {
 			dto["PlaylistItemId"] = entry.PlaylistItemID
 		}
-		applyItemSwitches(dto, r)
+		p.applySwitches(dto)
 		items = append(items, dto)
 	}
-	if !s.applyIndexedImages(w, r, subject.UserID, items, false) {
+	if !s.applyIndexedImages(w, r, subject.UserID, items, false, p) {
 		return
 	}
 	jsonResponse(w, http.StatusOK, map[string]any{"Items": items, "TotalRecordCount": result.TotalRecordCount})

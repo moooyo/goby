@@ -33,11 +33,11 @@ func (s *Store) readSteadyApplicationClient(ctx context.Context, previous Princi
 	}
 	// Evaluate authorization after the credential lock wait, including a
 	// revocation committed while authentication's initial lookup was running.
-	if err := CheckApplicationKey(ctx, tx, credentialID, false); err != nil {
-		return Principal{}, false, err
-	}
 	var keyID int64
-	err = tx.QueryRow(ctx, "SELECT id FROM application_keys WHERE credential_id = $1 FOR SHARE", credentialID).Scan(&keyID)
+	err = tx.QueryRow(ctx, `SELECT k.id FROM sessions a
+		JOIN application_keys k ON k.credential_id = a.id
+		WHERE a.id = $1 AND a.kind = 'application_key' AND a.user_id IS NULL
+		AND a.expires_at IS NULL AND a.revoked_at IS NULL FOR SHARE OF k`, credentialID).Scan(&keyID)
 	if errors.Is(err, pgx.ErrNoRows) || (err == nil && keyID != previous.ApplicationKeyID) {
 		return Principal{}, false, ErrUnauthorized
 	}

@@ -60,6 +60,11 @@ type ManagedUserDeletion struct {
 	CollectionsChanged    bool `json:"-"`
 }
 
+type managedUserMutationLocks struct {
+	target           ManagedUser
+	targetSessionIDs []string
+}
+
 // ManagedUserValidationError carries safe field messages for native forms.
 type ManagedUserValidationError struct {
 	Fields map[string]string
@@ -153,11 +158,12 @@ func (s *Store) UpdateManagedUser(ctx context.Context, actor Principal, id strin
 	if err != nil {
 		return ManagedUserMutation{}, err
 	}
-	tx, current, err := s.beginManagedUserMutation(ctx, actor, id, false)
+	tx, locked, err := s.beginManagedUserMutation(ctx, actor, id, false)
 	if err != nil {
 		return ManagedUserMutation{}, err
 	}
 	defer rollback(tx)
+	current := locked.target
 	if current.Revision != input.Revision {
 		return ManagedUserMutation{}, ErrRevisionConflict
 	}
@@ -246,11 +252,12 @@ func (s *Store) ResetManagedUserPassword(ctx context.Context, actor Principal, i
 	if err != nil {
 		return ManagedUserMutation{}, fmt.Errorf("hash managed user password: %w", err)
 	}
-	tx, current, err := s.beginManagedUserMutation(ctx, actor, id, false)
+	tx, locked, err := s.beginManagedUserMutation(ctx, actor, id, false)
 	if err != nil {
 		return ManagedUserMutation{}, err
 	}
 	defer rollback(tx)
+	current := locked.target
 	if current.Revision != revision {
 		return ManagedUserMutation{}, ErrRevisionConflict
 	}
@@ -303,11 +310,12 @@ func (s *Store) DeleteManagedUser(ctx context.Context, actor Principal, id strin
 	if revision < 1 {
 		return ManagedUserDeletion{}, managedUserFieldError("Revision", "revision must be a positive integer")
 	}
-	tx, current, err := s.beginManagedUserMutation(ctx, actor, id, true)
+	tx, locked, err := s.beginManagedUserMutation(ctx, actor, id, true)
 	if err != nil {
 		return ManagedUserDeletion{}, err
 	}
 	defer rollback(tx)
+	current := locked.target
 	if err := CheckAdministrator(ctx, tx, actor, managedAdministratorAudience(actor), false); err != nil {
 		return ManagedUserDeletion{}, err
 	}
@@ -330,22 +338,9 @@ func (s *Store) DeleteManagedUser(ctx context.Context, actor Principal, id strin
 	if err := tx.QueryRow(ctx, "SELECT expires_at, device_id FROM sessions WHERE id = $1 AND user_id = $2", actor.SessionID, actor.User.ID).Scan(&actorExpiresAt, &actorDeviceID); err != nil {
 		return ManagedUserDeletion{}, fmt.Errorf("read locked deletion authority expiry: %w", err)
 	}
-	rows, err := tx.Query(ctx, "SELECT id FROM sessions WHERE user_id = $1 ORDER BY id", id)
-	if err != nil {
-		return ManagedUserDeletion{}, fmt.Errorf("read deleted user session handles: %w", err)
-	}
-	result := ManagedUserDeletion{CurrentSessionRevoked: id == actor.User.ID, RevokedSessionIDs: []string{}}
-	for rows.Next() {
-		var sessionID string
-		if err := rows.Scan(&sessionID); err != nil {
-			rows.Close()
-			return ManagedUserDeletion{}, fmt.Errorf("read deleted user session handle: %w", err)
-		}
-		result.RevokedSessionIDs = append(result.RevokedSessionIDs, sessionID)
-	}
-	rows.Close()
-	if err := rows.Err(); err != nil {
-		return ManagedUserDeletion{}, fmt.Errorf("read deleted user sessions: %w", err)
+	result := ManagedUserDeletion{
+		CurrentSessionRevoked: id == actor.User.ID,
+		RevokedSessionIDs:     locked.targetSessionIDs,
 	}
 	// Account locks also fence new collection ownership/share references. Keep
 	// this pre-cascade fact in the committed result: ordinary account deletion
@@ -404,13 +399,13 @@ func (s *Store) DeleteManagedUser(ctx context.Context, actor Principal, id strin
 	return result, nil
 }
 
-func (s *Store) beginManagedUserMutation(ctx context.Context, actor Principal, id string, lockTargetSessions bool) (pgx.Tx, ManagedUser, error) {
+func (s *Store) beginManagedUserMutation(ctx context.Context, actor Principal, id string, lockTargetSessions bool) (pgx.Tx, managedUserMutationLocks, error) {
 	if !validManagedActor(actor) {
-		return nil, ManagedUser{}, ErrUnauthorized
+		return nil, managedUserMutationLocks{}, ErrUnauthorized
 	}
 	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
-		return nil, ManagedUser{}, fmt.Errorf("begin managed user mutation: %w", err)
+		return nil, managedUserMutationLocks{}, fmt.Errorf("begin managed user mutation: %w", err)
 	}
 	ok := false
 	defer func() {
@@ -419,45 +414,51 @@ func (s *Store) beginManagedUserMutation(ctx context.Context, actor Principal, i
 		}
 	}()
 	if _, err := tx.Exec(ctx, "SELECT pg_advisory_xact_lock($1)", managedUsersLockID); err != nil {
-		return nil, ManagedUser{}, fmt.Errorf("lock managed user mutations: %w", err)
+		return nil, managedUserMutationLocks{}, fmt.Errorf("lock managed user mutations: %w", err)
 	}
 	// FOR UPDATE conflicts with Authenticate's FOR SHARE while preserving a
 	// deterministic account order for actor/target pairs in either direction.
 	rows, err := tx.Query(ctx, "SELECT "+userColumns+", management_revision FROM users WHERE id = ANY($1::text[]) ORDER BY id FOR UPDATE", []string{actor.User.ID, id})
 	if err != nil {
-		return nil, ManagedUser{}, fmt.Errorf("lock managed user accounts: %w", err)
+		return nil, managedUserMutationLocks{}, fmt.Errorf("lock managed user accounts: %w", err)
 	}
 	users := make(map[string]ManagedUser, 2)
 	for rows.Next() {
 		user, err := scanManagedUser(rows)
 		if err != nil {
 			rows.Close()
-			return nil, ManagedUser{}, fmt.Errorf("read locked managed user: %w", err)
+			return nil, managedUserMutationLocks{}, fmt.Errorf("read locked managed user: %w", err)
 		}
 		users[user.User.ID] = user
 	}
 	rows.Close()
 	if err := rows.Err(); err != nil {
-		return nil, ManagedUser{}, fmt.Errorf("read managed user accounts: %w", err)
+		return nil, managedUserMutationLocks{}, fmt.Errorf("read managed user accounts: %w", err)
 	}
 	account, found := users[actor.User.ID]
 	if !found || account.User.IsDisabled || !account.User.IsAdministrator {
-		return nil, ManagedUser{}, ErrUnauthorized
+		return nil, managedUserMutationLocks{}, ErrUnauthorized
 	}
 	var sessionID string
+	var targetSessionIDs []string
 	if lockTargetSessions {
 		// Deletion locks all affected credentials in one deterministic order.
 		// Account locks prevent new target logins while this set is consumed.
-		sessions, err := tx.Query(ctx, `SELECT id FROM sessions
+		targetSessionIDs = make([]string, 0)
+		sessions, err := tx.Query(ctx, `SELECT id, (user_id = $3) FROM sessions
 			WHERE (id = $1 AND user_id = $2) OR user_id = $3 ORDER BY id FOR UPDATE`, actor.SessionID, actor.User.ID, id)
 		if err != nil {
-			return nil, ManagedUser{}, fmt.Errorf("lock deleted user sessions: %w", err)
+			return nil, managedUserMutationLocks{}, fmt.Errorf("lock deleted user sessions: %w", err)
 		}
 		for sessions.Next() {
 			var lockedID string
-			if err := sessions.Scan(&lockedID); err != nil {
+			var targetSession bool
+			if err := sessions.Scan(&lockedID, &targetSession); err != nil {
 				sessions.Close()
-				return nil, ManagedUser{}, fmt.Errorf("read locked deletion session: %w", err)
+				return nil, managedUserMutationLocks{}, fmt.Errorf("read locked deletion session: %w", err)
+			}
+			if targetSession {
+				targetSessionIDs = append(targetSessionIDs, lockedID)
 			}
 			if lockedID == actor.SessionID {
 				sessionID = lockedID
@@ -465,19 +466,19 @@ func (s *Store) beginManagedUserMutation(ctx context.Context, actor Principal, i
 		}
 		sessions.Close()
 		if err := sessions.Err(); err != nil {
-			return nil, ManagedUser{}, fmt.Errorf("read locked deletion sessions: %w", err)
+			return nil, managedUserMutationLocks{}, fmt.Errorf("read locked deletion sessions: %w", err)
 		}
 		if sessionID == "" {
-			return nil, ManagedUser{}, ErrUnauthorized
+			return nil, managedUserMutationLocks{}, ErrUnauthorized
 		}
 	} else {
 		err = tx.QueryRow(ctx, `SELECT id FROM sessions WHERE id = $1 AND user_id = $2 FOR UPDATE`, actor.SessionID, actor.User.ID).Scan(&sessionID)
 	}
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, ManagedUser{}, ErrUnauthorized
+		return nil, managedUserMutationLocks{}, ErrUnauthorized
 	}
 	if err != nil {
-		return nil, ManagedUser{}, fmt.Errorf("lock managed user actor session: %w", err)
+		return nil, managedUserMutationLocks{}, fmt.Errorf("lock managed user actor session: %w", err)
 	}
 	// Check the clock after acquiring all authentication locks: a queued session
 	// may expire or be revoked while waiting for its account/session row.
@@ -485,29 +486,29 @@ func (s *Store) beginManagedUserMutation(ctx context.Context, actor Principal, i
 	if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM sessions
 		WHERE id = $1 AND user_id = $2 AND kind = $3 AND revoked_at IS NULL
 		AND expires_at > clock_timestamp())`, sessionID, actor.User.ID, actor.Kind).Scan(&authorized); err != nil {
-		return nil, ManagedUser{}, fmt.Errorf("revalidate managed user actor: %w", err)
+		return nil, managedUserMutationLocks{}, fmt.Errorf("revalidate managed user actor: %w", err)
 	}
 	if !authorized {
-		return nil, ManagedUser{}, ErrUnauthorized
+		return nil, managedUserMutationLocks{}, ErrUnauthorized
 	}
 	if actor.Kind == "emby" {
 		var deviceID string
 		var observedAt time.Time
 		if err := tx.QueryRow(ctx, "SELECT device_id, clock_timestamp() FROM sessions WHERE id = $1", sessionID).Scan(&deviceID, &observedAt); err != nil {
-			return nil, ManagedUser{}, fmt.Errorf("read managed user actor policy context: %w", err)
+			return nil, managedUserMutationLocks{}, fmt.Errorf("read managed user actor policy context: %w", err)
 		}
 		policy, err := ParseRuntimePolicy(account.User.Policy)
 		if err != nil || !parsedLoginPolicyAllows(policy, account.User.Policy, deviceID, observedAt) ||
 			(!policy.EnableRemoteAccess && !IsLocalPeer(actor.PeerIP)) {
-			return nil, ManagedUser{}, ErrUnauthorized
+			return nil, managedUserMutationLocks{}, ErrUnauthorized
 		}
 	}
 	target, found := users[id]
 	if !found {
-		return nil, ManagedUser{}, ErrNotFound
+		return nil, managedUserMutationLocks{}, ErrNotFound
 	}
 	ok = true
-	return tx, target, nil
+	return tx, managedUserMutationLocks{target: target, targetSessionIDs: targetSessionIDs}, nil
 }
 
 func validManagedActor(actor Principal) bool {

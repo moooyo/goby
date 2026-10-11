@@ -3,10 +3,23 @@ package library
 import "strings"
 
 // QueryProjection opts browse callers into narrower response-only data. Its
-// zero value preserves complete domain items and entity image projections.
+// zero value preserves complete domain items, entity counts, and attachments.
 type QueryProjection struct {
 	Browse         bool
 	ImagesDisabled bool
+	// UserDataDisabled leaves user-state filtering, ordering, and authority intact.
+	UserDataDisabled bool
+	// EntitySourceCountsDisabled leaves Entity.Count zero without changing membership.
+	EntitySourceCountsDisabled bool
+}
+
+// Source counts are response data. Grouping still retains one row per entity
+// and requires the same authorized association when the aggregate is omitted.
+func entitySourceCountSQL(projection QueryProjection) string {
+	if projection.EntitySourceCountsDisabled {
+		return "0::bigint"
+	}
+	return "count(DISTINCT i.id)"
 }
 
 // Playback restart evidence is never part of a public item DTO. Preserve SQL

@@ -13,9 +13,13 @@ import (
 
 // Ancestors returns nearest parents first. Every link must stay inside the
 // seed's library and remain visible in the same current-policy snapshot.
-func (s *Store) Ancestors(ctx context.Context, subject Subject, itemID string) ([]Item, error) {
+func (s *Store) Ancestors(ctx context.Context, subject Subject, itemID string, projections ...QueryProjection) ([]Item, error) {
 	if !metadataIdentifier(itemID) {
 		return nil, ErrInvalidInput
+	}
+	projection := QueryProjection{}
+	if len(projections) != 0 {
+		projection = projections[0]
 	}
 	tx, access, err := s.beginSubjectRead(ctx, subject)
 	if err != nil {
@@ -59,8 +63,10 @@ func (s *Store) Ancestors(ctx context.Context, subject Subject, itemID string) (
 		return nil, err
 	}
 	rows.Close()
-	if err := attachUserData(ctx, tx, subject.UserID, result, access); err != nil {
-		return nil, err
+	if !projection.UserDataDisabled {
+		if err := attachUserData(ctx, tx, subject.UserID, result, access); err != nil {
+			return nil, err
+		}
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return nil, err
