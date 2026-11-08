@@ -1,0 +1,12 @@
+.user-activity-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.user-activity-heading h3 { margin: 0; color: var(--ink); font-size: 13px; font-weight: 650; }
+.user-activity-error { margin-bottom: 12px; }
+.user-activity-error p { margin: 6px 0 0; color: var(--ink3); font-size: 12px; }
+.user-activity-details .access-sheet-kv dt { width: 98px; }
+.user-activity-list-notice { padding: 12px 16px; border-top: 1px solid var(--line); }
+.user-activity-list-notice p { margin: 6px 0 0; color: var(--ink3); font-size: 12px; }
+.user-activity-cell { white-space: nowrap; }
+
+@media (max-width: 760px) {
+  .access-users-table th.user-activity-column { display: none; }
+}

@@ -843,6 +843,7 @@ func (s *Store) reportPlaybackValidatedStop(ctx context.Context, owner PlaybackO
 		}
 		return session, data, nil
 	}
+	previousSession := session
 	duration := item.duration
 	position := clampPosition(session.PositionTicks, duration)
 	if session.IsDynamic {
@@ -900,6 +901,9 @@ func (s *Store) reportPlaybackValidatedStop(ctx context.Context, owner PlaybackO
 		if err := notificationjournal.RecordUserData(ctx, tx, owner.UserID, notificationjournal.Reference{Kind: "Item", ID: item.id}, false); err != nil {
 			return PlaySession{}, UserData{}, err
 		}
+	}
+	if err := recordPlaybackObservations(ctx, tx, owner, previousSession, session); err != nil {
+		return PlaySession{}, UserData{}, err
 	}
 	if err := commitPlaybackWrite(ctx, tx, owner); err != nil {
 		return PlaySession{}, UserData{}, fmt.Errorf("commit playback report: %w", err)

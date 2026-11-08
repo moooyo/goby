@@ -98,6 +98,7 @@ type hlsSession struct {
 	progressiveReaders      int
 	lastAsked               int
 	demand                  hlsPlaybackDemand
+	bufferThrottle          hlsBufferThrottle
 	ctx                     context.Context
 	cancel                  context.CancelFunc
 	playbackReference       *playbackAdmissionReference
@@ -149,6 +150,12 @@ func newHLSRuntime(ctx context.Context, server *Server) (*hlsRuntime, error) {
 		return nil, errors.New("the configured FFprobe executable is unavailable")
 	}
 	managerOptions := server.cfg.Transcoding.ManagerOptions(server.cfg.FFmpegPath, transcode.NewRepository(server.db))
+	if server.settings != nil {
+		managerOptions.Root = server.settings.Snapshot().Runtime.DesiredTranscodingTempPath
+	}
+	if err := server.validateStartupTranscodingTempPath(managerOptions.Root, ctx); err != nil {
+		return nil, err
+	}
 	managerOptions.ValidateHardware = func(ctx context.Context, plan transcode.Plan) error {
 		if err := ctx.Err(); err != nil {
 			return err
@@ -176,6 +183,7 @@ func newHLSRuntime(ctx context.Context, server *Server) (*hlsRuntime, error) {
 	if err != nil {
 		return nil, err
 	}
+	server.activeTranscodingTempPath = managerOptions.Root
 	lifetime, cancel := context.WithCancel(context.Background())
 	runtime = &hlsRuntime{server: server, manager: manager, ctx: lifetime, cancel: cancel, sessions: make(map[string]*hlsSession),
 		byKey: make(map[hlsKey]*hlsSession), byScope: make(map[transcode.Scope]map[string]*hlsSession),
@@ -205,7 +213,7 @@ func (h *hlsRuntime) registerWithStatus(principal identity.Principal, source lib
 	return h.registerWithPlaybackOwner(principal, source, playID, decision, start, nil)
 }
 
-func (h *hlsRuntime) registerWithPlaybackOwner(principal identity.Principal, source library.MediaFile, playID string, decision playback.ConversionDecision, start int64, parent *playbackAdmissionReference) (*hlsSession, bool, error) {
+func (h *hlsRuntime) registerWithPlaybackOwner(principal identity.Principal, source library.MediaFile, playID string, decision playback.ConversionDecision, start int64, parent *playbackAdmissionReference, enableThrottling ...bool) (*hlsSession, bool, error) {
 	if decision.Plan == nil {
 		return nil, false, transcode.ErrInvalidPlan
 	}
@@ -283,6 +291,7 @@ func (h *hlsRuntime) registerWithPlaybackOwner(principal identity.Principal, sou
 		subtitleSource: playback.Source{ItemID: source.Item.ID, MediaSourceID: source.SourceID, ItemType: source.Item.Type, Info: playbackMediaInfo(source.Item)},
 		subtitleView:   decision.SubtitleView,
 		startHint:      start, accessed: time.Now(), presenceUpdated: time.Now(), lastAsked: -1, ctx: ctx, cancel: cancel,
+		bufferThrottle:    hlsBufferThrottle{enabled: len(enableThrottling) != 0 && enableThrottling[0]},
 		playbackReference: playbackReference}
 	if !session.subtitleView.SelectionSet {
 		if plan.Subtitle.Mode == "hls" {
@@ -520,8 +529,15 @@ func hlsServerLimits(cfg config.TranscodingConfig) playback.ConversionLimits {
 	return playback.ConversionLimits{
 		MaxBitrate: cfg.MaxBitrate, MaxWidth: cfg.MaxWidth, MaxHeight: cfg.MaxHeight,
 		MaxAudioChannels: cfg.MaxAudioChannels, Hardware: cfg.Hardware, Execution: cfg.Execution,
-		HardwareUnavailable: cfg.HardwareUnavailable,
-		AllowRemux:          cfg.Enabled, AllowAudioTranscode: cfg.Enabled, AllowVideoTranscode: cfg.Enabled,
+		HardwareUnavailable:         cfg.HardwareUnavailable,
+		DisableHevcEncoding:         cfg.DisableHevcEncoding,
+		DisableHardwareEncoding:     cfg.DisableHardwareEncoding,
+		DisableSubtitleExtraction:   cfg.DisableSubtitleExtraction,
+		DisableAttachmentExtraction: cfg.DisableAttachmentExtraction,
+		CodecConfigurations:         cfg.CodecConfigurations,
+		CodecProfileLimits:          cfg.CodecProfileLimits,
+		DisableAssToText:            cfg.DisableAssToText,
+		AllowRemux:                  cfg.Enabled, AllowAudioTranscode: cfg.Enabled, AllowVideoTranscode: cfg.Enabled,
 	}
 }
 

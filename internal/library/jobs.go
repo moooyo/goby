@@ -284,7 +284,7 @@ func (s *Store) finishTask(task *scanTask, status, message string) error {
 			if _, err := tx.Exec("UPDATE libraries SET last_scan_at = clock_timestamp() WHERE id = $1", finished.LibraryID); err != nil {
 				return err
 			}
-			var detectIntros, generatePreviews, generateBackgrounds, generateWaveforms, detectCredits, generateSubtitleTimelines bool
+			var detectIntros, generatePreviews, generateBackgrounds, generateWaveforms, detectCredits, generateSubtitleTimelines, downloadImages bool
 			if err := tx.QueryRow(`SELECT collection_type='tvshows'
 				AND COALESCE((options->>'EnableIntroDetection')::boolean,false),
 				collection_type IN ('movies','tvshows','mixed')
@@ -296,8 +296,10 @@ func (s *Store) finishTask(task *scanTask, status, message string) error {
 				collection_type IN ('movies','tvshows','mixed')
 				AND COALESCE((options->>'EnableCreditsDetection')::boolean,false),
 				collection_type IN ('movies','tvshows','mixed')
-				AND COALESCE((options->>'EnableSubtitleTimelineGeneration')::boolean,false)
-				FROM libraries WHERE id=$1`, finished.LibraryID).Scan(&detectIntros, &generatePreviews, &generateBackgrounds, &generateWaveforms, &detectCredits, &generateSubtitleTimelines); err != nil {
+				AND COALESCE((options->>'EnableSubtitleTimelineGeneration')::boolean,false),
+				collection_type IN ('movies','tvshows','mixed')
+				AND COALESCE((options->>'EnableOnlineImages')::boolean,false)
+				FROM libraries WHERE id=$1`, finished.LibraryID).Scan(&detectIntros, &generatePreviews, &generateBackgrounds, &generateWaveforms, &detectCredits, &generateSubtitleTimelines, &downloadImages); err != nil {
 				return err
 			}
 			if detectIntros {
@@ -329,6 +331,11 @@ func (s *Store) finishTask(task *scanTask, status, message string) error {
 			}
 			if generateSubtitleTimelines {
 				if err := systemevents.Record(tx.Exec, systemevents.SubtitleTimelineGenerationRequested); err != nil {
+					return err
+				}
+			}
+			if downloadImages {
+				if err := systemevents.Record(tx.Exec, systemevents.OnlineImagesRequested); err != nil {
 					return err
 				}
 			}

@@ -478,7 +478,7 @@ func validAuthority(authority Authority) bool {
 	if authority == (Authority{}) {
 		return true
 	}
-	if authority.Kind == "emby" {
+	if authority.Kind == "emby" || authority.Kind == "admin" {
 		return validScopeField(authority.UserID, true) && validScopeField(authority.SessionID, true) &&
 			validScopeField(authority.PeerIP, false) && authority.CredentialID == "" &&
 			authority.ClientSessionID == "" && authority.ApplicationKeyID == 0

@@ -202,6 +202,7 @@ export interface MetadataItemsQuery {
 
 export interface BootstrapResponse {
   Initialized: boolean;
+  UICulture?: 'zh-CN' | 'en-US';
 }
 
 export interface UserResponse {
@@ -377,11 +378,12 @@ export interface OverviewResponse {
 }
 
 export const activityActions = [
-  "user.created", "user.updated", "user.password_reset", "session.login", "session.revoked",
+  "user.created", "user.updated", "user.deleted", "user.password_reset", "session.login", "session.revoked",
   "application_key.created", "application_key.revealed", "application_key.revoked", "device.updated", "device.removed",
-  "library.created", "library.removed", "library.root_binding.updated", "scan.requested", "scan.cancel_requested", "scan.finished", "metadata.updated",
+  "library.created", "library.updated", "library.removed", "library.root_binding.updated", "scan.requested", "scan.cancel_requested", "scan.finished", "metadata.updated", "item.deleted", "subtitle.deleted",
   "settings.updated", "task.admitted", "task.cancel_requested", "task.finished", "task.schedule_updated",
-  "backup.requested", "backup.cancel_requested", "backup.finished", "backup.imported", "backup.delete_requested", "backup.deleted", "backup.downloaded",
+  "playback.started", "playback.stopped",
+  "backup.requested", "backup.cancel_requested", "backup.finished", "backup.published", "backup.imported", "backup.delete_requested", "backup.deleted", "backup.downloaded",
   "restore.requested", "restore.planned", "restore.apply_requested", "restore.applied", "restore.rollback_requested", "restore.cancel_requested", "restore.failed",
 ] as const;
 export const activitySeverities = ["Info", "Debug", "Warn", "Error", "Fatal"] as const;
@@ -396,7 +398,7 @@ export interface ActivityEntry {
   Severity: ActivitySeverity;
   Source: "native" | "emby" | "system";
   Actor: { Kind: "user" | "application_key" | "system"; Id: string | null; Name: string | null };
-  Resource: { Kind: ActivityResourceKind; Id: string };
+  Resource: { Kind: ActivityResourceKind; Id: string; Name?: string };
   Revision: string | null;
   PreviousRevision?: string;
   ObservationFingerprint?: string;
@@ -501,7 +503,7 @@ export interface JobResponse {
 export type TaskRunState = "pending" | "running" | "stopping" | "completed" | "failed" | "cancelled" | "interrupted";
 export type TaskChildState = "waiting" | "queued" | "running" | "completed" | "failed" | "cancelled" | "unavailable" | "interrupted";
 export type TaskTriggerKind = "interval" | "daily" | "weekly" | "startup" | "system_event";
-export type TaskSystemEvent = "ServerStarted" | "LibraryChanged" | "ConfigurationChanged" | "IntroAnalysisRequested" | "PreviewGenerationRequested" | "BackgroundPreviewGenerationRequested" | "AudioWaveformGenerationRequested" | "CreditsAnalysisRequested" | "SubtitleTimelineGenerationRequested";
+export type TaskSystemEvent = "ServerStarted" | "LibraryChanged" | "ConfigurationChanged" | "IntroAnalysisRequested" | "PreviewGenerationRequested" | "BackgroundPreviewGenerationRequested" | "AudioWaveformGenerationRequested" | "CreditsAnalysisRequested" | "SubtitleTimelineGenerationRequested" | "OnlineImagesRequested";
 
 export interface TaskTriggerInput {
   Kind: TaskTriggerKind;
@@ -522,6 +524,15 @@ export interface TaskTrigger {
   MaxRuntimeTicks: string | null;
   NextFireAt: string | null;
   CalculationError: string;
+}
+
+export interface TaskBackupResult {
+  Status: 'available' | 'not_recorded' | 'deleted' | 'deleting' | 'missing' | 'mismatch' | 'unavailable';
+  BackupId?: string;
+  State?: string;
+  SizeBytes?: string;
+  SHA256?: string;
+  Verified?: boolean;
 }
 
 export interface TaskRun {
@@ -547,6 +558,7 @@ export interface TaskRun {
   Scanned: number;
   Added: number;
   Updated: number;
+  BackupResult?: TaskBackupResult;
 }
 
 export interface TaskChild {
@@ -602,8 +614,24 @@ export interface StorageRootsResponse {
   Items: {
     Path: string;
     Available: boolean;
+    Readable: boolean | null;
+    Writable: boolean | null;
   }[];
   Configured: boolean;
+}
+
+export interface LibraryStorageDirectory {
+  Path: string;
+  Available: boolean;
+  Readable: boolean | null;
+  Writable: boolean | null;
+  TotalBytes: string | null;
+  UsedBytes: string | null;
+  AvailableBytes: string | null;
+}
+export interface LibraryStorageDirectoriesResponse {
+  Items: LibraryStorageDirectory[];
+  TotalRecordCount: number;
 }
 
 export interface SettingsValues {
@@ -1317,7 +1345,7 @@ function validTaskDefinition(value: unknown): value is TaskDefinition {
   return value.Triggers.every((trigger: unknown) => {
     if (!isRecord(trigger) || !nonemptyString(trigger.Id) || ids.has(trigger.Id as string)
       || typeof trigger.Kind !== "string" || !["interval", "daily", "weekly", "startup", "system_event"].includes(trigger.Kind)
-      || (trigger.Kind === "system_event" ? !["ServerStarted", "LibraryChanged", "ConfigurationChanged", "IntroAnalysisRequested", "PreviewGenerationRequested", "BackgroundPreviewGenerationRequested", "AudioWaveformGenerationRequested", "CreditsAnalysisRequested", "SubtitleTimelineGenerationRequested"].includes(String(trigger.SystemEvent)) : trigger.SystemEvent != null)
+      || (trigger.Kind === "system_event" ? !["ServerStarted", "LibraryChanged", "ConfigurationChanged", "IntroAnalysisRequested", "PreviewGenerationRequested", "BackgroundPreviewGenerationRequested", "AudioWaveformGenerationRequested", "CreditsAnalysisRequested", "SubtitleTimelineGenerationRequested", "OnlineImagesRequested"].includes(String(trigger.SystemEvent)) : trigger.SystemEvent != null)
       || ![trigger.IntervalTicks, trigger.TimeOfDayTicks, trigger.MaxRuntimeTicks].every(validTaskTicks)
       || (trigger.DayOfWeek !== null && (!Number.isInteger(trigger.DayOfWeek) || (trigger.DayOfWeek as number) < 0 || (trigger.DayOfWeek as number) > 6))
       || !validTaskTimestamp(trigger.NextFireAt) || typeof trigger.CalculationError !== "string") return false;
@@ -1629,6 +1657,8 @@ function validActivityEntry(value: unknown): value is ActivityEntry {
     || (value.Actor.Id !== null && !nonemptyString(value.Actor.Id))
     || (value.Actor.Name !== null && typeof value.Actor.Name !== "string")
     || !isRecord(value.Resource) || !nonemptyString(value.Resource.Id)
+    || (value.Resource.Name !== undefined && (typeof value.Resource.Name !== "string" || !value.Resource.Name
+      || new TextEncoder().encode(value.Resource.Name).length > 1024 || /[\u0000-\u001f\u007f-\u009f]/u.test(value.Resource.Name)))
     || !["user", "session", "application_key", "device", "library", "library_root", "scan", "item", "settings", "task", "task_run", "backup", "restore"].includes(value.Resource.Kind as string)
     || (value.Revision !== null && !validObservabilityDecimal(value.Revision, true))
     || (value.PreviousRevision !== undefined && !validObservabilityDecimal(value.PreviousRevision, true))
@@ -1643,10 +1673,22 @@ function validActivityEntry(value: unknown): value is ActivityEntry {
       || typeof value.ObservationFingerprint !== "string" || !/^[0-9a-f]{64}$/.test(value.ObservationFingerprint)
       || BigInt(value.PreviousRevision) >= 9223372036854775807n || BigInt(value.Revision) !== BigInt(value.PreviousRevision) + 1n
       || value.Count !== "0" || value.State !== null || value.ChangedFields.length !== 0) return false;
+  } else if (value.Action === "backup.published") {
+    if (value.Source !== "system" || value.Actor.Kind !== "system" || value.Actor.Id !== null || value.Actor.Name !== null
+      || value.Resource.Kind !== "backup" || value.Revision !== null || value.PreviousRevision !== undefined
+      || value.ObservationFingerprint === undefined || value.Count !== "0" || value.State !== "completed"
+      || value.ChangedFields.length !== 0) return false;
+  } else if (value.Action === "playback.started" || value.Action === "playback.stopped") {
+    if (value.Severity !== "Info" || !["native", "emby"].includes(value.Source as string)
+      || !["user", "application_key"].includes(value.Actor.Kind as string) || value.Source === "native" && value.Actor.Kind !== "user"
+      || !nonemptyString(value.Actor.Id) || value.Resource.Kind !== "item" || value.Revision !== null
+      || value.PreviousRevision !== undefined || value.ObservationFingerprint === undefined || value.Count !== "0"
+      || value.State !== null || value.ChangedFields.length !== 0) return false;
   } else if (value.PreviousRevision !== undefined || value.ObservationFingerprint !== undefined) return false;
+  if (value.Resource.Name !== undefined && value.Action !== "playback.started" && value.Action !== "playback.stopped") return false;
   return Object.keys(value).every((field) => ["Id", "Date", "Action", "Severity", "Source", "Actor", "Resource", "Revision", "PreviousRevision", "ObservationFingerprint", "Count", "State", "ChangedFields", "Name", "Overview"].includes(field))
     && Object.keys(value.Actor).every((field) => ["Kind", "Id", "Name"].includes(field))
-    && Object.keys(value.Resource).every((field) => ["Kind", "Id"].includes(field));
+    && Object.keys(value.Resource).every((field) => ["Kind", "Id", "Name"].includes(field));
 }
 
 function validateObservabilityPage(value: { Items: unknown[]; TotalRecordCount: number; StartIndex: number; Limit: number }, query: ObservabilityPageQuery): void {
@@ -2132,5 +2174,19 @@ export const adminApi = {
 
   getStorageRoots(options: RequestOptions = {}): Promise<StorageRootsResponse> {
     return request("/storage/roots", options);
+  },
+
+  async getLibraryStorageDirectories(options: RequestOptions = {}): Promise<LibraryStorageDirectoriesResponse> {
+    const result = await authenticatedRequest<LibraryStorageDirectoriesResponse>("/storage/library-directories", options);
+    const byteValue = (value: unknown): value is string | null => value === null || typeof value === "string" && /^(0|[1-9]\d{0,19})$/.test(value) && BigInt(value) <= 18446744073709551615n;
+    const nullableBoolean = (value: unknown) => value === null || typeof value === "boolean";
+    if (!isRecord(result) || !Array.isArray(result.Items) || !Number.isSafeInteger(result.TotalRecordCount)
+      || result.TotalRecordCount !== result.Items.length || !result.Items.every((item) => isRecord(item)
+        && nonemptyString(item.Path) && typeof item.Available === "boolean" && nullableBoolean(item.Readable) && nullableBoolean(item.Writable)
+        && byteValue(item.TotalBytes) && byteValue(item.UsedBytes) && byteValue(item.AvailableBytes)
+        && (item.TotalBytes === null || item.UsedBytes === null || BigInt(item.UsedBytes) <= BigInt(item.TotalBytes))
+        && (item.TotalBytes === null || item.AvailableBytes === null || BigInt(item.AvailableBytes) <= BigInt(item.TotalBytes)))
+      || new Set(result.Items.map((item) => item.Path)).size !== result.Items.length) throw invalidResponse();
+    return result;
   },
 };

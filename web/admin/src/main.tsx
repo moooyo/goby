@@ -1,19 +1,19 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { CssBaseline, ThemeProvider } from '@mui/material';
-import '@fontsource-variable/manrope';
+import '@fontsource-variable/noto-serif-sc';
+import '@fontsource-variable/league-gothic';
 import '@fontsource-variable/noto-sans-sc';
-import '@fontsource-variable/jetbrains-mono';
+import '@fontsource/ibm-plex-mono/400.css';
+import '@fontsource/ibm-plex-mono/500.css';
 import { App } from './App';
 import { ErrorBoundary } from './ErrorBoundary';
-import { theme } from './theme';
+import { AdminPreferencesProvider } from './i18n';
 import './styles.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+    <AdminPreferencesProvider>
       <ErrorBoundary><App /></ErrorBoundary>
-    </ThemeProvider>
+    </AdminPreferencesProvider>
   </React.StrictMode>,
 );

@@ -61,7 +61,7 @@ func (r *mediaAnalysisRuntime) buildPreview(ctx context.Context, work library.An
 	if !present {
 		return nil, nil, media.ErrAnalysisUnproven
 	}
-	extractor, err := bindAnalysisPreviewExtractor(r.extractor, work, plan)
+	extractor, err := r.previewBuildExtractor(work, plan)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -81,6 +81,19 @@ func (r *mediaAnalysisRuntime) buildPreview(ctx context.Context, work library.An
 		return nil, nil, discardAnalysisPreviewPublication(publication, err)
 	}
 	return publication, values, nil
+}
+
+// previewBuildExtractor captures the image decoder resource policy at build
+// start. All source audits and output widths share this value copy. It leaves
+// the frozen analysis output profile and existing preview identities unchanged.
+func (r *mediaAnalysisRuntime) previewBuildExtractor(work library.AnalysisWork, plan analysisPreviewBuildPlan) (media.AnalysisExtractor, error) {
+	extractor := r.extractor
+	if r.server != nil {
+		extractor.ImageExtractionThreads = media.ImageExtractionThreads{
+			Count: r.server.currentSettingsSnapshot().ExtractionThreadCount, Configured: true,
+		}
+	}
+	return bindAnalysisPreviewExtractor(extractor, work, plan)
 }
 
 func planAnalysisPreviewBuild(configuration config.MediaAnalysisConfig, work library.AnalysisWork, source library.AnalysisSource, info media.Info) (analysisPreviewBuildPlan, error) {

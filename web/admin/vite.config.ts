@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { frontendContributions } from './build/frontend-contributions';
+import { frontendContributions } from './build/frontend-contributions.ts';
 
 export default defineConfig({
   plugins: [react(), frontendContributions()],

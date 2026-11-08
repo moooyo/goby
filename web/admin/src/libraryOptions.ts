@@ -2,6 +2,7 @@ export interface LibraryOptions {
   EnableLocalMetadata: boolean;
   EnableLocalImages: boolean;
   EnableEmbeddedArtwork?: boolean;
+  EnableOnlineImages?: boolean;
   EnableIntroDetection?: boolean;
   EnableCreditsDetection?: boolean;
   EnablePreviewGeneration?: boolean;
@@ -15,6 +16,7 @@ export function validLibraryOptions(value: unknown): value is LibraryOptions {
   return 'EnableLocalMetadata' in value && typeof value.EnableLocalMetadata === 'boolean'
     && 'EnableLocalImages' in value && typeof value.EnableLocalImages === 'boolean'
     && (!('EnableEmbeddedArtwork' in value) || typeof value.EnableEmbeddedArtwork === 'boolean')
+    && (!('EnableOnlineImages' in value) || typeof value.EnableOnlineImages === 'boolean')
     && (!('EnableIntroDetection' in value) || typeof value.EnableIntroDetection === 'boolean')
     && (!('EnableCreditsDetection' in value) || typeof value.EnableCreditsDetection === 'boolean')
     && (!('EnablePreviewGeneration' in value) || typeof value.EnablePreviewGeneration === 'boolean')
@@ -28,6 +30,7 @@ export function completeLibraryOptions(value: LibraryOptions): Required<LibraryO
     EnableLocalMetadata: value.EnableLocalMetadata,
     EnableLocalImages: value.EnableLocalImages,
     EnableEmbeddedArtwork: value.EnableEmbeddedArtwork ?? true,
+    EnableOnlineImages: value.EnableOnlineImages ?? false,
     EnableIntroDetection: value.EnableIntroDetection ?? false,
     EnableCreditsDetection: value.EnableCreditsDetection ?? false,
     EnablePreviewGeneration: value.EnablePreviewGeneration ?? false,

@@ -196,6 +196,8 @@ type Store struct {
 	catalogListener      atomic.Pointer[catalogChangeListener]
 	catalogChangesClosed atomic.Bool
 	automaticDiscovery   automaticDiscoveryHints
+
+	libraryStorageDirectoryHook libraryStorageDirectoryObservationHook
 }
 
 type rowScanner interface{ Scan(...any) error }

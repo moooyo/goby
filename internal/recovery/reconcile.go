@@ -156,7 +156,7 @@ func (m *Manager) Reconcile(ctx context.Context) error {
 			return err
 		}
 	}
-	return nil
+	return m.ReconcileAutomaticBackups(ctx)
 }
 
 func admissionAction(kind string) activity.Action {
@@ -249,6 +249,9 @@ func (m *Manager) reconcilePublication(ctx context.Context, op operationRecord) 
 		complete, err := m.hasSystem(ctx, op, activity.ActionBackupFinished, activity.StateCompleted)
 		if err != nil || !complete || metadata.Digest != op.Digest || metadata.Size != op.Size {
 			return ErrConflict
+		}
+		if err := m.recordBackupPublished(ctx, op.BackupID, metadata.Digest, metadata.Size); err != nil {
+			return err
 		}
 		return m.updateOperation(op.ID, "completed", "finished", "", func(op *operationRecord) { op.Manifest = nil })
 	}

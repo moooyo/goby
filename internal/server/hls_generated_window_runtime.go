@@ -383,6 +383,7 @@ func (h *hlsRuntime) removeGeneratedWindowBindingsLocked(session *hlsSession) {
 				h.releaseGeneratedWindowPinLocked(session, binding.redirectPin)
 			}
 			delete(session.windowGraph.slots, number)
+			notifyHLSBufferThrottleLocked(session)
 		}
 	}
 }

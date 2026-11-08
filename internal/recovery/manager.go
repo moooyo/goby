@@ -39,23 +39,25 @@ type activeJob struct {
 // records both sides of that boundary so restart can inspect an uncertain
 // result without inferring authorization from a filesystem file alone.
 type Manager struct {
-	mu       sync.Mutex
-	runtime  *Runtime
-	cfg      config.Config
-	pool     *pgxpool.Pool
-	lease    *database.Lease
-	vault    *identity.ApplicationKeyVault
-	engine   *Engine
-	current  lifecycle.State
-	data     controlData
-	control  recoverycontrol.Snapshot
-	ctx      context.Context
-	cancel   context.CancelFunc
-	jobs     map[string]*activeJob
-	closed   bool
-	fault    bool
-	switches chan string
-	operator bool
+	mu                sync.Mutex
+	runtime           *Runtime
+	cfg               config.Config
+	pool              *pgxpool.Pool
+	lease             *database.Lease
+	vault             *identity.ApplicationKeyVault
+	engine            *Engine
+	current           lifecycle.State
+	data              controlData
+	control           recoverycontrol.Snapshot
+	ctx               context.Context
+	cancel            context.CancelFunc
+	jobs              map[string]*activeJob
+	closed            bool
+	fault             bool
+	switches          chan string
+	operator          bool
+	backupPolicy      *backupPolicyExecutor
+	automaticBackupID string
 }
 
 func NewManager(ctx context.Context, runtime *Runtime, cfg config.Config, pool *pgxpool.Pool, lease *database.Lease, vault *identity.ApplicationKeyVault, version string) (*Manager, error) {
@@ -172,6 +174,9 @@ func (m *Manager) operationLocked(id string) *operationRecord {
 }
 
 func (m *Manager) busyLocked(except string) bool {
+	if m.automaticBackupID != "" {
+		return true
+	}
 	for _, op := range m.data.Operations {
 		if op.ID != except && !terminalOperation(op.State) {
 			return true

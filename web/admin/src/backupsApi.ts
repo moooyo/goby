@@ -112,6 +112,7 @@ export interface StatusView {
 export interface CreateBackupInput {
   RequestId: string;
   Passphrase: string;
+  IncludeImages?: boolean;
 }
 
 export interface DeleteBackupInput {
@@ -374,7 +375,8 @@ export const backupsApi = {
   },
 
   async createBackup(input: CreateBackupInput, options: RequestOptions = {}): Promise<OperationView> {
-    if (!exactFields(input, ["RequestId", "Passphrase"]) || !validId(input.RequestId)) throw invalidInput("The backup request ID is invalid.");
+    if (!exactFields(input, ["RequestId", "Passphrase", "IncludeImages"]) || !validId(input.RequestId)
+      || (input.IncludeImages !== undefined && typeof input.IncludeImages !== "boolean")) throw invalidInput("The backup request ID or image selection is invalid.");
     validateBackupPassphrase(input.Passphrase);
     const result = await authenticatedRequest<unknown>("/backups", { ...options, method: "POST", body: input });
     return operationResult(result, { requestId: input.RequestId, kind: "create" });

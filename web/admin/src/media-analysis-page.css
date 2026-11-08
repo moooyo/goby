@@ -1,0 +1,92 @@
+.analysis-page { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.analysis-page-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.analysis-page-heading h1 { margin: 0; font: 900 28px/1.2 var(--serif); color: var(--ink); }
+.analysis-page-summary { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 8px; color: var(--ink2); font-size: 13px; }
+.analysis-page-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.analysis-tone-error { color: var(--err); }
+.analysis-panel { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: var(--s2); }
+.analysis-panel-header { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 5px 16px; box-sizing: border-box; }
+.analysis-panel-header h2 { margin: 0; font: 700 14px/1.5 var(--sans); }
+.analysis-panel-caption { font: 11.5px/1.5 var(--mono); color: var(--ink3); }
+.analysis-panel-header > button:last-child, .analysis-panel-header > .MuiButton-root:last-child, .analysis-panel-header > .MuiTooltip-root:last-child { margin-left: auto; }
+.analysis-panel-note { display: flex; align-items: flex-start; gap: 8px; border-top: 1px solid var(--line); padding: 11px 16px; color: var(--ink3); font-size: 12.5px; line-height: 1.65; }
+.analysis-panel-inset { padding: 14px 16px 16px; border-top: 1px solid var(--line); }
+.analysis-loading { padding: 0 16px 10px; }
+.analysis-matrix-scroll { overflow: auto; }
+.analysis-coverage-libraries { display: none; }
+.analysis-matrix { border-collapse: collapse; table-layout: auto; width: 100%; min-width: 560px; font-size: 12.5px; text-align: left; }
+.analysis-matrix th, .analysis-matrix td { padding: 9px 16px; min-width: 126px; border-top: 1px solid var(--line); vertical-align: middle; font-weight: 400; }
+.analysis-matrix thead th { height: 34px; padding-block: 0; font-size: 11px; font-weight: 600; color: var(--ink3); }
+.analysis-matrix tbody th { min-width: 208px; }
+.analysis-matrix tbody th strong { display: block; font-size: 13.5px; font-weight: 600; }
+.analysis-matrix tbody th > span { display: block; margin-top: 1px; color: var(--ink3); font-size: 12px; }
+.analysis-matrix tbody tr:hover { background: var(--s3); }
+.analysis-feature-state { display: inline-flex; align-items: center; gap: 7px; color: var(--ink3); white-space: nowrap; }
+.analysis-feature-state i { display: block; flex: none; width: 7px; height: 7px; box-sizing: border-box; border: 1.5px solid currentColor; border-radius: 50%; }
+.analysis-feature-state.is-enabled { color: var(--ink2); }
+.analysis-feature-state.is-enabled i { background: var(--ok); border-color: var(--ok); }
+.analysis-work-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.75fr); gap: 16px; align-items: start; }
+.analysis-empty { padding: 30px 24px; border-top: 1px solid var(--line); text-align: center; }
+.analysis-empty strong { font-weight: 600; font-size: 13.5px; }
+.analysis-empty p { max-width: 440px; margin: 6px auto 0; color: var(--ink3); font-size: 12.5px; line-height: 1.7; }
+.analysis-empty-compact { padding: 22px 16px; text-align: left; }
+.analysis-empty-compact p { margin-left: 0; }
+.analysis-task-row { padding: 12px 16px; border-top: 1px solid var(--line); }
+.analysis-task-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.analysis-task-top > strong { flex: 1; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.analysis-live-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--acc); }
+.analysis-task-row > button { margin-top: 8px; }
+.analysis-failure-row { display: flex; gap: 14px; align-items: center; padding: 12px 16px; border-top: 1px solid var(--line); }
+.analysis-failure-row > div { flex: 1; min-width: 0; }
+.analysis-failure-row strong { display: block; font-weight: 600; }
+.analysis-failure-description { display: block; margin-top: 3px; color: var(--err); font-size: 12px; overflow-wrap: anywhere; }
+.analysis-failure-row time { display: block; margin-top: 4px; color: var(--ink3); font: 11px/1.5 var(--mono); }
+.analysis-results { min-width: 0; }
+.analysis-status-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 16px; }
+.analysis-cache-value { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; margin-bottom: 9px; font: 500 21px/1.4 var(--mono); }
+.analysis-cache-value > span { color: var(--ink3); font-size: 12px; font-weight: 400; }
+.analysis-runtime-states { display: flex; flex-wrap: wrap; gap: 8px 14px; font-size: 12.5px; }
+.analysis-runtime-states > span { display: flex; align-items: center; gap: 6px; color: var(--ink3); }
+.analysis-runtime-states > span::before { content: ''; width: 6px; height: 6px; border: 1px solid currentColor; border-radius: 50%; box-sizing: border-box; }
+.analysis-runtime-states > span[data-available=true] { color: var(--ink2); }
+.analysis-runtime-states > span[data-available=true]::before { border-color: var(--ok); background: var(--ok); }
+.analysis-settings { min-width: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--s1); }
+.analysis-settings > summary { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 12px; padding: 14px 16px; cursor: pointer; list-style: none; }
+.analysis-settings > summary::after { content: '+'; margin-left: auto; color: var(--ink3); font: 16px var(--mono); }
+.analysis-settings[open] > summary::after { content: '−'; }
+.analysis-settings > summary:hover { background: var(--s3); border-radius: 14px; }
+.analysis-settings > summary > strong { font-size: 13.5px; font-weight: 600; }
+.analysis-settings > summary > span { color: var(--ink3); font-size: 12px; }
+.analysis-settings-content { display: flex; flex-direction: column; gap: 14px; padding: 0 14px 14px; }
+.analysis-settings-content > .MuiPaper-root { border-radius: 14px; background: var(--s2); border: 1px solid var(--line); }
+.analysis-settings-content > .analysis-panel-note { padding-inline: 2px; padding-bottom: 0; }
+@media (max-width: 999px) {
+  .analysis-work-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 639px) {
+  .analysis-page { gap: 14px; }
+  .analysis-page-heading { align-items: flex-start; flex-wrap: wrap; gap: 12px; }
+  .analysis-page-heading > div:first-child { flex-basis: 100%; }
+  .analysis-page-heading h1 { font-size: 24px; }
+  .analysis-page-actions { gap: 6px; }
+  .analysis-panel-header { padding-inline: 14px; flex-wrap: wrap; }
+  .analysis-panel-caption { font-size: 10.5px; }
+  .analysis-matrix-scroll { display: none; }
+  .analysis-coverage-libraries { display: flex; flex-direction: column; min-width: 0; }
+  .analysis-coverage-library { min-width: 0; border-top: 1px solid var(--line); }
+  .analysis-coverage-library h3 { margin: 0; padding: 12px 14px; background: var(--s3); font-size: 14px; font-weight: 600; line-height: 1.5; overflow-wrap: anywhere; }
+  .analysis-coverage-library dl { margin: 0; }
+  .analysis-coverage-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 7.75rem); align-items: start; gap: 12px; padding: 11px 14px; border-top: 1px solid var(--line); }
+  .analysis-coverage-row dt, .analysis-coverage-row dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+  .analysis-coverage-row dt strong { display: block; font-size: 13.5px; font-weight: 600; line-height: 1.5; }
+  .analysis-coverage-row dt > span { display: block; margin-top: 1px; color: var(--ink3); font-size: 12px; line-height: 1.5; }
+  .analysis-coverage-row dd { justify-self: end; }
+  .analysis-coverage-row .analysis-feature-state { max-width: 100%; align-items: flex-start; white-space: normal; font-size: 12.5px; line-height: 1.5; }
+  .analysis-coverage-row .analysis-feature-state > span { min-width: 0; }
+  .analysis-coverage-row .analysis-feature-state i { margin-top: 6px; }
+  .analysis-status-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .analysis-panel-note, .analysis-panel-inset { padding-inline: 14px; }
+  .analysis-settings > summary { gap: 3px 8px; }
+  .analysis-settings > summary > span { flex-basis: calc(100% - 25px); order: 2; }
+  .analysis-failure-row { flex-wrap: wrap; }
+}

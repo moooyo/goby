@@ -1,41 +1,36 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, IconButton, MenuItem, Paper, Skeleton, Stack, Switch, Tab, Tabs, TablePagination, TextField, Typography } from '@mui/material';
-import ArrowDownwardRounded from '@mui/icons-material/ArrowDownwardRounded';
-import ArrowUpwardRounded from '@mui/icons-material/ArrowUpwardRounded';
-import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
-import RefreshRounded from '@mui/icons-material/RefreshRounded';
-import { adminApi, ApiError, isAbortError } from './api';
-import type { User } from './api';
+import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Skeleton, Stack, Switch, TablePagination, TextField, Typography } from './ui';
+import { DeleteOutlineRounded } from './icons';
+import { RefreshRounded } from './icons';
+import { ApiError, isAbortError } from './api';
 import { collectionsApi } from './collectionsApi';
-import type { CollectionKind, CollectionMember, CollectionPage, CollectionPatch, CollectionShare, ManagedCollection } from './collectionsApi';
+import type { CollectionMember, CollectionPage, CollectionPatch, ManagedCollection } from './collectionsApi';
 import { CollectionItemPicker } from './CollectionItemPicker';
 import { ErrorNotice } from './components';
+import { useTranslation } from './i18n';
 import { useUserDraftNavigation } from './userDraftNavigation';
 import type { UserNavigationGuardChange } from './userDraftNavigation';
 
-interface Draft { Name: string; IsPublic: boolean; IsLocked: boolean; Shares: CollectionShare[] }
-function draftFor(value: ManagedCollection): Draft { return { Name: value.Name, IsPublic: value.IsPublic, IsLocked: value.IsLocked, Shares: value.Shares.map((share) => ({ ...share })) }; }
-function shareKey(shares: CollectionShare[]) { return JSON.stringify([...shares].sort((a, b) => a.UserId.localeCompare(b.UserId))); }
-function draftKey(draft: Draft) { return JSON.stringify([draft.Name, draft.IsPublic, draft.IsLocked, shareKey(draft.Shares)]); }
+interface Draft { Name: string; IsLocked: boolean }
+function draftFor(value: ManagedCollection): Draft { return { Name: value.Name, IsLocked: value.IsLocked }; }
+function draftKey(draft: Draft) { return JSON.stringify([draft.Name, draft.IsLocked]); }
 function uncertain(error: unknown) { return !(error instanceof ApiError) || error.status === 409 || error.status >= 500 || ['network_error', 'invalid_response', 'session_changed'].includes(error.code); }
 
-export function CollectionDialog({ kind, collectionId, onClose, onSaved, onNavigationGuardChange }: { kind: CollectionKind; collectionId?: string; onClose: () => void; onSaved: () => void; onNavigationGuardChange: UserNavigationGuardChange }) {
-  const label = kind === 'playlists' ? 'playlist' : 'collection';
+export function CollectionDialog({ collectionId, onClose, onSaved, onNavigationGuardChange }: { collectionId?: string; onClose: () => void; onSaved: () => void; onNavigationGuardChange: UserNavigationGuardChange }) {
+  const { t, formatCount } = useTranslation();
+  const kind = 'collections';
+  const label = 'collection';
   const [id, setId] = useState(collectionId);
   const [saved, setSaved] = useState<ManagedCollection>();
-  const [draft, setDraft] = useState<Draft>({ Name: '', IsPublic: false, IsLocked: false, Shares: [] });
-  const [mediaType, setMediaType] = useState('');
-  const [users, setUsers] = useState<User[]>([]);
-  const [usersError, setUsersError] = useState<unknown>();
-  const [shareUser, setShareUser] = useState('');
-  const [tab, setTab] = useState<'details' | 'items'>('details');
+  const [draft, setDraft] = useState<Draft>({ Name: '', IsLocked: false });
   const [members, setMembers] = useState<CollectionPage<CollectionMember>>();
   const [page, setPage] = useState(0);
   const [membersLoading, setMembersLoading] = useState(false);
   const [membersError, setMembersError] = useState<unknown>();
   const [memberRevision, setMemberRevision] = useState(0);
   const [selected, setSelected] = useState<string[]>([]);
+  const [draftMembers, setDraftMembers] = useState<CollectionMember[]>([]);
   const [loading, setLoading] = useState(Boolean(collectionId));
   const [loadError, setLoadError] = useState<unknown>();
   const [error, setError] = useState<unknown>();
@@ -46,29 +41,24 @@ export function CollectionDialog({ kind, collectionId, onClose, onSaved, onNavig
   const [pending, setPending] = useState<'close' | 'reload' | 'discard'>();
   const [deleting, setDeleting] = useState(false);
   const mutation = useRef<AbortController | undefined>(undefined);
-  const dirty = saved ? draftKey(draft) !== draftKey(draftFor(saved)) : Boolean(draft.Name || draft.IsPublic || draft.IsLocked || mediaType);
+  const dirty = saved ? draftKey(draft) !== draftKey(draftFor(saved)) : Boolean(draft.Name || draft.IsLocked);
   const disabled = loading || Boolean(busy) || blocked || loadError != null;
   const memberDisabled = disabled || dirty || !saved || saved.IsLocked;
+  const needsInitialMember = !id && selected.length === 0;
   useUserDraftNavigation(dirty || selected.length > 0, Boolean(busy), onNavigationGuardChange, `Discard unsaved ${label} changes and leave this page?`);
   useEffect(() => () => mutation.current?.abort(), []);
 
   useEffect(() => {
-    const controller = new AbortController(); setUsersError(undefined);
-    void adminApi.getUsers({ signal: controller.signal }).then((result) => { if (!controller.signal.aborted) setUsers(result.Items); })
-      .catch((cause) => { if (!controller.signal.aborted && !isAbortError(cause)) setUsersError(cause); });
-    return () => controller.abort();
-  }, [revision]);
-  useEffect(() => {
     if (!id) return;
     const controller = new AbortController(); setLoading(true); setLoadError(undefined);
     void collectionsApi.get(kind, id, { signal: controller.signal }).then((value) => {
-      if (!controller.signal.aborted) { setSaved(value); setDraft(draftFor(value)); setBlocked(false); setError(undefined); setSelected([]); setShareUser(''); }
+      if (!controller.signal.aborted) { setSaved(value); setDraft(draftFor(value)); setBlocked(false); setError(undefined); setSelected([]); }
     }).catch((cause) => { if (!controller.signal.aborted && !isAbortError(cause)) setLoadError(cause); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [kind, id, revision]);
   useEffect(() => {
-    if (!id || tab !== 'items') return;
+    if (!id) return;
     const controller = new AbortController(); setMembersLoading(true); setMembersError(undefined); setMembers(undefined);
     void collectionsApi.members(kind, id, page * 25, 25, { signal: controller.signal }).then((result) => {
       if (controller.signal.aborted) return;
@@ -77,7 +67,7 @@ export function CollectionDialog({ kind, collectionId, onClose, onSaved, onNavig
     }).catch((cause) => { if (!controller.signal.aborted && !isAbortError(cause)) setMembersError(cause); })
       .finally(() => { if (!controller.signal.aborted) setMembersLoading(false); });
     return () => controller.abort();
-  }, [kind, id, tab, page, memberRevision, revision]);
+  }, [kind, id, page, memberRevision, revision]);
 
   function reload() { setPending(undefined); setDeleting(false); setNotice(''); setRevision((value) => value + 1); }
   function request(action: 'close' | 'reload') {
@@ -94,25 +84,31 @@ export function CollectionDialog({ kind, collectionId, onClose, onSaved, onNavig
   }
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!draft.Name.trim() || !dirty) return;
+    if (!draft.Name.trim() || !dirty || needsInitialMember) return;
     await mutate(`Saving ${label}`, async (signal) => {
       if (!id) {
-        const result = await collectionsApi.create(kind, { Name: draft.Name.trim(), IsPublic: draft.IsPublic, IsLocked: draft.IsLocked, ...(kind === 'playlists' && mediaType ? { MediaType: mediaType } : {}) }, { signal });
-        if (!signal.aborted) { setId(result.Id); setNotice(`${result.Name} created. Add media in the Items tab.`); onSaved(); }
+        const result = await collectionsApi.create(kind, { Name: draft.Name.trim(), IsPublic: false, IsLocked: draft.IsLocked, Ids: selected }, { signal });
+        if (!signal.aborted) { setSelected([]); setDraftMembers([]); setId(result.Id); setLoading(true); setNotice('Collection created with selected media.'); onSaved(); }
         return;
       }
       if (!saved) return;
       const patch: CollectionPatch = {};
       if (draft.Name !== saved.Name) patch.Name = draft.Name.trim();
-      if (draft.IsPublic !== saved.IsPublic) patch.IsPublic = draft.IsPublic;
       if (draft.IsLocked !== saved.IsLocked) patch.IsLocked = draft.IsLocked;
-      if (shareKey(draft.Shares) !== shareKey(saved.Shares)) patch.Shares = draft.Shares;
       const latest = await collectionsApi.get(kind, id, { signal });
-      const conflict = (patch.Name !== undefined && latest.Name !== saved.Name) || (patch.IsPublic !== undefined && latest.IsPublic !== saved.IsPublic)
-        || (patch.IsLocked !== undefined && latest.IsLocked !== saved.IsLocked) || (patch.Shares !== undefined && shareKey(latest.Shares) !== shareKey(saved.Shares));
+      const conflict = (patch.Name !== undefined && latest.Name !== saved.Name) || (patch.IsLocked !== undefined && latest.IsLocked !== saved.IsLocked);
       if (conflict) throw new ApiError('These details changed after you opened them. Reload before saving again.', { status: 409, code: 'collection_changed' });
       const result = await collectionsApi.update(kind, id, patch, { signal });
       if (!signal.aborted) { setSaved(result); setDraft(draftFor(result)); setNotice(`${result.Name} saved.`); onSaved(); }
+    });
+  }
+  function selectMembers(ids: string[], addedItem?: CollectionMember) {
+    if (mutation.current || disabled) return;
+    setSelected(ids);
+    if (!id) setDraftMembers((current) => {
+      const choices = new Map(current.map((member) => [member.Id, member]));
+      if (addedItem) choices.set(addedItem.Id, addedItem);
+      return ids.flatMap((memberId) => { const member = choices.get(memberId); return member ? [member] : []; });
     });
   }
   async function changeMembers(action: (signal: AbortSignal) => Promise<unknown>, message: string, clearSelection = false) {
@@ -134,9 +130,9 @@ export function CollectionDialog({ kind, collectionId, onClose, onSaved, onNavig
   }
   const title = id ? `Manage ${label}` : `Create ${label}`;
   return <>
-    <Dialog open fullWidth maxWidth="md" onClose={() => request('close')} aria-labelledby="manage-collection-title">
+    <Dialog open fullWidth maxWidth="sm" className="ac-collection-dialog" onClose={() => request('close')} aria-label={t(title)} PaperProps={{ sx: { width: 'min(540px, 100vw)' } }}>
       <Box component="form" onSubmit={(event: FormEvent<HTMLFormElement>) => void save(event)}>
-        <DialogTitle id="manage-collection-title">{title}</DialogTitle>
+        <DialogTitle id="manage-collection-title"><span className="ac-collection-eyebrow">{t(title)}</span><strong className="ac-collection-title" translate="no">{draft.Name.trim() || saved?.Name || t('Untitled collection')}</strong><span className="ac-collection-subtitle">{id ? formatCount(saved?.ChildCount ?? 0, 'item', 'items') : formatCount(selected.length, 'draft item', 'draft items')}</span></DialogTitle>
         <DialogContent aria-busy={loading || Boolean(busy)}><Stack spacing={2.5} sx={{ pt: 1 }}>
           {loadError != null && <ErrorNotice error={loadError} retry={() => request('reload')} />}
           {error != null && <ErrorNotice error={error} />}
@@ -144,43 +140,42 @@ export function CollectionDialog({ kind, collectionId, onClose, onSaved, onNavig
           {notice && <Alert severity="success">{notice}</Alert>}
           {loading && !saved && <Skeleton variant="rounded" height={260} />}
           {(!id || saved) && <>
-            {saved && <Stack direction="row" sx={{ gap: 1, alignItems: 'center', flexWrap: 'wrap' }}><Typography variant="h3" component="h2" sx={{ overflowWrap: 'anywhere' }}>{saved.Name}</Typography><Chip size="small" label={`${saved.ChildCount} items`} variant="outlined" /><Chip size="small" label={saved.IsPublic ? 'Public' : 'Private'} variant="outlined" />{saved.IsLocked && <Chip size="small" label="Locked" color="warning" variant="outlined" />}</Stack>}
-            {id && <Tabs value={tab} onChange={(_event, value: 'details' | 'items') => setTab(value)} aria-label="Collection management views"><Tab value="details" label="Details and sharing" id="collection-details-tab" aria-controls="collection-details-panel" disabled={Boolean(busy)} /><Tab value="items" label="Items" id="collection-items-tab" aria-controls="collection-items-panel" disabled={Boolean(busy)} /></Tabs>}
-            {tab === 'details' && <Stack spacing={2.5} role={id ? 'tabpanel' : undefined} id="collection-details-panel" aria-labelledby={id ? 'collection-details-tab' : undefined}>
-              <TextField autoFocus fullWidth required label={kind === 'playlists' ? 'Playlist name' : 'Collection name'} value={draft.Name} disabled={disabled} onChange={(event) => setDraft((current) => ({ ...current, Name: event.target.value }))} slotProps={{ htmlInput: { maxLength: 256 } }} />
-              {!id && kind === 'playlists' && <TextField select label="Media type" value={mediaType} disabled={disabled} onChange={(event) => setMediaType(event.target.value)}><MenuItem value="">Mixed media</MenuItem><MenuItem value="Audio">Audio</MenuItem><MenuItem value="Video">Video</MenuItem></TextField>}
-              <FormControlLabel label="Public" control={<Switch checked={draft.IsPublic} disabled={disabled} onChange={(event) => setDraft((current) => ({ ...current, IsPublic: event.target.checked }))} />} />
-              <Typography variant="body2" color="text.secondary">Public entries can be discovered by other users. Each user still needs access to the source media.</Typography>
-              <FormControlLabel label="Lock membership and deletion" control={<Switch checked={draft.IsLocked} disabled={disabled} onChange={(event) => setDraft((current) => ({ ...current, IsLocked: event.target.checked }))} />} />
-              <Typography variant="body2" color="text.secondary">Unlock and save before adding, removing, reordering, or deleting. Administrators can edit details and sharing while locked.</Typography>
-              {saved && <>
-                <Typography variant="caption" color="text.secondary">Owner: {users.find((user) => user.Id === saved.OwnerId)?.Name ?? saved.OwnerId}{saved.MediaType ? ` · ${saved.MediaType}` : ''}</Typography>
-                <Box component="section" aria-label="Sharing"><Typography variant="h4" component="h3" sx={{ mb: 1 }}>Sharing</Typography><Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>Read access lets a user browse this entry. Edit access also allows membership changes when unlocked.</Typography>
-                  {usersError != null && <ErrorNotice error={usersError} retry={() => request('reload')} />}
-                  <Stack spacing={1.5}>{draft.Shares.map((share) => <Paper key={share.UserId} variant="outlined" sx={{ p: 1.5 }}><Stack direction={{ xs: 'column', sm: 'row' }} sx={{ gap: 1, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between' }}><Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{users.find((user) => user.Id === share.UserId)?.Name ?? `Unavailable user (${share.UserId})`}</Typography><FormControlLabel label="Can edit items" control={<Switch checked={share.CanEdit} disabled={disabled} onChange={(event) => setDraft((current) => ({ ...current, Shares: current.Shares.map((entry) => entry.UserId === share.UserId ? { ...entry, CanEdit: event.target.checked } : entry) }))} />} /><Button color="error" disabled={disabled} aria-label={`Remove sharing for ${users.find((user) => user.Id === share.UserId)?.Name ?? share.UserId}`} onClick={() => setDraft((current) => ({ ...current, Shares: current.Shares.filter((entry) => entry.UserId !== share.UserId) }))}>Remove</Button></Stack></Paper>)}</Stack>
-                  {draft.Shares.length === 0 && <Typography color="text.secondary" variant="body2">No explicit shares.</Typography>}
-                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mt: 2 }}><TextField select fullWidth label="Share with user" value={shareUser} disabled={disabled || usersError != null || draft.Shares.length >= 1000} onChange={(event) => setShareUser(event.target.value)}><MenuItem value="">Choose a user</MenuItem>{users.filter((user) => !user.IsDisabled && user.Id !== saved.OwnerId && !draft.Shares.some((share) => share.UserId === user.Id)).map((user) => <MenuItem key={user.Id} value={user.Id}>{user.Name}</MenuItem>)}</TextField><Button disabled={disabled || !shareUser || usersError != null || draft.Shares.length >= 1000} onClick={() => { setDraft((current) => ({ ...current, Shares: [...current.Shares, { UserId: shareUser, CanEdit: false }] })); setShareUser(''); }}>Add share</Button></Stack>
-                </Box>
-                <Box sx={{ pt: 2, borderTop: 1, borderColor: 'divider' }}><Button color="error" startIcon={<DeleteOutlineRounded />} disabled={disabled || dirty || selected.length > 0 || saved.IsLocked} onClick={() => setDeleting(true)}>Delete {label}</Button><Typography variant="caption" color="text.secondary" component="p" sx={{ mb: 0 }}>Deleting this entry keeps the source media files.</Typography></Box>
-              </>}
+            <TextField autoFocus fullWidth required label="Collection name" value={draft.Name} disabled={disabled} onChange={(event) => setDraft((current) => ({ ...current, Name: event.target.value }))} slotProps={{ htmlInput: { maxLength: 256 } }} />
+            <FormControlLabel label="Lock membership and deletion" control={<Switch checked={draft.IsLocked} disabled={disabled} onChange={(event) => setDraft((current) => ({ ...current, IsLocked: event.target.checked }))} />} />
+            {!id && <Stack component="section" spacing={2} aria-labelledby="collection-create-members-title" aria-describedby="collection-create-members-help">
+              <Typography variant="body2" color="text.secondary">The name, lock setting, and selected media are saved together when you create the collection.</Typography>
+              <Typography id="collection-create-members-title" className="ac-collection-section-title" component="h3">Members</Typography>
+              <Typography id="collection-create-members-help" variant="body2" color="text.secondary">Select at least one media item before creating the collection.</Typography>
+              {draftMembers.length > 0 && <ol className="ac-collection-members" aria-label={t('Draft collection items')} style={{ maxHeight: 260, overflow: 'auto' }}>{draftMembers.map((member, index) => <li key={member.Id}>
+                <span className="ac-collection-member-number" aria-hidden="true">{index + 1}</span>
+                <span className="ac-collection-member-name" translate="no">{member.Name}<span>{t(member.Type)}</span></span>
+                <Button size="small" disabled={disabled} aria-label={t('Remove {name} from draft collection', { name: member.Name })} onClick={() => selectMembers(selected.filter((memberId) => memberId !== member.Id))}>Remove</Button>
+              </li>)}</ol>}
+              <Box><Typography className="ac-collection-section-title" component="h3" sx={{ mb: 1.5 }}>Add media</Typography><CollectionItemPicker disabled={disabled} selected={selected} onSelectedChange={selectMembers} /></Box>
             </Stack>}
-            {tab === 'items' && saved && id && <Stack spacing={2.5} role="tabpanel" id="collection-items-panel" aria-labelledby="collection-items-tab">
+            {saved && id && <Stack spacing={2.5}>
+              <Typography variant="body2" color="text.secondary">Adding or removing media takes effect immediately. Save collection details separately.</Typography>
               {dirty && <Alert severity="info">Save or discard detail changes before editing items.</Alert>}
-              {saved.IsLocked && <Alert severity="info">This {label} is locked. Turn off Lock membership and deletion in Details and sharing, then save.</Alert>}
+              {saved.IsLocked && <Alert severity="info">This collection is locked. Turn off Lock membership and deletion, then save.</Alert>}
               {membersError != null && <ErrorNotice error={membersError} retry={() => setMemberRevision((value) => value + 1)} />}
-              <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}><Typography variant="h4" component="h3">Current items</Typography><Button startIcon={<RefreshRounded />} disabled={Boolean(busy) || membersLoading} onClick={() => setMemberRevision((value) => value + 1)}>Refresh items</Button></Stack>
+              <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}><Typography className="ac-collection-section-title" component="h3">Members</Typography><Button size="small" startIcon={<RefreshRounded aria-hidden="true" />} disabled={Boolean(busy) || membersLoading} onClick={() => setMemberRevision((value) => value + 1)}>Refresh items</Button></Stack>
               {membersLoading && <Skeleton variant="rounded" height={120} />}
-              {members?.Items.length === 0 && <Typography color="text.secondary">No items in this {label}.</Typography>}
-              {members && <Box component="ol" start={page * 25 + 1} aria-label="Collection items" sx={{ m: 0, pl: 3 }}>{members.Items.map((member, index) => <Box component="li" key={member.PlaylistItemId ?? member.Id} sx={{ py: 1.5, borderBottom: 1, borderColor: 'divider' }}><Stack direction={{ xs: 'column', sm: 'row' }} sx={{ alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 1 }}><Box><Typography variant="body2" sx={{ fontWeight: 600 }}>{member.Name}</Typography><Typography variant="caption" color="text.secondary">{member.Type}</Typography></Box><Stack direction="row" sx={{ alignItems: 'center', flexShrink: 0 }}>{kind === 'playlists' && <><IconButton size="small" aria-label={`Move ${member.Name} up`} disabled={memberDisabled || membersLoading || page * 25 + index === 0} onClick={() => void changeMembers((signal) => collectionsApi.move(id, member.PlaylistItemId!, page * 25 + index - 1, { signal }), 'Playlist order updated.')}><ArrowUpwardRounded fontSize="small" /></IconButton><IconButton size="small" aria-label={`Move ${member.Name} down`} disabled={memberDisabled || membersLoading || page * 25 + index >= members.TotalRecordCount - 1} onClick={() => void changeMembers((signal) => collectionsApi.move(id, member.PlaylistItemId!, page * 25 + index + 1, { signal }), 'Playlist order updated.')}><ArrowDownwardRounded fontSize="small" /></IconButton></>}<Button color="error" size="small" disabled={memberDisabled || membersLoading} aria-label={`Remove ${member.Name} from ${label}`} onClick={() => void changeMembers((signal) => collectionsApi.removeMember(kind, id, member, { signal }), `${member.Name} removed from ${label}.`)}>Remove</Button></Stack></Stack></Box>)}</Box>}
+              {members?.Items.length === 0 && <Typography color="text.secondary">No members yet. Find media below to add it.</Typography>}
+              {members && <ol className="ac-collection-members" start={page * 25 + 1} aria-label={t('Collection items')}>{members.Items.map((member, index) => <li key={member.Id}>
+                <span className="ac-collection-member-number" aria-hidden="true">{page * 25 + index + 1}</span>
+                <span className="ac-collection-member-name" translate="no">{member.Name}<span>{t(member.Type)}</span></span>
+                <Button color="error" size="small" disabled={memberDisabled || membersLoading} aria-label={`Remove ${member.Name} from collection`} onClick={() => void changeMembers((signal) => collectionsApi.removeMember(kind, id, member, { signal }), `${member.Name} removed from collection.`)}>Remove</Button>
+              </li>)}</ol>}
               {members && <TablePagination component="div" count={members.TotalRecordCount} page={page} rowsPerPage={25} rowsPerPageOptions={[25]} disabled={Boolean(busy) || membersLoading} onPageChange={(_event, value) => setPage(value)} sx={{ '& .MuiTablePagination-toolbar': { flexWrap: 'wrap', px: 0 }, '& .MuiTablePagination-spacer': { display: 'none' } }} />}
-              <Box sx={{ pt: 2, borderTop: 1, borderColor: 'divider' }}><Typography variant="h4" component="h3" sx={{ mb: 1.5 }}>Add media</Typography>{kind === 'playlists' && <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>Playlists can include repeated entries. Adding an item again creates another entry.</Typography>}<CollectionItemPicker disabled={Boolean(memberDisabled)} selected={selected} onSelectedChange={setSelected} /><Button variant="contained" disabled={memberDisabled || selected.length === 0} sx={{ mt: 2 }} onClick={() => void changeMembers((signal) => collectionsApi.addMembers(kind, id, selected, { signal }), 'Selected media added.', true)}>Add selected media</Button></Box>
+              <Box><Typography className="ac-collection-section-title" component="h3" sx={{ mb: 1.5 }}>Add media</Typography><CollectionItemPicker disabled={Boolean(memberDisabled)} selected={selected} onSelectedChange={setSelected} /><Button variant="contained" disabled={memberDisabled || selected.length === 0} sx={{ mt: 2 }} onClick={() => void changeMembers((signal) => collectionsApi.addMembers(kind, id, selected, { signal }), 'Selected media added.', true)}>Add selected media</Button></Box>
+              <Box><Button color="error" startIcon={<DeleteOutlineRounded aria-hidden="true" />} disabled={disabled || dirty || selected.length > 0 || saved.IsLocked} onClick={() => setDeleting(true)}>Delete collection</Button><Typography variant="caption" color="text.secondary" component="p">Deleting this entry keeps the source media files.</Typography></Box>
             </Stack>}
           </>}
         </Stack></DialogContent>
-        <DialogActions sx={{ px: 3, py: 2, flexWrap: 'wrap', gap: 1 }}><Typography variant="caption" color="text.secondary" sx={{ mr: 'auto' }}>{busy || (dirty ? 'Unsaved changes' : selected.length > 0 ? `${selected.length} items selected for addition` : '')}</Typography>{id && <Button startIcon={<RefreshRounded />} disabled={loading || Boolean(busy)} onClick={() => request('reload')}>Reload</Button>}{saved && dirty && <Button disabled={Boolean(busy)} onClick={() => setPending('discard')}>Discard details</Button>}<Button disabled={Boolean(busy)} onClick={() => request('close')}>Close</Button><Button type="submit" variant="contained" disabled={disabled || !dirty || !draft.Name.trim()} startIcon={busy ? <CircularProgress size={16} color="inherit" /> : undefined}>{id ? 'Save details' : `Create ${label}`}</Button></DialogActions>
+        <DialogActions sx={{ px: 3, py: 2, flexWrap: 'wrap', gap: 1 }}><Typography variant="caption" color="text.secondary" sx={{ mr: 'auto' }}>{busy || (dirty ? 'Unsaved changes' : selected.length > 0 ? formatCount(selected.length, 'item selected for addition', 'items selected for addition') : '')}</Typography>{id && <Button startIcon={<RefreshRounded />} disabled={loading || Boolean(busy)} onClick={() => request('reload')}>Reload</Button>}{saved && dirty && <Button disabled={Boolean(busy)} onClick={() => setPending('discard')}>Discard details</Button>}<Button disabled={Boolean(busy)} onClick={() => request('close')}>Close</Button><Button type="submit" variant="contained" disabled={disabled || !dirty || !draft.Name.trim() || needsInitialMember} startIcon={busy ? <CircularProgress size={16} color="inherit" /> : undefined}>{id ? 'Save details' : `Create ${label}`}</Button></DialogActions>
       </Box>
     </Dialog>
-    {pending && <Dialog open onClose={() => setPending(undefined)} maxWidth="xs" fullWidth aria-labelledby="discard-collection-title"><DialogTitle id="discard-collection-title">Discard unsaved changes?</DialogTitle><DialogContent><Typography color="text.secondary">{pending === 'discard' ? 'Detail edits will return to the last loaded values. Selected media stays selected.' : 'Your detail edits and media selections have not been saved.'}</Typography></DialogContent><DialogActions sx={{ px: 3, pb: 2.5 }}><Button autoFocus onClick={() => setPending(undefined)}>Keep editing</Button><Button color="error" onClick={() => { if (pending === 'reload') reload(); else if (pending === 'discard' && saved) { setDraft(draftFor(saved)); setPending(undefined); } else onClose(); }}>Discard changes</Button></DialogActions></Dialog>}
+    {pending && <Dialog open onClose={() => setPending(undefined)} maxWidth="xs" fullWidth aria-labelledby="discard-collection-title"><DialogTitle id="discard-collection-title">Discard unsaved changes?</DialogTitle><DialogContent><Typography color="text.secondary">{pending === 'discard' ? 'Name and lock settings will return to the last loaded values. Selected media stays selected. Saved member changes are kept.' : 'Unsaved details and media selections will be discarded. Saved member changes are kept.'}</Typography></DialogContent><DialogActions sx={{ px: 3, pb: 2.5 }}><Button autoFocus onClick={() => setPending(undefined)}>Keep editing</Button><Button color="error" onClick={() => { if (pending === 'reload') reload(); else if (pending === 'discard' && saved) { setDraft(draftFor(saved)); setPending(undefined); } else onClose(); }}>Discard changes</Button></DialogActions></Dialog>}
     {deleting && saved && id && <Dialog open onClose={busy ? undefined : () => setDeleting(false)} fullWidth maxWidth="sm" aria-labelledby="delete-collection-title"><DialogTitle id="delete-collection-title">Delete {label}</DialogTitle><DialogContent><Stack spacing={2}><Typography>Delete <strong>{saved.Name}</strong> and its membership and sharing settings? Source media files are kept.</Typography>{error != null && <ErrorNotice error={error} />}{blocked && <Typography color="text.secondary">Reload the latest entry before trying another change.</Typography>}</Stack></DialogContent><DialogActions sx={{ px: 3, pb: 2.5 }}><Button disabled={Boolean(busy)} onClick={() => setDeleting(false)}>Cancel</Button><Button color="error" variant="contained" disabled={disabled} onClick={() => void mutate(`Deleting ${label}`, async (signal) => { await collectionsApi.remove(kind, id, { signal }); if (!signal.aborted) { onSaved(); onClose(); } })}>Delete {label}</Button></DialogActions></Dialog>}
   </>;
 }

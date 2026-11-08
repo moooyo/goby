@@ -44,6 +44,7 @@ type Runtime struct {
 	active   map[string]*activeAttempt
 	claiming chan struct{}
 	options  RuntimeOptions
+	admin    *adminDestinationRuntime
 }
 
 // RootCAs is explicit deployment trust. Nil uses system roots; custom roots
@@ -56,6 +57,7 @@ func NewRuntime(store *Store, options ...RuntimeOptions) *Runtime {
 	if len(options) > 0 && options[0].RootCAs != nil {
 		r.options.RootCAs = options[0].RootCAs.Clone()
 	}
+	r.admin = newAdminDestinationRuntime(r.ctx, store, r.options)
 	go r.run()
 	return r
 }
@@ -127,7 +129,10 @@ func (r *Runtime) FenceSession(ctx context.Context, id string) error {
 	return r.fence(ctx, func(t target) bool { return t.session == id })
 }
 func (r *Runtime) FenceUser(ctx context.Context, id string) error {
-	return r.fence(ctx, func(t target) bool { return t.user == id })
+	if err := r.fence(ctx, func(t target) bool { return t.user == id }); err != nil || r == nil {
+		return err
+	}
+	return r.admin.fenceUser(ctx, id)
 }
 
 // ActiveForSession is a safe process-ownership observation for shutdown and
@@ -152,8 +157,17 @@ func (r *Runtime) FenceRegistration(ctx context.Context, id string, current int6
 func (r *Runtime) FenceConfig(ctx context.Context, current int64) error {
 	return r.fence(ctx, func(t target) bool { return t.configRevision < current })
 }
+
+func (r *Runtime) FenceAdminDestination(ctx context.Context, id string, current int64) error {
+	if r == nil {
+		return nil
+	}
+	return r.admin.fence(ctx, id, current)
+}
+
 func (r *Runtime) run() {
 	defer close(r.done)
+	defer r.admin.close()
 	senderDone := make(chan struct{})
 	go func() {
 		defer close(senderDone)

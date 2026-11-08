@@ -8,6 +8,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/transcode"
 )
 
@@ -36,13 +37,28 @@ type TranscodingConfig struct {
 	AllowedAMDDeviceCount int
 	// HardwareUnavailable is set only on a private runtime planning copy.
 	HardwareUnavailable bool
+	// Managed policy gates affect new admission only. Their zero values retain
+	// the historical deployment behavior for direct configuration callers.
+	DisableHevcEncoding         bool
+	DisableHardwareEncoding     bool
+	DisableSubtitleExtraction   bool
+	DisableAttachmentExtraction bool
+	CodecConfigurations         transcode.CodecConfigurations
+	EnableThrottling            bool
+	ExtractionThreadCount       int
+	// The presence bit distinguishes a legacy omitted value from explicit
+	// automatic decoder threads without entering managed settings or output IDs.
+	ExtractionThreadCountSet bool
+	CodecProfileLimits       transcode.CodecProfileLimits
+	DisableAssToText         bool
 }
 
 const maxConfiguredCacheBytes = int64(1 << 50)
 
 func loadTranscoding() (TranscodingConfig, error) {
 	c := TranscodingConfig{
-		CacheDirectory: env("GOBY_TRANSCODE_CACHE", "/var/cache/goby/transcodes"),
+		CacheDirectory:        env("GOBY_TRANSCODE_CACHE", "/var/cache/goby/transcodes"),
+		ExtractionThreadCount: 1, ExtractionThreadCountSet: true,
 		Hardware: transcode.Hardware{
 			Decode: env("GOBY_HW_DECODER", "software"),
 			Encode: env("GOBY_HW_ENCODER", "software"),
@@ -141,6 +157,12 @@ func (c TranscodingConfig) Validate() error {
 			return fmt.Errorf("transcoding execution options are invalid: %w", err)
 		}
 	}
+	if _, err := transcode.ResolveCodecProfileLimits(c.CodecProfileLimits); err != nil {
+		return fmt.Errorf("transcoding video profile limits are invalid: %w", err)
+	}
+	if err := media.ValidateImageExtractionThreadCount(c.ResolvedExtractionThreadCount()); err != nil {
+		return fmt.Errorf("image extraction thread setting is invalid: %w", err)
+	}
 	if _, err := c.AuthorizedAMDDevices(); err != nil {
 		return err
 	}
@@ -154,6 +176,15 @@ func (c TranscodingConfig) Validate() error {
 		return fmt.Errorf("GOBY_HW_DECODER, GOBY_HW_ENCODER, or GOBY_HW_DEVICE is invalid: %w", err)
 	}
 	return nil
+}
+
+// ResolvedExtractionThreadCount preserves the historical single-thread image
+// decoder for callers that omitted the newly managed extraction preference.
+func (c TranscodingConfig) ResolvedExtractionThreadCount() int {
+	if c.ExtractionThreadCountSet || c.ExtractionThreadCount != 0 {
+		return c.ExtractionThreadCount
+	}
+	return 1
 }
 
 // ValidAMDDevicePath accepts only the closed set of Linux render node names.

@@ -110,11 +110,11 @@ func TestHTTPConfigurationRuntimeAuthorityAndAtomicInvalidFields(t *testing.T) {
 	}
 	before = adminSettingsHTTPRow(t, f.serverFixture)
 	for _, raw := range []string{
-		`{"HttpServerPortNumber":9091,"H264Crf":36}`,
+		`{"HttpServerPortNumber":9091,"H264Crf":52}`,
 		`{"HttpServerPortNumber":9091,"EnableSoftwareToneMapping":null}`,
 		`{"HttpServerPortNumber":9091,"httpserverportnumber":9092}`,
 		`{"HttpServerPortNumber":9091,"H264Crf":24,"h264crf":25}`,
-		`{"HttpServerPortNumber":9091,"EnableHardwareEncoding":true}`,
+		`{"HttpServerPortNumber":9091,"EnableHardwareEncoding":0}`,
 	} {
 		configurationHTTPStatus(t, configurationHTTPRaw(f.serverFixture, http.MethodPost, "/System/Configuration/Partial", raw, "application/json", headers), http.StatusBadRequest)
 		configurationHTTPUnchanged(t, f.serverFixture, before, snapshot)

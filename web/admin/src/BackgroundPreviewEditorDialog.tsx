@@ -1,6 +1,7 @@
+import { confirmAction } from './i18n';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Paper, Skeleton, Stack, TextField, Typography } from '@mui/material';
-import SaveOutlined from '@mui/icons-material/SaveOutlined';
+import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Paper, Skeleton, Stack, TextField, Typography } from './ui';
+import { SaveOutlined } from './icons';
 import { ApiError, isAbortError } from './api';
 import { ErrorNotice } from './components';
 import { fieldError } from './formFields';
@@ -90,9 +91,9 @@ export function BackgroundPreviewEditorDialog({ itemId, itemName, currentUserId,
     return () => { window.clearTimeout(timer); controller.abort(); };
   }, [itemId, current, busy, loading, pollError, dirty, saved, pageHidden]);
 
-  function close() { if (!mutation.current && (!dirty || window.confirm('放弃尚未保存的背景短片起点？'))) onClose(); }
+  function close() { if (!mutation.current && (!dirty || confirmAction('放弃尚未保存的背景短片起点？'))) onClose(); }
   function reload() {
-    if (mutation.current || loading || dirty && !window.confirm('放弃当前草稿并加载最新起点和生成状态？')) return;
+    if (mutation.current || loading || dirty && !confirmAction('放弃当前草稿并加载最新起点和生成状态？')) return;
     setRevision((value) => value + 1);
   }
   async function save() {

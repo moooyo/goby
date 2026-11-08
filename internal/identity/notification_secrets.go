@@ -128,10 +128,28 @@ func notificationSecretsExist(ctx context.Context, tx pgx.Tx) (bool, error) {
 }
 
 const notificationSecretRowsQuery = `SELECT 'receiver',ARRAY['receiver',credential_generation::text],CASE WHEN octet_length(credential_ciphertext) BETWEEN 48 AND 2080 THEN credential_ciphertext END FROM notification_transport WHERE credential_ciphertext IS NOT NULL
-	UNION ALL SELECT 'target',ARRAY[id,session_id,user_id,device_id,token_generation::text],CASE WHEN octet_length(token_ciphertext) BETWEEN 48 AND 2080 THEN token_ciphertext END FROM notification_registrations ORDER BY 1,2`
+	UNION ALL SELECT 'target',ARRAY[id,session_id,user_id,device_id,token_generation::text],CASE WHEN octet_length(token_ciphertext) BETWEEN 48 AND 2080 THEN token_ciphertext END FROM notification_registrations`
+
+func notificationRecoveryQuery(ctx context.Context, tx pgx.Tx) (string, error) {
+	var hasDestinations bool
+	if err := tx.QueryRow(ctx, `SELECT to_regclass('admin_notification_destinations') IS NOT NULL`).Scan(&hasDestinations); err != nil {
+		return "", err
+	}
+	query := notificationSecretRowsQuery
+	if hasDestinations {
+		query += ` UNION ALL SELECT 'receiver',ARRAY['admin-destination',id,secret_generation::text],
+			CASE WHEN octet_length(secret_ciphertext) BETWEEN 48 AND 2080 THEN secret_ciphertext END
+			FROM admin_notification_destinations WHERE secret_ciphertext IS NOT NULL`
+	}
+	return query + " ORDER BY 1,2", nil
+}
 
 func notificationSecretRows(ctx context.Context, tx pgx.Tx) (pgx.Rows, error) {
-	return tx.Query(ctx, notificationSecretRowsQuery)
+	query, err := notificationRecoveryQuery(ctx, tx)
+	if err != nil {
+		return nil, err
+	}
+	return tx.Query(ctx, query)
 }
 func validateNotificationRecovery(ctx context.Context, tx pgx.Tx, gcm cipher.AEAD) (int64, error) {
 	exists, err := notificationSecretsExist(ctx, tx)
@@ -163,17 +181,28 @@ func validateNotificationRecovery(ctx context.Context, tx pgx.Tx, gcm cipher.AEA
 }
 func (s *Store) allowNotificationMasterCreation(ctx context.Context, tx pgx.Tx) (bool, error) {
 	exists, err := notificationSecretsExist(ctx, tx)
-	if err != nil || !exists {
-		return !exists, err
+	if err != nil {
+		return false, err
+	}
+	if !exists {
+		return s.allowAdministrativeMasterCreation(ctx, tx)
 	}
 	// Admission needs one ordered witness; recovery still validates every row.
-	rows, err := tx.Query(ctx, notificationSecretRowsQuery+" LIMIT 1")
+	query, err := notificationRecoveryQuery(ctx, tx)
+	if err != nil {
+		return false, ErrApplicationKeyVaultUnavailable
+	}
+	rows, err := tx.Query(ctx, query+" LIMIT 1")
 	if err != nil {
 		return false, ErrApplicationKeyVaultUnavailable
 	}
 	defer rows.Close()
 	if !rows.Next() {
-		return rows.Err() == nil, rows.Err()
+		if err := rows.Err(); err != nil {
+			return false, err
+		}
+		rows.Close()
+		return s.allowAdministrativeMasterCreation(ctx, tx)
 	}
 	var purpose string
 	var values []string
@@ -203,6 +232,38 @@ func NormalizeNotificationRestore(ctx context.Context, tx pgx.Tx) error {
 	_, err = tx.Exec(ctx, `UPDATE notification_transport SET enabled=false,revision=revision+1 WHERE enabled;
 	UPDATE notification_registrations SET enabled=false,revision=revision+1,last_outcome='backup_restored',updated_at=clock_timestamp() WHERE enabled;
 	UPDATE notification_deliveries SET state='cancelled',lease_id='',lease_until=NULL,refs='[]',outcome='backup_restored',updated_at=clock_timestamp() WHERE state IN ('pending','sending')`)
+	if err != nil {
+		return err
+	}
+	return normalizeAdministrativeNotificationRestore(ctx, tx)
+}
+
+// Administrative secrets share the existing master key. A missing master may
+// be created only when every supported sealed-secret domain has no ciphertext.
+func (s *Store) allowAdministrativeMasterCreation(ctx context.Context, tx pgx.Tx) (bool, error) {
+	allow, err := s.allowProviderConfigurationMasterCreation(ctx, tx)
+	if err != nil || !allow {
+		return allow, err
+	}
+	return s.allowBackupPolicyMasterCreation(ctx, tx)
+}
+
+func normalizeAdministrativeNotificationRestore(ctx context.Context, tx pgx.Tx) error {
+	var exists bool
+	if err := tx.QueryRow(ctx, `SELECT to_regclass('admin_notification_destinations') IS NOT NULL`).Scan(&exists); err != nil {
+		return err
+	}
+	if !exists {
+		return nil
+	}
+	var overflow bool
+	if err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM admin_notification_destinations WHERE enabled AND revision=9223372036854775807)`).Scan(&overflow); err != nil || overflow {
+		return ErrApplicationKeyBackupInvalid
+	}
+	_, err := tx.Exec(ctx, `UPDATE admin_notification_destinations SET enabled=false,revision=revision+1,
+		last_outcome='backup_restored',updated_at=clock_timestamp() WHERE enabled;
+		UPDATE admin_notification_deliveries SET state='cancelled',lease_id='',lease_until=NULL,
+		outcome='backup_restored',updated_at=clock_timestamp() WHERE state IN ('pending','sending')`)
 	return err
 }
 

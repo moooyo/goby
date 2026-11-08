@@ -73,14 +73,19 @@ type CopySink interface {
 // expanded pg_restore text. Generated archives must pass ValidateDump before
 // publication so compression cannot conceal an unsupported expanded size.
 type Options struct {
-	SourceURL         string
-	PGDump            string
-	PGRestore         string
-	Schema            string
-	Timeout           time.Duration
-	MaxDumpBytes      int64
-	ProbeVersion      int64
-	sourceHostAddress string
+	SourceURL    string
+	PGDump       string
+	PGRestore    string
+	Schema       string
+	Timeout      time.Duration
+	MaxDumpBytes int64
+	ProbeVersion int64
+	// OmitManagedArtwork excludes uploaded and provider image payloads,
+	// embedded-cover caches, avatars, and manual image override sets. Ordinary
+	// metadata and source-file image references remain in the archive.
+	// The default retains the complete database.
+	OmitManagedArtwork bool
+	sourceHostAddress  string
 }
 
 type snapshotSource struct {

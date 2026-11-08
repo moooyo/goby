@@ -29,6 +29,7 @@ func WithNotificationTrustRoots(roots *x509.CertPool) Option {
 	}
 }
 func (s *Server) registerNotificationRoutes(mux *http.ServeMux) {
+	s.registerAdminNotificationDestinationRoutes(mux)
 	for _, method := range []string{"GET", "PUT"} {
 		mux.HandleFunc(method+" /admin/v1/notifications", s.requireAdmin(s.adminNotifications))
 	}

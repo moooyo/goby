@@ -108,6 +108,7 @@ type embyActivityEntry struct {
 	Type     string            `json:"Type"`
 	Date     string            `json:"Date"`
 	UserID   string            `json:"UserId,omitempty"`
+	ItemID   string            `json:"ItemId,omitempty"`
 	Severity activity.Severity `json:"Severity"`
 }
 
@@ -136,6 +137,21 @@ func embyActivityDTO(page activity.Page, options embyObservabilityPageOptions) (
 			item.Type = "user.authenticated"
 		case activity.ActionUserPasswordReset:
 			item.Type = "user.passwordchanged"
+		case activity.ActionPlaybackStarted, activity.ActionPlaybackStopped:
+			if !activity.ValidPlaybackObservation(entry.Event) {
+				return embyObservabilityResult[embyActivityEntry]{}, activity.ErrUnavailable
+			}
+			switch entry.ResourceMediaType {
+			case "Audio":
+				item.Type = "AudioPlayback"
+			case "Video":
+				item.Type = "VideoPlayback"
+			}
+			if (entry.ResourceMediaType == "Audio" || entry.ResourceMediaType == "Video") &&
+				entry.Action == activity.ActionPlaybackStopped {
+				item.Type += "Stopped"
+			}
+			item.ItemID = entry.Resource.ID
 		}
 		// The reference's UserId is an internal numeric identity, not its public
 		// Users DTO GUID. Goby uses its actual associated user ID, without making

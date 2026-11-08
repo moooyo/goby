@@ -11,7 +11,7 @@ export interface ManagedCollection {
 export interface CollectionMember { Id: string; Name: string; Type: string; PlaylistItemId?: string }
 export interface CollectionPage<T> { Items: T[]; TotalRecordCount: number }
 export interface CollectionPatch { Name?: string; IsPublic?: boolean; IsLocked?: boolean; Shares?: CollectionShare[] }
-export interface CollectionCreate { Name: string; MediaType?: string; IsPublic: boolean; IsLocked: boolean }
+export interface CollectionCreate { Name: string; MediaType?: string; IsPublic: boolean; IsLocked: boolean; Ids?: string[] }
 
 function invalid(): never { throw new ApiError('The server returned an invalid collection response.', { code: 'invalid_response' }); }
 function validEmptyResult(value: unknown): void {
@@ -45,7 +45,7 @@ export const collectionsApi = {
   },
   async create(kind: CollectionKind, input: CollectionCreate, options: RequestOptions = {}) {
     const result = await authenticatedRequest<{ Id: string; Name: string; ItemAddedCount?: number }>(path(kind), { ...options, method: 'POST', body: input });
-    if (!result || typeof result.Id !== 'string' || !result.Id || typeof result.Name !== 'string' || !result.Name
+    if (!result || typeof result.Id !== 'string' || !result.Id.trim() || result.Id !== result.Id.trim() || typeof result.Name !== 'string' || !result.Name.trim()
       || (kind === 'playlists' && (typeof result.ItemAddedCount !== 'number' || !Number.isSafeInteger(result.ItemAddedCount) || result.ItemAddedCount < 0))) invalid();
     return result;
   },

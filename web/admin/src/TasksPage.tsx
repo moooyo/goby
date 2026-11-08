@@ -1,23 +1,36 @@
 import { useCallback, useRef, useState } from 'react';
-import { Box, Button, IconButton, Stack, Tab, Tabs, Tooltip, Typography } from '@mui/material';
-import LibraryBooksOutlined from '@mui/icons-material/LibraryBooksOutlined';
-import CheckRounded from '@mui/icons-material/CheckRounded';
-import RefreshRounded from '@mui/icons-material/RefreshRounded';
+import { Box, Button, CircularProgress, IconButton, Stack, Tooltip, Typography } from './ui';
+import { LibraryBooksOutlined } from './icons';
+import { RefreshRounded } from './icons';
+import { MoreVertRounded, SyncRounded } from './icons';
 import { PageHeading } from './components';
+import { useTranslation } from './i18n';
 import { MediaOperationsPanel } from './MediaOperationsPanel';
 import { ScanHistoryPanel } from './ScanHistoryPanel';
 import { ScheduledTasksPanel } from './ScheduledTasksPanel';
 import type { UserNavigationGuard, UserNavigationGuardChange } from './userDraftNavigation';
+import './system-pages.css';
 
 type TasksTab = 'available' | 'history' | 'media-processing';
-export interface TaskPanelStatus { message: string; active: boolean; refresh?: () => void; refreshing?: boolean; refreshLabel?: string }
+export interface TaskPanelStatus {
+  message: string;
+  active: boolean;
+  refresh?: () => void;
+  refreshing?: boolean;
+  refreshLabel?: string;
+  summary?: string;
+  primaryAction?: { label: string; onClick: () => void; disabled: boolean; busy: boolean };
+}
 
-export function TasksPage({ onLibraries, currentUserId, onNavigationGuardChange }: { onLibraries: () => void; currentUserId: string; onNavigationGuardChange: UserNavigationGuardChange }) {
+export function TasksPage({ onLibraries, currentUserId, onNavigationGuardChange, onTaskQueryCleared }: { onLibraries: () => void; currentUserId: string; onNavigationGuardChange: UserNavigationGuardChange; onTaskQueryCleared?: () => void }) {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<TasksTab>(() => {
+    if (new URLSearchParams(window.location.search).get('task')) return 'available';
     const initialTab = window.history.state?.tasksTab;
     return initialTab === 'history' || initialTab === 'media-processing' ? initialTab : 'available';
   });
   const navigationGuard = useRef<UserNavigationGuard | undefined>(undefined);
+  const viewMenu = useRef<HTMLDetailsElement>(null);
   const [status, setStatus] = useState<TaskPanelStatus>();
   const onStatusChange = useCallback((value: TaskPanelStatus) => setStatus(value), []);
   const setNavigationGuard = useCallback((guard: UserNavigationGuard | undefined) => {
@@ -25,29 +38,45 @@ export function TasksPage({ onLibraries, currentUserId, onNavigationGuardChange 
     onNavigationGuardChange(guard);
   }, [onNavigationGuardChange]);
 
-  function changeTab(next: TasksTab) {
-    if (next === tab || (navigationGuard.current && !navigationGuard.current())) return;
-    setStatus(undefined);
-    setTab(next);
-    window.history.replaceState({ ...window.history.state, tasksTab: next }, '');
+  function closeViewMenu() {
+    if (!viewMenu.current) return;
+    viewMenu.current.open = false;
+    viewMenu.current.querySelector('summary')?.focus();
   }
 
-  return <Box>
-    <PageHeading title="Tasks" description="Run library scans, process media, refresh metadata, download subtitles, maintain caches, and manage task schedules." action={<Button variant="outlined" startIcon={<LibraryBooksOutlined />} onClick={onLibraries}>Manage libraries</Button>} />
-    <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5, mb: 2.5 }}>
-    <Tabs value={tab} onChange={(_event, next: TasksTab) => changeTab(next)} aria-label="Task views" variant="scrollable" allowScrollButtonsMobile sx={{ width: 'fit-content', maxWidth: '100%', minHeight: 40, border: '1px solid', borderColor: 'text.disabled', borderRadius: '24px', '& .MuiTabs-indicator': { display: 'none' }, '& .MuiTab-root': { minHeight: 38, minWidth: 0, px: { xs: 1, sm: 2.25 }, py: 1, borderRight: '1px solid', borderColor: 'text.disabled', fontSize: { xs: 12, sm: 13 }, fontWeight: 500, '& .MuiTab-icon': { display: { xs: 'none', sm: 'inline-flex' } }, '&:last-of-type': { borderRight: 0 }, '&.Mui-selected': { color: '#0F2A57', bgcolor: '#D8E4FA', fontWeight: 600 } } }}>
-      <Tab value="available" icon={tab === 'available' ? <CheckRounded sx={{ fontSize: 17 }} /> : undefined} iconPosition="start" label="Available tasks" id="available-tasks-tab" aria-controls="available-tasks-panel" />
-      <Tab value="history" icon={tab === 'history' ? <CheckRounded sx={{ fontSize: 17 }} /> : undefined} iconPosition="start" label="Scan history" id="scan-history-tab" aria-controls="scan-history-panel" />
-      <Tab value="media-processing" icon={tab === 'media-processing' ? <CheckRounded sx={{ fontSize: 17 }} /> : undefined} iconPosition="start" label="Media processing" id="media-processing-tab" aria-controls="media-processing-panel" />
-    </Tabs>
-    {status && <Stack direction="row" sx={{ alignItems: 'center', gap: 1, minWidth: 0 }}>
-      <Box aria-hidden="true" sx={{ width: 5, height: 5, flexShrink: 0, borderRadius: '50%', bgcolor: status.active ? 'success.main' : 'text.disabled' }} />
-      <Typography variant="caption" color="text.secondary">{status.message}</Typography>
-      {status.refresh && <Tooltip title={status.refreshLabel ?? 'Refresh tasks'}><span><IconButton aria-label={status.refreshLabel ?? 'Refresh tasks'} onClick={status.refresh} disabled={status.refreshing} size="small"><RefreshRounded sx={{ fontSize: 18 }} /></IconButton></span></Tooltip>}
-    </Stack>}
-    </Stack>
-    {tab === 'available' && <Box role="tabpanel" id="available-tasks-panel" aria-labelledby="available-tasks-tab"><ScheduledTasksPanel currentUserId={currentUserId} onNavigationGuardChange={setNavigationGuard} onStatusChange={onStatusChange} /></Box>}
-    {tab === 'history' && <Box role="tabpanel" id="scan-history-panel" aria-labelledby="scan-history-tab"><ScanHistoryPanel onLibraries={onLibraries} onStatusChange={onStatusChange} /></Box>}
-    {tab === 'media-processing' && <Box role="tabpanel" id="media-processing-panel" aria-labelledby="media-processing-tab"><MediaOperationsPanel onNavigationGuardChange={setNavigationGuard} onStatusChange={onStatusChange} /></Box>}
+  function clearTaskQuery(nextTab: TasksTab = tab) {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('task');
+    window.history.replaceState({ ...window.history.state, tasksTab: nextTab }, '', url);
+    onTaskQueryCleared?.();
+  }
+
+  function changeTab(next: TasksTab) {
+    if (next === tab) { closeViewMenu(); return; }
+    if (navigationGuard.current && !navigationGuard.current()) return;
+    setStatus(undefined);
+    setTab(next);
+    closeViewMenu();
+    clearTaskQuery(next);
+  }
+
+  return <Box className="system-page tasks-page">
+    <PageHeading title="Tasks" description={status?.summary ?? 'Monitor running work and manage server schedules.'} action={<Stack direction="row" className="system-task-heading-actions">
+      {status?.primaryAction ? <Button variant="outlined" startIcon={status.primaryAction.busy ? <CircularProgress size={15} color="inherit" /> : <SyncRounded />} disabled={status.primaryAction.disabled} onClick={status.primaryAction.onClick}>{status.primaryAction.label}</Button> : <Button variant="outlined" startIcon={<LibraryBooksOutlined />} onClick={onLibraries}>Manage libraries</Button>}
+      {status?.refresh && <Tooltip title={t(status.message)}><span><IconButton aria-label={status.refreshLabel ?? 'Refresh tasks'} onClick={status.refresh} disabled={status.refreshing} size="small"><RefreshRounded sx={{ fontSize: 18 }} /></IconButton></span></Tooltip>}
+      <details className="system-task-view-menu" ref={viewMenu} onKeyDown={(event) => { if (event.key === 'Escape') { event.preventDefault(); closeViewMenu(); } }} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) event.currentTarget.open = false; }}>
+        <summary aria-label={t('More task views')} title={t('More task views')}><MoreVertRounded /></summary>
+        <div className="system-task-view-options" role="group" aria-label={t('Task views')}>
+          <button type="button" aria-pressed={tab === 'available'} id="available-tasks-tab" onClick={() => changeTab('available')}>{t('Available tasks')}</button>
+          <button type="button" aria-pressed={tab === 'history'} id="scan-history-tab" onClick={() => changeTab('history')}>{t('Scan history')}</button>
+          <button type="button" aria-pressed={tab === 'media-processing'} id="media-processing-tab" onClick={() => changeTab('media-processing')}>{t('Media processing')}</button>
+        </div>
+      </details>
+    </Stack>} />
+    {tab !== 'available' && <div className="system-task-secondary-view"><Button size="small" onClick={() => changeTab('available')}>Back to task overview</Button><Typography variant="caption" color="text.secondary">{tab === 'history' ? 'Scan history' : 'Media processing'}</Typography></div>}
+    {tab === 'available' && <Box role="region" id="available-tasks-panel" aria-label="Available tasks"><ScheduledTasksPanel currentUserId={currentUserId} onNavigationGuardChange={setNavigationGuard} onStatusChange={onStatusChange} onTaskQueryCleared={onTaskQueryCleared} /></Box>}
+    {tab === 'history' && <Box role="region" id="scan-history-panel" aria-label="Scan history"><ScanHistoryPanel onLibraries={onLibraries} onStatusChange={onStatusChange} /></Box>}
+    {tab === 'media-processing' && <Box role="region" id="media-processing-panel" aria-label="Media processing"><MediaOperationsPanel onNavigationGuardChange={setNavigationGuard} onStatusChange={onStatusChange} /></Box>}
+    {status && <p className="system-task-updates"><span className={`system-status-dot${status.active ? ' is-connected' : ''}`} aria-hidden="true" />{t(status.message)}</p>}
   </Box>;
 }

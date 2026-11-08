@@ -222,7 +222,16 @@ func (s *Store) ResetArtwork(ctx context.Context, actor identity.Principal, audi
 	return s.mutateArtwork(ctx, actor, audience, target, revision, imageType, "reset", 0, nil, nil)
 }
 
+type artworkMetadataPrecondition struct {
+	revision string
+	itemType string
+}
+
 func (s *Store) mutateArtwork(ctx context.Context, actor identity.Principal, audience identity.AdministratorAudience, target ArtworkTarget, revision, imageType, operation string, index int, indexes []int, data []byte) (ArtworkCollection, error) {
+	return s.mutateArtworkWithMetadata(ctx, actor, audience, target, revision, imageType, operation, index, indexes, data, nil)
+}
+
+func (s *Store) mutateArtworkWithMetadata(ctx context.Context, actor identity.Principal, audience identity.AdministratorAudience, target ArtworkTarget, revision, imageType, operation string, index int, indexes []int, data []byte, metadata *artworkMetadataPrecondition) (ArtworkCollection, error) {
 	stored, err := target.stored()
 	if err != nil {
 		return ArtworkCollection{}, err
@@ -348,6 +357,15 @@ func (s *Store) mutateArtwork(ctx context.Context, actor identity.Principal, aud
 	change, err := artworkTargetRecord(ctx, tx, target, true)
 	if err != nil {
 		return ArtworkCollection{}, err
+	}
+	if metadata != nil {
+		record, err := readProviderMetadataTarget(ctx, tx, target.ItemID, true)
+		if err != nil {
+			return ArtworkCollection{}, err
+		}
+		if metadata.revision != strconv.FormatInt(record.revision, 10) || metadata.itemType != record.itemType {
+			return ArtworkCollection{}, ErrRevisionConflict
+		}
 	}
 	current, err := readArtworkCollection(ctx, tx, target)
 	if err != nil {

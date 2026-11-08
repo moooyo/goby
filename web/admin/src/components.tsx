@@ -1,21 +1,15 @@
 import type { ReactNode } from 'react';
-import { Alert, Box, Button, CircularProgress, Stack, Typography } from '@mui/material';
-import RefreshRounded from '@mui/icons-material/RefreshRounded';
+import { Alert, Button, CircularProgress, Stack, Typography } from './ui';
+import { RefreshRounded } from './icons';
 import { ApiError } from './api';
-import { colors } from './theme';
+import { useTranslation } from './i18n';
 
 export function Brand({ light = false, compact = false }: { light?: boolean; compact?: boolean }) {
-  return (
-    <Stack direction="row" spacing={1.2} sx={{ alignItems: 'center', color: light ? 'white' : colors.deep }}>
-      <Box aria-hidden="true" sx={{ display: 'grid', placeItems: 'center', width: 44, height: 44, borderRadius: '14px', backgroundColor: colors.primary, color: 'white', fontSize: 20, fontWeight: 700 }}>
-        G
-      </Box>
-      <Box>
-        <Typography component="span" sx={{ fontFamily: '"Manrope Variable", sans-serif', fontSize: compact ? 25 : 28, lineHeight: 1, fontWeight: 780, letterSpacing: '-0.055em' }}>goby</Typography>
-        {!compact && <Typography sx={{ mt: 0.4, fontSize: 10, letterSpacing: '0.13em', textTransform: 'uppercase', opacity: 0.67 }}>Server administration</Typography>}
-      </Box>
-    </Stack>
-  );
+  const { t } = useTranslation();
+  return <div className="goby-brand" data-light={light || undefined}>
+    <svg className="goby-mark" viewBox="0 0 44 44" aria-hidden="true"><rect width="44" height="44" rx="13" fill="var(--acc)"/><path d="M29.5 15.7a10 10 0 1 0 1.1 11.1V21H22v3h5.4v1.8a6.5 6.5 0 1 1-.4-8Z" fill="var(--on-acc)"/></svg>
+    <div><strong className="goby-brand-name">Goby</strong>{!compact && <span className="goby-brand-sub">{t('Server admin')}</span>}</div>
+  </div>;
 }
 
 export function errorText(error: unknown) {
@@ -48,13 +42,6 @@ export function LoadingView({ label = 'Connecting to your server' }: { label?: s
 }
 
 export function PageHeading({ title, description, action }: { title: string; description: string; action?: ReactNode }) {
-  return (
-    <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2, mb: 2.5 }}>
-      <Box sx={{ minWidth: 0 }}>
-        <Typography component="h2" className="visually-hidden">{title}</Typography>
-        <Typography color="text.secondary" variant="body1">{description}</Typography>
-      </Box>
-      {action}
-    </Stack>
-  );
+  const { t } = useTranslation();
+  return <div className="page-heading"><div className="page-heading-copy"><h1>{t(title)}</h1><p>{t(description)}</p></div>{action && <div className="page-heading-actions">{action}</div>}</div>;
 }

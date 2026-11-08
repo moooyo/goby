@@ -1,5 +1,6 @@
 import { ApiError, authenticatedRequest } from './api';
 import type { RequestOptions } from './api';
+import { notificationReadTimeout, notificationRequest, notificationWriteTimeout, notificationWriteTimeoutMessage } from './notificationRequest';
 
 export interface NotificationSettings { Revision: string; Enabled: boolean; Endpoint: string; AllowedNetworks: string[]; HasReceiverCredential: boolean; SupportedEvents: string[]; PendingCount: number }
 export interface NotificationSettingsInput { Revision: string; Enabled: boolean; Endpoint: string; AllowedNetworks: string[]; ReceiverCredential?: string }
@@ -45,6 +46,10 @@ function decode(value: NotificationSettings): NotificationSettings {
 }
 
 export const notificationsApi = {
-  async get(options: RequestOptions = {}): Promise<NotificationSettings> { return decode(await authenticatedRequest<NotificationSettings>('/notifications', options)); },
-  async update(input: NotificationSettingsInput): Promise<NotificationSettings> { return decode(await authenticatedRequest<NotificationSettings>('/notifications', { method: 'PUT', body: input })); },
+  async get(options: RequestOptions = {}): Promise<NotificationSettings> {
+    return decode(await notificationRequest(options, notificationReadTimeout, 'Notification settings did not respond. Reload notifications to try again.', (signal) => authenticatedRequest<NotificationSettings>('/notifications', { signal })));
+  },
+  async update(input: NotificationSettingsInput, options: RequestOptions = {}): Promise<NotificationSettings> {
+    return decode(await notificationRequest(options, notificationWriteTimeout, notificationWriteTimeoutMessage, (signal) => authenticatedRequest<NotificationSettings>('/notifications', { signal, method: 'PUT', body: input })));
+  },
 };

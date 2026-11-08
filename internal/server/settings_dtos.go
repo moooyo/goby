@@ -76,10 +76,31 @@ func settingsHardwareDTO(value settings.HardwareSelection) map[string]any {
 	return map[string]any{"Decode": value.Decode, "Encode": value.Encode, "DeviceId": value.DeviceID}
 }
 
+func settingsCPUQualityDTO(value transcode.CPUQuality) map[string]any {
+	var threads any
+	if value.ThreadCountSet {
+		threads = value.ThreadCount
+	}
+	return map[string]any{"Preset": value.Preset, "RateControl": value.RateControl, "CRF": value.CRF,
+		"ThreadCount": threads, "X264Options": value.X264Options}
+}
+
+func settingsCPUQualityOverrideDTO(value *transcode.CPUQuality) any {
+	if value == nil {
+		return nil
+	}
+	return settingsCPUQualityDTO(*value)
+}
+
 func settingsExecutionDTO(value transcode.ExecutionOptions) map[string]any {
+	tone := value.SoftwareToneMapOptions
+	if tone == (transcode.SoftwareToneMapOptions{}) {
+		tone = transcode.DefaultSoftwareToneMapOptions()
+	}
 	return map[string]any{
-		"Threads": value.Threads, "H264": value.H264, "HEVC": value.HEVC,
+		"Threads": value.Threads, "H264": settingsCPUQualityDTO(value.H264), "HEVC": settingsCPUQualityDTO(value.HEVC),
 		"SoftwareToneMapping": value.SoftwareToneMapping, "VulkanToneMapping": value.VulkanToneMapping,
+		"SoftwareToneMapOptions": tone,
 	}
 }
 
@@ -89,8 +110,21 @@ func settingsRuntimeDTO(snapshot settings.RuntimeSnapshot) map[string]any {
 	defaults := settingsExecutionDTO(snapshot.Defaults.Execution)
 	defaults["Network"] = settingsNetworkDTO(snapshot.Defaults.Network)
 	defaults["Hardware"] = settingsHardwareDTO(snapshot.Defaults.Hardware)
+	defaults["Transcoding"] = snapshot.Defaults.Transcoding
+	defaults["TranscodingTempPath"] = snapshot.Defaults.TranscodingTempPath
+	defaults["CodecConfigurations"] = snapshot.Defaults.CodecConfigurations
+	defaults["EnableThrottling"] = snapshot.Defaults.EnableThrottling
+	defaults["ExtractionThreadCount"] = snapshot.Defaults.ExtractionThreadCount
+	defaults["CodecProfileLimits"] = snapshot.Defaults.CodecProfileLimits
+	defaults["SubtitleOptions"] = snapshot.Defaults.SubtitleOptions
 	effective := settingsExecutionDTO(snapshot.Execution)
 	effective["Hardware"] = settingsHardwareDTO(snapshot.Hardware)
+	effective["Transcoding"] = snapshot.Transcoding
+	effective["CodecConfigurations"] = snapshot.CodecConfigurations
+	effective["EnableThrottling"] = snapshot.EnableThrottling
+	effective["ExtractionThreadCount"] = snapshot.ExtractionThreadCount
+	effective["CodecProfileLimits"] = snapshot.CodecProfileLimits
+	effective["SubtitleOptions"] = snapshot.SubtitleOptions
 	var network, hardware any
 	bindSource, portSource := "deployment", "deployment"
 	if value := snapshot.Overrides.Network; value != nil {
@@ -104,25 +138,48 @@ func settingsRuntimeDTO(snapshot settings.RuntimeSnapshot) map[string]any {
 		"Defaults": defaults,
 		"Overrides": map[string]any{
 			"Network": network, "Hardware": hardware, "Threads": settingsOverrideValue(snapshot.Overrides.Threads),
-			"H264": settingsOverrideValue(snapshot.Overrides.H264), "HEVC": settingsOverrideValue(snapshot.Overrides.HEVC),
-			"SoftwareToneMapping": settingsOverrideValue(snapshot.Overrides.SoftwareToneMapping),
-			"VulkanToneMapping":   settingsOverrideValue(snapshot.Overrides.VulkanToneMapping),
+			"H264": settingsCPUQualityOverrideDTO(snapshot.Overrides.H264), "HEVC": settingsCPUQualityOverrideDTO(snapshot.Overrides.HEVC),
+			"SoftwareToneMapping":    settingsOverrideValue(snapshot.Overrides.SoftwareToneMapping),
+			"VulkanToneMapping":      settingsOverrideValue(snapshot.Overrides.VulkanToneMapping),
+			"Transcoding":            settingsOverrideValue(snapshot.Overrides.Transcoding),
+			"TranscodingTempPath":    settingsOverrideValue(snapshot.Overrides.TranscodingTempPath),
+			"SoftwareToneMapOptions": settingsOverrideValue(snapshot.Overrides.SoftwareToneMapOptions),
+			"CodecConfigurations":    settingsOverrideValue(snapshot.Overrides.CodecConfigurations),
+			"EnableThrottling":       settingsOverrideValue(snapshot.Overrides.EnableThrottling),
+			"ExtractionThreadCount":  settingsOverrideValue(snapshot.Overrides.ExtractionThreadCount),
+			"CodecProfileLimits":     settingsOverrideValue(snapshot.Overrides.CodecProfileLimits),
+			"SubtitleOptions":        settingsOverrideValue(snapshot.Overrides.SubtitleOptions),
 		},
 		"Effective": effective,
 		"Sources": map[string]any{
 			"Network":  map[string]any{"BindHost": bindSource, "HttpPort": portSource},
 			"Hardware": settingsSource(snapshot.Overrides.Hardware != nil), "Threads": settingsSource(snapshot.Overrides.Threads != nil),
 			"H264": settingsSource(snapshot.Overrides.H264 != nil), "HEVC": settingsSource(snapshot.Overrides.HEVC != nil),
-			"SoftwareToneMapping": settingsSource(snapshot.Overrides.SoftwareToneMapping != nil),
-			"VulkanToneMapping":   settingsSource(snapshot.Overrides.VulkanToneMapping != nil),
+			"SoftwareToneMapping":    settingsSource(snapshot.Overrides.SoftwareToneMapping != nil),
+			"VulkanToneMapping":      settingsSource(snapshot.Overrides.VulkanToneMapping != nil),
+			"Transcoding":            settingsSource(snapshot.Overrides.Transcoding != nil),
+			"TranscodingTempPath":    settingsSource(snapshot.Overrides.TranscodingTempPath != nil),
+			"SoftwareToneMapOptions": settingsSource(snapshot.Overrides.SoftwareToneMapOptions != nil),
+			"CodecConfigurations":    settingsSource(snapshot.Overrides.CodecConfigurations != nil),
+			"EnableThrottling":       settingsSource(snapshot.Overrides.EnableThrottling != nil),
+			"ExtractionThreadCount":  settingsSource(snapshot.Overrides.ExtractionThreadCount != nil),
+			"CodecProfileLimits":     settingsSource(snapshot.Overrides.CodecProfileLimits != nil),
+			"SubtitleOptions":        settingsSource(snapshot.Overrides.SubtitleOptions != nil),
 		},
 		"Effects": map[string]any{
 			"Network": "restart", "Hardware": "next_admission", "Threads": "next_admission",
 			"H264": "next_admission", "HEVC": "next_admission", "SoftwareToneMapping": "next_admission", "VulkanToneMapping": "next_admission",
+			"Transcoding": "next_admission", "TranscodingTempPath": "restart", "SoftwareToneMapOptions": "next_admission", "CodecConfigurations": "next_admission",
+			"CodecProfileLimits": "next_admission", "SubtitleOptions": "next_admission",
+			"EnableThrottling": "next_hls_playback", "ExtractionThreadCount": "next_image_extraction",
 		},
 		"Applicability": map[string]any{
 			"H264": "software_h264_output", "HEVC": "software_hevc_output",
 			"SoftwareToneMapping": "software_filter", "VulkanToneMapping": "vulkan_filter",
+			"Transcoding": "encoding_and_extraction", "TranscodingTempPath": "cache_root_after_restart",
+			"SoftwareToneMapOptions": "software_tone_mapping", "CodecConfigurations": "software_video_encoding",
+			"CodecProfileLimits": "new_video_encoding", "SubtitleOptions": "ass_text_negotiation",
+			"EnableThrottling": "file_hls_video_encoding", "ExtractionThreadCount": "image_extraction",
 		},
 	}
 }
@@ -155,6 +212,9 @@ func (s *Server) adminSettingsDTO(snapshot settings.Snapshot) map[string]any {
 		_, available, code = s.resolveManagedHardware(snapshot.Runtime.Hardware)
 	}
 	runtime["Hardware"] = map[string]any{"Available": available, "Code": code, "Devices": devices}
+	path := s.ManagedTranscodingTempPathState(snapshot.Runtime.DesiredTranscodingTempPath)
+	runtime["TranscodingTempPath"] = map[string]any{"Desired": path.Desired,
+		"Active": settingsOverrideValue(path.Active), "RestartRequired": path.RestartRequired}
 	result["Runtime"] = runtime
 	return result
 }

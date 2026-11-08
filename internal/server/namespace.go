@@ -26,7 +26,7 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 	if len(parts) == 0 {
 		return r
 	}
-	resources := []string{"System", "Users", "UserSettings", "DisplayPreferences", "Items", "Videos", "Audio", "Sessions", "Library", "Libraries", "Environment", "Shows", "Genres", "Tags", "Studios", "Persons", "Artists", "AlbumArtists", "MusicGenres", "Albums", "Songs", "Search", "Auth", "Devices", "ScheduledTasks", "Branding", "Playlists", "Collections", "LiveStreams", "LiveTv", "Providers", "Features", "Registrations"}
+	resources := []string{"System", "Users", "UserSettings", "DisplayPreferences", "Items", "Videos", "Audio", "Sessions", "Library", "Libraries", "Environment", "Shows", "Genres", "Tags", "Studios", "Persons", "Artists", "AlbumArtists", "MusicGenres", "Albums", "Songs", "Search", "Auth", "Devices", "ScheduledTasks", "Branding", "Playlists", "Collections", "LiveStreams", "LiveTv", "Providers", "Features", "Registrations", "Packages"}
 	resource := ""
 	decoded, err := url.PathUnescape(parts[0])
 	if err != nil {
@@ -58,6 +58,8 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 		}
 	}
 	switch resource {
+	case "Packages":
+		literal(1, "Updates")
 	case "Playlists", "Collections":
 		literal(2, "Items", "Delete", "Users")
 		if resource == "Playlists" {
@@ -129,7 +131,7 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 			literal(3, "Delete")
 		}
 	case "System":
-		literal(1, "Info", "Ping", "Endpoint", "Configuration", "ActivityLog", "Logs")
+		literal(1, "Info", "Ping", "Endpoint", "Configuration", "ActivityLog", "Logs", "Restart")
 		if len(parts) > 1 && parts[1] == "Configuration" {
 			literal(2, "Partial", "encoding", "subtitles", "tasks")
 		} else if len(parts) > 1 && parts[1] == "ActivityLog" {

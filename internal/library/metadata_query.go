@@ -14,19 +14,20 @@ import (
 
 // MetadataItemSummary is the bounded administrator-facing catalog projection.
 type MetadataItemSummary struct {
-	ItemID            string `json:"ItemId"`
-	LibraryID         string `json:"LibraryId"`
-	ParentID          string `json:"ParentId"`
-	ParentName        string `json:"ParentName"`
-	Name              string `json:"Name"`
-	Type              string `json:"Type"`
-	Path              string `json:"Path"`
-	IsFolder          bool   `json:"IsFolder"`
-	IndexNumber       *int   `json:"IndexNumber"`
-	ParentIndexNumber *int   `json:"ParentIndexNumber"`
-	ProductionYear    *int   `json:"ProductionYear"`
-	HasOverrides      bool   `json:"HasOverrides"`
-	LockedFieldCount  int    `json:"LockedFieldCount"`
+	ItemID            string             `json:"ItemId"`
+	LibraryID         string             `json:"LibraryId"`
+	ParentID          string             `json:"ParentId"`
+	ParentName        string             `json:"ParentName"`
+	Name              string             `json:"Name"`
+	Type              string             `json:"Type"`
+	Path              string             `json:"Path"`
+	IsFolder          bool               `json:"IsFolder"`
+	IndexNumber       *int               `json:"IndexNumber"`
+	ParentIndexNumber *int               `json:"ParentIndexNumber"`
+	ProductionYear    *int               `json:"ProductionYear"`
+	HasOverrides      bool               `json:"HasOverrides"`
+	LockedFieldCount  int                `json:"LockedFieldCount"`
+	Media             *AdminMediaSummary `json:"Media,omitempty"`
 }
 
 type MetadataItemQuery struct {
@@ -112,8 +113,26 @@ func (s *Store) QueryMetadataItems(ctx context.Context, actor identity.Principal
 		return MetadataItemResult{}, fmt.Errorf("read metadata items: %w", err)
 	}
 	rows.Close()
+	ids := make([]string, len(result.Items))
+	for index := range result.Items {
+		ids[index] = result.Items[index].ItemID
+	}
+	mediaInfo, err := readAdminMediaInfo(ctx, tx, ids, false)
+	if err != nil {
+		return MetadataItemResult{}, err
+	}
+	for index := range result.Items {
+		info, exists := mediaInfo[result.Items[index].ItemID]
+		if !exists {
+			return MetadataItemResult{}, ErrUnavailable
+		}
+		result.Items[index].Media = &info.Summary
+	}
 	if err := tx.Commit(ctx); err != nil {
 		return MetadataItemResult{}, fmt.Errorf("commit metadata item read: %w", err)
+	}
+	if err := s.finishAnalysisAdminRead(ctx, actor); err != nil {
+		return MetadataItemResult{}, err
 	}
 	return result, nil
 }

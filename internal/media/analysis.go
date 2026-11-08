@@ -36,6 +36,7 @@ type AnalysisExtractor struct {
 	ExpectedFFprobeSHA256     string
 	ExpectedFingerprintSHA256 string
 	Limits                    AnalysisLimits
+	ImageExtractionThreads    ImageExtractionThreads
 }
 
 type AnalysisLimits struct {

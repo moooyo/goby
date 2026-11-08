@@ -1,5 +1,6 @@
 import type { AuthSession, BackgroundPreviewResponse, DisplayPreferences, ItemQuery, ItemsResponse, MediaItem, MediaStream, PlaybackEvent, PlaybackInfo, PlaybackOptions, PlaybackSession, SearchHintsResponse, SystemInfo, ThemeMediaResponse, User, UserConfiguration, UserData } from '../types';
 import { applyUserConfiguration, configurePreferencePersistence, resolveItemPreferences, setPreferenceScope } from './preferences';
+import { remoteCommands } from './remoteControl';
 
 const SESSION_KEY = 'goby.player.session.v1';
 const DEVICE_KEY = 'goby.player.device.v1';
@@ -75,6 +76,24 @@ export class GobyApi {
   }
 
   getSession(): AuthSession | null { return this.session; }
+  matchesSession(owner: AuthSession): boolean {
+    return this.session?.AccessToken === owner.AccessToken && this.session?.User.Id === owner.User.Id
+      && this.session?.serverUrl === owner.serverUrl && this.session?.SessionInfo?.Id === owner.SessionInfo?.Id;
+  }
+  registerRemoteCapabilities(signal?: AbortSignal): Promise<void> {
+    return this.request('/emby/Sessions/Capabilities/Full', { method: 'POST', signal, body: {
+      PlayableMediaTypes: ['Video'], SupportedCommands: remoteCommands,
+      SupportsMediaControl: true, SupportsSync: false,
+    } });
+  }
+  remoteSocketUrl(owner: AuthSession): string {
+    if (!this.matchesSession(owner)) throw new ApiError(401, 'session_changed', 'The active account changed before remote control connected.');
+    const url = this.url('/embywebsocket', {}, normalizeServerUrl(owner.serverUrl));
+    url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+    url.searchParams.set('api_key', owner.AccessToken);
+    url.searchParams.set('deviceId', this.deviceId);
+    return url.href;
+  }
   private updateScope(): void { setPreferenceScope(this.session ? `${this.session.ServerId || this.session.serverUrl}.${this.session.User.Id}` : 'anonymous'); }
   private persistSession(): void {
     try { if (this.session) localStorage.setItem(SESSION_KEY, JSON.stringify(this.session)); else localStorage.removeItem(SESSION_KEY); } catch { /* Authentication remains usable in memory. */ }
@@ -257,7 +276,7 @@ export class GobyApi {
       options = { ...defaults, ...Object.fromEntries(Object.entries(options).filter(([, value]) => value !== undefined)) };
     }
     const info = await this.playbackInfo(id, options);
-    const source = info.MediaSources?.find(candidate => candidate.Id === options.mediaSourceId) ?? info.MediaSources?.[0];
+    const source = options.mediaSourceId === undefined ? info.MediaSources?.[0] : info.MediaSources?.find(candidate => candidate.Id === options.mediaSourceId);
     if (info.ErrorCode || !source) throw new ApiError(422, info.ErrorCode || 'NoCompatibleStream', 'No compatible playback stream is available for this browser and account.');
     let url: string;
     let method: PlaybackSession['method'];

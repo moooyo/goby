@@ -43,7 +43,8 @@ func ValidateDump(ctx context.Context, archive io.Reader, facts backupformat.Sou
 	}
 	sink := &dumpValidationSink{expected: expected}
 	return decodeCommand(ctx, options, archive, func(decoded io.Reader) error {
-		return Decode(ctx, decoded, catalog, sink, DecodeOptions{MaxBytes: options.MaxDumpBytes})
+		return Decode(ctx, decoded, catalog, sink, DecodeOptions{MaxBytes: options.MaxDumpBytes,
+			AllowEmptyManagedArtwork: factsOmitManagedArtwork(facts)})
 	})
 }
 

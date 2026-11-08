@@ -32,14 +32,18 @@ func hlsProfileContainer(profile TranscodingProfile, kind DlnaProfileType) strin
 	return ""
 }
 
-func configureHLSSubtitle(plan *transcode.Plan, source Source, request Request, profile TranscodingProfile, subtitle *media.Stream, videoCopy bool) *Reason {
+func configureHLSSubtitle(plan *transcode.Plan, source Source, request Request, profile TranscodingProfile, subtitle *media.Stream, videoCopy bool, policies ...ConversionLimits) *Reason {
+	if len(policies) > 0 {
+		source.DisableSubtitleExtraction = source.DisableSubtitleExtraction || policies[0].DisableSubtitleExtraction
+		source.DisableAssToText = source.DisableAssToText || policies[0].DisableAssToText
+	}
 	if subtitle == nil {
 		return configureHLSSubtitleTracks(plan, source, request, profile, nil)
 	}
 	fail := func() *Reason {
 		return conversionReason("conversion_subtitle_unsupported", "SubtitleStreamIndex", "The selected subtitle requires an explicitly supported HLS, external, or encoded delivery method.")
 	}
-	if clientAcceptsHLSSubtitle(*subtitle, plan.Container, request, profile) {
+	if clientAcceptsHLSSubtitle(*subtitle, plan.Container, request, profile, source) {
 		// Once the client can select this rendition from the shared manifest,
 		// retain that delivery path when it also advertises fallback methods.
 		return configureHLSSubtitleTracks(plan, source, request, profile, subtitle)
@@ -51,12 +55,13 @@ func configureHLSSubtitle(plan *transcode.Plan, source Source, request Request, 
 		return nil
 	}
 	selected := SubtitleDeliveryMethod("")
+	plainTextAllowed := allowsPlainTextSubtitle(source, subtitle.Codec)
 	for _, candidate := range request.DeviceProfile.SubtitleProfiles {
 		if !matchesList(candidate.Language, subtitle.Language) || !matchesList(candidate.Container, plan.Container) ||
 			candidate.Protocol != "" && !strings.EqualFold(candidate.Protocol, "hls") {
 			continue
 		}
-		if candidate.Method == SubtitleDeliveryMethodHls && subtitle.IsTextSubtitleStream && (matchesList(candidate.Format, "vtt") || matchesList(candidate.Format, "webvtt")) {
+		if candidate.Method == SubtitleDeliveryMethodHls && plainTextAllowed && (!source.DisableSubtitleExtraction || subtitle.IsExternal) && subtitle.IsTextSubtitleStream && (matchesList(candidate.Format, "vtt") || matchesList(candidate.Format, "webvtt")) {
 			selected = candidate.Method
 			break
 		}
@@ -65,7 +70,7 @@ func configureHLSSubtitle(plan *transcode.Plan, source Source, request Request, 
 			break
 		}
 	}
-	if profile.ManifestSubtitles != "" && subtitle.IsTextSubtitleStream {
+	if profile.ManifestSubtitles != "" && plainTextAllowed && (!source.DisableSubtitleExtraction || subtitle.IsExternal) && subtitle.IsTextSubtitleStream {
 		selected = SubtitleDeliveryMethodHls
 	}
 	if selected == "" {
@@ -75,12 +80,12 @@ func configureHLSSubtitle(plan *transcode.Plan, source Source, request Request, 
 		return fail()
 	}
 	if selected == SubtitleDeliveryMethodEncode {
-		return configureEncodedSubtitle(plan, source, subtitle)
+		return configureEncodedSubtitle(plan, source, subtitle, policies...)
 	}
 	return configureHLSSubtitleTracks(plan, source, request, profile, subtitle)
 }
 
-func configureEncodedSubtitle(plan *transcode.Plan, source Source, subtitle *media.Stream) *Reason {
+func configureEncodedSubtitle(plan *transcode.Plan, source Source, subtitle *media.Stream, policies ...ConversionLimits) *Reason {
 	fail := func() *Reason {
 		return conversionReason("conversion_subtitle_unsupported", "SubtitleStreamIndex", "Subtitle burn-in requires a supported selected track and bounded font attachments.")
 	}
@@ -107,11 +112,12 @@ func configureEncodedSubtitle(plan *transcode.Plan, source Source, subtitle *med
 		}
 	}
 	var indexes []int
+	extractAttachments := len(policies) == 0 || !policies[0].DisableAttachmentExtraction
 	for _, stream := range source.Info.Streams {
 		if stream.CodecType == "subtitle" && !stream.IsExternal && stream.Index < subtitle.Index {
 			plan.Subtitle.SubtitleOrdinal++
 		}
-		if stream.CodecType == "attachment" && media.FontAttachment(stream) {
+		if extractAttachments && stream.CodecType == "attachment" && media.FontAttachment(stream) {
 			indexes = append(indexes, stream.Index)
 		}
 	}

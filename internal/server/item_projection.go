@@ -7,6 +7,8 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/moooyo/goby/internal/settings"
 )
 
 const (
@@ -26,6 +28,7 @@ type itemPresentation struct {
 	invalidImageTypeLimit bool
 	enabledImageTypes     map[string]bool
 	deliveryToken         string
+	transcoding           settings.TranscodingPolicy
 }
 
 func readItemPresentation(r *http.Request) itemPresentation {
@@ -34,6 +37,7 @@ func readItemPresentation(r *http.Request) itemPresentation {
 		fields: queryValues(values["Fields"]), excludedFields: queryValues(values["ExcludeFields"]),
 		enableImages: true, enableUserData: true, imageTypeLimit: 32,
 		enabledImageTypes: make(map[string]bool),
+		transcoding:       settings.DefaultTranscodingPolicy(),
 	}
 	if raw := values.Get("EnableImages"); raw != "" {
 		presentation.enableImages, _ = strconv.ParseBool(raw)
@@ -54,6 +58,12 @@ func readItemPresentation(r *http.Request) itemPresentation {
 	// The formatter has always ignored extraction errors. Admission remains at
 	// the caller, including its existing credential conflict and carrier rules.
 	presentation.deliveryToken, _, _ = parseEmbyCredentials(r)
+	return presentation
+}
+
+func (s *Server) readItemPresentation(r *http.Request) itemPresentation {
+	presentation := readItemPresentation(r)
+	presentation.transcoding = s.requestSettings(r).Transcoding
 	return presentation
 }
 

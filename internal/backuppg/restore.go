@@ -201,7 +201,8 @@ func restoreTarget(ctx context.Context, target *pgxpool.Pool, archive io.Reader,
 	}
 	sink := &transactionSink{tx: tx, schema: options.Schema, sequenceValues: make(map[string]sequenceState)}
 	err = decodeCommand(ctx, options, archive, func(decoded io.Reader) error {
-		return Decode(ctx, decoded, catalog, sink, DecodeOptions{MaxBytes: options.MaxDumpBytes})
+		return Decode(ctx, decoded, catalog, sink, DecodeOptions{MaxBytes: options.MaxDumpBytes,
+			AllowEmptyManagedArtwork: factsOmitManagedArtwork(facts)})
 	})
 	if err != nil {
 		return result, err

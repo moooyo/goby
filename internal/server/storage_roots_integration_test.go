@@ -150,8 +150,11 @@ func TestHTTPStorageRootsPreserveConfiguredOrderAliasesAndReadability(t *testing
 	for index, path := range paths {
 		item, ok := items[index].(map[string]any)
 		wantAvailable := path != missing && path != regular
-		if !ok || len(item) != 2 || item["Path"] != path || item["Available"] != wantAvailable {
+		if !ok || len(item) != 4 || item["Path"] != path || item["Available"] != wantAvailable || item["Readable"] != wantAvailable {
 			t.Fatalf("configuration order, spelling, duplicates or readability changed at %d: %#v", index, item)
+		}
+		if !wantAvailable && item["Writable"] != nil {
+			t.Fatalf("unreadable directory invented write access at %d: %#v", index, item)
 		}
 	}
 	if err := os.Remove(alias); err != nil {

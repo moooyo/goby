@@ -236,6 +236,7 @@ func (runtime *originalStreamRuntime) resourceSnapshot() (originalResourcesDTO, 
 }
 
 func (s *Server) registerAdminRuntimeResourcesRoutes(mux *http.ServeMux) {
+	s.registerAdminCodecCapabilityRoutes(mux)
 	authorized := s.requireAdmin(s.adminRuntimeResources)
 	mux.HandleFunc("GET /admin/v1/runtime/resources", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")

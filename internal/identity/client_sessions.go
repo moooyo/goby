@@ -239,6 +239,17 @@ func (s *Store) ListClientSessionSummaries(ctx context.Context, principal Princi
 }
 
 func (s *Store) listClientSessions(ctx context.Context, principal Principal, filter ClientSessionFilter, summary bool) ([]ClientSession, error) {
+	return s.listClientSessionsForAudience(ctx, principal, filter, summary, false)
+}
+
+// ListManagedClientSessionSummaries exposes client presence to a separately
+// authenticated administrator. It never accepts an Emby token or includes
+// administrator-cookie sessions among the playback targets.
+func (s *Store) ListManagedClientSessionSummaries(ctx context.Context, principal Principal, filter ClientSessionFilter) ([]ClientSession, error) {
+	return s.listClientSessionsForAudience(ctx, principal, filter, true, true)
+}
+
+func (s *Store) listClientSessionsForAudience(ctx context.Context, principal Principal, filter ClientSessionFilter, summary, native bool) ([]ClientSession, error) {
 	if err := validateClient(Client{DeviceID: filter.DeviceID, Name: filter.SessionID}); err != nil {
 		return nil, err
 	}
@@ -261,7 +272,7 @@ func (s *Store) listClientSessions(ctx context.Context, principal Principal, fil
 		return nil, fmt.Errorf("begin client session list: %w", err)
 	}
 	defer rollback(tx)
-	authority, err := lockClientSession(ctx, tx, principal, false)
+	authority, err := lockClientSessionListActor(ctx, tx, principal, native, true)
 	if err != nil {
 		return nil, err
 	}
@@ -333,13 +344,23 @@ func (s *Store) listClientSessions(ctx context.Context, principal Principal, fil
 		return nil, fmt.Errorf("read client session list: %w", err)
 	}
 	rows.Close()
-	if _, err := lockClientSession(ctx, tx, principal, false); err != nil {
+	if _, err := lockClientSessionListActor(ctx, tx, principal, native, false); err != nil {
 		return nil, err
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("commit client session list: %w", err)
 	}
 	return sessions, nil
+}
+
+func lockClientSessionListActor(ctx context.Context, tx pgx.Tx, principal Principal, native, lock bool) (clientSessionAuthority, error) {
+	if native {
+		if err := CheckAdministrator(ctx, tx, principal, AdministratorNative, lock); err != nil {
+			return clientSessionAuthority{}, err
+		}
+		return clientSessionAuthority{administrator: true, controlOtherUsers: true, controlSharedDevices: true}, nil
+	}
+	return lockClientSession(ctx, tx, principal, false)
 }
 
 // The visibility flags belong to the account policy parsed under the retained

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Box, Checkbox, FormControlLabel, Skeleton, Stack, Typography } from '@mui/material';
+import { Box, Checkbox, FormControlLabel, Skeleton, Stack, Typography } from './ui';
 import { adminApi, isAbortError } from './api';
 import type { FeatureInfo } from './api';
 import { ErrorNotice } from './components';

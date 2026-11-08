@@ -12,16 +12,22 @@ import (
 // defaults as native Reset; explicit null is never a reset instruction.
 func decodeManagementConfiguration(w http.ResponseWriter, r *http.Request, mutation settings.ConfigurationMutation, values map[string]json.RawMessage) (settings.ConfigurationMutation, bool) {
 	defaults := settings.DefaultManagement()
+	hasSubtitleDownloads := false
 	for name, raw := range values {
 		var target any
 		if mutation.Section == settings.ConfigurationSubtitles {
 			switch name {
 			case "downloadlanguages":
 				target = &defaults.Subtitles.DownloadLanguages
+				hasSubtitleDownloads = true
 			case "downloadmoviesubtitles":
 				target = &defaults.Subtitles.DownloadMovieSubtitles
+				hasSubtitleDownloads = true
 			case "downloadepisodesubtitles":
 				target = &defaults.Subtitles.DownloadEpisodeSubtitles
+				hasSubtitleDownloads = true
+			case "allowasstotext":
+				target = &mutation.AllowAssToText
 			}
 		} else {
 			switch name {
@@ -43,7 +49,11 @@ func decodeManagementConfiguration(w http.ResponseWriter, r *http.Request, mutat
 		return settings.ConfigurationMutation{}, false
 	}
 	if mutation.Section == settings.ConfigurationSubtitles {
-		mutation.Subtitles = &defaults.Subtitles
+		// The native ASS-only editor does not replace subtitle download policy.
+		// A legacy empty object retains the established download reset behavior.
+		if len(values) == 0 || hasSubtitleDownloads {
+			mutation.Subtitles = &defaults.Subtitles
+		}
 	} else {
 		mutation.Tasks = &defaults.Tasks
 	}

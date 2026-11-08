@@ -3,6 +3,8 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from
 import Hls from 'hls.js';
 import { useApp } from '../context';
 import { MediaImage } from '../components';
+import { useRemotePlayback } from '../components/RemoteControl';
+import type { RemotePlaybackCommand } from '../lib/remoteControl';
 import { api } from '../lib/api';
 import { seekThumbnailAt, seekThumbnails, seekThumbnailUrl, type SeekThumbnail } from '../lib/seekPreviews';
 import { subtitleStyles } from '../lib/subtitleStyles';
@@ -46,7 +48,7 @@ function Glyph({ name, size = 24 }: { name: string; size?: number }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name] ?? paths.more}</svg>;
 }
 
-export function PlayerPage({ id, restart = false }: { id: string; restart?: boolean }) {
+export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId }: { id: string; restart?: boolean; remoteOptions?: PlaybackOptions; remoteRequestId?: number }) {
   const app = useApp();
   const appRef = useRef(app);
   appRef.current = app;
@@ -55,6 +57,7 @@ export function PlayerPage({ id, restart = false }: { id: string; restart?: bool
   const hlsRef = useRef<Hls | null>(null);
   const activeRef = useRef<ActivePlayback | null>(null);
   const generationRef = useRef(0);
+  const requestedPosition = useRef(0);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const controlHeld = useRef(false);
@@ -63,6 +66,7 @@ export function PlayerPage({ id, restart = false }: { id: string; restart?: bool
   const episodeRow = useRef<HTMLDivElement>(null);
   const dragRef = useRef(false);
   const reportFailure = useRef(false);
+  const remotelyPaused = useRef(false);
   const nextStarted = useRef(false);
   const skipDone = useRef(false);
   const itemOwner = useRef<MediaItem | null>(null);
@@ -82,6 +86,7 @@ export function PlayerPage({ id, restart = false }: { id: string; restart?: bool
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const [visible, setVisible] = useState(true);
   const [panel, setPanel] = useState<Panel>(null);
   const [volume, setVolume] = useState(0.8);
@@ -159,7 +164,7 @@ export function PlayerPage({ id, restart = false }: { id: string; restart?: bool
     try { await api.stopActiveEncoding(active.session.info.PlaySessionId); } catch { /* The backend also expires abandoned encodings. */ }
   }, [report]);
 
-  const begin = useCallback(async (target: MediaItem, at: number, options: PlaybackOptions) => {
+  const begin = useCallback(async (target: MediaItem, at: number, options: PlaybackOptions, keepPaused = false) => {
     const generation = ++generationRef.current;
     const previous = activeRef.current;
     activeRef.current = null;
@@ -169,11 +174,14 @@ export function PlayerPage({ id, restart = false }: { id: string; restart?: bool
     setPlayback(null);
     setLoading(true);
     setError('');
+    setAutoplayBlocked(false);
+    remotelyPaused.current = keepPaused;
     setPlaying(false);
     setEnded(false);
     setCues([]);
     setBuffered([]);
     setPosition(at);
+    requestedPosition.current = at;
     setHover(null);
     setDrag(null);
     setFailedPreview('');
@@ -227,9 +235,9 @@ export function PlayerPage({ id, restart = false }: { id: string; restart?: bool
       await loadItemPreferences(target.SeriesId || target.Id).catch(() => undefined);
       if (disposed) return;
       const preferences = resolveItemPreferences(target);
-      const options: PlaybackOptions = { quality: preferences.quality ?? appRef.current.prefs.quality, audioStreamIndex: preferences.audioStreamIndex, subtitleStreamIndex: preferences.subtitleStreamIndex };
+      const options: PlaybackOptions = { quality: preferences.quality ?? appRef.current.prefs.quality, audioStreamIndex: preferences.audioStreamIndex, subtitleStreamIndex: preferences.subtitleStreamIndex, ...remoteOptions };
       setSelection(options);
-      const at = restart ? 0 : (target.UserData?.PlaybackPositionTicks ?? 0) / TICKS_PER_SECOND;
+      const at = remoteOptions?.startTimeTicks !== undefined ? remoteOptions.startTimeTicks / TICKS_PER_SECOND : restart ? 0 : (target.UserData?.PlaybackPositionTicks ?? 0) / TICKS_PER_SECOND;
       if (at > 0) setResumeAt(at);
       void begin(target, at, options);
       if (target.SeriesId) {
@@ -258,7 +266,7 @@ export function PlayerPage({ id, restart = false }: { id: string; restart?: bool
       clearTimeout(hideTimer.current);
       clearTimeout(flashTimer.current);
     };
-  }, [id, restart, begin, stop, app.session.AccessToken, app.session.User.Id, app.session.serverUrl]);
+  }, [id, restart, remoteOptions, begin, stop, app.session.AccessToken, app.session.User.Id, app.session.serverUrl]);
 
   useEffect(() => {
     if (!item?.SeriesId || itemOwner.current !== item) return;
@@ -315,9 +323,9 @@ export function PlayerPage({ id, restart = false }: { id: string; restart?: bool
     video.muted = statusRef.current.muted;
     video.playbackRate = statusRef.current.rate;
     const play = () => {
-      if (disposed) return;
-      void video.play().catch(() => {
-        if (!disposed) { setLoading(false); setPlaying(false); setVisible(true); }
+      if (disposed || remotelyPaused.current) return;
+      void video.play().catch((failure: unknown) => {
+        if (!disposed) { setLoading(false); setPlaying(false); setVisible(true); setAutoplayBlocked(failure instanceof DOMException && failure.name === 'NotAllowedError'); }
       });
     };
     const isHls = /\.m3u8(?:\?|$)/i.test(playback.url)
@@ -325,7 +333,8 @@ export function PlayerPage({ id, restart = false }: { id: string; restart?: bool
     const metadata = () => {
       if (disposed) return;
       if ((!isHls || !playback.source.RunTimeTicks) && Number.isFinite(video.duration) && video.duration > 0) setDuration(video.duration);
-      if (wanted > 0 && Math.abs(video.currentTime - wanted) > 0.5) video.currentTime = wanted;
+      const target = requestedPosition.current;
+      if (Math.abs(video.currentTime - target) > 0.5) video.currentTime = target;
       play();
     };
     video.addEventListener('loadedmetadata', metadata, { once: true });
@@ -451,7 +460,7 @@ export function PlayerPage({ id, restart = false }: { id: string; restart?: bool
     const active = activeRef.current;
     if (!video || !active || error) return;
     if (active.stopped) { void begin(active.item, 0, active.selection); return; }
-    if (video.paused) void video.play().catch(() => { setVisible(true); appRef.current.notify('浏览器未能开始播放，请重试。'); });
+    if (video.paused) { remotelyPaused.current = false; void video.play().catch(() => { setVisible(true); appRef.current.notify('浏览器未能开始播放，请重试。'); }); }
     else video.pause();
     reveal();
   }, [begin, reveal, error]);
@@ -461,17 +470,63 @@ export function PlayerPage({ id, restart = false }: { id: string; restart?: bool
     const active = activeRef.current;
     if (!video || !active || !duration || active.stopped) return;
     const target = clamp(requested, 0, Math.max(0, duration - 0.05));
+    requestedPosition.current = target;
     setPosition(target);
     setEnded(false);
     setResumeAt(null);
     if (target < position) skipDone.current = false;
-    if (active.session.method === 'DirectPlay' || hlsRef.current || canSeekTo(video.seekable, target)) {
+    if (video.readyState === 0) {
+      // Metadata applies the latest intent, including a remote seek received
+      // while the requested source is still opening.
+    } else if (active.session.method === 'DirectPlay' || hlsRef.current || canSeekTo(video.seekable, target)) {
       video.currentTime = target;
     } else {
-      void begin(active.item, target, active.selection);
+      void begin(active.item, target, active.selection, video.paused);
     }
     reveal();
   }, [begin, duration, position, reveal]);
+
+  const remotePlayback = useCallback(async (command: RemotePlaybackCommand) => {
+    const video = videoRef.current;
+    const active = activeRef.current;
+    if (!video || !active || active.stopped || error) return;
+    const owner = appRef.current.session;
+    const current = () => api.matchesSession(owner) && activeRef.current === active;
+    if (command.command === 'Stop') {
+      remotelyPaused.current = true;
+      video.pause();
+      active.position = Number.isFinite(video.currentTime) ? Math.max(0, video.currentTime) : active.position;
+      setPlaying(false); setLoading(false); setVisible(true);
+      await stop(active);
+      if (current()) { appRef.current.notify('管理员已停止此设备的播放。'); exit(); }
+      return;
+    }
+    if (command.command === 'Seek') {
+      try { if (command.positionTicks !== undefined) seek(command.positionTicks / TICKS_PER_SECOND); }
+      catch { if (current()) appRef.current.notify('当前影片暂时无法跳转，请稍后重试。'); }
+      return;
+    }
+    const pause = command.command === 'Pause' || command.command === 'PlayPause' && !video.paused;
+    remotelyPaused.current = pause;
+    if (pause) {
+      const alreadyPaused = video.paused;
+      video.pause();
+      setPlaying(false); setVisible(true);
+      if (alreadyPaused && active.started) { active.position = Math.max(0, video.currentTime); await report(active, 'Progress'); }
+    } else {
+      setAutoplayBlocked(false);
+      const alreadyPlaying = !video.paused;
+      // Do not block a following Stop while the browser waits for media or a
+      // user gesture. Native playing/pause events report the observed result.
+      void video.play().then(() => {
+        if (current() && !active.stopped && alreadyPlaying && active.started) { active.position = Math.max(0, video.currentTime); void report(active, 'Progress'); }
+      }).catch(() => {
+        if (current() && !active.stopped) { setLoading(false); setPlaying(false); setVisible(true); setAutoplayBlocked(true); appRef.current.notify('浏览器已阻止远程开始播放，请在此设备点按播放。'); }
+      });
+    }
+    reveal();
+  }, [error, exit, report, reveal, seek, stop]);
+  useRemotePlayback(remotePlayback, Boolean(playback) && !error, remoteRequestId);
 
   const jump = useCallback((delta: number) => {
     seek((activeRef.current?.position ?? position) + delta);
@@ -525,6 +580,7 @@ export function PlayerPage({ id, restart = false }: { id: string; restart?: bool
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      if (document.querySelector('dialog[open]')) return;
       const target = event.target as HTMLElement;
       if (!panel && event.key === 'Tab' && !visible) {
         event.preventDefault();
@@ -657,6 +713,7 @@ export function PlayerPage({ id, restart = false }: { id: string; restart?: bool
     if (!active || active.stopped) return;
     setLoading(false);
     setPlaying(true);
+    setAutoplayBlocked(false);
     updateTime();
     if (!active.started) { active.started = true; void report(active, 'Started'); }
     else void report(active, 'Progress');
@@ -668,6 +725,16 @@ export function PlayerPage({ id, restart = false }: { id: string; restart?: bool
     setVisible(true);
     const active = activeRef.current;
     if (active?.started && !active.stopped) { updateTime(); void report(active, 'Progress'); }
+  };
+
+  const onLoadedData = () => {
+    const active = activeRef.current;
+    const video = videoRef.current;
+    if (!remotelyPaused.current || !video?.paused || !active || active.stopped || active.started) return;
+    active.position = Math.max(0, video.currentTime);
+    active.started = true;
+    setLoading(false); setPlaying(false); setVisible(true);
+    void report(active, 'Started');
   };
 
   const onEnded = () => {
@@ -724,12 +791,13 @@ export function PlayerPage({ id, restart = false }: { id: string; restart?: bool
   };
 
   return <div ref={rootRef} className={`player-page ${visible || panel || error ? 'is-visible' : 'is-hidden'}`} onPointerMove={reveal} onFocusCapture={reveal} style={subtitleStyles(app.prefs)}>
-    <video ref={videoRef} className="player-video" crossOrigin="anonymous" playsInline preload="auto" onClick={() => { if (panel) closePanel(); else if (window.matchMedia('(hover: hover)').matches) toggle(); else setVisible((value) => !value); }} onDoubleClick={toggleFull} onTimeUpdate={updateTime} onProgress={updateBuffer} onPlaying={onPlaying} onPause={onPause} onWaiting={() => { if (activeRef.current && !error) setLoading(true); }} onSeeked={() => { updateTime(); const active = activeRef.current; if (active?.started && !active.stopped) void report(active, 'Progress'); }} onEnded={onEnded} onError={() => { if (activeRef.current && !hlsRef.current) { setError('当前影片无法播放，请尝试其他画质。'); setLoading(false); setVisible(true); } }} aria-label={item?.Name ?? '影片'}>
+    <video ref={videoRef} className="player-video" crossOrigin="anonymous" playsInline preload="auto" onClick={() => { if (panel) closePanel(); else if (window.matchMedia('(hover: hover)').matches) toggle(); else setVisible((value) => !value); }} onDoubleClick={toggleFull} onTimeUpdate={updateTime} onProgress={updateBuffer} onLoadedData={onLoadedData} onPlaying={onPlaying} onPause={onPause} onWaiting={() => { if (activeRef.current && !error) setLoading(true); }} onSeeked={() => { updateTime(); const active = activeRef.current; if (active?.started && !active.stopped) void report(active, 'Progress'); }} onEnded={onEnded} onError={() => { if (activeRef.current && !hlsRef.current) { setError('当前影片无法播放，请尝试其他画质。'); setLoading(false); setVisible(true); } }} aria-label={item?.Name ?? '影片'}>
       {playback?.subtitleUrl && <track key={playback.subtitleUrl} kind="subtitles" src={playback.subtitleUrl} label="字幕" default />}
     </video>
     {cues.length > 0 && <div className={`player-subtitles subtitle-${app.prefs.subtitleStyle}`} aria-live="off">{cues.map((cue, index) => <span key={`${index}-${cue}`}>{cue}</span>)}</div>}
     {loading && !error && <div className="player-loading" role="status" aria-label="正在缓冲"><span /><span className="sr-only">正在缓冲</span></div>}
     {!playing && !loading && !error && !ended && <button className="player-big-play" aria-label="播放" onClick={toggle}><Glyph name="play" size={40} /></button>}
+    {autoplayBlocked && !playing && !error && <p className="player-autoplay-notice" role="status">浏览器已阻止自动播放，请点按播放继续。</p>}
     {flash && <div className={`player-flash ${flash}`}>{flash === 'forward' ? '快进 10 秒 ›' : '‹ 后退 10 秒'}</div>}
     {error && <div className="player-error" role="alert"><h1>暂时无法播放</h1><p>{error}</p><div><button onClick={() => { if (item) void begin(item, position, selection); else window.location.reload(); }}>重试</button><button onClick={() => openPanel('quality')}>选择画质</button><button onClick={exit}>返回详情</button></div></div>}
     {ended && !showNext && !error && <div className="player-ended"><h2>播放结束</h2><button onClick={() => { if (item) void begin(item, 0, selection); }}>重新播放</button><button onClick={exit}>返回详情</button></div>}

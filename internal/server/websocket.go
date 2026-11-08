@@ -214,11 +214,22 @@ func (s *Server) clientSocket(w http.ResponseWriter, r *http.Request) {
 		}
 		runtime.mu.Unlock()
 	}()
-	s.serveClientSocket(conn, sub, principal, s.clientAddress(r))
+	s.serveClientSocket(conn, sub, principal, s.policyClientAddress(r))
 }
 
 func (s *Server) serveClientSocket(conn *websocket.Conn, sub *events.Subscription, principal identity.Principal, peerIP string) {
 	ctx, cancel := context.WithCancel(s.sockets.ctx)
+	if s.serverPolicy != nil {
+		var release func()
+		var allowed bool
+		ctx, release, allowed = s.serverPolicy.Watch(ctx, peerIP)
+		defer release()
+		if !allowed {
+			cancel()
+			_ = conn.Close(websocket.StatusPolicyViolation, "Remote access is disabled.")
+			return
+		}
+	}
 	updates := newSessionSubscription()
 	queuedEvents := make(chan events.Event, 1)
 	var workers sync.WaitGroup

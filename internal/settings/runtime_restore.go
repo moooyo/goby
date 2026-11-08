@@ -12,21 +12,23 @@ import (
 // TargetHostSettings is a trusted coordinator capture, never incoming archive
 // metadata. Nil overrides preserve target deployment defaults after activation.
 type TargetHostSettings struct {
-	Network  *NetworkOverrides
-	Hardware *HardwareSelection
-	Threads  *int
+	Network             *NetworkOverrides
+	Hardware            *HardwareSelection
+	Threads             *int
+	TranscodingTempPath *string
 }
 
 // ValidateTargetHostSettings validates a trusted target capture without reading
 // database state, inventory availability, devices or deployment configuration.
 func ValidateTargetHostSettings(value TargetHostSettings) error {
 	return validateRuntimeOverrides(RuntimeOverrides{Network: cloneNetworkOverrides(value.Network),
-		Hardware: clonePointer(value.Hardware), Threads: clonePointer(value.Threads)})
+		Hardware: clonePointer(value.Hardware), Threads: clonePointer(value.Threads), TranscodingTempPath: clonePointer(value.TranscodingTempPath)})
 }
 
 func CaptureTargetHostSettings(snapshot Snapshot) TargetHostSettings {
 	return TargetHostSettings{Network: cloneNetworkOverrides(snapshot.Runtime.Overrides.Network),
-		Hardware: clonePointer(snapshot.Runtime.Overrides.Hardware), Threads: clonePointer(snapshot.Runtime.Overrides.Threads)}
+		Hardware: clonePointer(snapshot.Runtime.Overrides.Hardware), Threads: clonePointer(snapshot.Runtime.Overrides.Threads),
+		TranscodingTempPath: clonePointer(snapshot.Runtime.Overrides.TranscodingTempPath)}
 }
 
 // ReadTargetHostSettings captures target-owned choices in a coordinator-owned
@@ -55,7 +57,8 @@ func NormalizeRestoredHostSettings(ctx context.Context, tx pgx.Tx, target Target
 	if tx == nil {
 		return false, ErrInvalidInput
 	}
-	targetRuntime := RuntimeOverrides{Network: cloneNetworkOverrides(target.Network), Hardware: clonePointer(target.Hardware), Threads: clonePointer(target.Threads)}
+	targetRuntime := RuntimeOverrides{Network: cloneNetworkOverrides(target.Network), Hardware: clonePointer(target.Hardware), Threads: clonePointer(target.Threads),
+		TranscodingTempPath: clonePointer(target.TranscodingTempPath)}
 	if err := validateRuntimeOverrides(targetRuntime); err != nil {
 		return false, err
 	}
@@ -70,6 +73,7 @@ func NormalizeRestoredHostSettings(ctx context.Context, tx pgx.Tx, target Target
 	}
 	next := cloneRuntimeOverrides(previous)
 	next.Network, next.Hardware, next.Threads = targetRuntime.Network, targetRuntime.Hardware, targetRuntime.Threads
+	next.TranscodingTempPath = targetRuntime.TranscodingTempPath
 	if equalRuntimeOverrides(previous, next) {
 		return false, nil
 	}

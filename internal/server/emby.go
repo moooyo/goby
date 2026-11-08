@@ -89,13 +89,14 @@ func (s *Server) systemInfo(w http.ResponseWriter, r *http.Request) {
 		s.identityError(w, r, err)
 		return
 	}
-	// Capability facts do not grant management authority. Deployment owns TLS
-	// and process supervision; a configured HTTPS PublicURL does not enable an
-	// in-process TLS listener or a self-restart/update implementation.
-	dto["CanSelfRestart"], dto["CanSelfUpdate"], dto["SupportsHttps"] = false, false, false
+	// Capability facts do not grant management authority. The process owner
+	// supplies generation restart; deployment still owns TLS and updates.
+	dto["CanSelfRestart"] = s.restartController != nil && s.restartController.request != nil
+	dto["CanSelfUpdate"], dto["SupportsHttps"] = false, false
 	dto["SupportsLocalPortConfiguration"] = true
 	principal, _ := r.Context().Value(principalKey).(identity.Principal)
 	if principal.CanManageServer() {
+		s.projectVerifiedUpdateInfo(dto)
 		binding := s.ManagedHTTPBindingState(s.requestSettings(r).DesiredNetwork)
 		dto["HasPendingRestart"] = binding.RestartRequired
 		if binding.Active != nil {

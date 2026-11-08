@@ -169,7 +169,7 @@ func (s *Server) clientSessions(w http.ResponseWriter, r *http.Request) {
 		s.clientSessionSnapshotError(w, r, err)
 		return
 	}
-	p := readItemPresentation(r)
+	p := s.readItemPresentation(r)
 	if len(itemDTOs) > 0 && !s.applyIndexedImages(w, r, principal.User.ID, itemDTOs, false, p) {
 		return
 	}
@@ -179,6 +179,11 @@ func (s *Server) clientSessions(w http.ResponseWriter, r *http.Request) {
 // clientSessionSnapshot is shared by HTTP lists and per-connection Sessions
 // subscriptions. The caller obtains sessions through current identity authority.
 func (s *Server) clientSessionSnapshot(ctx context.Context, principal identity.Principal, sessions []identity.ClientSession) ([]map[string]any, []map[string]any, error) {
+	return s.clientSessionSnapshotForAudience(ctx, principal, sessions, false)
+}
+
+func (s *Server) clientSessionSnapshotForAudience(ctx context.Context, principal identity.Principal, sessions []identity.ClientSession, native bool) ([]map[string]any, []map[string]any, error) {
+	policy := s.settingsForContext(ctx).Transcoding
 	authIDs := make([]string, 0, len(sessions))
 	for _, session := range sessions {
 		authIDs = append(authIDs, session.SessionID)
@@ -213,7 +218,12 @@ func (s *Server) clientSessionSnapshot(ctx context.Context, principal identity.P
 			return nil, nil, err
 		}
 		for _, item := range result {
-			dto := s.itemDTO(item, nil, false)
+			var fields []string
+			if native {
+				fields = []string{"Container", "MediaStreams", "Size", "Bitrate", "Width", "Height", "VideoCodec", "AudioCodec"}
+			}
+			dto := s.itemDTO(item, fields, false)
+			applySubtitleDeliveryPolicy(dto, policy)
 			items[item.ID], itemDTOs = dto, append(itemDTOs, dto)
 		}
 	}
@@ -230,6 +240,15 @@ func (s *Server) clientSessionSnapshot(ctx context.Context, principal identity.P
 			state["PositionTicks"], state["IsPaused"] = play.PositionTicks, play.State == "Paused"
 			state["MediaSourceId"] = play.MediaSourceID
 			dto["PlayState"] = state
+			if native {
+				dto["PlaySessionId"] = play.ID
+				dto["PlaybackUpdatedAt"] = play.UpdatedAt.UTC()
+			}
+		}
+		if native {
+			connected := s.hasClientControlTransport(session.SessionID)
+			dto["TransportConnected"] = connected
+			dto["Controls"] = nativePlaybackControls(principal, session, dto, connected)
 		}
 		result = append(result, dto)
 	}

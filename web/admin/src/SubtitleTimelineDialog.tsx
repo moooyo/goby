@@ -1,5 +1,6 @@
+import { adminLocale } from './i18n';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Paper, Skeleton, Stack, Typography } from '@mui/material';
+import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Paper, Skeleton, Stack, Typography } from './ui';
 import { ErrorNotice } from './components';
 import { subtitleTimelineApi } from './subtitleTimelineApi';
 import { activeSubtitleTimeline, subtitleTimelineFailure, subtitleTimelineStateLabels } from './subtitleTimeline';
@@ -53,7 +54,7 @@ export function SubtitleTimelineDialog({ itemId, itemName, currentUserId, onClos
             {item.Artifact.Stale && <Alert severity="warning">片源已经变化，已有时间轴仍保存在片源旁。播放器不会显示这些可能错位的时间轴；需要更新时请明确重新生成。</Alert>}
             {item.Artifact.Tracks.length > 0 ? <>
               <Typography variant="body2">已保存 {item.Artifact.Tracks.length} 条字幕轨的时间轴，影片时长 {ticksToSeconds(item.Artifact.DurationTicks)} 秒。</Typography>
-              <Stack component="ul" aria-label="已生成时间轴的字幕轨" spacing={1} sx={{ listStyle: 'none', m: 0, p: 0 }}>{item.Artifact.Tracks.map((track) => <Box component="li" key={track.StreamIndex} sx={{ borderTop: 1, borderColor: 'divider', pt: 1 }}><Typography variant="body2" sx={{ fontWeight: 600 }}>字幕轨 {track.StreamIndex}</Typography><Typography variant="caption" color="text.secondary">{track.Codec.toUpperCase()} · {track.IntervalCount.toLocaleString()} 段字幕</Typography>{track.Warnings.length > 0 && <Typography variant="caption" component="div" color="warning.main" sx={{ overflowWrap: 'anywhere' }}>解析说明：{track.Warnings.join('；')}</Typography>}</Box>)}</Stack>
+              <Stack component="ul" aria-label="已生成时间轴的字幕轨" spacing={1} sx={{ listStyle: 'none', m: 0, p: 0 }}>{item.Artifact.Tracks.map((track) => <Box component="li" key={track.StreamIndex} sx={{ borderTop: 1, borderColor: 'divider', pt: 1 }}><Typography variant="body2" sx={{ fontWeight: 600 }}>字幕轨 {track.StreamIndex}</Typography><Typography variant="caption" color="text.secondary">{track.Codec.toUpperCase()} · {track.IntervalCount.toLocaleString(adminLocale())} 段字幕</Typography>{track.Warnings.length > 0 && <Typography variant="caption" component="div" color="warning.main" sx={{ overflowWrap: 'anywhere' }}>解析说明：{track.Warnings.join('；')}</Typography>}</Box>)}</Stack>
             </> : !item.Artifact.Stale && <Typography variant="body2" color="text.secondary">尚无已保存的时间轴，生成时会分别处理当前片源中支持的内封 PGS/DVD 字幕轨。</Typography>}
           </Stack></Paper>
           <Stack direction="row" sx={{ alignItems: 'center', gap: 1, flexWrap: 'wrap' }}><Typography variant="body2">最近任务：</Typography><Chip size="small" label={subtitleTimelineStateLabels[item.State]} color={item.State === 'failed' ? 'error' : activeSubtitleTimeline(item) ? 'primary' : 'default'} /></Stack>

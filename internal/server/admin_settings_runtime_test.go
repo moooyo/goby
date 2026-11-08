@@ -35,10 +35,13 @@ func TestDecodeAdminRuntimeSettingsPreservesAbsentNullAndExplicitValues(t *testi
 	}
 	wantReset := settings.ResetRuntimeUpdate()
 	if value := decode(`null`).Runtime; value == nil || !reflect.DeepEqual(*value, wantReset) {
-		t.Fatal("explicit runtime null did not reset all seven groups")
+		t.Fatal("explicit runtime null did not reset all fifteen groups")
 	}
-	if value := decode(`{"Network":null,"Hardware":null,"Threads":null,"H264":null,"HEVC":null,"SoftwareToneMapping":null,"VulkanToneMapping":null}`).Runtime; !reflect.DeepEqual(*value, wantReset) {
-		t.Fatal("independent null groups did not retain their clear markers")
+	wantLegacyReset := wantReset
+	wantLegacyReset.EnableThrottling, wantLegacyReset.ExtractionThreadCount = settings.Change[bool]{}, settings.Change[int]{}
+	wantLegacyReset.CodecProfileLimits, wantLegacyReset.SubtitleOptions = settings.Change[transcode.CodecProfileLimits]{}, settings.Change[settings.RuntimeSubtitleOptions]{}
+	if value := decode(`{"Network":null,"Hardware":null,"Threads":null,"H264":null,"HEVC":null,"SoftwareToneMapping":null,"VulkanToneMapping":null,"Transcoding":null,"TranscodingTempPath":null,"SoftwareToneMapOptions":null,"CodecConfigurations":null}`).Runtime; !reflect.DeepEqual(*value, wantLegacyReset) {
+		t.Fatal("an older null-group writer unexpectedly cleared newly managed controls")
 	}
 	value := decode(`{"Network":{"BindHost":null,"HttpPort":65535},"Hardware":{"Decode":"software","Encode":"software","DeviceId":""},"Threads":64,"H264":{"Preset":"slow","RateControl":"capped_crf","CRF":18},"HEVC":{"Preset":"medium","RateControl":"bitrate","CRF":35},"SoftwareToneMapping":false,"VulkanToneMapping":true}`).Runtime
 	if value == nil || !value.Network.Present || value.Network.Value == nil || value.Network.Value.BindHost != nil || *value.Network.Value.HttpPort != 65535 ||
@@ -70,9 +73,9 @@ func TestDecodeAdminRuntimeSettingsRejectsAtomicGroupAmbiguityAtFixedFields(t *t
 		{`{"Threads":"4"}`, "Runtime.Threads"}, {`{"Threads":9223372036854775808}`, "Runtime.Threads"},
 		{`{"H264":{"Preset":"fast","RateControl":"bitrate"}}`, "Runtime.H264.CRF"},
 		{`{"H264":{"Preset":"fast","RateControl":"bitrate","CRF":null}}`, "Runtime.H264.CRF"},
-		{`{"H264":{"Preset":"fast","RateControl":"bitrate","CRF":17}}`, "Runtime.H264.CRF"},
+		{`{"H264":{"Preset":"fast","RateControl":"bitrate","CRF":0}}`, "Runtime.H264.CRF"},
 		{`{"H264":{"Preset":"private-marker","RateControl":"bitrate","CRF":23}}`, "Runtime.H264.Preset"},
-		{`{"HEVC":{"Preset":"fast","RateControl":"bitrate","CRF":36}}`, "Runtime.HEVC.CRF"},
+		{`{"HEVC":{"Preset":"fast","RateControl":"bitrate","CRF":52}}`, "Runtime.HEVC.CRF"},
 		{`{"HEVC":{"Preset":"fast","RateControl":"private-marker","CRF":28}}`, "Runtime.HEVC.RateControl"},
 		{`{"HEVC":{"Preset":"fast","RateControl":"bitrate","CRF":28,"CRF":29}}`, "Runtime.HEVC.CRF"},
 		{`{"H264":{"Preset":"fast","RateControl":"bitrate","CRF":23,"private-marker":true}}`, "Runtime.H264"},
@@ -90,7 +93,9 @@ func TestDecodeAdminRuntimeSettingsRejectsAtomicGroupAmbiguityAtFixedFields(t *t
 }
 
 func TestDecodeAdminRuntimeResetAcceptsOnlyExactGroupNames(t *testing.T) {
-	fields := []string{"Runtime", "Runtime.Network", "Runtime.Hardware", "Runtime.Threads", "Runtime.H264", "Runtime.HEVC", "Runtime.SoftwareToneMapping", "Runtime.VulkanToneMapping"}
+	fields := []string{"Runtime", "Runtime.Network", "Runtime.Hardware", "Runtime.Threads", "Runtime.H264", "Runtime.HEVC", "Runtime.SoftwareToneMapping", "Runtime.VulkanToneMapping",
+		"Runtime.Transcoding", "Runtime.TranscodingTempPath", "Runtime.SoftwareToneMapOptions", "Runtime.CodecConfigurations",
+		"Runtime.EnableThrottling", "Runtime.ExtractionThreadCount", "Runtime.CodecProfileLimits", "Runtime.SubtitleOptions"}
 	for _, field := range fields {
 		body, _ := json.Marshal(map[string]any{"Revision": "9007199254740993", "Fields": []string{field}})
 		response := httptest.NewRecorder()
@@ -115,14 +120,23 @@ func TestSettingsRuntimeDTOUsesFrozenDefaultsSourcesAndIndependentValues(t *test
 	port, threads, off := 9090, 3, false
 	quality := transcode.CPUQuality{Preset: "slow", RateControl: "capped_crf", CRF: 19}
 	snapshot := settings.RuntimeSnapshot{
-		Defaults:       settings.RuntimeValues{Network: defaults.Network, Hardware: defaults.Hardware, Execution: defaults.Execution},
+		Defaults: settings.RuntimeValues{Network: defaults.Network, Hardware: defaults.Hardware, Execution: defaults.Execution,
+			Transcoding: defaults.Transcoding, CodecConfigurations: defaults.CodecConfigurations,
+			EnableThrottling: defaults.EnableThrottling, ExtractionThreadCount: *defaults.ExtractionThreadCount,
+			CodecProfileLimits: defaults.CodecProfileLimits, SubtitleOptions: *defaults.SubtitleOptions},
 		Overrides:      settings.RuntimeOverrides{Network: &settings.NetworkOverrides{HttpPort: &port}, Threads: &threads, H264: &quality, SoftwareToneMapping: &off},
 		DesiredNetwork: settings.NetworkValues{BindHost: "::1", HttpPort: 9090}, Hardware: defaults.Hardware, Execution: defaults.Execution,
+		Transcoding: defaults.Transcoding, CodecConfigurations: defaults.CodecConfigurations,
+		EnableThrottling: defaults.EnableThrottling, ExtractionThreadCount: *defaults.ExtractionThreadCount,
+		CodecProfileLimits: defaults.CodecProfileLimits, SubtitleOptions: *defaults.SubtitleOptions,
 	}
 	snapshot.Execution.Threads, snapshot.Execution.H264, snapshot.Execution.SoftwareToneMapping = threads, quality, off
 	value := settingsRuntimeDTO(snapshot)
 	if value["Defaults"].(map[string]any)["Threads"] != 7 || value["Effective"].(map[string]any)["Threads"] != 3 ||
-		value["Overrides"].(map[string]any)["SoftwareToneMapping"] != false || value["Effective"].(map[string]any)["H264"] != quality {
+		value["Overrides"].(map[string]any)["SoftwareToneMapping"] != false ||
+		!reflect.DeepEqual(value["Effective"].(map[string]any)["H264"], map[string]any{
+			"Preset": "slow", "RateControl": "capped_crf", "CRF": 19, "ThreadCount": nil, "X264Options": "",
+		}) {
 		t.Fatal("runtime projection synthesized defaults or lost a configured false or codec group")
 	}
 	if _, exists := value["Effective"].(map[string]any)["Network"]; exists {
@@ -134,7 +148,7 @@ func TestSettingsRuntimeDTOUsesFrozenDefaultsSourcesAndIndependentValues(t *test
 	}
 	port, threads, off, quality.CRF = 1, 1, true, 35
 	if value["Overrides"].(map[string]any)["Network"].(map[string]any)["HttpPort"] != 9090 || value["Overrides"].(map[string]any)["Threads"] != 3 ||
-		value["Overrides"].(map[string]any)["SoftwareToneMapping"] != false || value["Overrides"].(map[string]any)["H264"].(transcode.CPUQuality).CRF != 19 {
+		value["Overrides"].(map[string]any)["SoftwareToneMapping"] != false || value["Overrides"].(map[string]any)["H264"].(map[string]any)["CRF"] != 19 {
 		t.Fatal("runtime DTO retained mutable pointers from its snapshot")
 	}
 }
@@ -143,9 +157,15 @@ func TestAdminSettingsRuntimeDTOSeparatesObservedBindingAndSafeInventory(t *test
 	defaults := settings.DefaultRuntimeOptions()
 	selected := settings.HardwareSelection{Decode: "vaapi", Encode: "vaapi", DeviceID: "amd-fixture"}
 	snapshot := settings.Snapshot{Revision: 9007199254740994, Management: settings.DefaultManagement(), Sorting: settings.DefaultSorting(), Runtime: settings.RuntimeSnapshot{
-		Defaults:       settings.RuntimeValues{Network: defaults.Network, Hardware: defaults.Hardware, Execution: defaults.Execution},
+		Defaults: settings.RuntimeValues{Network: defaults.Network, Hardware: defaults.Hardware, Execution: defaults.Execution,
+			Transcoding: defaults.Transcoding, CodecConfigurations: defaults.CodecConfigurations,
+			EnableThrottling: defaults.EnableThrottling, ExtractionThreadCount: *defaults.ExtractionThreadCount,
+			CodecProfileLimits: defaults.CodecProfileLimits, SubtitleOptions: *defaults.SubtitleOptions},
 		DesiredNetwork: settings.NetworkValues{BindHost: "127.0.0.1", HttpPort: 9090},
 		Hardware:       selected, HardwareAvailable: true, Execution: defaults.Execution,
+		Transcoding: defaults.Transcoding, CodecConfigurations: defaults.CodecConfigurations,
+		EnableThrottling: defaults.EnableThrottling, ExtractionThreadCount: *defaults.ExtractionThreadCount,
+		CodecProfileLimits: defaults.CodecProfileLimits, SubtitleOptions: *defaults.SubtitleOptions,
 	}}
 	server := &Server{
 		cfg: config.Config{Transcoding: config.TranscodingConfig{Hardware: transcode.Hardware{Device: "/private-marker/deployment"}}},
@@ -168,8 +188,8 @@ func TestAdminSettingsRuntimeDTOSeparatesObservedBindingAndSafeInventory(t *test
 	assertAdminSettingsDTOFields(t, value, true)
 	assertAdminSettingsSortingDTO(t, value, []string{})
 	runtime := value["Runtime"].(map[string]any)
-	if len(runtime) != 8 || len(runtime["Defaults"].(map[string]any)) != 7 ||
-		len(runtime["Overrides"].(map[string]any)) != 7 || len(runtime["Effective"].(map[string]any)) != 6 || len(runtime["Sources"].(map[string]any)) != 7 {
+	if len(runtime) != 9 || len(runtime["Defaults"].(map[string]any)) != 15 ||
+		len(runtime["Overrides"].(map[string]any)) != 15 || len(runtime["Effective"].(map[string]any)) != 13 || len(runtime["Sources"].(map[string]any)) != 15 {
 		t.Fatal("runtime settings changed their closed projection shape")
 	}
 	network := runtime["Network"].(map[string]any)

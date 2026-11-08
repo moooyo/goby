@@ -1,0 +1,15 @@
+export const design2AttentionChinese: Record<string, string> = {
+  'No automatic backup rules': '没有自动备份规则',
+  'The backup task has no active trigger rules. Backups must be started manually.': '备份任务没有生效的触发规则，需要手动启动备份。',
+  'Media directory checks unavailable': '无法检查媒体目录',
+  'Showing the last successful directory checks.': '当前显示上次成功检查的目录状态。',
+  'Media directory read access is unknown.': '媒体目录的读取权限未知。',
+  'Some registered directories have not been checked.': '部分已注册目录尚未确认读取权限。',
+  'Automatic backup rules check unavailable': '无法检查自动备份规则',
+  'Showing the last successful backup rules check.': '当前显示上次成功检查的备份规则状态。',
+  'The automatic backup service is unavailable.': '自动备份服务暂不可用。',
+  'Automatic backup trigger rules are unknown.': '自动备份触发规则状态未知。',
+  'Checking registered media directories…': '正在检查已注册媒体目录…',
+  'Checking automatic backup rules…': '正在检查自动备份规则…',
+  'Refresh attention checks': '刷新提醒检查',
+};

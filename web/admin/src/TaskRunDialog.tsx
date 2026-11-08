@@ -1,18 +1,98 @@
+import { adminLocale, useTranslation } from './i18n';
+import type { TranslationValues } from './i18n';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, LinearProgress, Paper, Skeleton, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, Typography } from '@mui/material';
-import type { ChipProps } from '@mui/material';
-import ArrowBackRounded from '@mui/icons-material/ArrowBackRounded';
-import CancelOutlined from '@mui/icons-material/CancelOutlined';
-import RefreshRounded from '@mui/icons-material/RefreshRounded';
+import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, LinearProgress, Paper, Skeleton, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, Typography } from './ui';
+import type { ChipProps } from './ui';
+import { ArrowBackRounded } from './icons';
+import { CancelOutlined } from './icons';
+import { RefreshRounded } from './icons';
 import { adminApi, isAbortError } from './api';
-import type { TaskChild, TaskChildState, TaskDefinition, TaskRun, TaskRunDetail, TaskRunsResponse, TaskRunState } from './api';
+import type { TaskBackupResult, TaskChild, TaskChildState, TaskDefinition, TaskRun, TaskRunDetail, TaskRunsResponse, TaskRunState } from './api';
+import { capacityBytes } from './directoryCapacity';
 import { ErrorNotice } from './components';
 import { useTaskResource } from './useTaskResource';
+import { taskRunSourceLabel } from './TaskRunOrigin';
 import { useUserDraftNavigation } from './userDraftNavigation';
 import type { UserNavigationGuardChange } from './userDraftNavigation';
 
 const alwaysPoll = () => true;
 const pollActiveRun = (result: TaskRunDetail) => isActiveTaskRun(result.Run);
+
+const backupResultLabels: Record<string, string> = {
+  not_recorded: 'Backup result not recorded', deleted: 'Backup archive deleted', deleting: 'Backup archive deleting',
+  missing: 'Backup archive missing', mismatch: 'Backup association mismatch', unavailable: 'Backup result unavailable',
+};
+const archiveStateLabels: Record<string, string> = {
+  ready: 'Ready', writing: 'Writing backup', failed: 'Failed', cancelled: 'Cancelled', interrupted: 'Interrupted',
+  deleted: 'Backup archive deleted', deleting: 'Backup archive deleting',
+};
+
+function normalizeTaskBackupResult(value: unknown): TaskBackupResult | undefined {
+  if (value == null || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const fields = value as Record<string, unknown>;
+  if (typeof fields.Status !== 'string') return undefined;
+  const id = typeof fields.BackupId === 'string' && /^[0-9a-f]{32}$/.test(fields.BackupId) ? fields.BackupId : undefined;
+  if (fields.Status !== 'available') {
+    if (!Object.hasOwn(backupResultLabels, fields.Status)) return undefined;
+    return { Status: fields.Status as TaskBackupResult['Status'], BackupId: ['deleted', 'deleting', 'missing', 'unavailable'].includes(fields.Status) ? id : undefined };
+  }
+  const size = capacityBytes(typeof fields.SizeBytes === 'string' ? fields.SizeBytes : undefined);
+  const state = typeof fields.State === 'string' && ['ready', 'writing', 'failed', 'cancelled', 'interrupted'].includes(fields.State) ? fields.State : undefined;
+  const digest = typeof fields.SHA256 === 'string' && /^[0-9a-f]{64}$/.test(fields.SHA256) ? fields.SHA256 : undefined;
+  if (!id || size == null || size > 9223372036854775807n || !state || typeof fields.Verified !== 'boolean' ||
+    fields.SHA256 != null && fields.SHA256 !== '' && !digest || fields.Verified && (state !== 'ready' || !digest || size === 0n)) return undefined;
+  return { Status: 'available', BackupId: id, State: state, SizeBytes: String(fields.SizeBytes), SHA256: digest, Verified: fields.Verified };
+}
+
+function taskBackupBytes(value: bigint, locale: string): string {
+  const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB'];
+  let unit = 0;
+  while (unit < units.length - 1 && value >= 1024n ** BigInt(unit + 1)) unit += 1;
+  const divisor = 1024n ** BigInt(unit);
+  const hundredths = (value * 100n + divisor / 2n) / divisor;
+  return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(Number(hundredths) / 100)} ${units[unit]}`;
+}
+
+function backupVerification(result: TaskBackupResult, t: (key: string, values?: TranslationValues) => string): string {
+  return t(result.Verified === true && result.State === 'ready' ? 'Archive verified' : result.Verified === false ? 'Archive not verified' : 'Backup verification not recorded');
+}
+
+export function taskBackupResultLabel(value: TaskBackupResult | undefined, t: (key: string, values?: TranslationValues) => string, locale: string): string {
+  const result = normalizeTaskBackupResult(value);
+  if (!result) return t('Backup result unknown');
+  if (result.Status !== 'available') return t(backupResultLabels[result.Status] ?? 'Backup result unknown');
+  const size = taskBackupBytes(capacityBytes(result.SizeBytes)!, locale);
+  const state = result.State && result.State !== 'ready' ? [t(archiveStateLabels[result.State] ?? 'Archive state unknown')] : [];
+  return [size, ...state, backupVerification(result, t)].join(' · ');
+}
+
+function TaskBackupResultDetails({ result: value }: { result?: TaskBackupResult }) {
+  const { t, locale } = useTranslation();
+  const result = normalizeTaskBackupResult(value);
+  const available = result?.Status === 'available' ? result : undefined;
+  const recorded = Boolean(available);
+  const size = capacityBytes(available?.SizeBytes);
+  const digest = available?.SHA256;
+  const explanations: Record<string, string> = {
+    not_recorded: 'No backup was associated with this run.', deleted: 'The backup was deleted. Its run history has been kept.',
+    deleting: 'The backup is being deleted.', missing: 'The backup file is missing. Its recorded run has been kept.',
+    mismatch: 'The recorded backup does not match this server or archive.', unavailable: 'Backup results could not be read. Refresh this run to retry.',
+  };
+  return <Paper component="section" variant="outlined" aria-label={t('Backup result')} sx={{ p: 2.5, minWidth: 0 }}>
+    <Typography variant="h4" component="h3">{t('Backup result')}</Typography>
+    <Typography variant="body2" data-backup-result={result?.Status ?? 'unknown'} sx={{ mt: 1, overflowWrap: 'anywhere' }}>{taskBackupResultLabel(result, t, locale)}</Typography>
+    {!recorded && <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>{t(explanations[result?.Status ?? ''] ?? 'The backup result for this run is unknown.')}</Typography>}
+    {(recorded || result?.BackupId) && <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' }, m: 0, mt: 2, gap: 1.5 }}>
+      {result?.BackupId && <Box sx={{ minWidth: 0 }}><Typography component="dt" variant="caption" color="text.secondary">{t('Backup id')}</Typography><Typography component="dd" variant="body2" className="mono" sx={{ m: 0, overflowWrap: 'anywhere' }}>{result.BackupId}</Typography></Box>}
+      {available && <>
+        <Box><Typography component="dt" variant="caption" color="text.secondary">{t('Archive state')}</Typography><Typography component="dd" variant="body2" sx={{ m: 0 }}>{t(archiveStateLabels[available.State ?? ''] ?? 'Archive state unknown')}</Typography></Box>
+        <Box><Typography component="dt" variant="caption" color="text.secondary">{t('Archive size')}</Typography><Typography component="dd" variant="body2" className="mono" sx={{ m: 0, overflowWrap: 'anywhere' }}>{size == null ? t('Size not recorded') : t('{count} bytes', { count: size.toLocaleString(locale) })}</Typography></Box>
+        <Box><Typography component="dt" variant="caption" color="text.secondary">{t('Verification')}</Typography><Typography component="dd" variant="body2" sx={{ m: 0 }}>{backupVerification(available, t)}</Typography></Box>
+        <Box sx={{ minWidth: 0, gridColumn: '1 / -1' }}><Typography component="dt" variant="caption" color="text.secondary">SHA-256</Typography><Typography component="dd" variant="body2" className="mono" sx={{ m: 0, overflowWrap: 'anywhere' }}>{digest ?? t('Checksum not recorded')}</Typography></Box>
+      </>}
+    </Box>}
+  </Paper>;
+}
 
 export function isActiveTaskRun(run: TaskRun): boolean {
   return ['pending', 'running', 'stopping'].includes(run.State);
@@ -20,7 +100,7 @@ export function isActiveTaskRun(run: TaskRun): boolean {
 
 export function TaskTimestamp({ value, empty = 'Not recorded' }: { value: string | null; empty?: string }) {
   if (!value) return <>{empty}</>;
-  return <time dateTime={value} title={value}>{new Date(value).toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</time>;
+  return <time dateTime={value} title={value}>{new Date(value).toLocaleString(adminLocale(), { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</time>;
 }
 
 export function RunStatusChip({ state }: { state: TaskRunState | TaskChildState }) {
@@ -30,20 +110,24 @@ export function RunStatusChip({ state }: { state: TaskRunState | TaskChildState 
 }
 
 export function RunProgress({ run, compact = false }: { run: TaskRun; compact?: boolean }) {
+  const { t, countLabel, locale } = useTranslation();
+  const progressText = t(countLabel(run.TotalChildren, '{done} of {total} work item finished', '{done} of {total} work items finished'), {
+    done: run.TerminalChildren.toLocaleString(locale), total: run.TotalChildren.toLocaleString(locale),
+  });
   const outcomes = [
     ['Completed', run.CompletedChildren], ['Failed', run.FailedChildren], ['Cancelled', run.CancelledChildren],
     ['Interrupted', run.InterruptedChildren], ['Unavailable', run.UnavailableChildren],
   ] as const;
   return <Box>
     <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'baseline', gap: 1, mb: 0.8 }}>
-      <Typography variant="body2" sx={{ fontWeight: 600 }}>{run.TotalChildren > 0 ? `${run.TerminalChildren.toLocaleString()} of ${run.TotalChildren.toLocaleString()} work items finished` : run.State === 'pending' ? 'Preparing work items' : 'No work items to process'}</Typography>
+      <Typography variant="body2" sx={{ fontWeight: 600 }}>{run.TotalChildren > 0 ? progressText : run.State === 'pending' ? 'Preparing work items' : 'No work items to process'}</Typography>
       {!compact && <Typography variant="caption" color="text.secondary">Work progress</Typography>}
     </Stack>
-    {run.TotalChildren > 0 && <LinearProgress variant="determinate" value={run.TerminalChildren / run.TotalChildren * 100} aria-label="Work progress" aria-valuetext={`${run.TerminalChildren} of ${run.TotalChildren} work items finished`} sx={{ height: 6, borderRadius: 1 }} />}
+    {run.TotalChildren > 0 && <LinearProgress variant="determinate" value={run.TerminalChildren / run.TotalChildren * 100} aria-label="Work progress" aria-valuetext={progressText} sx={{ height: 6, borderRadius: 1 }} />}
     {!compact && <>
-      <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1.5, mt: 1.5 }}>{outcomes.filter(([, count]) => count > 0).map(([label, count]) => <Typography key={label} variant="caption" color="text.secondary">{label}: {count.toLocaleString()}</Typography>)}</Stack>
+      <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1.5, mt: 1.5 }}>{outcomes.filter(([, count]) => count > 0).map(([label, count]) => <Typography key={label} variant="caption" color="text.secondary">{label}: {count.toLocaleString(adminLocale())}</Typography>)}</Stack>
       <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 1, m: 0, mt: 2 }}>
-        {([['Processed items', run.Scanned], ['Added items', run.Added], ['Changed items', run.Updated]] as const).map(([label, value]) => <Box key={label} sx={{ minWidth: 0 }}><Typography variant="caption" component="dt" color="text.secondary">{label}</Typography><Typography component="dd" sx={{ m: 0, fontWeight: 650, fontSize: '1.15rem', overflowWrap: 'anywhere', fontVariantNumeric: 'tabular-nums' }}>{value.toLocaleString()}</Typography></Box>)}
+        {([['Processed items', run.Scanned], ['Added items', run.Added], ['Changed items', run.Updated]] as const).map(([label, value]) => <Box key={label} sx={{ minWidth: 0 }}><Typography variant="caption" component="dt" color="text.secondary">{label}</Typography><Typography component="dd" sx={{ m: 0, fontWeight: 650, fontSize: '1.15rem', overflowWrap: 'anywhere', fontVariantNumeric: 'tabular-nums' }}>{value.toLocaleString(adminLocale())}</Typography></Box>)}
       </Box>
     </>}
   </Box>;
@@ -66,7 +150,7 @@ function TaskPagination({ total, page, limit, label, loading, onPage, onLimit }:
 function ChildRecord({ child }: { child: TaskChild }) {
   return <Box component="li" sx={{ p: { xs: 2, sm: 2.5 }, borderTop: 1, borderColor: 'divider' }}>
     <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 1 }}><Box sx={{ minWidth: 0 }}><Typography variant="body2" sx={{ fontWeight: 650, overflowWrap: 'anywhere' }}>{child.LibraryName || child.LibraryId || 'Server'}</Typography><Typography variant="caption" color="text.secondary">Work item {child.Ordinal + 1}</Typography></Box><RunStatusChip state={child.State} /></Stack>
-    <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 2, mt: 1.5 }}>{([['Processed', child.Scanned], ['Added', child.Added], ['Changed', child.Updated]] as const).map(([label, count]) => <Typography variant="body2" key={label}>{label}: {count.toLocaleString()}</Typography>)}</Stack>
+    <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 2, mt: 1.5 }}>{([['Processed', child.Scanned], ['Added', child.Added], ['Changed', child.Updated]] as const).map(([label, count]) => <Typography variant="body2" key={label}>{label}: {count.toLocaleString(adminLocale())}</Typography>)}</Stack>
     <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' }, gap: 1.5, m: 0, mt: 1.5 }}>
       {([['Created', child.CreatedAt], ['Started', child.StartedAt], ['Finished', child.FinishedAt]] as const).map(([label, value]) => <Box key={label}><Typography component="dt" variant="caption" color="text.secondary">{label}</Typography><Typography component="dd" variant="caption" sx={{ m: 0 }}><TaskTimestamp value={value} /></Typography></Box>)}
     </Box>
@@ -74,7 +158,8 @@ function ChildRecord({ child }: { child: TaskChild }) {
   </Box>;
 }
 
-function RunDetails({ initialRun, onChanged, onBusyChange }: { initialRun: TaskRun; onChanged: () => void; onBusyChange: (busy: boolean) => void }) {
+function RunDetails({ task, initialRun, onChanged, onBusyChange }: { task: TaskDefinition; initialRun: TaskRun; onChanged: () => void; onBusyChange: (busy: boolean) => void }) {
+  const { t } = useTranslation();
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(50);
   const [busy, setBusy] = useState(false);
@@ -114,10 +199,11 @@ function RunDetails({ initialRun, onChanged, onBusyChange }: { initialRun: TaskR
   }
 
   return <Stack spacing={2.5}>
-    <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}><Stack direction="row" sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 1 }}><RunStatusChip state={run.State} /><Typography variant="body2" color="text.secondary">{run.Source.replaceAll('_', ' ')}</Typography></Stack><Stack direction="row" sx={{ gap: 1 }}><Button size="small" startIcon={<RefreshRounded />} disabled={busy || resource.loading} onClick={refresh}>Refresh run</Button>{isActiveTaskRun(run) && <Button size="small" color="error" startIcon={<CancelOutlined />} disabled={busy || run.State === 'stopping'} onClick={() => setConfirming(true)}>{run.State === 'stopping' ? 'Stopping...' : 'Stop run'}</Button>}</Stack></Stack>
+    <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}><Stack direction="row" sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 1 }}><RunStatusChip state={run.State} /><Typography variant="body2" color="text.secondary" className="system-task-run-source" translate="no">{taskRunSourceLabel(run.Source, t)}</Typography></Stack><Stack direction="row" sx={{ gap: 1 }}><Button size="small" startIcon={<RefreshRounded />} disabled={busy || resource.loading} onClick={refresh}>Refresh run</Button>{isActiveTaskRun(run) && <Button size="small" color="error" startIcon={<CancelOutlined />} disabled={busy || run.State === 'stopping'} onClick={() => setConfirming(true)}>{run.State === 'stopping' ? 'Stopping...' : 'Stop run'}</Button>}</Stack></Stack>
     {resource.error != null && <Stack spacing={1}><ErrorNotice error={resource.error} retry={refresh} /><Typography variant="body2" color="text.secondary">Automatic updates stopped. The summary shows the last recorded state. Refresh this run to retry.</Typography></Stack>}
     {cancelError != null && !confirming && <ErrorNotice error={cancelError} retry={refresh} />}
     <RunMessage run={run} />
+    {task.Key === 'backup.create' && <TaskBackupResultDetails result={run.BackupResult} />}
     <Paper variant="outlined" sx={{ p: 2.5, bgcolor: 'background.default' }}><RunProgress run={run} /></Paper>
     <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' }, m: 0, gap: 1.5 }}>
       {([['Created', run.CreatedAt], ['Started', run.StartedAt], ['Finished', run.FinishedAt], ['Stop requested', run.StopRequestedAt]] as const).map(([label, value]) => <Box key={label}><Typography variant="caption" component="dt" color="text.secondary">{label}</Typography><Typography variant="body2" component="dd" sx={{ m: 0 }}><TaskTimestamp value={value} /></Typography></Box>)}
@@ -132,7 +218,9 @@ function RunDetails({ initialRun, onChanged, onBusyChange }: { initialRun: TaskR
   </Stack>;
 }
 
-function RunHistory({ taskId, onSelect }: { taskId: string; onSelect: (run: TaskRun) => void }) {
+function RunHistory({ task, onSelect }: { task: TaskDefinition; onSelect: (run: TaskRun) => void }) {
+  const { t, locale } = useTranslation();
+  const taskId = task.Id;
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(50);
   const load = useCallback((signal: AbortSignal): Promise<TaskRunsResponse> => adminApi.getTaskRuns(taskId, { StartIndex: page * limit, Limit: limit }, { signal }), [taskId, page, limit]);
@@ -144,8 +232,8 @@ function RunHistory({ taskId, onSelect }: { taskId: string; onSelect: (run: Task
     {!resource.data && resource.loading && <Stack role="status" aria-label="Loading task runs"><Skeleton height={70} /><Skeleton height={70} /></Stack>}
     {resource.data?.Items.length === 0 && <Alert severity="info">This task has not run yet. Start it from Available tasks or add an automatic trigger.</Alert>}
     {resource.data && resource.data.Items.length > 0 && <>
-      <Box component="ul" aria-label="Task runs" sx={{ display: { xs: 'block', md: 'none' }, listStyle: 'none', m: 0, p: 0 }}>{resource.data.Items.map((run) => <Paper component="li" variant="outlined" key={run.Id} sx={{ p: 2, mb: 1.5 }}><Stack spacing={1.5}><Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}><RunStatusChip state={run.State} /><Typography variant="caption" color="text.secondary">{run.Source.replaceAll('_', ' ')}</Typography></Stack><Typography variant="body2"><TaskTimestamp value={run.CreatedAt} /></Typography><RunProgress run={run} compact /><Box><Button size="small" variant="outlined" onClick={() => onSelect(run)}>View run</Button></Box></Stack></Paper>)}</Box>
-      <TableContainer sx={{ display: { xs: 'none', md: 'block' } }}><Table aria-label="Task runs"><TableHead><TableRow><TableCell>Created</TableCell><TableCell>State</TableCell><TableCell>Work items finished</TableCell><TableCell align="right">Details</TableCell></TableRow></TableHead><TableBody>{resource.data.Items.map((run) => <TableRow key={run.Id}><TableCell><Typography variant="body2"><TaskTimestamp value={run.CreatedAt} /></Typography><Typography variant="caption" color="text.secondary">{run.Source.replaceAll('_', ' ')}</Typography></TableCell><TableCell><RunStatusChip state={run.State} /></TableCell><TableCell>{run.TerminalChildren.toLocaleString()} / {run.TotalChildren.toLocaleString()}</TableCell><TableCell align="right"><Button size="small" onClick={() => onSelect(run)}>View run</Button></TableCell></TableRow>)}</TableBody></Table></TableContainer>
+      <Box component="ul" aria-label="Task runs" sx={{ display: { xs: 'block', md: 'none' }, listStyle: 'none', m: 0, p: 0 }}>{resource.data.Items.map((run) => <Paper component="li" variant="outlined" key={run.Id} sx={{ p: 2, mb: 1.5 }}><Stack spacing={1.5}><Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}><RunStatusChip state={run.State} /><Typography variant="caption" color="text.secondary" className="system-task-run-source" translate="no">{taskRunSourceLabel(run.Source, t)}</Typography></Stack><Typography variant="body2"><TaskTimestamp value={run.CreatedAt} /></Typography><RunProgress run={run} compact />{task.Key === 'backup.create' && <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{taskBackupResultLabel(run.BackupResult, t, locale)}</Typography>}<Box><Button size="small" variant="outlined" onClick={() => onSelect(run)}>View run</Button></Box></Stack></Paper>)}</Box>
+      <TableContainer sx={{ display: { xs: 'none', md: 'block' } }}><Table aria-label="Task runs"><TableHead><TableRow><TableCell>Created</TableCell><TableCell>State</TableCell><TableCell>Work items finished</TableCell>{task.Key === 'backup.create' && <TableCell>{t('Backup result')}</TableCell>}<TableCell align="right">Details</TableCell></TableRow></TableHead><TableBody>{resource.data.Items.map((run) => <TableRow key={run.Id}><TableCell><Typography variant="body2"><TaskTimestamp value={run.CreatedAt} /></Typography><Typography variant="caption" color="text.secondary" className="system-task-run-source" translate="no">{taskRunSourceLabel(run.Source, t)}</Typography></TableCell><TableCell><RunStatusChip state={run.State} /></TableCell><TableCell>{run.TerminalChildren.toLocaleString(adminLocale())} / {run.TotalChildren.toLocaleString(adminLocale())}</TableCell>{task.Key === 'backup.create' && <TableCell sx={{ overflowWrap: 'anywhere' }}>{taskBackupResultLabel(run.BackupResult, t, locale)}</TableCell>}<TableCell align="right"><Button size="small" onClick={() => onSelect(run)}>View run</Button></TableCell></TableRow>)}</TableBody></Table></TableContainer>
     </>}
     {resource.data && <TaskPagination total={resource.data.TotalRecordCount} page={page} limit={limit} label="Runs per page:" loading={resource.loading} onPage={setPage} onLimit={(value) => { setLimit(value); setPage(0); }} />}
   </Stack>;
@@ -157,7 +245,7 @@ export function TaskRunDialog({ task, initialRun, notice, onClose, onChanged, on
   useUserDraftNavigation(false, busy, onNavigationGuardChange);
   return <Dialog open onClose={busy ? undefined : onClose} fullWidth maxWidth="md" aria-labelledby="task-runs-title">
     <DialogTitle id="task-runs-title" sx={{ pt: 3, overflowWrap: 'anywhere' }}>{selected ? 'Run details' : 'Run history'} · {task.Name}</DialogTitle>
-    <DialogContent>{notice && <Alert severity="info" sx={{ mb: 2 }}>{notice}</Alert>}{selected ? <><Button size="small" color="secondary" startIcon={<ArrowBackRounded />} onClick={() => setSelected(undefined)} disabled={busy} sx={{ mb: 2 }}>Back to run history</Button><RunDetails key={selected.Id} initialRun={selected} onChanged={onChanged} onBusyChange={setBusy} /></> : <RunHistory taskId={task.Id} onSelect={setSelected} />}</DialogContent>
+    <DialogContent>{notice && <Alert severity="info" sx={{ mb: 2 }}>{notice}</Alert>}{selected ? <><Button size="small" color="secondary" startIcon={<ArrowBackRounded />} onClick={() => setSelected(undefined)} disabled={busy} sx={{ mb: 2 }}>Back to run history</Button><RunDetails key={selected.Id} task={task} initialRun={selected} onChanged={onChanged} onBusyChange={setBusy} /></> : <RunHistory task={task} onSelect={setSelected} />}</DialogContent>
     <DialogActions sx={{ px: 3, pb: 3 }}><Button color="secondary" onClick={onClose} disabled={busy}>Close</Button></DialogActions>
   </Dialog>;
 }

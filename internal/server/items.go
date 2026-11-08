@@ -114,7 +114,7 @@ func (s *Server) embyViews(w http.ResponseWriter, r *http.Request) {
 			return a < b
 		})
 	}
-	presentation := readItemPresentation(r)
+	presentation := s.readItemPresentation(r)
 	items := make([]map[string]any, 0, len(libraries))
 	for _, entry := range libraries {
 		item := s.itemDTO(library.Item{ID: entry.ID, LibraryID: entry.ID, Name: entry.Name, SortName: entry.Name, Type: "CollectionFolder", IsFolder: true, CreatedAt: entry.CreatedAt}, nil, false)
@@ -146,7 +146,7 @@ func (s *Server) embyRoot(w http.ResponseWriter, r *http.Request) {
 	}
 	dto := map[string]any{"Id": virtualRootID(), "Name": "Media libraries", "Type": "Folder", "IsFolder": true,
 		"ServerId": s.serverID, "ChildCount": len(libraries), "CanDelete": false, "CanDownload": false}
-	readItemPresentation(r).applySwitches(dto)
+	s.readItemPresentation(r).applySwitches(dto)
 	jsonResponse(w, 200, dto)
 }
 
@@ -300,11 +300,11 @@ func (s *Server) sendItemQuery(w http.ResponseWriter, r *http.Request, query lib
 		s.libraryError(w, r, err)
 		return
 	}
-	presentation := readItemPresentation(r)
+	presentation := s.readItemPresentation(r)
 	items := make([]map[string]any, 0, len(result.Items))
 	if !zeroLimit {
 		for _, entry := range result.Items {
-			item := s.itemDTOWithToken(entry, presentation.fields, false, presentation.deliveryToken)
+			item := s.itemDTOWithToken(entry, presentation.fields, false, presentation.deliveryToken, presentation.transcoding)
 			if entry.Type == "CollectionFolder" {
 				if entry.CollectionType == "mixed" {
 					item["CollectionType"] = nil
@@ -345,7 +345,7 @@ func (s *Server) embyItem(w http.ResponseWriter, r *http.Request) {
 					s.libraryError(w, r, entityErr)
 					return
 				}
-				presentation := readItemPresentation(r)
+				presentation := s.readItemPresentation(r)
 				dto := s.entityDTO(entity, presentation.fields, true)
 				if entity.Type == "Person" {
 					dto["TagItems"] = []map[string]any{}
@@ -360,8 +360,8 @@ func (s *Server) embyItem(w http.ResponseWriter, r *http.Request) {
 	}
 	s.resolveItemAnalysisIntro(r.Context(), subject, &item, "")
 	s.resolveItemAnalysisCredits(r.Context(), subject, &item, "")
-	presentation := readItemPresentation(r)
-	dto := s.itemDTOWithToken(item, presentation.fields, true, presentation.deliveryToken)
+	presentation := s.readItemPresentation(r)
+	dto := s.itemDTOWithToken(item, presentation.fields, true, presentation.deliveryToken, presentation.transcoding)
 	if item.Type == "CollectionFolder" {
 		lib, err := s.library.GetLibrary(r.Context(), item.LibraryID)
 		if err != nil {
@@ -443,11 +443,11 @@ func (s *Server) embyLatest(w http.ResponseWriter, r *http.Request) {
 		s.libraryError(w, r, err)
 		return
 	}
-	presentation := readItemPresentation(r)
+	presentation := s.readItemPresentation(r)
 	items := make([]map[string]any, 0, len(result))
 	if !zeroLimit {
 		for _, entry := range result {
-			dto := s.itemDTOWithToken(entry.Item, presentation.fields, false, presentation.deliveryToken)
+			dto := s.itemDTOWithToken(entry.Item, presentation.fields, false, presentation.deliveryToken, presentation.transcoding)
 			if group && entry.Item.IsFolder {
 				dto["ChildCount"] = entry.ChildCount
 			}
@@ -656,6 +656,9 @@ func addLocalMetadata(dto map[string]any, source *metadata.Metadata, entities li
 	}
 	if local.Status != nil && (detail || hasField(fields, "Status")) {
 		dto["Status"] = *local.Status
+	}
+	if (local.DisplayOrder == "Aired" || local.DisplayOrder == "Dvd" || local.DisplayOrder == "Absolute") && (detail || hasField(fields, "DisplayOrder")) {
+		dto["DisplayOrder"] = local.DisplayOrder
 	}
 	if local.OriginalTitle != "" && (detail || hasField(fields, "OriginalTitle")) {
 		dto["OriginalTitle"] = local.OriginalTitle

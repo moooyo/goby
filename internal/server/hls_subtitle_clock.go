@@ -47,7 +47,9 @@ func (s *Server) serveGeneratedHLSSubtitle(w http.ResponseWriter, r *http.Reques
 	if track.ExternalTag == "" && session.key.plan.SourceMode == "" {
 		cached = &hlsSubtitleExtractionRead{runtime: s.hls, session: session}
 	}
-	content, err := s.readSubtitleContentForExtraction(ctx, librarySubject(principal, principal.User.ID), session.key.scope.ItemID, session.key.scope.SourceID, track.StreamIndex, subtitle.FormatWebVTT, cached)
+	// The immutable rendition set already admitted extraction. Its later
+	// artifact requests may carry a newer server settings revision.
+	content, err := s.readSubtitleContentForExtraction(ctx, librarySubject(principal, principal.User.ID), session.key.scope.ItemID, session.key.scope.SourceID, track.StreamIndex, subtitle.FormatWebVTT, cached, true)
 	if err != nil {
 		s.subtitleError(w, r, err)
 		return false

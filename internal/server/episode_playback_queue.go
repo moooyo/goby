@@ -53,10 +53,10 @@ func (s *Server) tryEpisodePlaybackQueue(w http.ResponseWriter, r *http.Request,
 		s.libraryError(w, r, err)
 		return true
 	}
-	p := readItemPresentation(r)
+	p := s.readItemPresentation(r)
 	items := make([]map[string]any, 0, len(result.Items))
 	for _, entry := range result.Items {
-		item := s.itemDTOWithToken(entry, p.fields, false, p.deliveryToken)
+		item := s.itemDTOWithToken(entry, p.fields, false, p.deliveryToken, p.transcoding)
 		p.applySwitches(item)
 		items = append(items, item)
 	}

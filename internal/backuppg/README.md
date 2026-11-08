@@ -42,6 +42,28 @@ accepted for bounded tests. Arbitrary streams are rejected because a blocked Go
 reader or writer cannot be cancelled reliably. The complete private file must
 be discarded on any failure.
 
+`Options.OmitManagedArtwork` selects an archive without database-owned library
+artwork and user avatars. Its fixed data-exclusion list is `artwork_images`,
+`artwork_state`, `item_provider_images`, and `item_embedded_artwork`. This removes
+uploaded artwork, downloaded posters and logos, automatically fetched images,
+embedded-cover caches, user avatars, and manual image-type overrides together.
+Restoration can use source-folder images when available; downloaded or extracted
+images may need to be rebuilt. Ordinary metadata, provider provenance, subtitle
+review text and its `media_operation_cues.image_png` evidence, and source-file
+image references remain included. Source media and image sidecar files are not
+copied by either mode. The default retains the complete database.
+
+For this selection, export facts record every applicable artwork table as zero
+rows with the exact empty-table SHA256; every other table retains its snapshot
+fingerprint. The source database is never modified. The shared decoder accepts
+missing COPY sections only for these compiled names, and only when authenticated
+facts declare all artwork tables in that trusted schema prefix exactly empty.
+The provider-image boundary is schema 31, managed sets and payloads are schema
+38, and embedded covers are schema 45. It supplies empty data to the ordinary
+sink before sequence sections. Restoration still checks every resulting
+fingerprint, foreign key, application invariant, and sequence value; omission
+never permits missing ordinary metadata or subtitle-review tables.
+
 Before publishing a generated archive, `ValidateDump` runs its private custom
 dump through the same `pg_restore` command and `Decode` grammar used by a real
 restore. `MaxDumpBytes` bounds both compressed custom input and expanded text

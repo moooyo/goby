@@ -54,8 +54,18 @@ func TestLibraryPreviewMigrationPreservesSchema51AndAddsDisabledPolicy(t *testin
 					|| CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=59)
 						THEN '{"EnableCreditsDetection":false}'::jsonb ELSE '{}'::jsonb END
 					|| CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=60)
-						THEN '{"EnableSubtitleTimelineGeneration":false}'::jsonb ELSE '{}'::jsonb END`).Scan(&defaults); err != nil || !defaults {
+						THEN '{"EnableSubtitleTimelineGeneration":false}'::jsonb ELSE '{}'::jsonb END
+					|| CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=75)
+						THEN '{"EnableOnlineImages":false}'::jsonb ELSE '{}'::jsonb END`).Scan(&defaults); err != nil || !defaults {
 				t.Fatalf("new library defaults did not keep the installed automation switches disabled: %v", err)
+			}
+			var onlineImagesEvent bool
+			if err := pool.QueryRow(ctx, `SELECT
+				(SELECT count(*) FROM task_system_events WHERE name='OnlineImagesRequested')=
+					CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=75) THEN 1 ELSE 0 END
+				AND NOT EXISTS(SELECT 1 FROM task_system_events WHERE name='OnlineImagesRequested'
+					AND (sequence IS DISTINCT FROM 0 OR lifecycle_key IS DISTINCT FROM '' OR occurred_at IS NULL))`).Scan(&onlineImagesEvent); err != nil || !onlineImagesEvent {
+				t.Fatalf("migration did not append the exact neutral online-image event: %v", err)
 			}
 			if _, err := pool.Exec(ctx, `UPDATE libraries SET options=options||'{"EnablePreviewGeneration":true}'::jsonb
 				WHERE id IN ('preview-new-tv','preview-new-movie','preview-new-mixed')`); err != nil {

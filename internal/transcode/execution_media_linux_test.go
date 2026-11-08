@@ -33,12 +33,21 @@ func TestExecutionCPUQualityActualOutputsPreserveFramesAndSegmentClocks(t *testi
 					p.VideoBitrate, p.FrameRate = 768000, 12
 					p.Width, p.Height = videoCodecFixtureWidth, videoCodecFixtureHeight
 					options := DefaultExecutionOptions(2)
-					preset := "fast"
-					if rateControl == "capped_crf" {
-						preset = "medium"
+					preset := "superfast"
+					if codec == "hevc" {
+						preset = "ultrafast"
 					}
-					options.H264 = CPUQuality{Preset: preset, RateControl: rateControl, CRF: 22}
-					options.HEVC = CPUQuality{Preset: preset, RateControl: rateControl, CRF: 27}
+					if rateControl == "capped_crf" {
+						preset = "veryslow"
+					}
+					options.H264 = CPUQuality{Preset: "superfast", RateControl: rateControl, CRF: 42, ThreadCount: 1, ThreadCountSet: true,
+						X264Options: "subme=0:me_range=4:rc_lookahead=10:partitions=none"}
+					options.HEVC = CPUQuality{Preset: "ultrafast", RateControl: rateControl, CRF: 45, ThreadCount: 1, ThreadCountSet: true}
+					if codec == "h264" {
+						options.H264.Preset = preset
+					} else {
+						options.HEVC.Preset = preset
+					}
 					if output != "progressive" {
 						p.OutputMode, p.SourceFormatStartKnown, p.SourceFormatStartTicks, p.StartTicks = "", false, 0, 0
 						p.Container, p.SegmentSeconds = "ts", 1

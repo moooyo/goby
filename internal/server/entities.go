@@ -46,7 +46,7 @@ func (s *Server) entityList(kind string) http.HandlerFunc {
 			s.libraryError(w, r, err)
 			return
 		}
-		presentation := readItemPresentation(r)
+		presentation := s.readItemPresentation(r)
 		items := make([]map[string]any, 0, len(result.Items))
 		for _, entity := range result.Items {
 			// Tag lists use UserLibrary.TagItem rather than BaseItemDto.
@@ -73,7 +73,7 @@ func (s *Server) entityByName(kind string) http.HandlerFunc {
 			s.libraryError(w, r, err)
 			return
 		}
-		presentation := readItemPresentation(r)
+		presentation := s.readItemPresentation(r)
 		dto := s.entityDTO(entity, presentation.fields, true)
 		presentation.applySwitches(dto)
 		jsonResponse(w, 200, dto)

@@ -1,10 +1,11 @@
+import { adminLocale } from './i18n';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, LinearProgress, Paper, Skeleton, Snackbar, Stack, Tooltip, Typography } from '@mui/material';
-import type { ChipProps } from '@mui/material';
-import CancelOutlined from '@mui/icons-material/CancelOutlined';
-import LibraryBooksOutlined from '@mui/icons-material/LibraryBooksOutlined';
-import RefreshRounded from '@mui/icons-material/RefreshRounded';
-import WorkHistoryOutlined from '@mui/icons-material/WorkHistoryOutlined';
+import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, LinearProgress, Paper, Skeleton, Snackbar, Stack, Tooltip, Typography } from './ui';
+import type { ChipProps } from './ui';
+import { CancelOutlined } from './icons';
+import { LibraryBooksOutlined } from './icons';
+import { RefreshRounded } from './icons';
+import { WorkHistoryOutlined } from './icons';
 import { adminApi, isAbortError } from './api';
 import type { Job, JobsResponse, Library } from './api';
 import { ErrorNotice, errorText } from './components';
@@ -41,7 +42,7 @@ function StatusChip({ job }: { job: Job }) {
 function taskDate(value: string | null): string {
   const date = value ? new Date(value) : null;
   return date && !Number.isNaN(date.getTime())
-    ? date.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+    ? date.toLocaleString(adminLocale(), { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
     : 'Unknown time';
 }
 
@@ -56,7 +57,7 @@ function taskDuration(job: Job): string | null {
 }
 
 function TaskCounts({ job }: { job: Job }) {
-  return <><span>Scanned</span> {job.Scanned.toLocaleString()} · <span>Added</span> {job.Added.toLocaleString()} · <span>Updated</span> {job.Updated.toLocaleString()}</>;
+  return <><span>Scanned</span> {job.Scanned.toLocaleString(adminLocale())} · <span>Added</span> {job.Added.toLocaleString(adminLocale())} · <span>Updated</span> {job.Updated.toLocaleString(adminLocale())}</>;
 }
 
 function TaskRow({ job, library, onCancel, onDetails, busy }: { job: Job; library?: Library; onCancel: () => void; onDetails: () => void; busy: boolean }) {
@@ -99,7 +100,7 @@ function TaskTime({ label, value, empty }: { label: string; value: string | null
   const date = value ? new Date(value) : null;
   const valid = date !== null && !Number.isNaN(date.getTime());
   const formatted = valid
-    ? date.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit' })
+    ? date.toLocaleString(adminLocale(), { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit' })
     : value ? 'Unknown' : empty;
 
   return (
@@ -133,7 +134,7 @@ function TaskDetails({ job, library }: { job: Job; library?: Library }) {
         {([{ label: 'Scanned', value: job.Scanned }, { label: 'Added', value: job.Added }, { label: 'Updated', value: job.Updated }]).map((metric, index) => (
           <Box key={metric.label} sx={{ px: { xs: 1.5, sm: 2.5 }, minWidth: 0, borderLeft: index > 0 ? 1 : 0, borderColor: 'divider' }}>
             <Typography component="dt" variant="caption" color="text.secondary">{metric.label}</Typography>
-            <Typography component="dd" sx={{ m: 0, mt: 0.4, fontSize: { xs: '1.15rem', sm: '1.4rem' }, fontWeight: 650, fontVariantNumeric: 'tabular-nums', overflowWrap: 'anywhere' }}>{metric.value.toLocaleString()}</Typography>
+            <Typography component="dd" sx={{ m: 0, mt: 0.4, fontSize: { xs: '1.15rem', sm: '1.4rem' }, fontWeight: 650, fontVariantNumeric: 'tabular-nums', overflowWrap: 'anywhere' }}>{metric.value.toLocaleString(adminLocale())}</Typography>
           </Box>
         ))}
       </Box>
@@ -300,7 +301,7 @@ export function ScanHistoryPanel({ onLibraries, onStatusChange }: { onLibraries:
 
   const libraryById = new Map(libraries.map((library) => [library.Id, library]));
   const activeCount = data?.Items.filter(isActive).length ?? 0;
-  const statusMessage = cancelling ? 'Cancelling task...' : loading && data ? 'Refreshing tasks...' : error != null ? 'Updates paused after a request error.' : activeCount > 0 ? paused ? 'Updates paused while this tab is hidden.' : `${activeCount.toLocaleString()} active ${activeCount === 1 ? 'task' : 'tasks'} · Updates every 5 seconds` : data ? 'No active scans.' : 'Loading scan history...';
+  const statusMessage = cancelling ? 'Cancelling task...' : loading && data ? 'Refreshing tasks...' : error != null ? 'Updates paused after a request error.' : activeCount > 0 ? paused ? 'Updates paused while this tab is hidden.' : `${activeCount.toLocaleString(adminLocale())} active ${activeCount === 1 ? 'task' : 'tasks'} · Updates every 5 seconds` : data ? 'No active scans.' : 'Loading scan history...';
   const statusActive = activeCount > 0 && !paused && !cancelling && error == null;
 
   useEffect(() => {
@@ -318,7 +319,7 @@ export function ScanHistoryPanel({ onLibraries, onStatusChange }: { onLibraries:
       )}
       <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
         <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', gap: 1.5, px: { xs: 2, sm: 3 }, py: 1.5 }}>
-          <Stack direction="row" sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 1 }}><Typography variant="h4" component="h2">Scan and refresh history</Typography>{data && <Chip label={data.TotalRecordCount.toLocaleString()} size="small" sx={{ bgcolor: colors.container }} />}</Stack>
+          <Stack direction="row" sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 1 }}><Typography variant="h4" component="h2">Scan and refresh history</Typography>{data && <Chip label={data.TotalRecordCount.toLocaleString(adminLocale())} size="small" sx={{ bgcolor: colors.container }} />}</Stack>
           <Tooltip title="Refresh scan history"><span><IconButton onClick={refresh} disabled={loading || cancelling} aria-label="Refresh scan history"><RefreshRounded sx={{ fontSize: 20 }} /></IconButton></span></Tooltip>
         </Stack>
         {!data && loading && <Stack role="status" aria-label="Loading scan tasks" sx={{ p: { xs: 2, sm: 3 }, pt: 0, gap: 1 }}><Skeleton height={64} /><Skeleton height={64} /><Skeleton height={64} /></Stack>}

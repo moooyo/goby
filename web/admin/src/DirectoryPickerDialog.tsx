@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, List, ListItemButton, ListItemIcon, ListItemText, Skeleton, Stack, TextField, Typography } from '@mui/material';
-import FolderOutlined from '@mui/icons-material/FolderOutlined';
-import ArrowUpwardRounded from '@mui/icons-material/ArrowUpwardRounded';
+import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, List, ListItemButton, ListItemIcon, ListItemText, Skeleton, Stack, TextField, Typography } from './ui';
+import { FolderOutlined } from './icons';
+import { ArrowUpwardRounded } from './icons';
 import { isAbortError } from './api';
 import { ErrorNotice } from './components';
 import { libraryManagementApi } from './libraryManagementApi';

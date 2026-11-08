@@ -1,10 +1,12 @@
 import { createContext, useContext } from 'react';
-import type { AuthSession, MediaItem, PlayerPreferences } from './types';
+import type { AuthSession, MediaItem, PlaybackOptions, PlayerPreferences } from './types';
 
 export interface Route {
   page: 'home' | 'movies' | 'series' | 'favorites' | 'search' | 'settings' | 'detail' | 'player';
   id?: string;
   restart?: boolean;
+  playback?: PlaybackOptions;
+  playbackRequestId?: number;
 }
 
 export interface AppState {

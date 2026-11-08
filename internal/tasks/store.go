@@ -77,7 +77,10 @@ func (s *Store) Reconcile(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("disable unavailable task definitions: %w", err)
 		}
-		return s.installAnalysisSchedules(tx)
+		if err := s.installAnalysisSchedules(tx); err != nil {
+			return err
+		}
+		return s.installOnlineImageSchedule(tx)
 	})
 }
 

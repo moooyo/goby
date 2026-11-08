@@ -92,6 +92,16 @@ var publishedMigrations = [...]publishedMigration{
 	{66, "0066_linux_auxiliary_paths.sql", "4b18305673016f02358624e394e18a8a23981aec63a5dd789a774829ff20223e"},
 	{67, "0067_media_operations_pending_index.sql", "796f54cff22c7544fbfa3e80123a6033eb49af6e707ad2b59cdf67c8211d46c0"},
 	{68, "0068_catalog_entity_reuse.sql", "bf88f792671a305d4da05a1cf358af719e64de4e6fd209cac6f64e4713becacb"},
+	{69, "0069_admin_notification_destinations.sql", "97abf41c704d3668896f5dbafd8a913b6afd8f1232406f3789951b191e440eb1"},
+	{70, "0070_provider_configuration.sql", "8701c783c8f89038f496f1c80da13c2e92a6352833646e7981b5645e3970d1e6"},
+	{71, "0071_backup_policy.sql", "2fd267c69e240b0375f6ba6c9f8f00e159c5161d2f16bd63b61353488f35ce76"},
+	{72, "0072_server_policy.sql", "51cd2399cdc6e33d92d4c546643b1f52ce1685c6e5ee49769c58d7bb3884bbc0"},
+	{73, "0073_series_display_order.sql", "c1d22a6ebbcc7f136403f165c2c5c1ff42809b17ad9d52feb1358d56560fb47f"},
+	{74, "0074_user_activity.sql", "97e85a8339b9d64284944aff93bfba8f9536cd8f40f382fa4f3979576affa577"},
+	{75, "0075_online_images.sql", "8646d89758b82f7bfa71d3a44bcb60ee51489a88c8ad81ff81b6cd2b2ffabf02"},
+	{76, "0076_playback_activity.sql", "b8bf69455ca73ac07e188db78174707ba81ab2d2fdeffaf67429de05b73790df"},
+	{77, "0077_managed_transcoding_options.sql", "6bc704aed4d6385da9dd821425fbc96c2660f7d312ce03f5d1421b560e6fbaa6"},
+	{78, "0078_managed_transcoding_controls.sql", "352ac2837596565caf430b12530e5de29aa16df6eab4a8e814ae2a6f3078c67c"},
 }
 
 func validatePublishedMigrations(available []migration) error {

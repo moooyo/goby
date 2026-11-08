@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Alert, Autocomplete, Box, Button, CircularProgress, Collapse, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, InputAdornment, MenuItem, Paper, Skeleton, Snackbar, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material';
-import DevicesOutlined from '@mui/icons-material/DevicesOutlined';
-import FilterAltOffOutlined from '@mui/icons-material/FilterAltOffOutlined';
-import LogoutRounded from '@mui/icons-material/LogoutRounded';
-import RefreshRounded from '@mui/icons-material/RefreshRounded';
-import SearchRounded from '@mui/icons-material/SearchRounded';
-import BlockRounded from '@mui/icons-material/BlockRounded';
-import CloseRounded from '@mui/icons-material/CloseRounded';
-import TuneRounded from '@mui/icons-material/TuneRounded';
+import { Alert, Autocomplete, Box, Button, CircularProgress, Collapse, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, InputAdornment, MenuItem, Paper, Skeleton, Snackbar, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from './ui';
+import { DevicesOutlined } from './icons';
+import { FilterAltOffOutlined } from './icons';
+import { LogoutRounded } from './icons';
+import { RefreshRounded } from './icons';
+import { SearchRounded } from './icons';
+import { BlockRounded } from './icons';
+import { CloseRounded } from './icons';
+import { TuneRounded } from './icons';
 import { adminApi, ApiError, isAbortError } from './api';
 import type { LoginSession, LoginSessionKind, LoginSessionStatus, SessionsResponse, User } from './api';
 import { ErrorNotice, PageHeading } from './components';
@@ -16,6 +16,9 @@ import { fieldError } from './formFields';
 import { useUserDraftNavigation } from './userDraftNavigation';
 import type { UserNavigationGuardChange } from './userDraftNavigation';
 import { AccessBadge, AccessDetails, AccessTableHeader, accessSearchSx, accessTableSx } from './accessVisuals';
+import { PlaybackSessionsPanel, usePlaybackPageGuards } from './PlaybackSessionsPanel';
+import { RecentlyEndedPlaybackPanel } from './RecentlyEndedPlaybackPanel';
+import './access-pages.css';
 
 interface SessionFilters {
   user: User | null;
@@ -43,7 +46,7 @@ function kindLabel(kind: LoginSessionKind): string {
 
 function dateTime(value: string): string {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? 'Unknown' : date.toLocaleString(undefined, {
+  return Number.isNaN(date.getTime()) ? 'Unknown' : date.toLocaleString(typeof document === 'undefined' ? 'en-US' : document.documentElement.lang, {
     year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
   });
 }
@@ -56,12 +59,12 @@ function SessionIdentity({ session }: { session: LoginSession }) {
   return (
     <Box sx={{ minWidth: 0, overflowWrap: 'anywhere' }}>
       <Stack direction="row" sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 0.75 }}>
-        <Typography variant="body2" sx={{ fontWeight: 600 }} title={session.UserIsAdministrator ? 'Administrator' : 'Member'}>{session.UserName || 'Unnamed user'}</Typography>
+        <Typography variant="body2" sx={{ fontWeight: 600 }} title={session.UserIsAdministrator ? 'Administrator' : 'Member'}>{session.UserName ? <span translate="no">{session.UserName}</span> : 'Unnamed user'}</Typography>
         <AccessBadge label={session.Kind === 'admin' ? 'Dashboard' : 'Emby'} tone={session.Kind === 'admin' ? 'info' : 'neutral'} title={kindLabel(session.Kind)} />
         {session.IsCurrent && <Typography variant="caption" color="primary.main" sx={{ fontWeight: 600, whiteSpace: 'nowrap' }}>This login</Typography>}
         {session.UserIsDisabled && <AccessBadge label="User disabled" tone="warning" />}
       </Stack>
-      <Typography component="div" variant="caption" color="text.secondary" sx={{ mt: 0.35 }}>{session.Client || 'Client not reported'}{session.ApplicationVersion ? ` ${session.ApplicationVersion}` : ''}</Typography>
+      <Typography component="div" variant="caption" color="text.secondary" sx={{ mt: 0.35 }}><span translate={session.Client ? 'no' : undefined}>{session.Client || 'Client not reported'}</span><span translate="no">{session.ApplicationVersion ? ` ${session.ApplicationVersion}` : ''}</span></Typography>
     </Box>
   );
 }
@@ -69,9 +72,9 @@ function SessionIdentity({ session }: { session: LoginSession }) {
 function SessionDevice({ session }: { session: LoginSession }) {
   return (
     <Box sx={{ minWidth: 0, overflowWrap: 'anywhere' }}>
-      <Typography variant="body2">{session.DeviceName || 'Device name not reported'}</Typography>
+      <Typography variant="body2" translate={session.DeviceName ? 'no' : undefined}>{session.DeviceName || 'Device name not reported'}</Typography>
       <Typography component="div" variant="caption" color="text.secondary" sx={{ mt: 0.35, fontSize: 11 }}>
-        Device ID: <span className="mono">{session.DeviceId || 'Not reported'}</span>
+        Device ID: <span className="mono" translate={session.DeviceId ? 'no' : undefined}>{session.DeviceId || 'Not reported'}</span>
       </Typography>
     </Box>
   );
@@ -93,27 +96,27 @@ function SessionHistory({ session }: { session: LoginSession }) {
 
 function RevokeButton({ session, onRevoke }: { session: LoginSession; onRevoke: (session: LoginSession) => void }) {
   if (session.Status === 'revoked') return null;
-  return <Button size="small" variant="outlined" color="error" startIcon={<BlockRounded />} onClick={() => onRevoke(session)} aria-label={`Revoke login for ${session.UserName} on ${session.DeviceName || session.Client || 'unreported device'}`} sx={{ px: 1.75, borderColor: '#DDE3EE' }}>Revoke</Button>;
+  return <Button size="small" variant="outlined" color="error" startIcon={<BlockRounded />} onClick={() => onRevoke(session)} aria-label={`Revoke login for ${session.UserName} on ${session.DeviceName || session.Client || 'unreported device'}`} sx={{ px: 1.75, borderColor: 'var(--line2)' }}>Revoke</Button>;
 }
 
 function SessionsList({ items, onRevoke }: { items: LoginSession[]; onRevoke: (session: LoginSession) => void }) {
   return (
     <>
-      <Box component="ul" aria-label="Login sessions" sx={{ display: { xs: 'block', lg: 'none' }, listStyle: 'none', p: 0, m: 0 }}>
+      <Box component="ul" className="access-record-cards" aria-label="Login sessions" sx={{ display: { xs: 'block', lg: 'none' }, listStyle: 'none', p: 0, m: 0 }}>
         {items.map((session) => (
-          <Box component="li" key={session.Id} sx={{ p: 2.5, borderTop: 1, borderColor: 'divider' }}>
+          <Box component="li" className="access-compact-record" key={session.Id} sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
             <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 1.5 }}>
               <SessionIdentity session={session} />
               <StatusChip status={session.Status} />
             </Stack>
             <Box sx={{ mt: 2 }}><SessionDevice session={session} /></Box>
-            <Box sx={{ mt: 2, p: 1.5, borderRadius: '12px', bgcolor: '#F3F6FB' }}><SessionHistory session={session} /></Box>
+            <Box sx={{ mt: 2, p: 1.5, borderRadius: '12px', bgcolor: 'var(--s1)' }}><SessionHistory session={session} /></Box>
             {session.Status !== 'revoked' && <Box sx={{ mt: 1.5, ml: -1 }}><RevokeButton session={session} onRevoke={onRevoke} /></Box>}
           </Box>
         ))}
       </Box>
-      <TableContainer sx={{ display: { xs: 'none', lg: 'block' } }}>
-        <Table aria-label="Login sessions" sx={{ minWidth: 820, tableLayout: 'fixed', ...accessTableSx }}>
+      <TableContainer className="access-record-table" sx={{ display: { xs: 'none', lg: 'block' } }}>
+        <Table className="access-data-table" aria-label="Login sessions" sx={{ minWidth: 820, tableLayout: 'fixed', ...accessTableSx }}>
           <TableHead><TableRow><TableCell sx={{ width: '31%' }}>User and client</TableCell><TableCell sx={{ width: '27%' }}>Device</TableCell><TableCell sx={{ width: '28%' }}>Login history</TableCell><TableCell align="right" sx={{ width: '14%' }}>Access</TableCell></TableRow></TableHead>
           <TableBody>
             {items.map((session) => (
@@ -164,7 +167,7 @@ function RevokeSessionDialog({ session, onClose, onRevoked, onRefresh, onNavigat
   }
 
   return (
-    <Dialog open onClose={close} fullWidth maxWidth="sm" aria-labelledby="revoke-session-title" aria-describedby="revoke-session-description">
+    <Dialog open data-layout="modal" onClose={close} fullWidth maxWidth="xs" aria-labelledby="revoke-session-title" aria-describedby="revoke-session-description">
       <Box aria-busy={busy}>
         <DialogTitle id="revoke-session-title" sx={{ pt: 3 }}>Revoke this login?</DialogTitle>
         <DialogContent>
@@ -195,6 +198,7 @@ function RevokeSessionDialog({ session, onClose, onRevoked, onRefresh, onNavigat
 }
 
 export function SessionsPage({ onNavigationGuardChange }: { onNavigationGuardChange: UserNavigationGuardChange }) {
+  const guards = usePlaybackPageGuards(onNavigationGuardChange);
   const [filters, setFilters] = useState<SessionFilters>(initialFilters);
   const [query, setQuery] = useState(() => ({ filters: initialFilters(), page: 0, pageSize: 50 }));
   const [loaded, setLoaded] = useState<{ requestKey: string; result: SessionsResponse }>();
@@ -291,10 +295,14 @@ export function SessionsPage({ onNavigationGuardChange }: { onNavigationGuardCha
   }
 
   return (
-    <Box aria-busy={loading}>
-      <PageHeading title="Sessions" description="Review user sign-ins and revoke individual logins. Revoking your current login returns you to sign in." />
+    <Box aria-busy={loading} className="access-page">
+      <PageHeading title="Sessions" description="Monitor current playback, control connected players, and manage user sign-ins." />
+      <div className="access-session-stack" style={{ marginBottom: 18 }}>
+        <PlaybackSessionsPanel onNavigationGuardChange={guards.playback} />
+        <RecentlyEndedPlaybackPanel />
+      </div>
       {failed && <Box sx={{ mb: 3 }}><ErrorNotice error={queryError} retry={refresh} /></Box>}
-      <Paper variant="outlined" sx={{ overflow: 'hidden', borderRadius: '20px' }}>
+      <Paper variant="outlined" className="access-panel" sx={{ overflow: 'hidden', borderRadius: '14px', bgcolor: 'var(--s2)', borderColor: 'var(--line)' }}>
         <Box component="form" onSubmit={applyFilters}>
           <AccessTableHeader title="Login sessions" count={data?.TotalRecordCount}>
             <Stack direction="row" sx={{ alignItems: 'flex-start', flexWrap: 'wrap', gap: 1 }}>
@@ -302,10 +310,10 @@ export function SessionsPage({ onNavigationGuardChange }: { onNavigationGuardCha
                 const status = event.target.value as SessionFilters['status'];
                 changeFilter('status', status);
                 setQuery((current) => ({ ...current, filters: { ...current.filters, status }, page: 0 }));
-              }} sx={{ minWidth: 138, '& .MuiOutlinedInput-root': { height: 40, borderRadius: '8px' } }}>
+              }} sx={{ minWidth: 138, '& .MuiOutlinedInput-root': { height: 34, borderRadius: '10px' } }}>
                 {(['all', 'active', 'revoked', 'disabled', 'expired'] as const).map((status) => <MenuItem key={status} value={status}>{statusLabels[status]}</MenuItem>)}
               </TextField>
-              <TextField id="sessions-search" name="SearchTerm" placeholder="Search user, client, or device" value={filters.searchTerm} onChange={(event) => changeFilter('searchTerm', event.target.value)} error={searchTooLong || Boolean(fieldError(queryError, 'SearchTerm'))} helperText={searchTooLong ? 'Use at most 256 UTF-8 bytes.' : fieldError(queryError, 'SearchTerm')} sx={accessSearchSx} slotProps={{ htmlInput: { 'aria-label': 'Search user, client, or device', autoComplete: 'off', spellCheck: false }, input: { startAdornment: <InputAdornment position="start"><IconButton type="submit" size="small" aria-label="Search sessions" disabled={searchTooLong} edge="start"><SearchRounded sx={{ fontSize: 18 }} /></IconButton></InputAdornment>, endAdornment: filters.searchTerm ? <InputAdornment position="end"><IconButton size="small" aria-label="Clear session search" onClick={() => { changeFilter('searchTerm', ''); setQuery((current) => ({ ...current, filters: { ...current.filters, searchTerm: '' }, page: 0 })); }} edge="end"><CloseRounded sx={{ fontSize: 16 }} /></IconButton></InputAdornment> : undefined } }} />
+              <TextField id="sessions-search" name="SearchTerm" placeholder="Search user, client, or device" value={filters.searchTerm} onChange={(event) => changeFilter('searchTerm', event.target.value)} error={searchTooLong || Boolean(fieldError(queryError, 'SearchTerm'))} helperText={searchTooLong ? 'Use at most 256 UTF-8 bytes.' : fieldError(queryError, 'SearchTerm') ? <span translate="no">{fieldError(queryError, 'SearchTerm')}</span> : undefined} sx={accessSearchSx} slotProps={{ htmlInput: { 'aria-label': 'Search user, client, or device', autoComplete: 'off', spellCheck: false }, input: { startAdornment: <InputAdornment position="start"><IconButton type="submit" size="small" aria-label="Search sessions" disabled={searchTooLong} edge="start"><SearchRounded sx={{ fontSize: 18 }} /></IconButton></InputAdornment>, endAdornment: filters.searchTerm ? <InputAdornment position="end"><IconButton size="small" aria-label="Clear session search" onClick={() => { changeFilter('searchTerm', ''); setQuery((current) => ({ ...current, filters: { ...current.filters, searchTerm: '' }, page: 0 })); }} edge="end"><CloseRounded sx={{ fontSize: 16 }} /></IconButton></InputAdornment> : undefined } }} />
               <Tooltip title="More filters"><IconButton aria-label="More filters" aria-expanded={filtersExpanded} aria-controls="session-advanced-filters" onClick={() => setFiltersExpanded((value) => !value)} color={filtersExpanded || Boolean(filters.user || filters.kind || filters.deviceId) ? 'primary' : 'default'}><TuneRounded sx={{ fontSize: 20 }} /></IconButton></Tooltip>
               <Tooltip title="Refresh sessions"><span><IconButton onClick={refresh} disabled={loading} aria-label="Refresh sessions"><RefreshRounded sx={{ fontSize: 19 }} /></IconButton></span></Tooltip>
             </Stack>
@@ -314,11 +322,11 @@ export function SessionsPage({ onNavigationGuardChange }: { onNavigationGuardCha
             <Box id="session-advanced-filters" sx={{ px: { xs: 2, sm: 3 }, pb: 2.5 }}>
               {usersError != null && <Box sx={{ mb: 2 }}><Typography variant="body2" sx={{ mb: 1 }}>The user filter could not be loaded. Other filters are still available.</Typography><ErrorNotice error={usersError} retry={() => setUsersRevision((value) => value + 1)} /></Box>}
               <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'repeat(3, minmax(0, 1fr))' }, gap: 2, alignItems: 'start' }}>
-                <Autocomplete<User> id="sessions-user" options={users} value={filters.user} loading={usersLoading} loadingText="Loading users..." noOptionsText={usersError ? 'User list unavailable' : 'No matching users'} getOptionLabel={(user) => user.Name} isOptionEqualToValue={(option, value) => option.Id === value.Id} onChange={(_event, user) => changeFilter('user', user)} renderInput={(params) => <TextField {...params} label="User" placeholder="All users" error={Boolean(fieldError(queryError, 'UserId'))} helperText={fieldError(queryError, 'UserId')} />} />
+                <Autocomplete<User> id="sessions-user" options={users} value={filters.user} loading={usersLoading} loadingText="Loading users..." noOptionsText={usersError ? 'User list unavailable' : 'No matching users'} getOptionLabel={(user) => user.Name} isOptionEqualToValue={(option, value) => option.Id === value.Id} onChange={(_event, user) => changeFilter('user', user)} renderInput={(params) => <TextField {...params} label="User" placeholder="All users" error={Boolean(fieldError(queryError, 'UserId'))} helperText={fieldError(queryError, 'UserId') ? <span translate="no">{fieldError(queryError, 'UserId')}</span> : undefined} />} />
                 <TextField id="sessions-kind" select fullWidth label="Login type" value={filters.kind || 'all'} onChange={(event) => changeFilter('kind', event.target.value === 'all' ? '' : event.target.value as LoginSessionKind)}>
                   <MenuItem value="all">All login types</MenuItem><MenuItem value="admin">Administrator dashboard</MenuItem><MenuItem value="emby">Emby client</MenuItem>
                 </TextField>
-                <TextField id="sessions-device-id" name="DeviceId" fullWidth label="Device ID" value={filters.deviceId} onChange={(event) => changeFilter('deviceId', event.target.value)} error={Boolean(fieldError(queryError, 'DeviceId'))} helperText={fieldError(queryError, 'DeviceId') ?? 'Matches this device ID exactly.'} slotProps={{ htmlInput: { autoComplete: 'off', spellCheck: false } }} />
+                <TextField id="sessions-device-id" name="DeviceId" fullWidth label="Device ID" value={filters.deviceId} onChange={(event) => changeFilter('deviceId', event.target.value)} error={Boolean(fieldError(queryError, 'DeviceId'))} helperText={fieldError(queryError, 'DeviceId') ? <span translate="no">{fieldError(queryError, 'DeviceId')}</span> : 'Matches this device ID exactly.'} slotProps={{ htmlInput: { autoComplete: 'off', spellCheck: false } }} />
               </Box>
               <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1, mt: 2 }}>
                 <Button type="submit" variant="outlined" startIcon={<SearchRounded />} disabled={searchTooLong}>Apply filters</Button>
@@ -353,14 +361,14 @@ export function SessionsPage({ onNavigationGuardChange }: { onNavigationGuardCha
           sx={{ borderTop: 1, borderColor: 'divider', '& .MuiTablePagination-toolbar': { flexWrap: 'wrap', justifyContent: 'flex-end', px: { xs: 2, sm: 3 }, py: 1, gap: 0.5 }, '& .MuiTablePagination-spacer': { display: { xs: 'none', sm: 'block' } }, '& .MuiTablePagination-actions': { ml: { xs: 1, sm: 2 } } }}
         />}
       </Paper>
-      <Box sx={{ mt: 2 }}><AccessDetails label="About session activity"><Typography variant="caption">Active means a login is authorized; it does not show whether a user is online. Last activity is the last recorded token activity and may not change with administrator requests. Times use your local time zone. A user can sign in again after a login is revoked.</Typography></AccessDetails></Box>
+      <Box sx={{ mt: 2 }}><AccessDetails label="About session activity"><Typography variant="caption">Active means a login is authorized; it does not show whether a user is online.</Typography><Typography variant="caption" component="p">Last activity is the last authenticated request recorded for this login. Activity is sampled and does not mean the client is online or playing.</Typography><Typography variant="caption" component="p">Times use your local time zone. A user can sign in again after a login is revoked.</Typography></AccessDetails></Box>
       {revoking && <RevokeSessionDialog
         key={revoking.Id}
         session={revoking}
         onClose={() => setRevoking(undefined)}
         onRevoked={() => { setNotice(`Login revoked for ${revoking.UserName}.`); setRevoking(undefined); refresh(); }}
         onRefresh={() => { setRevoking(undefined); refresh(); }}
-        onNavigationGuardChange={onNavigationGuardChange}
+        onNavigationGuardChange={guards.page}
       />}
       <Snackbar open={Boolean(notice)} autoHideDuration={6000} onClose={() => setNotice('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}><Alert severity="success" variant="filled" onClose={() => setNotice('')} sx={{ width: '100%', overflowWrap: 'anywhere' }}>{notice}</Alert></Snackbar>
     </Box>

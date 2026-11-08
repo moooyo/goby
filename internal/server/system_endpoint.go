@@ -16,7 +16,7 @@ type systemEndpointInfo struct {
 // loopback response is {"IsLocal":true,"IsInNetwork":true}; other address
 // classes below are Goby's explicit policy, not a complete reference matrix.
 func (s *Server) endpointInfo(r *http.Request) systemEndpointInfo {
-	peer, err := netip.ParseAddr(s.clientAddress(r))
+	peer, err := netip.ParseAddr(s.policyClientAddress(r))
 	if err != nil || peer.IsUnspecified() || peer.IsMulticast() {
 		return systemEndpointInfo{}
 	}
@@ -29,9 +29,13 @@ func (s *Server) endpointInfo(r *http.Request) systemEndpointInfo {
 			}
 		}
 	}
+	inNetwork := local || peer.IsPrivate() || peer.IsLinkLocalUnicast()
+	if s.serverPolicy != nil {
+		inNetwork = local || s.serverPolicy.Snapshot().IsLocal(peer.String())
+	}
 	return systemEndpointInfo{
 		IsLocal:     local,
-		IsInNetwork: local || peer.IsPrivate() || peer.IsLinkLocalUnicast(),
+		IsInNetwork: inNetwork,
 	}
 }
 

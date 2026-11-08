@@ -5,6 +5,9 @@ package recovery
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
 	"errors"
 	"io"
 	"os"
@@ -17,12 +20,14 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/moooyo/goby/internal/activity"
 	"github.com/moooyo/goby/internal/backupformat"
 	"github.com/moooyo/goby/internal/backuppg"
 	"github.com/moooyo/goby/internal/backupstore"
 	"github.com/moooyo/goby/internal/database"
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/lifecycle"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // The current primary retains current-schema music, preferences, and theme owners.
@@ -354,19 +359,14 @@ func createHistoricalManagerArchive(t *testing.T, f *managerIntegrationFixture, 
 		}
 	}
 	seedHistoricalManagerCatalog(t, ctx, pool, admin.ID)
-	legacy.adminLogin, err = legacy.identities.Authenticate(ctx, admin.Name, historicalManagerAdministratorPassword(version), identity.Client{Name: "Historical native login"}, "admin")
-	if err != nil {
-		t.Fatalf("issue the real historical administrator credential: %v", err)
-	}
+	legacy.adminLogin = issueHistoricalManagerCredentials(t, legacy, identityPool, admin.ID, historicalManagerAdministratorPassword(version),
+		identity.Client{Name: "Historical native login"}, "admin")
 	legacy.actor, err = legacy.identities.Resolve(ctx, legacy.adminLogin.Token, "admin")
 	if err != nil {
 		t.Fatalf("resolve the historical administrator: %v", err)
 	}
-	legacy.embyLogin, err = legacy.identities.Authenticate(ctx, admin.Name, historicalManagerAdministratorPassword(version),
+	legacy.embyLogin = issueHistoricalManagerCredentials(t, legacy, identityPool, admin.ID, historicalManagerAdministratorPassword(version),
 		identity.Client{Name: "Historical player", DeviceID: "schema" + versionText + "-player", Device: "Historical device"}, "emby")
-	if err != nil {
-		t.Fatalf("issue a real historical player credential: %v", err)
-	}
 	// The adapter permits only credentials representable by the historical
 	// schema. A current local-auth request must fail before reaching its table.
 	_, err = identityPool.Exec(ctx, `INSERT INTO sessions(id,user_id,token_hash,kind,expires_at,local_auth)
@@ -443,6 +443,82 @@ func createHistoricalManagerArchive(t *testing.T, f *managerIntegrationFixture, 
 		t.Fatal("commit the empty secondary before native restore planning")
 	}
 	return legacy, metadata, state
+}
+
+// Current login issuance atomically records schema74 user_activity. Seed only
+// historical login fields, retaining the old password, device and audit facts.
+// The current resolver still authenticates the resulting token and account.
+func issueHistoricalManagerCredentials(t *testing.T, f *engineRecoveryFixture, pool *pgxpool.Pool, userID, password string, client identity.Client, kind string) identity.Credentials {
+	t.Helper()
+	var lifetime time.Duration
+	var source activity.Source
+	switch kind {
+	case "admin":
+		lifetime, source = 24*time.Hour, activity.SourceNative
+	case "emby":
+		lifetime, source = 30*24*time.Hour, activity.SourceEmby
+	default:
+		t.Fatal("historical manager credentials support only user login kinds")
+	}
+	var tokenBytes [32]byte
+	if _, err := rand.Read(tokenBytes[:]); err != nil {
+		t.Fatal("generate the historical login token")
+	}
+	token := base64.RawURLEncoding.EncodeToString(tokenBytes[:])
+	digest := sha256.Sum256([]byte(token))
+	credentials := identity.Credentials{Token: token, SessionID: recoveryEngineTestID(t)}
+	ctx := f.ctx
+	tx, err := pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		t.Fatal("begin historical credential issuance")
+	}
+	defer rollbackRestore(tx)
+	var passwordHash string
+	if err := tx.QueryRow(ctx, `SELECT password_hash FROM public.users
+		WHERE id=$1 AND NOT is_disabled AND ($2 <> 'admin' OR is_administrator) FOR SHARE`, userID, kind).
+		Scan(&passwordHash); err != nil {
+		t.Fatal("read the authorized historical authentication account")
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password)); err != nil {
+		t.Fatal("the historical login password does not match the retained account")
+	}
+	var deviceID *int64
+	if kind == "emby" && client.DeviceID != "" {
+		var registeredID int64
+		if err := tx.QueryRow(ctx, `INSERT INTO public.devices
+			(reported_device_id,reported_name,app_name,app_version,last_user_id)
+			VALUES($1,$2,$3,$4,$5) RETURNING id`, client.DeviceID, client.Device, client.Name, client.Version, userID).
+			Scan(&registeredID); err != nil {
+			t.Fatal("register the historical player device")
+		}
+		deviceID = &registeredID
+	}
+	if err := tx.QueryRow(ctx, `WITH issued_at AS MATERIALIZED (SELECT clock_timestamp() AS instant)
+		INSERT INTO public.sessions(id,user_id,token_hash,kind,client_name,device_id,device_name,client_version,
+			created_at,last_seen_at,expires_at,device_registry_id)
+		SELECT $1,$2,$3,$4,$5,$6,$7,$8,instant,instant,
+			instant+($9::bigint*interval '1 second'),$10 FROM issued_at RETURNING created_at,expires_at`,
+		credentials.SessionID, userID, digest[:], kind, client.Name, client.DeviceID, client.Device, client.Version,
+		int64(lifetime/time.Second), deviceID).Scan(&credentials.CreatedAt, &credentials.ExpiresAt); err != nil {
+		t.Fatal("persist the historical login credential")
+	}
+	if err := activity.Record(ctx, tx, activity.Event{
+		Action: activity.ActionSessionLogin, Source: source,
+		Actor:    activity.Actor{Kind: activity.ActorUser, ID: userID, CredentialID: credentials.SessionID},
+		Resource: activity.Resource{Kind: activity.ResourceSession, ID: credentials.SessionID}, Count: 1,
+	}); err != nil {
+		t.Fatal("retain the historical login audit record")
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatal("commit the historical login credential and audit record")
+	}
+	principal, err := f.identities.Resolve(ctx, token, kind)
+	if err != nil || principal.User.ID != userID || principal.SessionID != credentials.SessionID || principal.Kind != kind ||
+		principal.Client != client || !principal.ExpiresAt.Equal(credentials.ExpiresAt) {
+		t.Fatalf("the current resolver rejected or changed the historical login credential: %v", err)
+	}
+	credentials.User, credentials.Client = principal.User, principal.Client
+	return credentials
 }
 
 // Current identity operations also read schema42 credential fields and insert

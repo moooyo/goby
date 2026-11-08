@@ -1,0 +1,21 @@
+.online-sources-sheet .goby-dialog-content { padding-top: 16px; }
+.online-sources-sheet .goby-dialog-content > .goby-stack { gap: 16px !important; }
+.online-sources-sheet .goby-dialog-title { font-size: 19px; line-height: 1.5; }
+.online-sources-sheet .goby-alert { font-size: 12px; line-height: 1.65; }
+.online-sources-sheet .goby-type-body2 { font-size: 12px; line-height: 1.65; }
+.online-sources-sheet .goby-type-caption { font-size: 11.5px; }
+.online-sources-sheet .goby-type-h4 { font-size: 14px; }
+.online-sources-sheet .goby-button { font-size: 12px; }
+.online-sources-sheet .goby-dialog-actions { gap: 8px; }
+.online-sources-sheet .MuiTabs-list { gap: 20px; }
+.online-sources-sheet .goby-tab { min-height: 36px; padding-block: 8px; font-size: 12.5px; }
+.online-image-preview[data-image-type="Logo"] {
+  padding: 18px;
+  box-sizing: border-box;
+  background-image: linear-gradient(45deg, var(--s3) 25%, transparent 25%), linear-gradient(-45deg, var(--s3) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, var(--s3) 75%), linear-gradient(-45deg, transparent 75%, var(--s3) 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+}
+@media (max-width: 639px) {
+  .online-sources-sheet .goby-dialog-title { font-size: 18px; }
+}

@@ -127,7 +127,7 @@ func TestRuntimeValidationAcceptsOnlyManagedCanonicalValues(t *testing.T) {
 	}
 	for _, mode := range []string{"bitrate", "capped_crf"} {
 		for _, preset := range []string{"veryfast", "fast", "medium", "slow"} {
-			for _, crf := range []int{18, 35} {
+			for _, crf := range []int{1, 51} {
 				quality := transcode.CPUQuality{Preset: preset, RateControl: mode, CRF: crf}
 				change := RuntimeUpdate{H264: Change[transcode.CPUQuality]{Present: true, Value: &quality}, HEVC: Change[transcode.CPUQuality]{Present: true, Value: &quality}}
 				if err := ValidateRuntimeUpdate(change); err != nil {
@@ -173,8 +173,8 @@ func TestRuntimeValidationAcceptsOnlyManagedCanonicalValues(t *testing.T) {
 		{"device-environment", RuntimeUpdate{Hardware: Change[HardwareSelection]{Present: true, Value: &HardwareSelection{Decode: "vaapi", Encode: "software", DeviceID: "LIBVA_DRIVER_NAME=radeonsi"}}}},
 		{"h264-preset", RuntimeUpdate{H264: Change[transcode.CPUQuality]{Present: true, Value: &transcode.CPUQuality{Preset: "ultrafast", RateControl: "bitrate", CRF: 23}}}},
 		{"hevc-rate-control", RuntimeUpdate{HEVC: Change[transcode.CPUQuality]{Present: true, Value: &transcode.CPUQuality{Preset: "fast", RateControl: "crf", CRF: 28}}}},
-		{"h264-low-crf", RuntimeUpdate{H264: Change[transcode.CPUQuality]{Present: true, Value: &transcode.CPUQuality{Preset: "fast", RateControl: "bitrate", CRF: 17}}}},
-		{"hevc-high-crf", RuntimeUpdate{HEVC: Change[transcode.CPUQuality]{Present: true, Value: &transcode.CPUQuality{Preset: "fast", RateControl: "bitrate", CRF: 36}}}},
+		{"h264-low-crf", RuntimeUpdate{H264: Change[transcode.CPUQuality]{Present: true, Value: &transcode.CPUQuality{Preset: "fast", RateControl: "bitrate", CRF: 0}}}},
+		{"hevc-high-crf", RuntimeUpdate{HEVC: Change[transcode.CPUQuality]{Present: true, Value: &transcode.CPUQuality{Preset: "fast", RateControl: "bitrate", CRF: 52}}}},
 		{"unmarked-network", RuntimeUpdate{Network: Change[NetworkOverrides]{Value: &NetworkOverrides{}}}},
 		{"unmarked-threads", RuntimeUpdate{Threads: Change[int]{Value: settingsTestPointer(4)}}},
 		{"unmarked-false", RuntimeUpdate{SoftwareToneMapping: Change[bool]{Value: settingsTestPointer(false)}}},

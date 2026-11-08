@@ -35,6 +35,7 @@ func (budget *audioProfileBudget) take(count int) bool {
 // never grant conversion permissions. Original remains the unchanged complete
 // source evaluation; every returned output is evaluated independently.
 func PlanAudioConversion(source Source, request Request, limits ConversionLimits) (ConversionDecision, error) {
+	source.DisableSubtitleExtraction = source.DisableSubtitleExtraction || limits.DisableSubtitleExtraction
 	original, err := Evaluate(source, request)
 	if err != nil {
 		return ConversionDecision{}, err

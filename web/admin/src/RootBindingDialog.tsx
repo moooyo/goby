@@ -1,7 +1,8 @@
+import { adminLocale } from './i18n';
 import { useEffect, useRef, useState } from 'react';
-import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Button, Checkbox, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, MenuItem, Paper, Skeleton, Stack, TextField, Typography } from '@mui/material';
-import ExpandMoreRounded from '@mui/icons-material/ExpandMoreRounded';
-import RefreshRounded from '@mui/icons-material/RefreshRounded';
+import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Button, Checkbox, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, MenuItem, Paper, Skeleton, Stack, TextField, Typography } from './ui';
+import { ExpandMoreRounded } from './icons';
+import { RefreshRounded } from './icons';
 import { ApiError, isAbortError } from './api';
 import type { Library } from './api';
 import { ErrorNotice } from './components';
@@ -127,7 +128,7 @@ function BindingFacts({ root, binding }: { root: RegisteredRoot; binding?: RootB
       ))}
       {binding?.BoundAt && <>
         <Typography component="dt" variant="body2" color="text.secondary">Last approved</Typography>
-        <Typography component="dd" variant="body2" sx={{ m: 0, overflowWrap: 'anywhere' }}><time dateTime={binding.BoundAt} title={binding.BoundAt}>{new Date(binding.BoundAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'long' })}</time></Typography>
+        <Typography component="dd" variant="body2" sx={{ m: 0, overflowWrap: 'anywhere' }}><time dateTime={binding.BoundAt} title={binding.BoundAt}>{new Date(binding.BoundAt).toLocaleString(adminLocale(), { dateStyle: 'medium', timeStyle: 'long' })}</time></Typography>
         <Typography component="dt" variant="body2" color="text.secondary">Last approved by</Typography>
         <Typography component="dd" variant="body2" sx={{ ...mono, m: 0 }}>{binding.BoundBy}</Typography>
       </>}

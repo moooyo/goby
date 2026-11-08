@@ -193,6 +193,7 @@ func (h *hlsRuntime) releaseAdmission(key hlsKey, gate *hlsAdmissionGate) {
 // initiating request's cancellation and the session's retirement fence.
 func newHLSAdmission(ctx context.Context, session *hlsSession, spec transcode.Spec, first, last int) *hlsAdmission {
 	session.admissionRevision++
+	ctx = transcode.WithPlaybackBufferThrottling(ctx, session.bufferThrottle.enabled, playbackBufferDemandLocked(session))
 	work, cancel := context.WithCancel(ctx)
 	pending := &hlsAdmission{first: first, last: last, revision: session.admissionRevision, spec: spec, request: ctx, ctx: work, cancel: cancel,
 		stopSession: context.AfterFunc(session.ctx, cancel), done: make(chan struct{})}
@@ -238,6 +239,9 @@ func (h *hlsRuntime) runAdmission(session *hlsSession, pending *hlsAdmission, ga
 			record, err = h.manager.Ensure(pending.ctx, pending.spec, input)
 		}
 	}
+	// A committed report can arrive while Ensure waits for authority or queue
+	// admission. Bind its latest position to the original scheduling policy.
+	h.syncPlaybackBufferDemand(session)
 	session.mu.Lock()
 	current := session.admission == pending && !session.closed && session.ctx.Err() == nil && pending.ctx.Err() == nil
 	if session.closed || session.ctx.Err() != nil {

@@ -496,6 +496,7 @@ var diagnosticEvents = func() map[string]diagnosticEvent {
 	}
 	add("server.starting", "server starting", "version", "database")
 	add("server.listening", "server listening", "version", "database")
+	add("server.restarting", "administrator restart rebuilding application generation")
 	add("server.stopped", "server stopped", "error_class")
 	add("server.shutdown.completed", "server shutdown completed", "duration_ms")
 	add("server.shutdown.failed", "background work did not close cleanly", "error_class")

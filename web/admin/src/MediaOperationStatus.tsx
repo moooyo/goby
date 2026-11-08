@@ -1,5 +1,6 @@
-import { Alert, Box, Chip, LinearProgress, Stack, Typography } from '@mui/material';
-import type { ChipProps } from '@mui/material';
+import { adminLocale } from './i18n';
+import { Alert, Box, Chip, LinearProgress, Stack, Typography } from './ui';
+import type { ChipProps } from './ui';
 import type { MediaOperation, MediaOperationKind, MediaOperationState } from './mediaOperationsApi';
 
 const stateLabels: Record<MediaOperationState, string> = {
@@ -20,7 +21,7 @@ export function MediaOperationProgress({ operation }: { operation: MediaOperatio
   return <Stack spacing={1}>
     <Typography variant="body2">{progress.Stage ? progress.Stage.replaceAll('_', ' ') : operation.State === 'queued' ? 'Waiting for a worker' : stateLabels[operation.State]}</Typography>
     {(active || progress.Total > 0) && <LinearProgress aria-label="Media processing progress" variant={progress.Total > 0 ? 'determinate' : 'indeterminate'} value={progress.Total > 0 ? Math.min(100, progress.Processed / progress.Total * 100) : undefined} />}
-    {progress.Total > 0 && <Typography variant="caption" color="text.secondary">{progress.Processed.toLocaleString()} of {progress.Total.toLocaleString()} processed</Typography>}
+    {progress.Total > 0 && <Typography variant="caption" color="text.secondary">{progress.Processed.toLocaleString(adminLocale())} of {progress.Total.toLocaleString(adminLocale())} processed</Typography>}
   </Stack>;
 }
 export function MediaOperationNotice({ operation }: { operation: MediaOperation }) {

@@ -14,12 +14,18 @@ type settingsSnapshotContextKey struct{}
 // A request carries only committed effective values and their revision. The
 // override pointers and deployment configuration never enter this snapshot.
 type requestSettingsSnapshot struct {
-	Revision            int64
-	Effective           settings.Values
-	DesiredNetwork      settings.NetworkValues
-	TranscodingMaxWidth int
-	HardwareSelection   settings.HardwareSelection
-	Execution           transcode.ExecutionOptions
+	Revision              int64
+	Effective             settings.Values
+	DesiredNetwork        settings.NetworkValues
+	TranscodingMaxWidth   int
+	HardwareSelection     settings.HardwareSelection
+	Execution             transcode.ExecutionOptions
+	Transcoding           settings.TranscodingPolicy
+	CodecConfigurations   transcode.CodecConfigurations
+	EnableThrottling      bool
+	ExtractionThreadCount int
+	CodecProfileLimits    transcode.CodecProfileLimits
+	DisableAssToText      bool
 	// Direct handler fixtures without managed settings capture their deployment
 	// profile here. Production snapshots carry only the opaque selection above.
 	hardwareFallback            transcode.Hardware
@@ -31,7 +37,10 @@ func (s *Server) currentSettingsSnapshot() requestSettingsSnapshot {
 		snapshot := s.settings.ValueSnapshot()
 		return requestSettingsSnapshot{Revision: snapshot.Revision, Effective: snapshot.Effective,
 			DesiredNetwork: snapshot.DesiredNetwork, TranscodingMaxWidth: snapshot.Encoding.TranscodingMaxWidth,
-			HardwareSelection: snapshot.Hardware, Execution: snapshot.Execution}
+			HardwareSelection: snapshot.Hardware, Execution: snapshot.Execution, Transcoding: snapshot.Transcoding,
+			CodecConfigurations: snapshot.CodecConfigurations, CodecProfileLimits: snapshot.CodecProfileLimits,
+			DisableAssToText: !snapshot.SubtitleOptions.AllowAssToText, EnableThrottling: snapshot.EnableThrottling,
+			ExtractionThreadCount: snapshot.ExtractionThreadCount}
 	}
 	// Direct handler fixtures may have no settings store. Production startup
 	// initializes the store before its request handler is exposed.
@@ -40,11 +49,12 @@ func (s *Server) currentSettingsSnapshot() requestSettingsSnapshot {
 		execution = transcode.DefaultExecutionOptions(s.cfg.Transcoding.Threads)
 	}
 	binding, _ := config.HTTPBindingDefaults(s.cfg.ListenAddress)
-	return requestSettingsSnapshot{DesiredNetwork: settings.NetworkValues{BindHost: binding.BindHost, HttpPort: binding.HttpPort}, hardwareFallback: s.cfg.Transcoding.Hardware, hardwareFallbackUnavailable: s.cfg.Transcoding.HardwareUnavailable, Execution: execution, Effective: settings.Values{
-		ServerName: s.cfg.ServerName, MaxBitrate: s.cfg.Transcoding.MaxBitrate,
-		MaxWidth: s.cfg.Transcoding.MaxWidth, MaxHeight: s.cfg.Transcoding.MaxHeight,
-		MaxAudioChannels: s.cfg.Transcoding.MaxAudioChannels,
-	}}
+	return requestSettingsSnapshot{DesiredNetwork: settings.NetworkValues{BindHost: binding.BindHost, HttpPort: binding.HttpPort}, hardwareFallback: s.cfg.Transcoding.Hardware, hardwareFallbackUnavailable: s.cfg.Transcoding.HardwareUnavailable, Execution: execution, Transcoding: settings.DefaultTranscodingPolicy(),
+		CodecProfileLimits: s.cfg.Transcoding.CodecProfileLimits, DisableAssToText: s.cfg.Transcoding.DisableAssToText, Effective: settings.Values{
+			ServerName: s.cfg.ServerName, MaxBitrate: s.cfg.Transcoding.MaxBitrate,
+			MaxWidth: s.cfg.Transcoding.MaxWidth, MaxHeight: s.cfg.Transcoding.MaxHeight,
+			MaxAudioChannels: s.cfg.Transcoding.MaxAudioChannels,
+		}, EnableThrottling: s.cfg.Transcoding.EnableThrottling, ExtractionThreadCount: s.cfg.Transcoding.ResolvedExtractionThreadCount()}
 }
 
 func (s *Server) withSettingsSnapshot(next http.Handler) http.Handler {
@@ -58,7 +68,16 @@ func (s *Server) withSettingsSnapshot(next http.Handler) http.Handler {
 }
 
 func (s *Server) requestSettings(r *http.Request) requestSettingsSnapshot {
-	if snapshot, exists := r.Context().Value(settingsSnapshotContextKey{}).(requestSettingsSnapshot); exists {
+	return s.settingsForContext(r.Context())
+}
+
+func (s *Server) settingsForContext(ctx context.Context) requestSettingsSnapshot {
+	if snapshot, exists := ctx.Value(settingsSnapshotContextKey{}).(requestSettingsSnapshot); exists {
+		// Older direct handler fixtures do not carry managed policy. A resolved
+		// production policy always has a positive downmix multiplier.
+		if snapshot.Transcoding == (settings.TranscodingPolicy{}) {
+			snapshot.Transcoding = settings.DefaultTranscodingPolicy()
+		}
 		return snapshot
 	}
 	return s.currentSettingsSnapshot()
@@ -82,7 +101,21 @@ func (s *Server) requestPlanningConfig(r *http.Request) config.TranscodingConfig
 	planning.Hardware = hardware
 	planning.HardwareUnavailable = !available
 	planning.Execution = snapshot.Execution
+	planning.CodecConfigurations = snapshot.CodecConfigurations
+	planning.EnableThrottling = snapshot.EnableThrottling
+	planning.ExtractionThreadCount, planning.ExtractionThreadCountSet = snapshot.ExtractionThreadCount, true
+	planning.CodecProfileLimits = snapshot.CodecProfileLimits
+	planning.DisableAssToText = snapshot.DisableAssToText
 	planning.Threads = snapshot.Execution.Threads
+	planning.DisableHevcEncoding = !snapshot.Transcoding.EnableHevcEncoding
+	planning.DisableHardwareEncoding = !snapshot.Transcoding.EnableHardwareEncoding
+	planning.DisableSubtitleExtraction = !snapshot.Transcoding.EnableSubtitleExtraction
+	planning.DisableAttachmentExtraction = !snapshot.Transcoding.EnableOnTheFlyAttachmentExtraction
+	if !snapshot.Transcoding.EnableHardwareEncoding {
+		// Keep decoding and the selected device available for their own graph
+		// stages; disabling an encoder does not disable GPU filters.
+		planning.Hardware.Encode = "software"
+	}
 	return planning
 }
 

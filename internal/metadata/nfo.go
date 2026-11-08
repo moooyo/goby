@@ -27,6 +27,7 @@ const (
 // Metadata contains local descriptive values without filesystem or network data.
 type Metadata struct {
 	Kind, Name, SortName, OriginalTitle, Overview, OfficialRating string
+	DisplayOrder                                                  string `json:"DisplayOrder,omitempty"`
 	ProductionYear                                                *int
 	PremiereDate                                                  *time.Time
 	EndDate                                                       *time.Time

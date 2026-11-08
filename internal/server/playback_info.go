@@ -16,6 +16,7 @@ import (
 	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/playback"
+	"github.com/moooyo/goby/internal/settings"
 	"github.com/moooyo/goby/internal/subtitle"
 	"github.com/moooyo/goby/internal/transcode"
 )
@@ -153,6 +154,7 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
 	defer cancel()
 	planning := s.requestPlanningConfig(r)
+	transcoding := s.requestSettings(r).Transcoding
 	limits := hlsPrincipalLimits(planning, principal)
 	targetConversionDisabled := false
 	if principal.IsApplicationKey() {
@@ -192,7 +194,9 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	input := playback.Source{ItemID: source.Item.ID, MediaSourceID: source.SourceID,
-		Path: source.Item.Path, ItemType: source.Item.Type, Info: playbackMediaInfo(source.Item)}
+		Path: source.Item.Path, ItemType: source.Item.Type, Info: playbackMediaInfo(source.Item),
+		DisableSubtitleExtraction: !transcoding.EnableSubtitleExtraction,
+		DisableAssToText:          s.settingsForContext(ctx).DisableAssToText}
 	decision, err := playback.Evaluate(input, request)
 	if err != nil {
 		apiError(w, r, http.StatusBadRequest, "invalid_playback_request", "The playback request or media facts cannot be evaluated.")
@@ -260,9 +264,9 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 	}
 	s.resolvePlaybackAnalysisIntro(ctx, librarySubject(principal, principal.User.ID), &source)
 	s.resolveItemAnalysisCredits(ctx, librarySubject(principal, principal.User.ID), &source.Item, source.SourceID)
-	dto := originalSourceDTO(source.Item)
+	dto := originalSourceDTO(source.Item, transcoding)
 	token, _, _ := parseEmbyCredentials(r)
-	addSubtitleDeliveryCredentials(dto, source.Item.ID, token, formats)
+	addSubtitleDeliveryCredentials(dto, source.Item.ID, token, formats, transcoding)
 	dto["SupportsDirectPlay"] = decision.DirectPlay
 	dto["SupportsDirectStream"] = decision.DirectStream
 	includeDefaultAudio := !principal.IsApplicationKey() || request.UserID != "" || request.DeviceProfile != nil || request.AudioStreamIndex != nil
@@ -348,7 +352,7 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, http.StatusOK, response)
 }
 
-func originalSourceDTO(item library.Item) map[string]any {
+func originalSourceDTO(item library.Item, policies ...settings.TranscodingPolicy) map[string]any {
 	info := item.Media
 	name := strings.TrimSuffix(filepath.Base(item.Path), filepath.Ext(item.Path))
 	if name == "" || name == "." {
@@ -357,7 +361,7 @@ func originalSourceDTO(item library.Item) map[string]any {
 	available := item.CanPlay && info.ProbeVersion == media.CurrentProbeVersion && info.FileChangeTimeNs > 0
 	dto := map[string]any{"Id": media.SourceID(item.ID), "ItemId": item.ID, "Name": name, "Path": item.Path,
 		"Protocol": "File", "Type": "Default", "Container": media.CanonicalContainer(*info, item.Path), "Formats": []string{},
-		"RunTimeTicks": info.DurationTicks, "Bitrate": info.Bitrate, "Size": info.Size, "MediaStreams": itemMediaStreamsDTO(item),
+		"RunTimeTicks": info.DurationTicks, "Bitrate": info.Bitrate, "Size": info.Size, "MediaStreams": itemMediaStreamsDTO(item, policies...),
 		"SupportsDirectPlay": available, "SupportsDirectStream": available, "SupportsTranscoding": false,
 		"RequiresOpening": false, "RequiresClosing": false, "RequiresLooping": false, "IsInfiniteStream": false,
 		"IsRemote": false, "HasMixedProtocols": false, "SupportsProbing": true, "RequiredHttpHeaders": map[string]string{},

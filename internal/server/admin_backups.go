@@ -58,6 +58,7 @@ func WithRecovery(manager *recovery.Manager) Option {
 }
 
 func (s *Server) registerAdminBackupRoutes(mux *http.ServeMux) {
+	s.registerAdminBackupPolicyRoutes(mux)
 	for _, route := range []struct{ pattern, action string }{
 		{"GET /admin/v1/backups/status", "status"},
 		{"GET /admin/v1/backups", "backups"},
@@ -260,7 +261,7 @@ func adminBackupContentType(r *http.Request, binary bool) bool {
 var errAdminBackupMediaType = errors.New("unsupported backup request media type")
 var errAdminBackupPayloadLarge = fmt.Errorf("backup request body exceeds its HTTP limit: %w", recovery.ErrCapacity)
 
-func adminBackupObject(w http.ResponseWriter, r *http.Request, fields []string) (map[string]json.RawMessage, error) {
+func adminBackupObject(w http.ResponseWriter, r *http.Request, fields []string, optional ...string) (map[string]json.RawMessage, error) {
 	if !adminBackupContentType(r, false) {
 		return nil, errAdminBackupMediaType
 	}
@@ -279,7 +280,8 @@ func adminBackupObject(w http.ResponseWriter, r *http.Request, fields []string) 
 	}
 	// The shared object primitive checks exact field names, duplicates, required
 	// fields and trailing input. Its settings/task error text is never returned.
-	values, invalid := adminTaskObject(data, fields, fields, "")
+	allowed := append(append([]string(nil), fields...), optional...)
+	values, invalid := adminTaskObject(data, allowed, fields, "")
 	if invalid != nil {
 		clearAdminBackupObject(values)
 		return nil, recovery.ErrInvalid
@@ -384,7 +386,11 @@ func (s *Server) adminBackupMutation(w http.ResponseWriter, r *http.Request, act
 	if fields == nil {
 		return recovery.OperationView{}, recovery.ErrInvalid
 	}
-	values, err := adminBackupObject(w, r, fields)
+	var optional []string
+	if action == "create" {
+		optional = []string{"IncludeImages"}
+	}
+	values, err := adminBackupObject(w, r, fields, optional...)
 	if err != nil {
 		return recovery.OperationView{}, err
 	}
@@ -424,7 +430,15 @@ func (s *Server) adminBackupMutation(w http.ResponseWriter, r *http.Request, act
 	}
 	switch action {
 	case "create":
-		return s.recovery.Create(r.Context(), actor, recovery.CreateRequest{RequestId: text["RequestId"], Passphrase: phrase})
+		var includeImages *bool
+		if raw, exists := values["IncludeImages"]; exists {
+			var value bool
+			if bytes.Equal(bytes.TrimSpace(raw), []byte("null")) || json.Unmarshal(raw, &value) != nil {
+				return recovery.OperationView{}, recovery.ErrInvalid
+			}
+			includeImages = &value
+		}
+		return s.recovery.Create(r.Context(), actor, recovery.CreateRequest{RequestId: text["RequestId"], Passphrase: phrase, IncludeImages: includeImages})
 	case "delete":
 		return s.recovery.Delete(r.Context(), actor, id, recovery.DeleteRequest{RequestId: text["RequestId"], SHA256: text["SHA256"]})
 	case "cancel":

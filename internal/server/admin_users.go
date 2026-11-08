@@ -17,6 +17,7 @@ import (
 )
 
 func (s *Server) registerAdminUserRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("GET /admin/v1/users/activity", s.requireAdmin(s.adminUserActivity))
 	mux.HandleFunc("GET /admin/v1/users/{id}", s.requireAdmin(s.managedUser))
 	mux.HandleFunc("PUT /admin/v1/users/{id}", s.requireAdmin(s.updateManagedUser))
 	mux.HandleFunc("DELETE /admin/v1/users/{id}", s.requireAdmin(s.deleteManagedUser))

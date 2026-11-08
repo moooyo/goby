@@ -337,6 +337,8 @@ func TestHTTPPlaybackControlDoesNotFallbackOrAuthorizeForeignPlayback(t *testing
 			response.Code, deadline.Err(), exhaustedCounts.dataAttempts.Load(), exhaustedCounts.dataSuccesses.Load(), exhaustedCounts.controlAttempts.Load(),
 			exhaustedCounts.controlSuccesses.Load(), exhaustedCounts.controlDeadlineErrors.Load(), exhaustedCounts.unexpectedAttempts.Load(), before, f.pool.Stat().AcquireCount())
 	}
+	t.Logf("control_exhaustion_witness response_status=%d context_error=%v request_data_attempts=%d request_control_attempts=%d request_control_successes=%d request_control_deadline_errors=%d whole_data_acquires_before=%d whole_data_acquires_after=%d",
+		response.Code, deadline.Err(), exhaustedCounts.dataAttempts.Load(), exhaustedCounts.controlAttempts.Load(), exhaustedCounts.controlSuccesses.Load(), exhaustedCounts.controlDeadlineErrors.Load(), before, f.pool.Stat().AcquireCount())
 }
 
 func TestHTTPPlaybackControlStopsRealFFmpegWhenDataIsExhausted(t *testing.T) {

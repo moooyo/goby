@@ -367,6 +367,13 @@ func runGenerationLoop(ctx context.Context, cfg config.Config, owned *generation
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
+			case <-g.restartRequests:
+				if err := owned.close(g, true); err != nil {
+					return generationError("administrator restart could not close the active generation", err)
+				}
+				logger.Info("administrator restart rebuilding application generation")
+				expect = generationRecoveryExpectation{allowReturn: true}
+				continue
 			case <-g.ctx.Done():
 				if !g.lease.Protects(g.pool) {
 					return g.failureError(generationLeaseError())

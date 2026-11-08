@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Box, Alert, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Paper, Skeleton, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Typography } from '@mui/material';
+import { useTranslation } from './i18n';
+import { Box, Alert, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Paper, Skeleton, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Typography } from './ui';
 import type { Library } from './api';
 import { ErrorNotice } from './components';
 import { subtitleTimelineApi } from './subtitleTimelineApi';
@@ -18,6 +19,7 @@ export function SubtitleTimelinePanel({ currentUserId, libraries, onLibraries, o
   currentUserId: string; libraries: Library[]; onLibraries: () => void; onTasks: () => void; onActivityChange: (value: SubtitleTimelineActivity) => void; visible: boolean;
   available?: boolean; reasons?: string[];
 }) {
+  const { countLabel } = useTranslation();
   const [libraryId, setLibraryId] = useState('');
   const [search, setSearch] = useState('');
   const [query, setQuery] = useState('');
@@ -64,7 +66,7 @@ export function SubtitleTimelinePanel({ currentUserId, libraries, onLibraries, o
       <Stack spacing={2} sx={{ p: 2.5 }}>
         <Typography component="h2" variant="h3" id="subtitle-timeline-results-title">字幕时间轴任务记录</Typography>
         <Box component="form" onSubmit={(event) => { event.preventDefault(); setQuery(search.trim()); setPage(0); }}><Stack direction={{ xs: 'column', md: 'row' }} sx={{ gap: 1.5, alignItems: { xs: 'stretch', md: 'center' }, flexWrap: 'wrap' }}>
-          <TextField select size="small" label="媒体库" value={libraryId} disabled={busy} onChange={(event) => { setLibraryId(event.target.value); setPage(0); }} slotProps={{ inputLabel: { shrink: true }, select: { displayEmpty: true } }} sx={mediaSelectSx}><MenuItem value="">全部媒体库</MenuItem>{supportedLibraries.map((library) => <MenuItem key={library.Id} value={library.Id}>{library.Name}</MenuItem>)}</TextField>
+          <TextField select size="small" label="媒体库" value={libraryId} disabled={busy} onChange={(event) => { setLibraryId(event.target.value); setPage(0); }} slotProps={{ inputLabel: { shrink: true }, select: { displayEmpty: true } }} sx={mediaSelectSx}><MenuItem value="">全部媒体库</MenuItem>{supportedLibraries.map((library) => <MenuItem key={library.Id} value={library.Id} translate="no">{library.Name}</MenuItem>)}</TextField>
           <TextField select size="small" label="任务状态" value={state} disabled={busy} onChange={(event) => { setState(event.target.value as SubtitleTimelineState | ''); setPage(0); }} slotProps={{ inputLabel: { shrink: true }, select: { displayEmpty: true } }} sx={mediaSelectSx}><MenuItem value="">全部状态</MenuItem>{subtitleTimelineStates.map((value) => <MenuItem key={value} value={value}>{subtitleTimelineStateLabels[value]}</MenuItem>)}</TextField>
           <Box sx={{ width: { xs: '100%', md: 250 } }}><MediaSearchField label="搜索影片名称" value={search} onChange={setSearch} maxLength={256} disabled={busy} /></Box><Button disabled={busy || resource.loading} onClick={resource.reload}>刷新记录</Button>
         </Stack></Box>
@@ -77,7 +79,7 @@ export function SubtitleTimelinePanel({ currentUserId, libraries, onLibraries, o
         <TableContainer sx={{ display: { xs: 'none', md: 'block' }, borderRadius: 0 }}><Table aria-label="字幕时间轴记录"><TableHead><TableRow><TableCell>影片</TableCell><TableCell>当前字幕轨数</TableCell><TableCell>最近任务</TableCell><TableCell align="right">操作</TableCell></TableRow></TableHead><TableBody>{resource.data.Items.map((item) => <TableRow key={item.ItemId}>
           <TableCell component="th" scope="row"><Typography variant="body2" sx={{ fontWeight: 600, overflowWrap: 'anywhere' }}>{item.Name || '未命名影片'}</Typography><Typography variant="caption" color="text.secondary">{libraries.find((library) => library.Id === item.LibraryId)?.Name || '媒体库'}</Typography></TableCell><TableCell>{item.SubtitleStreamCount}</TableCell><TableCell><Status item={item} /></TableCell><TableCell align="right"><Button disabled={busy} onClick={() => setDetail(item)} aria-label={`管理「${item.Name}」的字幕时间轴`}>管理时间轴</Button></TableCell>
         </TableRow>)}</TableBody></Table></TableContainer>
-        <Box component="ul" aria-label="字幕时间轴记录" sx={{ display: { xs: 'block', md: 'none' }, listStyle: 'none', p: 0, m: 0 }}>{resource.data.Items.map((item) => <Box component="li" key={item.ItemId} sx={{ p: 2.5, borderTop: 1, borderColor: 'divider' }}><Stack spacing={1.5}><Typography variant="body2" sx={{ fontWeight: 600, overflowWrap: 'anywhere' }}>{item.Name || '未命名影片'}</Typography><Typography variant="caption" color="text.secondary">{libraries.find((library) => library.Id === item.LibraryId)?.Name || '媒体库'} · {item.SubtitleStreamCount} 条字幕轨</Typography><Stack direction="row" sx={{ gap: 1, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}><Status item={item} /><Button disabled={busy} onClick={() => setDetail(item)} aria-label={`管理「${item.Name}」的字幕时间轴`}>管理时间轴</Button></Stack></Stack></Box>)}</Box>
+        <Box component="ul" aria-label="字幕时间轴记录" sx={{ display: { xs: 'block', md: 'none' }, listStyle: 'none', p: 0, m: 0 }}>{resource.data.Items.map((item) => <Box component="li" key={item.ItemId} sx={{ p: 2.5, borderTop: 1, borderColor: 'divider' }}><Stack spacing={1.5}><Typography variant="body2" sx={{ fontWeight: 600, overflowWrap: 'anywhere' }}>{item.Name || '未命名影片'}</Typography><Typography variant="caption" color="text.secondary">{libraries.find((library) => library.Id === item.LibraryId)?.Name || '媒体库'} · {item.SubtitleStreamCount} {countLabel(item.SubtitleStreamCount, 'subtitle track', 'subtitle tracks')}</Typography><Stack direction="row" sx={{ gap: 1, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}><Status item={item} /><Button disabled={busy} onClick={() => setDetail(item)} aria-label={`管理「${item.Name}」的字幕时间轴`}>管理时间轴</Button></Stack></Stack></Box>)}</Box>
       </>}
       {resource.data && <TablePagination component="div" count={resource.data.TotalRecordCount} page={page} rowsPerPage={25} rowsPerPageOptions={[25]} labelRowsPerPage="每页条目" labelDisplayedRows={({ from, to, count }) => `${from}–${to} / ${count}`} disabled={busy || resource.loading} onPageChange={(_, value) => setPage(value)} sx={{ borderTop: 1, borderColor: 'divider' }} />}
     </Paper>

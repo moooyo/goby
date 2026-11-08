@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Autocomplete, Chip, TextField } from '@mui/material';
+import { Autocomplete, Chip, TextField } from './ui';
 import type { SortingSettings } from './sortingSettings';
 import { SettingsGroup } from './SettingsLayout';
 
@@ -26,8 +26,8 @@ export function SortingSettingsFields({ settings, draft, disabled, stale, error,
     setInput(nextInput);
     onChange([...nextWords, nextInput].filter((word) => word !== '').join('\n'));
   }
-  return <SettingsGroup title="Library sorting" description="Remove a matching leading whole word when sorting media. Saving updates generated sort names immediately and keeps custom sort names." currentValue={savedWords.length ? savedWords.join(', ') : 'No words removed'} stale={stale}>
-    <Autocomplete multiple freeSolo options={[]} value={words} inputValue={input} disabled={disabled}
+  return <SettingsGroup title="Library sorting" description="Remove a matching leading whole word when sorting media. Saving updates generated sort names immediately and keeps custom sort names." currentValue={savedWords.length ? savedWords.join(', ') : 'No words removed'} stale={stale} preserveValues={savedWords.length > 0}>
+    <Autocomplete multiple freeSolo options={[]} value={words} inputValue={input} disabled={disabled} translate="no"
       onChange={(_, value) => update(value)}
       onInputChange={(_, value, reason) => { if (reason === 'input') update(words, value); }}
       onBlur={() => { if (input) update([...words, input]); }}

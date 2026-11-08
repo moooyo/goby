@@ -1,6 +1,6 @@
-import { Box, Button, IconButton, MenuItem, Stack, TextField, Typography } from '@mui/material';
-import AddRounded from '@mui/icons-material/AddRounded';
-import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
+import { Box, Button, IconButton, MenuItem, Stack, TextField, Typography } from './ui';
+import { AddRounded } from './icons';
+import { DeleteOutlineRounded } from './icons';
 import { metadataCreditTypes } from './metadataCreditTypes';
 
 let nextEntryId = 0;
@@ -103,8 +103,8 @@ export function MetadataPeopleList({ value, disabled, onChange, errorFor }: Coll
               <TextField id={`metadata-person-${entry.id}-role`} fullWidth label="Role" value={entry.Role} disabled={disabled} onChange={(event) => change(entry.id, 'Role', event.target.value)} error={Boolean(roleError)} helperText={roleError} />
               <TextField id={`metadata-person-${entry.id}-type`} select required fullWidth label="Type" value={entry.Type} disabled={disabled} onChange={(event) => change(entry.id, 'Type', event.target.value)} error={Boolean(typeError)} helperText={typeError ?? (unknownType ? 'Current type. Choose a listed type when editing this credit.' : 'Choose the credit type.')}>
                 <MenuItem value="" disabled>Select a type</MenuItem>
-                {unknownType && <MenuItem value={entry.Type} disabled>{entry.Type}</MenuItem>}
-                {metadataCreditTypes.map((type) => <MenuItem key={type} value={type}>{type}</MenuItem>)}
+                {unknownType && <MenuItem value={entry.Type} disabled translate="no">{entry.Type}</MenuItem>}
+                {metadataCreditTypes.map((type) => <MenuItem key={type} value={type}>{type === 'Actor' ? 'Performer' : type}</MenuItem>)}
               </TextField>
               <TextField id={`metadata-person-${entry.id}-sort-order`} fullWidth label="Sort order" type="text" value={entry.SortOrder} disabled={disabled} onChange={(event) => change(entry.id, 'SortOrder', event.target.value)} error={Boolean(orderError)} helperText={orderError ?? 'Leave blank for no explicit sort order.'} slotProps={{ htmlInput: { inputMode: 'numeric' } }} />
             </Box>

@@ -1,5 +1,6 @@
+import { confirmAction } from './i18n';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Paper, Skeleton, Stack, Typography } from '@mui/material';
+import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Paper, Skeleton, Stack, Typography } from './ui';
 import { isAbortError } from './api';
 import { ErrorNotice } from './components';
 import { mediaOperationsApi, mediaOperationIsActive, mediaOperationNeedsReload, mediaOperationRequestId } from './mediaOperationsApi';
@@ -50,9 +51,9 @@ export function MediaOperationDialog({ operationId, onClose, onChanged, onNaviga
   const reviewCurrent = operation?.Kind !== 'subtitle_ocr' || (reviewState.revision === operation.Revision && reviewState.resultHash === operation.ResultHash);
   const confirmationChanged = Boolean(confirming && confirming !== 'cancel' && operation && confirmationSnapshot && (operation.Revision !== confirmationSnapshot.Revision || operation.SourceRevision !== confirmationSnapshot.SourceRevision || operation.ResultHash !== confirmationSnapshot.ResultHash));
   const confirmationAvailable = Boolean(operation && confirming && (confirming === 'cancel' ? operation.CanCancel : confirming === 'recover' ? operation.CanRecover : operation.CanApply));
-  function close() { if (!inFlight.current && !reviewState.busy && (!reviewState.dirty || window.confirm('Discard unsaved OCR cue changes and close this operation?'))) onClose(); }
+  function close() { if (!inFlight.current && !reviewState.busy && (!reviewState.dirty || confirmAction('Discard unsaved OCR cue changes and close this operation?'))) onClose(); }
   function refresh() {
-    if (inFlight.current || refreshPending.current || reviewState.busy || (reviewState.dirty && !window.confirm('Discard unsaved OCR cue changes and reload this operation?'))) return;
+    if (inFlight.current || refreshPending.current || reviewState.busy || (reviewState.dirty && !confirmAction('Discard unsaved OCR cue changes and reload this operation?'))) return;
     refreshPending.current = true; setRefreshing(true);
     setError(null); setNotice(''); setReviewState(emptyReview); setReloadReview((value) => value + 1); resource.reload();
   }

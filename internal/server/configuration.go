@@ -43,7 +43,7 @@ func (s *Server) configurationAccess(w http.ResponseWriter, r *http.Request, adm
 		s.configurationError(w, r, settings.ErrUnavailable, feature)
 		return settings.Configuration{}, false
 	}
-	view, err := s.settings.GetConfiguration(r.Context(), configurationActor(r))
+	view, err := s.settings.GetConfigurationWithPolicy(r.Context(), configurationActor(r), s.serverPolicy)
 	if err != nil {
 		s.configurationError(w, r, err, feature)
 		return settings.Configuration{}, false
@@ -77,7 +77,8 @@ func (s *Server) embyNamedConfiguration(w http.ResponseWriter, r *http.Request) 
 	switch strings.ToLower(r.PathValue("key")) {
 	case "subtitles":
 		options := view.Snapshot.Management.Subtitles
-		configurationJSON(w, r, map[string]any{"DownloadLanguages": options.DownloadLanguages, "DownloadMovieSubtitles": options.DownloadMovieSubtitles, "DownloadEpisodeSubtitles": options.DownloadEpisodeSubtitles})
+		configurationJSON(w, r, map[string]any{"DownloadLanguages": options.DownloadLanguages, "DownloadMovieSubtitles": options.DownloadMovieSubtitles, "DownloadEpisodeSubtitles": options.DownloadEpisodeSubtitles,
+			"AllowAssToText": view.Snapshot.Runtime.SubtitleOptions.AllowAssToText})
 	case "tasks":
 		options := view.Snapshot.Management.Tasks
 		configurationJSON(w, r, map[string]any{"MaxConcurrent": options.MaxConcurrent, "CacheRetentionDays": options.CacheRetentionDays, "CacheMaxEntries": options.CacheMaxEntries})
@@ -109,7 +110,7 @@ func (s *Server) writeEmbyConfiguration(w http.ResponseWriter, r *http.Request, 
 	if !ok {
 		return
 	}
-	if _, err := s.settings.ApplyConfiguration(r.Context(), configurationActor(r), mutation); err != nil {
+	if _, err := s.settings.ApplyConfigurationWithPolicy(r.Context(), configurationActor(r), mutation, s.serverPolicy, s.policyClientAddress(r)); err != nil {
 		s.configurationError(w, r, err, "ManageServer")
 		return
 	}
@@ -131,7 +132,7 @@ func configurationSection(w http.ResponseWriter, r *http.Request) bool {
 }
 
 func configurationJSON(w http.ResponseWriter, r *http.Request, value map[string]any) {
-	// The closed DTO projections contain only strings, booleans and integers.
+	// Only the closed projections of managed values enter this response.
 	data, err := json.Marshal(value)
 	if err != nil {
 		embyTextError(w, r, http.StatusInternalServerError, "Configuration could not be represented.")
@@ -152,6 +153,8 @@ func (s *Server) configurationError(w http.ResponseWriter, r *http.Request, err 
 	case errors.Is(err, identity.ErrClientSessionForbidden):
 		actor, _ := r.Context().Value(principalKey).(identity.Principal)
 		embyTextError(w, r, http.StatusForbidden, fmt.Sprintf("User %s does not have access to %s feature.", actor.User.Name, feature))
+	case errors.Is(err, settings.ErrServerPolicyDenied):
+		embyTextError(w, r, http.StatusForbidden, "Remote access is disabled for this client address.")
 	case errors.Is(err, settings.ErrInvalidInput):
 		configurationInputError(w, r)
 	case errors.Is(err, notificationjournal.ErrCapacity):

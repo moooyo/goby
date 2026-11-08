@@ -1,0 +1,18 @@
+.remote-message { max-width: min(520px, calc(100vw - 32px)); padding: 24px; border: 1px solid var(--accent-line); border-radius: 20px; background: #171719; color: var(--ink); box-shadow: 0 24px 80px rgba(0,0,0,.5); font-family: var(--sans); }
+.remote-message h2 { margin: 0 0 12px; font-family: var(--serif); font-size: 23px; font-weight: 800; line-height: 1.4; overflow-wrap: anywhere; }
+.remote-message p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 15px; line-height: 1.8; color: var(--ink-84); }
+.remote-message-eyebrow { display: block; margin-bottom: 12px; color: var(--accent); font-size: 12px; font-weight: 700; }
+.remote-message-modal { width: 520px; max-height: min(640px, calc(100dvh - 48px)); overflow: auto; }
+.remote-message-modal::backdrop { background: rgba(0,0,0,.65); backdrop-filter: blur(6px); }
+.remote-message-actions { display: flex; justify-content: flex-end; margin-top: 24px; }
+.remote-message-actions button { min-height: 44px; padding: 0 22px; border: 0; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-weight: 700; }
+.remote-message-timed { position: fixed; z-index: 100; top: max(20px, env(safe-area-inset-top)); right: max(20px, env(safe-area-inset-right)); display: flex; align-items: flex-start; gap: 12px; max-height: calc(100dvh - 40px); overflow: auto; }
+.remote-message-timed > div { min-width: 0; }
+.remote-message-timed h2 { font-size: 18px; margin-bottom: 6px; }
+.remote-message-timed > button { display: grid; flex: none; place-items: center; width: 44px; height: 44px; margin: -10px -10px -10px 0; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--ink-72); font-size: 28px; line-height: 1; }
+.remote-message-timed > button:hover { background: rgba(255,255,255,.07); color: var(--ink); }
+.remote-control-status { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; color: var(--ink-72); font-size: 13px; }
+.remote-control-status i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.remote-control-status[data-state=connected] { color: #8ed8ac; }
+@media (max-width: 719px) { .remote-message { padding: 20px; } .remote-message-timed { left: 16px; right: 16px; width: auto; } }
+@media (prefers-reduced-motion: reduce) { .remote-message *, .remote-message *::before, .remote-message *::after { transition-duration: .01ms !important; } }

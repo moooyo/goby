@@ -110,6 +110,7 @@ The following is an illustrative response, not a captured verification result:
 | `Actor.Name` | Current user display name when available and valid; null for a missing user, system actor, or application key |
 | `Resource.Kind` | `user`, `session`, `application_key`, `device`, `library`, `scan`, `item`, `settings`, `task`, or `task_run` |
 | `Resource.Id` | Persisted public resource identifier as a string |
+| `Resource.Name` | Optional current media item name for playback observations; omitted when the item is unavailable |
 | `Revision` | Positive resource revision as a decimal string, or null when not applicable |
 | `Count` | Nonnegative action-specific count as a decimal string; it is not a universal count of all affected database rows |
 | `State` | `completed`, `failed`, `cancelled`, or `interrupted` for terminal scan/task entries; otherwise null |
@@ -134,6 +135,8 @@ activity description.
 | `user.password_reset` | `user` | Password replacement and its credential revocations |
 | `session.login` | `session` | Successful native or Emby login session issuance |
 | `session.revoked` | `session` | First explicit session revocation |
+| `playback.started` | `item` | First accepted player start or progress observation that enters Playing or Paused |
+| `playback.stopped` | `item` | An accepted player report that commits a nonterminal play to Stopped |
 | `application_key.created` | `application_key` | Application-key creation |
 | `application_key.revealed` | `application_key` | Successful decryption and preparation for authorized display, including compatibility list operations that reveal tokens |
 | `application_key.revoked` | `application_key` | First application-key revocation |
@@ -163,6 +166,16 @@ proof that a client received the secret.
 Activity retention defaults to 30 days. The worker runs once per minute and
 deletes at most 1000 expired rows per run using database time. Expired rows may
 remain while a backlog is drained; this is not a hard row-count limit.
+
+Playback facts share this retention policy. A transition fingerprint represents
+the canonical stored play and its start or stop action; the native DTO exposes
+that digest, never the canonical play, credential, device, or client correlation
+identifier. Preparation, expiry, Ping, and remote-control command acceptance
+do not establish playback observations. Duplicate or terminal late reports do
+not recreate an observation after activity retention removes its display row.
+Current item names are joined only when reading playback entries, just as user
+names are current enrichment. This log provides bounded observations rather
+than complete or permanent playback statistics.
 
 ## Native diagnostic file list
 

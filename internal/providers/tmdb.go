@@ -523,18 +523,28 @@ func (client *Client) imagesTMDB(ctx context.Context, selection Selection) ([]Re
 		Posters   []imageEntry `json:"posters"`
 		Backdrops []imageEntry `json:"backdrops"`
 		Stills    []imageEntry `json:"stills"`
+		Logos     []imageEntry `json:"logos"`
 	}
 	if err := client.requestJSON(ctx, http.MethodGet, tmdbAPIBase+target.path+"/images?"+parameters.Encode(), headers, nil, &response); err != nil {
 		return nil, err
 	}
 	images := make([]RemoteImage, 0)
 	seen := make(map[string]bool)
-	for _, group := range []struct {
+	groups := []struct {
 		kind    string
 		preview string
 		entries []imageEntry
-	}{{"Primary", "w500", response.Posters}, {"Backdrop", "w780", response.Backdrops}, {"Thumb", "w300", response.Stills}} {
-		for _, entry := range group.entries {
+	}{{"Primary", "w500", response.Posters}, {"Backdrop", "w780", response.Backdrops}, {"Thumb", "w300", response.Stills}, {"Logo", "w500", response.Logos}}
+	// Share the bound between image types so a large poster collection cannot
+	// hide every logo or backdrop from the administrator or missing-image task.
+	for index := 0; len(images) < tmdbMaximumImages; index++ {
+		hasEntries := false
+		for _, group := range groups {
+			if index >= len(group.entries) {
+				continue
+			}
+			hasEntries = true
+			entry := group.entries[index]
 			key := group.kind + ":" + entry.Path
 			if !tmdbImagePath(entry.Path) || entry.Width <= 0 || entry.Height <= 0 || entry.Width > 32768 || entry.Height > 32768 || seen[key] || len(images) >= tmdbMaximumImages {
 				continue
@@ -542,6 +552,9 @@ func (client *Client) imagesTMDB(ctx context.Context, selection Selection) ([]Re
 			images = append(images, RemoteImage{Selection: target.selection, ImageID: entry.Path, ImageType: group.kind,
 				Width: entry.Width, Height: entry.Height, PreviewURL: tmdbImageBase + group.preview + entry.Path})
 			seen[key] = true
+		}
+		if !hasEntries {
+			break
 		}
 	}
 	return images, nil
@@ -557,7 +570,7 @@ func (client *Client) DownloadImage(ctx context.Context, selected RemoteImage) (
 		return nil, ErrInvalidInput
 	}
 	switch selected.ImageType {
-	case "Primary", "Backdrop", "Thumb":
+	case "Primary", "Backdrop", "Thumb", "Logo":
 	default:
 		return nil, ErrInvalidInput
 	}

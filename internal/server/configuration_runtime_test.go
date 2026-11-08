@@ -42,14 +42,15 @@ func TestConfigurationRuntimeDecoderUsesClosedSectionsAndPresence(t *testing.T) 
 		{settings.ConfigurationPartial, `{"HttpServerPortNumber":65536}`},
 		{settings.ConfigurationPartial, `{"HttpServerPortNumber":8e3}`},
 		{settings.ConfigurationPartial, `{"HttpServerPortNumber":8096,"httpserverportnumber":8097}`},
-		{settings.ConfigurationEncoding, `{"H264Crf":17}`},
-		{settings.ConfigurationEncoding, `{"H264Crf":36}`},
+		{settings.ConfigurationEncoding, `{"H264Crf":0}`},
+		{settings.ConfigurationEncoding, `{"H264Crf":52}`},
 		{settings.ConfigurationEncoding, `{"H264Crf":null}`},
 		{settings.ConfigurationEncoding, `{"H264Crf":23.0}`},
 		{settings.ConfigurationEncoding, `{"H264Crf":23,"h264crf":24}`},
 		{settings.ConfigurationEncoding, `{"EnableSoftwareToneMapping":null}`},
 		{settings.ConfigurationEncoding, `{"EnableHardwareToneMapping":0}`},
-		{settings.ConfigurationEncoding, `{"EnableHardwareEncoding":true}`},
+		{settings.ConfigurationEncoding, `{"EnableHardwareEncoding":0}`},
+		{settings.ConfigurationEncoding, `{"EnableHardwareEncoding":null}`},
 		{settings.ConfigurationEncoding, `{"EncodingThreadCount":4}`},
 		{settings.ConfigurationEncoding, `{"DeviceId":"private-marker"}`},
 	} {
@@ -65,6 +66,7 @@ func TestConfigurationRuntimeDecoderUsesClosedSectionsAndPresence(t *testing.T) 
 func TestConfigurationRuntimeProjectionDistinguishesDesiredPortAndActiveCRF(t *testing.T) {
 	snapshot := settings.Snapshot{Runtime: settings.RuntimeSnapshot{
 		DesiredNetwork: settings.NetworkValues{HttpPort: 9090}, Execution: transcode.DefaultExecutionOptions(2),
+		Transcoding: settings.DefaultTranscodingPolicy(), CodecConfigurations: transcode.DefaultCodecConfigurations(),
 	}}
 	snapshot.Runtime.Execution.H264.CRF = 31
 	if serverConfigurationDTO(settings.Configuration{Snapshot: snapshot})["HttpServerPortNumber"] != 9090 {

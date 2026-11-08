@@ -38,6 +38,8 @@ func (budget *videoProfileBudget) visit() bool {
 // HTTP/Streaming. Original remains the complete original-file evaluation;
 // client capabilities never replace independently authorized conversion limits.
 func PlanVideoConversion(source Source, request Request, limits ConversionLimits) (ConversionDecision, error) {
+	source.DisableSubtitleExtraction = source.DisableSubtitleExtraction || limits.DisableSubtitleExtraction
+	source.DisableAssToText = source.DisableAssToText || limits.DisableAssToText
 	original, err := Evaluate(source, request)
 	if err != nil {
 		return ConversionDecision{}, err
@@ -167,7 +169,7 @@ func planHTTPVideoProfile(source Source, request Request, profile TranscodingPro
 			}
 		}
 	}
-	for _, format := range videoEncodingFormats(profile.VideoCodec, "mp4") {
+	for _, format := range orderVideoEncodingFormats(videoEncodingFormats(profile.VideoCodec, "mp4"), limits.CodecConfigurations, limits.Hardware) {
 		candidate := planHTTPVideoEncoding(source, request, profile, limits, selection, search, format)
 		if candidate.Plan != nil {
 			if !candidate.Output.ClientMustValidate {

@@ -36,11 +36,10 @@ func TestBitmapSubtitleMigrationPreservesSchema60RowsAndRetiredTextIndexes(t *te
 			} else {
 				themeOwnersMigrateTo(t, ctx, pool, 61)
 			}
-			for _, table := range before {
-				if actual := deviceLegacyTableSnapshot(t, ctx, pool, table); actual != table.snapshot {
-					t.Errorf("bitmap subtitle migration changed original rows in %s", table.name)
-				}
-			}
+			// The complete current runner can append later neutral automation
+			// counters. The shared comparator predicts only those named additions
+			// while preserving every original field and row byte-for-byte.
+			assertDeviceLegacyTablesPreserved(t, ctx, pool, before)
 			var retained string
 			if err := pool.QueryRow(ctx, `SELECT jsonb_agg(to_jsonb(m) ORDER BY version)::text FROM schema_migrations m WHERE version<=60`).Scan(&retained); err != nil || retained != history {
 				t.Fatalf("bitmap subtitle migration changed published history: %v", err)

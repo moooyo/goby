@@ -190,7 +190,7 @@ func buildProgressiveArgs(p Plan, threads int) []string {
 		if p.AudioSampleSeek {
 			filter = audioSampleSeekFilter(p, rate)
 		}
-		args = append(args, "-af", filter)
+		args = append(args, "-af", appendDownMixAudioFilter(p, filter))
 		if p.AudioCodec != "flac" && p.AudioCodec != "pcm_s16le" {
 			bitrate := p.AudioBitrate
 			if bitrate == 0 {

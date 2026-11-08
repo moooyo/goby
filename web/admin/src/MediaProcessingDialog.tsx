@@ -1,6 +1,7 @@
+import { confirmAction } from './i18n';
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Alert, Box, Button, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, MenuItem, Skeleton, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, MenuItem, Skeleton, Stack, TextField, Typography } from './ui';
 import { ApiError, isAbortError } from './api';
 import { ErrorNotice } from './components';
 import { fieldError } from './formFields';
@@ -62,9 +63,9 @@ export function MediaProcessingDialog({ itemId, itemName, onClose, onNavigationG
     return () => controller.abort();
   }, [itemId, reloadRevision]);
   function change() { setTouched(true); setError(null); }
-  function close() { if (!inFlight.current && (!touched || window.confirm(uncertain ? 'The preparation may already be queued. Close and check Media processing in Tasks?' : 'Discard the media processing setup?'))) onClose(); }
+  function close() { if (!inFlight.current && (!touched || confirmAction(uncertain ? 'The preparation may already be queued. Close and check Media processing in Tasks?' : 'Discard the media processing setup?'))) onClose(); }
   function reload() {
-    if (!inFlight.current && !uncertain && (!touched || window.confirm('Discard this setup and reload the current source?'))) setReloadRevision((value) => value + 1);
+    if (!inFlight.current && !uncertain && (!touched || confirmAction('Discard this setup and reload the current source?'))) setReloadRevision((value) => value + 1);
   }
   async function prepare(retry = false) {
     if (inFlight.current || (!retry && (!target || !canPrepare || invalidLanguage || invalidTitle || disabled))) return;

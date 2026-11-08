@@ -32,7 +32,14 @@ func hlsUserLimits(cfg config.TranscodingConfig, user identity.User) playback.Co
 	limits := playback.ConversionLimits{
 		MaxBitrate: cfg.MaxBitrate, MaxWidth: cfg.MaxWidth, MaxHeight: cfg.MaxHeight,
 		MaxAudioChannels: cfg.MaxAudioChannels, Hardware: cfg.Hardware, Execution: cfg.Execution,
-		HardwareUnavailable: cfg.HardwareUnavailable,
+		HardwareUnavailable:         cfg.HardwareUnavailable,
+		DisableHevcEncoding:         cfg.DisableHevcEncoding,
+		DisableHardwareEncoding:     cfg.DisableHardwareEncoding,
+		DisableSubtitleExtraction:   cfg.DisableSubtitleExtraction,
+		DisableAttachmentExtraction: cfg.DisableAttachmentExtraction,
+		CodecConfigurations:         cfg.CodecConfigurations,
+		CodecProfileLimits:          cfg.CodecProfileLimits,
+		DisableAssToText:            cfg.DisableAssToText,
 	}
 	if !cfg.Enabled || user.IsDisabled || !utf8.Valid(user.Policy) {
 		return limits

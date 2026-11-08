@@ -95,6 +95,31 @@ func (s *Store) SelectProviderImage(ctx context.Context, actor identity.Principa
 	return ProviderImageResult{Provider: selected.Provider, ProviderID: selected.ID, ImageID: selected.ImageID, ImageType: imageType, ImageIndex: index, Width: info.Width, Height: info.Height, Tag: info.Tag}, nil
 }
 
+// ReplaceProviderImageArtwork explicitly replaces one effective image through
+// managed artwork. Both editor revisions are checked in the publication
+// transaction, and the other images of the same type retain their bytes.
+func (s *Store) ReplaceProviderImageArtwork(ctx context.Context, actor identity.Principal, itemID, metadataRevision, artworkRevision string, selected providers.RemoteImage, index int, data []byte) (ProviderImageResult, ArtworkCollection, error) {
+	if !validMetadataActor(actor) {
+		return ProviderImageResult{}, ArtworkCollection{}, ErrForbidden
+	}
+	imageType, err := normalizeStoredImageType(selected.ImageType, index)
+	if err != nil || (imageType != "Backdrop" && index != 0) || selected.Provider != "tmdb" || !metadataIdentifier(selected.ID) || !metadataIdentifier(selected.ImageID) || metadataRevision == "" || artworkRevision == "" {
+		return ProviderImageResult{}, ArtworkCollection{}, ErrInvalidInput
+	}
+	collection, err := s.mutateArtworkWithMetadata(ctx, actor, identity.AdministratorNative, ArtworkTarget{ItemID: itemID}, artworkRevision, imageType, "upload", index, nil, data,
+		&artworkMetadataPrecondition{revision: metadataRevision, itemType: selected.Type})
+	if err != nil {
+		return ProviderImageResult{}, ArtworkCollection{}, err
+	}
+	for _, image := range collection.Items {
+		if image.ImageType == imageType && image.ImageIndex == index {
+			return ProviderImageResult{Provider: selected.Provider, ProviderID: selected.ID, ImageID: selected.ImageID,
+				ImageType: imageType, ImageIndex: index, Width: image.Width, Height: image.Height, Tag: image.Tag}, collection, nil
+		}
+	}
+	return ProviderImageResult{}, ArtworkCollection{}, ErrUnavailable
+}
+
 // OpenImageContentFor checks current policy in the same transaction as reading
 // selected online bytes; local artwork continues through its descriptor checks.
 func (s *Store) OpenImageContentFor(ctx context.Context, subject Subject, itemID, imageType string, index int) (io.ReadCloser, Image, error) {

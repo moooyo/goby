@@ -117,7 +117,7 @@ func buildProgressiveVideoArgsWithSeek(p Plan, threads int, inputSeekTicks int64
 		} else {
 			args = append(args, "-map", "0:"+strconv.Itoa(p.VideoStreamIndex), "-vf", filter)
 		}
-		args = append(args, "-c:v", codec, "-threads:v", threadCount, "-bf", "0",
+		args = append(args, "-c:v", codec, "-threads:v", strconv.Itoa(videoExecutionThreads(p, encode, threads)), "-bf", "0",
 			"-fps_mode", "passthrough", "-enc_time_base:v", timeBase, "-force_key_frames", "expr:gte(t,n_forced)")
 		args = appendVideoEncoderOptions(args, p, encode, threads)
 		args = AppendVideoColorArgs(args, p)
@@ -142,6 +142,9 @@ func buildProgressiveVideoArgsWithSeek(p Plan, threads int, inputSeekTicks int64
 			// asetpts=N/SR/TB would erase a legitimate source track offset here.
 			args = append(args, "-c:a", "aac", "-threads:a", threadCount, "-profile:a", "aac_low",
 				"-b:a", strconv.FormatInt(bitrate, 10), "-ac", strconv.Itoa(channels), "-ar", strconv.Itoa(rate), "-channel_layout", layout)
+			if filter := appendDownMixAudioFilter(p, ""); filter != "" {
+				args = append(args, "-af", filter)
+			}
 		}
 	}
 	if p.CopyTimestamps {

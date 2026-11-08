@@ -612,22 +612,24 @@ func (s *Server) authorizeRemoteSocketEvent(ctx context.Context, receiver identi
 		return false, nil
 	}
 	var trustedController identity.Principal
-	if authority := event.Authority(); authority.Kind != "emby" {
-		if authority == (events.Authority{}) || controllerSupplied {
+	if authority := event.Authority(); authority.Kind == "" {
+		if authority == (events.Authority{}) || controllerSupplied || authority.UserID != "" || authority.SessionID != "" || authority.PeerIP != "" {
 			return false, nil
 		}
 		trustedController = identity.Principal{
 			Kind: identity.ApplicationKeyKind, SessionID: authority.CredentialID,
 			ClientSessionID: authority.ClientSessionID, ApplicationKeyID: authority.ApplicationKeyID,
 		}
-	} else {
-		if !controllerSupplied || controllerID != authority.UserID {
+	} else if authority.Kind == "emby" || authority.Kind == "admin" {
+		if !controllerSupplied || controllerID != authority.UserID || authority.CredentialID != "" || authority.ClientSessionID != "" || authority.ApplicationKeyID != 0 {
 			return false, nil
 		}
 		trustedController = identity.Principal{
 			Kind: authority.Kind, User: identity.User{ID: authority.UserID},
 			SessionID: authority.SessionID, PeerIP: authority.PeerIP,
 		}
+	} else {
+		return false, nil
 	}
 	controller, err := s.revalidateRemoteController(ctx, trustedController, receiver)
 	if remoteControllerDenied(err) {
@@ -648,6 +650,12 @@ func (s *Server) authorizeRemoteSocketEvent(ctx context.Context, receiver identi
 	}
 	if len(targets) != 1 || !targets[0].Capabilities.SupportsMediaControl {
 		return false, nil
+	}
+	if trustedController.Kind == "admin" {
+		allowed, err := s.authorizeNativePlaybackDelivery(ctx, controller, targets[0], event.MessageType(), fields)
+		if err != nil || !allowed {
+			return false, err
+		}
 	}
 	var itemAuthority library.ItemPermissionAuthority
 	if event.MessageType() == "Play" {
@@ -682,7 +690,13 @@ func (s *Server) authorizeRemoteSocketEvent(ctx context.Context, receiver identi
 }
 
 func (s *Server) revalidateRemoteController(ctx context.Context, trusted, receiver identity.Principal) (identity.Principal, error) {
-	controller, err := s.identity.RevalidateSessionAuthority(ctx, trusted)
+	var controller identity.Principal
+	var err error
+	if trusted.Kind == "admin" {
+		controller, err = s.identity.RevalidateManagedPlaybackController(ctx, trusted)
+	} else {
+		controller, err = s.identity.RevalidateSessionAuthority(ctx, trusted)
+	}
 	if err != nil {
 		return identity.Principal{}, err
 	}

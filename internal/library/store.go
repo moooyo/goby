@@ -39,6 +39,7 @@ func New(pool *pgxpool.Pool, prober Prober, allowedRoots []string, options ...Op
 		}
 	}
 	s.playbackControlPool = settings.playbackControlPool
+	s.libraryStorageDirectoryHook = settings.libraryStorageDirectoryHook
 	seen := make(map[string]bool)
 	for _, path := range allowedRoots {
 		if strings.TrimSpace(path) == "" || strings.ContainsRune(path, '\x00') {
@@ -272,6 +273,11 @@ func (s *Store) createLibraryWithCaptureAttempt(ctx context.Context, administrat
 	}
 	if options.EnableIntroDetection {
 		if err := systemevents.Record((catalogActivityTx{tx: tx}).Exec, systemevents.IntroAnalysisRequested); err != nil {
+			return Library{}, err
+		}
+	}
+	if options.EnableOnlineImages {
+		if err := systemevents.Record((catalogActivityTx{tx: tx}).Exec, systemevents.OnlineImagesRequested); err != nil {
 			return Library{}, err
 		}
 	}

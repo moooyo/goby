@@ -1,6 +1,6 @@
 import { Component } from 'react';
 import type { ReactNode } from 'react';
-import { Button, Paper, Stack, Typography } from '@mui/material';
+import { Button, Paper, Stack, Typography } from './ui';
 import { Brand } from './components';
 
 export class ErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {

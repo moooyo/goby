@@ -1,4 +1,7 @@
 import { expect, test as base, type BrowserContext, type Page, type Request, type Route } from '@playwright/test';
+import type { TaskDefinition } from '../src/api';
+import type { BackupPolicy } from '../src/backupPolicyApi';
+import { settings as serverSettingsFixture } from './dashboard-fixture';
 
 const timestamp = '2026-09-09T10:00:00Z';
 const backupId = '11111111111111111111111111111111';
@@ -9,6 +12,8 @@ const digest = 'a'.repeat(64);
 const generation = '9007199254740995';
 const revision = '9007199254740993';
 const rollbackGeneration = '88888888888888888888888888888888';
+const backupTaskId = '99999999999999999999999999999999';
+const nextRun = '2026-09-10T03:00:00Z';
 
 type Source = {
   ServerId: string; ServerName: string; GobyVersion: string; SchemaVersion: string;
@@ -39,7 +44,7 @@ type MockHandler = (route: Route, request: Request, captured: CapturedRequest) =
 
 function source(overrides: Partial<Source> = {}): Source {
   return {
-    ServerId: '44444444444444444444444444444444', ServerName: 'Archive server', GobyVersion: '0.1.0',
+    ServerId: '44444444444444444444444444444444', ServerName: 'Archive server', GobyVersion: '0.0.9',
     SchemaVersion: '42', CreatedAt: timestamp, Tables: [{ Name: 'users', Rows: '9007199254740997' }], ...overrides,
   };
 }
@@ -71,6 +76,29 @@ function status(overrides: Partial<Status> = {}): Status {
   };
 }
 
+function policy(overrides: Partial<BackupPolicy> = {}): BackupPolicy {
+  return {
+    Revision: revision, Enabled: true,
+    Schedule: { Kind: 'daily', DayOfWeek: null, TimeOfDay: '03:00', Timezone: 'UTC' },
+    KeepCount: 7, IncludeImages: true, HasPassphrase: true, NextRunAt: nextRun,
+    Available: true, UnavailableReason: '', TaskId: backupTaskId,
+    LastRunAt: timestamp, LastRunState: 'completed', LastBackupId: backupId, ...overrides,
+  };
+}
+
+function backupTask(): TaskDefinition {
+  return {
+    Id: backupTaskId, Key: 'backup.create', Name: 'Create automatic backup',
+    Description: 'Create a backup with the saved automatic backup settings.', Category: 'System',
+    IsHidden: false, Enabled: true, Revision: revision, ScheduleTimezone: 'UTC',
+    Triggers: [{
+      Id: 'backup-daily-rule', Kind: 'daily', IntervalTicks: null, TimeOfDayTicks: '108000000000', DayOfWeek: null,
+      MaxRuntimeTicks: null, NextFireAt: nextRun, CalculationError: '',
+    }],
+    CurrentRun: null, LastRun: null, NextRunAt: nextRun,
+  };
+}
+
 async function json(route: Route, body: unknown, responseStatus = 200): Promise<void> {
   await route.fulfill({ status: responseStatus, contentType: 'application/json', headers: { 'Cache-Control': 'no-store' }, body: JSON.stringify(body) });
 }
@@ -83,6 +111,8 @@ class BackupMock {
   actorId = '55555555555555555555555555555555';
   serverId = '44444444444444444444444444444444';
   status: unknown = status();
+  policy = policy();
+  task = backupTask();
   backups: unknown[] = [];
   operations: unknown[] = [];
   requests: CapturedRequest[] = [];
@@ -123,7 +153,7 @@ class BackupMock {
       const handler = this.handlers.get(`${captured.method} ${captured.path}`);
       if (handler) return handler(route, request, captured);
       if (captured.method === 'GET') {
-        if (captured.path === '/admin/v1/bootstrap') return json(route, { Initialized: true });
+        if (captured.path === '/admin/v1/bootstrap') return json(route, { Initialized: true, UICulture: 'en-US' });
         if (captured.path === '/admin/v1/session') return json(route, {
           User: { Id: this.actorId, Name: 'Browser administrator', IsAdministrator: true, IsDisabled: false, HasPassword: true, CreatedAt: timestamp },
           CSRFToken: csrfToken,
@@ -134,6 +164,8 @@ class BackupMock {
           Runtime: { GoVersion: 'test' },
           Features: { LibraryManagement: true, Playback: true, Transcoding: false, ApplicationKeys: true },
         });
+        if (captured.path === '/admin/v1/settings') return json(route, serverSettingsFixture());
+        if (captured.path === '/admin/v1/storage/library-directories') return json(route, { Items: [], TotalRecordCount: 0 });
         if (captured.path === '/admin/v1/system/status') return json(route, {
           Timestamp: timestamp, UptimeSeconds: 60, Host: { OS: 'test', Architecture: 'test', CPUCount: 1 },
           CPU: { UsagePercent: null, Load1: null, Load5: null, Load15: null },
@@ -144,7 +176,12 @@ class BackupMock {
         if (captured.path === '/admin/v1/activity') return json(route, {
           Items: [], TotalRecordCount: 0, StartIndex: Number(url.searchParams.get('StartIndex') ?? 0), Limit: Number(url.searchParams.get('Limit') ?? 25), RetentionDays: 30,
         });
+        if (captured.path === '/admin/v1/playback/sessions') return json(route, { Items: [], ObservedAt: timestamp, Limit: 256, AtCapacity: false });
+        if (captured.path === '/admin/v1/jobs') return json(route, { Items: [], TotalRecordCount: 0 });
         if (captured.path === '/admin/v1/backups/status') return json(route, this.status);
+        if (captured.path === '/admin/v1/backups/policy') return json(route, this.policy);
+        if (captured.path === '/admin/v1/tasks') return json(route, { Items: [this.task], TotalRecordCount: 1 });
+        if (captured.path === `/admin/v1/tasks/${backupTaskId}`) return json(route, { Task: this.task });
         if (captured.path === '/admin/v1/backups' || captured.path === '/admin/v1/backup-operations') {
           const items = captured.path === '/admin/v1/backups' ? this.backups : this.operations;
           const startIndex = Number(url.searchParams.get('StartIndex') ?? 0);
@@ -179,12 +216,21 @@ test.use({ serviceWorkers: 'block' });
 
 async function openBackups(page: Page): Promise<void> {
   await page.goto('/admin/backups');
-  await expect(page.getByRole('heading', { name: 'Backups', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Backups & recovery', level: 1, exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Create backup', exact: true })).toBeVisible();
 }
 
 function backupCard(page: Page, id = backupId) {
   return page.getByTestId(`backup-${id}`);
+}
+
+async function openBackupActions(page: Page, id = backupId): Promise<void> {
+  const row = backupCard(page, id);
+  const details = row.locator('details.backup-row-details');
+  if (await details.getAttribute('open') === null) {
+    await row.getByLabel(`Details for backup ${id}`, { exact: true }).click();
+  }
+  await expect(details).toHaveAttribute('open', '');
 }
 
 function jobCard(page: Page, id = operationId) {
@@ -209,6 +255,7 @@ for (const readiness of [
     if (current.Busy) api.operations = [operation()];
     await openBackups(page);
     await expect(backupCard(page)).toBeVisible();
+    await openBackupActions(page);
     await expect(page.getByRole('button', { name: 'Reconnect', exact: true })).toBeEnabled();
     for (const [button, enabled] of [
       [page.getByRole('button', { name: 'Create backup', exact: true }), readiness.create],
@@ -295,6 +342,7 @@ function assertJSONMutation(request: CapturedRequest): void {
 }
 
 test('create preserves the exact passphrase, clears it, and treats 202 as admission', async ({ page, api }) => {
+  api.policy = policy({ IncludeImages: false });
   api.on('POST', '/admin/v1/backups', async (route, _request, captured) => {
     const admitted = operation({ State: 'pending', Phase: 'admission', RequestId: captured.json!.RequestId as string });
     api.operations = [admitted];
@@ -304,6 +352,8 @@ test('create preserves the exact passphrase, clears it, and treats 202 as admiss
   await openBackups(page);
   await page.getByRole('button', { name: 'Create backup', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Create backup', exact: true });
+  await expect(dialog.getByLabel(/^Passphrase(?:\s*\*)?$/)).toHaveValue('');
+  await expect(dialog.getByText('This manual backup excludes library images and avatars, using the saved backup contents setting.', { exact: true })).toBeVisible();
   const exactPassphrase = '  a deliberately exact secret  ';
   await dialog.getByLabel(/^Passphrase(?:\s*\*)?$/).fill(exactPassphrase);
   await dialog.getByLabel(/^Confirm passphrase(?:\s*\*)?$/).fill(exactPassphrase);
@@ -311,18 +361,26 @@ test('create preserves the exact passphrase, clears it, and treats 202 as admiss
   await expect(dialog).not.toBeVisible();
   await expect(jobCard(page)).toContainText(/pending/i);
   await expect(backupCard(page)).toContainText(/writing/i);
+  await expect(page.getByRole('table', { name: 'Backups', exact: true }).getByRole('columnheader')).toHaveText(['Time', 'Type', 'Size', 'Version', 'Verification']);
+  await expect(page.getByTestId(`backup-version-${backupId}`)).toHaveText('Pending verification');
+  await openBackupActions(page);
   await expect(backupCard(page).getByRole('button', { name: 'Download', exact: true })).toBeDisabled();
   await expect(page.getByText(/backup (created|completed) successfully/i)).not.toBeVisible();
   const [request] = api.mutations('/admin/v1/backups');
   assertJSONMutation(request);
-  expect(request.json).toEqual({ RequestId: expect.stringMatching(/^[0-9a-f]{32}$/), Passphrase: exactPassphrase });
+  expect(request.json).toEqual({ RequestId: expect.stringMatching(/^[0-9a-f]{32}$/), Passphrase: exactPassphrase, IncludeImages: false });
   expect(api.mutations('/admin/v1/backups')).toHaveLength(1);
   await expect(page.locator('input[type="password"]')).toHaveCount(0);
-  expect(await page.evaluate(() => ({ local: { ...localStorage }, session: Object.fromEntries(Object.entries(sessionStorage).filter(([key]) => key !== 'goby.dashboard.tabs')) }))).toEqual({ local: {}, session: {} });
+  const persisted = await page.evaluate(() => ({ local: { ...localStorage }, session: { ...sessionStorage } }));
+  expect(JSON.stringify(persisted)).not.toContain(exactPassphrase);
+  expect({ local: persisted.local, session: Object.fromEntries(Object.entries(persisted.session).filter(([key]) => key !== 'goby.dashboard.tabs')) })
+    .toEqual({ local: { 'goby.admin.theme': 'dark' }, session: {} });
   const readsBeforeCompletion = api.requests.filter((item) => item.method === 'GET' && item.path === '/admin/v1/backup-operations').length;
   api.operations = [operation({ RequestId: request.json!.RequestId as string, State: 'completed', Phase: 'finished', CanCancel: false, Source: source() })];
   api.backups = [backup()];
   await expect(jobCard(page)).toContainText('Completed', { timeout: 10_000 });
+  await expect(page.getByTestId(`backup-version-${backupId}`)).toHaveText('0.0.9');
+  await expect(page.getByTestId('backup-version-review')).toContainText('Goby 0.0.9; this server runs 0.1.0');
   await expect(backupCard(page).getByRole('button', { name: 'Download', exact: true })).toBeEnabled();
   expect(api.requests.filter((item) => item.method === 'GET' && item.path === '/admin/v1/backup-operations').length).toBeGreaterThan(readsBeforeCompletion);
   expect(api.mutations('/admin/v1/backups')).toHaveLength(1);
@@ -339,12 +397,14 @@ test('a writing backup keeps polling after the operation snapshot already report
   await openBackups(page);
   await expect(jobCard(page)).toContainText('Completed');
   await expect(backupCard(page)).toContainText('Writing');
+  await openBackupActions(page);
   const download = backupCard(page).getByRole('button', { name: 'Download', exact: true });
   await expect(download).toBeDisabled();
   const readsBeforePublication = api.requests.filter((request) => request.method === 'GET' && request.path === '/admin/v1/backups').length;
   api.backups = [backup()];
   await expect(download).toBeEnabled({ timeout: 10_000 });
-  await expect(backupCard(page).getByText('Ready', { exact: true })).toBeVisible();
+  await expect(backupCard(page).getByText('Verified', { exact: true })).toBeVisible();
+  await expect(page.getByTestId(`backup-version-${backupId}`)).toHaveText('0.0.9');
   expect(api.requests.filter((request) => request.method === 'GET' && request.path === '/admin/v1/backups').length).toBeGreaterThan(readsBeforePublication);
   expect(api.mutations()).toHaveLength(0);
 });
@@ -355,7 +415,9 @@ test('a completed delete keeps polling until its stale ready backup disappears',
   api.backups = [backup()];
   await openBackups(page);
   await expect(jobCard(page)).toContainText('Completed');
-  await expect(backupCard(page).getByText('Ready', { exact: true })).toBeVisible();
+  await expect(backupCard(page).getByText('Verified', { exact: true })).toBeVisible();
+  await openBackupActions(page);
+  await expect(backupCard(page).getByRole('button', { name: 'Download', exact: true })).toBeEnabled();
   const readsBeforeDeletion = api.requests.filter((request) => request.method === 'GET' && request.path === '/admin/v1/backups').length;
   api.backups = [];
   await expect(backupCard(page)).not.toBeVisible({ timeout: 10_000 });
@@ -484,6 +546,7 @@ test('a new create attempt requires a complete search and a fresh idle status, t
   expect(mock.submittedIds.every((id) => /^[0-9a-f]{32}$/.test(id))).toBe(true);
   expect(new Set(mock.submittedIds).size).toBe(2);
   expect(requests.map((request) => request.json!.Passphrase)).toEqual(['first manual attempt secret', 'second manual attempt secret']);
+  expect(requests.map((request) => request.json!.IncludeImages)).toEqual([true, true]);
   requests.forEach(assertJSONMutation);
 });
 
@@ -536,6 +599,8 @@ test('restore planning without creation tools preserves the selected digest, gen
   });
   await openBackups(page);
   await expect(backupCard(page)).not.toContainText('Archive server');
+  await expect(page.getByTestId(`backup-version-${backupId}`)).toHaveText('Pending verification');
+  await openBackupActions(page);
   await backupCard(page).getByRole('button', { name: 'Plan restore', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Plan restore', exact: true });
   await dialog.getByLabel(/^Passphrase(?:\s*\*)?$/).fill('  exact imported passphrase  ');
@@ -564,6 +629,7 @@ test('planning keeps both optional restore flags false when no consent is select
     await json(route, { Operation: admitted }, 202);
   });
   await openBackups(page);
+  await openBackupActions(page);
   await backupCard(page).getByRole('button', { name: 'Plan restore', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Plan restore', exact: true });
   await dialog.getByLabel(/^Passphrase(?:\s*\*)?$/).fill('existing encrypted secret');
@@ -693,7 +759,7 @@ test('an unresolved activation survives navigation and reload, and stays scoped 
 
   await page.getByRole('navigation', { name: 'Administration' }).getByRole('link', { name: 'Overview', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Overview', exact: true })).toBeVisible();
-  await page.getByRole('navigation', { name: 'Administration' }).getByRole('link', { name: 'System', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Administration' }).getByRole('link', { name: 'Backups & recovery', exact: true }).click();
   await inspectBlocked();
   await page.reload();
   await inspectBlocked();
@@ -854,6 +920,7 @@ test('delete without recovery tools requires explicit consent and sends the sele
     await json(route, { Operation: admitted }, 202);
   });
   await openBackups(page);
+  await openBackupActions(page);
   await backupCard(page).getByRole('button', { name: 'Delete backup', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Delete backup', exact: true });
   const submit = dialog.getByRole('button', { name: 'Delete backup', exact: true });
@@ -893,9 +960,12 @@ test('ready downloads without recovery tools use an authenticated browser attach
     };
   });
   await openBackups(page);
+  await openBackupActions(page);
+  const backupDownloadOrigin = new URL(page.url()).origin;
   const downloaded = page.waitForEvent('download');
   await backupCard(page).getByRole('button', { name: 'Download', exact: true }).click();
   const download = await downloaded;
+  expect(new URL(download.url()).origin).toBe(backupDownloadOrigin);
   expect(new URL(download.url()).pathname).toBe(`/admin/v1/backups/${backupId}/file`);
   expect(download.suggestedFilename()).toBe('goby-backup.age');
   expect(api.requests.filter((request) => request.path === `/admin/v1/backups/${backupId}/file`).map((request) => request.method)).toEqual(['HEAD', 'GET']);
@@ -968,11 +1038,19 @@ test('mobile backup cards and confirmation dialogs fit the viewport and support 
   await page.screenshot({ path: testInfo.outputPath('backups-mobile.png'), fullPage: true, animations: 'disabled' });
   await backupCard(page).scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath('backups-mobile-data.png'), fullPage: true, animations: 'disabled' });
-  const navigationLink = page.getByRole('navigation', { name: 'Administration' }).getByRole('link', { name: 'System', exact: true });
-  await navigationLink.focus();
-  await navigationLink.press('Enter');
+  const navigationToggle = page.getByRole('button', { name: 'Open navigation', exact: true });
+  await navigationToggle.focus();
+  await navigationToggle.press('Enter');
+  const navigationDrawer = page.getByRole('dialog', { name: 'Navigation', exact: true });
+  await expect(navigationDrawer).toBeVisible();
+  const navigationLink = page.getByRole('navigation', { name: 'Administration' }).getByRole('link', { name: 'Backups & recovery', exact: true });
   await expect(navigationLink).toBeFocused();
-  await expect(page.getByRole('tab', { name: 'Backups & recovery', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await expect(navigationLink).toHaveAttribute('aria-current', 'page');
+  await navigationLink.press('Enter');
+  await expect(navigationDrawer).toBeHidden();
+  await expect(navigationToggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(navigationToggle).toBeFocused();
+  await expect(page).toHaveURL(/\/admin\/system\/backups$/);
   const create = page.getByRole('button', { name: 'Create backup', exact: true });
   await create.focus();
   await create.press('Enter');

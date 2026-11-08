@@ -26,6 +26,10 @@ const (
 type DecodeOptions struct {
 	MaxBytes    int64
 	MaxRowBytes int64
+	// AllowEmptyManagedArtwork admits absent COPY blocks only for compiled
+	// artwork tables. Archive entry points enable this only when their
+	// authenticated facts declare all schema-applicable artwork tables empty.
+	AllowEmptyManagedArtwork bool
 }
 
 // Decode consumes PostgreSQL 17 pg_restore data-only text output without ever
@@ -60,8 +64,9 @@ func Decode(ctx context.Context, input io.Reader, catalog Catalog, sink CopySink
 	}
 	d := dumpDecoder{
 		ctx: ctx, sink: sink, tables: tables, sequences: sequences,
-		rowsMax: options.MaxRowBytes,
-		reader:  bufio.NewReaderSize(&decodeInput{ctx: ctx, input: input, remaining: options.MaxBytes}, 32<<10),
+		rowsMax:                  options.MaxRowBytes,
+		reader:                   bufio.NewReaderSize(&decodeInput{ctx: ctx, input: input, remaining: options.MaxBytes}, 32<<10),
+		allowEmptyManagedArtwork: options.AllowEmptyManagedArtwork,
 	}
 	if err := d.header(); err != nil {
 		return err
@@ -99,14 +104,15 @@ type decodeSequence struct {
 }
 
 type dumpDecoder struct {
-	ctx        context.Context
-	reader     *bufio.Reader
-	sink       CopySink
-	tables     map[string]*decodeTable
-	sequences  map[string]*decodeSequence
-	rowsMax    int64
-	restrict   string
-	sequenceOn bool
+	ctx                      context.Context
+	reader                   *bufio.Reader
+	sink                     CopySink
+	tables                   map[string]*decodeTable
+	sequences                map[string]*decodeSequence
+	rowsMax                  int64
+	restrict                 string
+	sequenceOn               bool
+	allowEmptyManagedArtwork bool
 }
 
 func decodeCatalog(catalog Catalog) (map[string]*decodeTable, map[string]*decodeSequence, error) {
@@ -255,7 +261,13 @@ func (d *dumpDecoder) entries() error {
 			continue
 		}
 		if sequence := d.sequences[comment]; sequence != nil {
-			if sequence.seen || !d.tablesComplete() {
+			if sequence.seen {
+				return ErrArchive
+			}
+			if err := d.completeOmittedArtwork(); err != nil {
+				return err
+			}
+			if !d.tablesComplete() {
 				return ErrArchive
 			}
 			value, called, err := decodeSetval(statement, sequence)
@@ -286,6 +298,9 @@ func (d *dumpDecoder) tablesComplete() bool {
 }
 
 func (d *dumpDecoder) footer() error {
+	if err := d.completeOmittedArtwork(); err != nil {
+		return err
+	}
 	if !d.tablesComplete() {
 		return ErrArchive
 	}
@@ -314,6 +329,32 @@ func (d *dumpDecoder) footer() error {
 			return ErrArchive
 		}
 	}
+}
+
+func (d *dumpDecoder) completeOmittedArtwork() error {
+	if !d.allowEmptyManagedArtwork {
+		return nil
+	}
+	for _, table := range d.tables {
+		if table.seen || !managedArtworkTable(table.spec.Name) {
+			continue
+		}
+		if err := d.ctx.Err(); err != nil {
+			return err
+		}
+		rows, err := d.sink.Copy(d.ctx, table.spec, strings.NewReader(""))
+		if contextErr := d.ctx.Err(); contextErr != nil {
+			return contextErr
+		}
+		if err != nil {
+			return err
+		}
+		if rows != 0 {
+			return ErrArchive
+		}
+		table.seen = true
+	}
+	return nil
 }
 
 func decodeSetval(statement string, sequence *decodeSequence) (int64, bool, error) {

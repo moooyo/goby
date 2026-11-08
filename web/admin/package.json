@@ -13,13 +13,10 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@emotion/react": "11.14.0",
-    "@emotion/styled": "11.14.1",
-    "@fontsource-variable/jetbrains-mono": "5.3.0",
-    "@fontsource-variable/manrope": "5.3.0",
+    "@fontsource-variable/league-gothic": "5.3.0",
     "@fontsource-variable/noto-sans-sc": "5.3.0",
-    "@mui/icons-material": "9.4.0",
-    "@mui/material": "9.4.0",
+    "@fontsource-variable/noto-serif-sc": "5.3.0",
+    "@fontsource/ibm-plex-mono": "5.3.0",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
@@ -30,6 +27,6 @@
     "@types/react-dom": "19.2.7",
     "@vitejs/plugin-react": "6.1.1",
     "typescript": "7.0.2",
-    "vite": "8.2.2"
+    "vite": "8.2.4"
   }
 }

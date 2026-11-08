@@ -29,6 +29,8 @@ const (
 type storeOptions struct {
 	scanEvidence        *ScanEvidenceOptions
 	playbackControlPool *pgxpool.Pool
+
+	libraryStorageDirectoryHook libraryStorageDirectoryObservationHook
 }
 
 // Option attaches optional deployment resources without changing existing callers.

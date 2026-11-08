@@ -1,5 +1,6 @@
+import { adminLocale } from './i18n';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Paper, Skeleton, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Paper, Skeleton, Stack, TextField, Typography } from './ui';
 import { ApiError, isAbortError } from './api';
 import { ErrorNotice } from './components';
 import { fieldError } from './formFields';
@@ -19,7 +20,7 @@ const fields = [
 function parse(draft: Draft) {
   const profile: BackgroundPreviewProfile = { DurationSeconds: Number(draft.DurationSeconds), MaxWidth: Number(draft.MaxWidth), VideoBitrate: Number(draft.VideoBitrate), MaxItemRuntimeSeconds: Number(draft.MaxItemRuntimeSeconds) };
   const errors: Partial<Record<keyof BackgroundPreviewProfile, string>> = {};
-  for (const { key, min, max } of fields) if (!/^\d+$/.test(draft[key]) || !Number.isSafeInteger(profile[key]) || profile[key] < min || profile[key] > max) errors[key] = `请输入 ${min.toLocaleString()}–${max.toLocaleString()} 之间的整数。`;
+  for (const { key, min, max } of fields) if (!/^\d+$/.test(draft[key]) || !Number.isSafeInteger(profile[key]) || profile[key] < min || profile[key] > max) errors[key] = `请输入 ${min.toLocaleString(adminLocale())}–${max.toLocaleString(adminLocale())} 之间的整数。`;
   if (![640, 960, 1280, 1920].includes(profile.MaxWidth)) errors.MaxWidth = '请选择支持的画面宽度。';
   return { profile: Object.keys(errors).length === 0 && validBackgroundPreviewProfile(profile) ? profile : undefined, errors };
 }
@@ -77,7 +78,7 @@ export function BackgroundPreviewSettings({ onStateChange, onLibraries, onTasks 
           <Button variant="outlined" onClick={() => setOpen(true)} disabled={busy}>生成设置{dirty ? ' •' : ''}</Button>
         </Stack>
         <Typography variant="body2" color="text.secondary">从本地片源生成无声背景短片，自动生成默认关闭。请在电影、剧集或混合媒体库设置中启用；也可在影片的“背景短片”操作中手动生成。</Typography>
-        {loading && !saved ? <Skeleton width="70%" /> : saved && <Typography variant="body2">当前规格：{saved.Profile.DurationSeconds} 秒 · 最宽 {saved.Profile.MaxWidth} 像素 · {(saved.Profile.VideoBitrate / 1_000_000).toLocaleString()} Mbps · 无音轨</Typography>}
+        {loading && !saved ? <Skeleton width="70%" /> : saved && <Typography variant="body2">当前规格：{saved.Profile.DurationSeconds} 秒 · 最宽 {saved.Profile.MaxWidth} 像素 · {(saved.Profile.VideoBitrate / 1_000_000).toLocaleString(adminLocale())} Mbps · 无音轨</Typography>}
         <Typography variant="body2" color="text.secondary">成品保存在片源旁，需要媒体目录可写。已有短片将持续保留，关闭自动生成、修改规格或清理分析缓存都不会删除或替换；只有明确重新生成才更新。</Typography>
         {!open && error != null && <ErrorNotice error={error} retry={reload} />}
         {!open && notice && <Alert severity="success">{notice}</Alert>}

@@ -163,6 +163,7 @@ func nextUpScopeSQL(scopes ...libraryAccess) string {
 		SELECT episode.id, episode.library_id, tree.series_id, series.sort_name AS series_sort_name,
 			COALESCE(episode.parent_index_number, tree.season_number) AS season_number,
 			episode.index_number AS episode_number, episode.sort_name,
+			` + seriesDisplayOrderRankSQL("display_order.display_order", "display_entry.ordinal") + ` AS display_rank,
 			COALESCE(data.played, false) AS played,
 			(NOT COALESCE(data.played, false) AND COALESCE(data.playback_position_ticks, 0) > 0) AS has_partial,
 			(COALESCE(data.played, false) OR COALESCE(data.play_count, 0) > 0
@@ -173,11 +174,17 @@ func nextUpScopeSQL(scopes ...libraryAccess) string {
 			($5::text = '' OR episode.id IN (SELECT id FROM parent_scope)) AS in_scope
 		FROM series_tree tree JOIN items episode ON episode.id = tree.item_id AND episode.library_id = tree.library_id
 		JOIN items series ON series.id = tree.series_id AND series.library_id = tree.library_id
+		LEFT JOIN series_display_orders display_order ON display_order.series_id=tree.series_id
+		LEFT JOIN series_display_order_entries display_entry ON display_entry.series_id=tree.series_id
+			AND display_order.display_order IN ('Dvd','Absolute')
+			AND display_order.provider_series_id=` + seriesDisplayOrderProviderSQL("series") + `
+			AND display_entry.season_number=COALESCE(episode.parent_index_number,tree.season_number)
+			AND display_entry.episode_number=episode.index_number
 		LEFT JOIN user_item_data data ON data.item_id = episode.id AND data.user_id = $1::text
 		WHERE episode.type = 'Episode' AND NOT episode.is_folder AND ` + access.ordinarySQL("episode") + `
 	), ordered_episodes AS (
 		SELECT episode_state.*, row_number() OVER (PARTITION BY series_id
-			ORDER BY season_number ASC NULLS LAST, episode_number ASC NULLS LAST, lower(sort_name), id) AS episode_order
+			ORDER BY ` + seriesDisplayOrderSequenceSQL("display_rank", "season_number", "episode_number", "lower(sort_name)", "id", "ASC") + `) AS episode_order
 		FROM episode_state
 	), series_activity AS (
 		SELECT series_id, bool_or(has_history) AS has_history, max(activity_at) AS last_activity,

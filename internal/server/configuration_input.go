@@ -8,7 +8,9 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/moooyo/goby/internal/config"
 	"github.com/moooyo/goby/internal/settings"
+	"github.com/moooyo/goby/internal/transcode"
 )
 
 const maxConfigurationBodyBytes = 32 * 1024
@@ -96,6 +98,23 @@ func decodeConfiguration(w http.ResponseWriter, r *http.Request, section setting
 				configurationInputError(w, r)
 				return settings.ConfigurationMutation{}, false
 			}
+		case (section == settings.ConfigurationFull || section == settings.ConfigurationPartial) && field == "enableremoteaccess":
+			if json.Unmarshal(raw, &mutation.EnableRemoteAccess) != nil || mutation.EnableRemoteAccess == nil {
+				configurationInputError(w, r)
+				return settings.ConfigurationMutation{}, false
+			}
+		case (section == settings.ConfigurationFull || section == settings.ConfigurationPartial) && field == "localnetworksubnets":
+			var subnets []string
+			if json.Unmarshal(raw, &subnets) != nil || subnets == nil {
+				configurationInputError(w, r)
+				return settings.ConfigurationMutation{}, false
+			}
+			mutation.LocalNetworkSubnets = &subnets
+		case (section == settings.ConfigurationFull || section == settings.ConfigurationPartial) && field == "uiculture":
+			if json.Unmarshal(raw, &mutation.UICulture) != nil || mutation.UICulture == nil {
+				configurationInputError(w, r)
+				return settings.ConfigurationMutation{}, false
+			}
 		case section != settings.ConfigurationEncoding && field == "sortremovewords":
 			var words []string
 			if json.Unmarshal(raw, &words) != nil || words == nil || settings.ValidateStoredSorting(settings.Sorting{SortRemoveWords: words}) != nil {
@@ -112,11 +131,76 @@ func decodeConfiguration(w http.ResponseWriter, r *http.Request, section setting
 			mutation.HttpServerPortNumberPresent, mutation.HttpServerPortNumber = true, *port
 		case (section == settings.ConfigurationEncoding || section == settings.ConfigurationPartial) && field == "h264crf":
 			var crf *int
-			if json.Unmarshal(raw, &crf) != nil || crf == nil || *crf < 18 || *crf > 35 {
+			if json.Unmarshal(raw, &crf) != nil || crf == nil || *crf < 1 || *crf > 51 {
 				configurationInputError(w, r)
 				return settings.ConfigurationMutation{}, false
 			}
 			mutation.H264CrfPresent, mutation.H264Crf = true, *crf
+		case (section == settings.ConfigurationEncoding || section == settings.ConfigurationPartial) && field == "h264preset":
+			var preset *string
+			quality := transcode.DefaultExecutionOptions(2).H264
+			if json.Unmarshal(raw, &preset) != nil || preset == nil {
+				configurationInputError(w, r)
+				return settings.ConfigurationMutation{}, false
+			}
+			quality.Preset = *preset
+			if transcode.ValidateCPUQuality("h264", quality) != nil {
+				configurationInputError(w, r)
+				return settings.ConfigurationMutation{}, false
+			}
+			mutation.H264Preset = preset
+		case (section == settings.ConfigurationEncoding || section == settings.ConfigurationPartial) && field == "enablehevcencoding":
+			if json.Unmarshal(raw, &mutation.EnableHevcEncoding) != nil || mutation.EnableHevcEncoding == nil {
+				configurationInputError(w, r)
+				return settings.ConfigurationMutation{}, false
+			}
+		case (section == settings.ConfigurationEncoding || section == settings.ConfigurationPartial) && field == "enablehardwareencoding":
+			if json.Unmarshal(raw, &mutation.EnableHardwareEncoding) != nil || mutation.EnableHardwareEncoding == nil {
+				configurationInputError(w, r)
+				return settings.ConfigurationMutation{}, false
+			}
+		case (section == settings.ConfigurationEncoding || section == settings.ConfigurationPartial) && field == "enablethrottling":
+			if json.Unmarshal(raw, &mutation.EnableThrottling) != nil || mutation.EnableThrottling == nil {
+				configurationInputError(w, r)
+				return settings.ConfigurationMutation{}, false
+			}
+		case (section == settings.ConfigurationEncoding || section == settings.ConfigurationPartial) && field == "extractionthreadcount":
+			var count *int
+			if json.Unmarshal(raw, &count) != nil || count == nil || *count < 0 || *count > 16 {
+				configurationInputError(w, r)
+				return settings.ConfigurationMutation{}, false
+			}
+			mutation.ExtractionThreadCount = count
+		case (section == settings.ConfigurationEncoding || section == settings.ConfigurationPartial) && field == "downmixaudioboost":
+			var boost *float64
+			if json.Unmarshal(raw, &boost) != nil || boost == nil || *boost < 0.1 || *boost > 10 {
+				configurationInputError(w, r)
+				return settings.ConfigurationMutation{}, false
+			}
+			mutation.DownMixAudioBoost = boost
+		case (section == settings.ConfigurationEncoding || section == settings.ConfigurationPartial) && field == "enablesubtitleextraction":
+			if json.Unmarshal(raw, &mutation.EnableSubtitleExtraction) != nil || mutation.EnableSubtitleExtraction == nil {
+				configurationInputError(w, r)
+				return settings.ConfigurationMutation{}, false
+			}
+		case (section == settings.ConfigurationEncoding || section == settings.ConfigurationPartial) && field == "enableontheflyattachmentextraction":
+			if json.Unmarshal(raw, &mutation.EnableOnTheFlyAttachmentExtraction) != nil || mutation.EnableOnTheFlyAttachmentExtraction == nil {
+				configurationInputError(w, r)
+				return settings.ConfigurationMutation{}, false
+			}
+		case (section == settings.ConfigurationEncoding || section == settings.ConfigurationPartial) && field == "transcodingtemppath":
+			if json.Unmarshal(raw, &mutation.TranscodingTempPath) != nil || mutation.TranscodingTempPath == nil ||
+				config.ValidateTranscodingTempPath(*mutation.TranscodingTempPath, nil) != nil {
+				configurationInputError(w, r)
+				return settings.ConfigurationMutation{}, false
+			}
+		case (section == settings.ConfigurationEncoding || section == settings.ConfigurationPartial) && field == "codecconfigurations":
+			var codecs transcode.CodecConfigurations
+			if json.Unmarshal(raw, &codecs) != nil {
+				configurationInputError(w, r)
+				return settings.ConfigurationMutation{}, false
+			}
+			mutation.CodecConfigurations = &codecs
 		case (section == settings.ConfigurationEncoding || section == settings.ConfigurationPartial) && field == "enablesoftwaretonemapping":
 			if json.Unmarshal(raw, &mutation.EnableSoftwareToneMapping) != nil || mutation.EnableSoftwareToneMapping == nil {
 				configurationInputError(w, r)

@@ -102,25 +102,27 @@ type Options struct {
 type managedJob struct {
 	// filesMu serializes filesystem work with this job's accounting changes.
 	// Acquire it before Manager.mu; readers pin the job before waiting for it.
-	filesMu    sync.Mutex
-	record     Record
-	input      *os.File
-	bitmap     *os.File
-	sourceRead SourceReadLifetime
-	ctx        context.Context
-	cancel     context.CancelFunc
-	created    chan struct{}
-	launch     chan struct{}
-	done       chan struct{}
-	changed    chan struct{}
-	durable    bool
-	running    bool
-	finished   bool
-	reclaiming bool
-	directory  bool
-	ready      bool
-	mediaReady bool
-	readers    int
+	filesMu        sync.Mutex
+	record         Record
+	input          *os.File
+	bitmap         *os.File
+	sourceRead     SourceReadLifetime
+	ctx            context.Context
+	cancel         context.CancelFunc
+	created        chan struct{}
+	launch         chan struct{}
+	done           chan struct{}
+	changed        chan struct{}
+	durable        bool
+	running        bool
+	finished       bool
+	reclaiming     bool
+	directory      bool
+	ready          bool
+	mediaReady     bool
+	readers        int
+	bufferWaiters  int
+	bufferThrottle *playbackBufferController
 	// accountingUnknown stays charged until guarded directory removal succeeds.
 	accountingUnknown    bool
 	accountingPending    bool
@@ -164,6 +166,7 @@ type Manager struct {
 	pendingAccountingJobs int
 	maintenanceCursor     string
 	readers               int
+	bufferWaiters         int
 	cacheFailed           bool
 	closing               bool
 	closeErr              error
@@ -376,6 +379,10 @@ func (m *Manager) ensureInputs(ctx context.Context, spec Spec, inputs StreamInpu
 		if err := ctx.Err(); err != nil {
 			return Record{}, err
 		}
+		bufferAdmission := playbackBufferAdmissionFromContext(ctx)
+		if !validPlaybackBufferDemand(bufferAdmission.demand) {
+			return Record{}, ErrInvalidOptions
+		}
 		if !validScope(spec.Scope) || !validManagerIdentifier(spec.SourceStamp, 256, false) {
 			return Record{}, ErrInvalidScope
 		}
@@ -515,7 +522,8 @@ func (m *Manager) ensureInputs(ctx context.Context, spec Spec, inputs StreamInpu
 		}
 		now := time.Now().UTC()
 		j := &managedJob{record: Record{ID: hex.EncodeToString(randomID[:]), Spec: spec, State: "queued", CreatedAt: now, UpdatedAt: now, LastAccessAt: now},
-			input: input, bitmap: inputs.Bitmap, sourceRead: sourceRead, ctx: jobCtx, cancel: cancel, created: make(chan struct{}), launch: make(chan struct{}), done: make(chan struct{}), changed: make(chan struct{})}
+			input: input, bitmap: inputs.Bitmap, sourceRead: sourceRead, ctx: jobCtx, cancel: cancel, created: make(chan struct{}), launch: make(chan struct{}), done: make(chan struct{}), changed: make(chan struct{}),
+			bufferThrottle: newPlaybackBufferController(spec.Plan, bufferAdmission)}
 		lock()
 		if m.closing {
 			unlock()
@@ -929,6 +937,20 @@ func (m *Manager) Snapshot(scope Scope, id string) (Record, error) {
 // Progressive output instead requires a nonempty stream whose media payload the
 // runner has confirmed. It does not expose temporary or header-only output.
 func (m *Manager) WaitReady(ctx context.Context, scope Scope, id string) (Record, error) {
+	if err := ctx.Err(); err != nil {
+		return Record{}, err
+	}
+	release, err := m.beginPlaybackBufferOutputDemand(scope, id, "", true)
+	if err != nil {
+		return Record{}, err
+	}
+	if release != nil {
+		defer release()
+	}
+	return m.waitReady(ctx, scope, id)
+}
+
+func (m *Manager) waitReady(ctx context.Context, scope Scope, id string) (Record, error) {
 	for {
 		if err := ctx.Err(); err != nil {
 			return Record{}, err
@@ -987,7 +1009,34 @@ func (m *Manager) Open(ctx context.Context, scope Scope, id, name string) (*Read
 	if !validOutputName(name) {
 		return nil, ErrOutputUnavailable
 	}
-	if _, err := m.WaitReady(ctx, scope, id); err != nil {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	m.mu.Lock()
+	job := m.jobs[id]
+	bufferControlled := job != nil && job.record.Spec.Scope == scope && job.bufferThrottle != nil
+	m.mu.Unlock()
+	if bufferControlled {
+		attempt, err := m.tryOpen(scope, id, name)
+		if err == nil {
+			if err := ctx.Err(); err != nil {
+				_ = attempt.handle.Close()
+				return nil, err
+			}
+			return attempt.handle, nil
+		}
+		if !attempt.pending {
+			return nil, err
+		}
+	}
+	release, err := m.beginPlaybackBufferOutputDemand(scope, id, name, false)
+	if err != nil {
+		return nil, err
+	}
+	if release != nil {
+		defer release()
+	}
+	if _, err := m.waitReady(ctx, scope, id); err != nil {
 		return nil, err
 	}
 	for {
@@ -1414,6 +1463,11 @@ func (m *Manager) runJob(j *managedJob) {
 	}
 	runContext := withSubtitleSource(j.ctx, j.record.Spec, m.options.SubtitleSource)
 	runContext = withBitmapSubtitleSource(runContext, j.record.Spec, m.options.BitmapSubtitleSource)
+	runContext = withPlaybackBufferController(runContext, j.bufferThrottle, func() {
+		m.mu.Lock()
+		j.lastProgress = time.Now().UTC()
+		m.mu.Unlock()
+	})
 	if j.sourceRead != nil {
 		runContext = j.sourceRead.Context(runContext)
 	}
@@ -1422,6 +1476,7 @@ func (m *Manager) runJob(j *managedJob) {
 			maxBytes: min(MaxLiveScratchBytes, m.options.MaxJobBytes), timeout: m.options.NoProgressTimeout, publish: m.options.LivePublish, subtitle: m.options.LiveSubtitle, caption: m.options.LiveCaption})
 	}
 	result, err := m.options.run(runContext, m.options.FFmpegPath, directory, j.input, j.record.Spec.Plan, j.record.Spec.Plan.Execution.Threads, func(p Progress) {
+		j.bufferThrottle.progress(p)
 		m.mu.Lock()
 		if clock := p.HLSClock; clock != nil && needsHLSClock(j.record.Spec.Plan) && clock.Rendition >= 0 && clock.Rendition < max(1, j.record.Spec.Plan.HLS.RenditionCount) {
 			if _, err := clock.ticks(j.record.Spec.Plan.SourceMode != "stream"); err == nil && !j.hlsClockKnown[clock.Rendition] {
@@ -1622,6 +1677,7 @@ func (m *Manager) maintainJobs(periodic bool) {
 			m.bytes += size - j.record.OutputBytes
 			j.record.OutputBytes = size
 			j.ready = ready
+			j.bufferThrottle.setReady(ready)
 			if size > m.options.MaxJobBytes {
 				if j.finished {
 					m.invalidateFinishedLocked(j, "job_quota")
@@ -1670,7 +1726,7 @@ func (m *Manager) maintainJobs(periodic bool) {
 			m.stopLocked(j, "runtime_timeout")
 		case periodic && j.running && !j.ready && now.Sub(j.started) > m.options.StartupTimeout:
 			m.stopLocked(j, "startup_timeout")
-		case periodic && j.running && now.Sub(j.lastProgress) > m.options.NoProgressTimeout:
+		case periodic && j.running && !j.bufferThrottle.isPaused() && now.Sub(j.lastProgress) > m.options.NoProgressTimeout:
 			m.stopLocked(j, "progress_timeout")
 		}
 	}

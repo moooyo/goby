@@ -1,0 +1,49 @@
+.storage-directories-panel { min-width: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--s2); }
+.storage-directories-heading { display: flex; align-items: center; min-height: 44px; gap: 8px; padding: 6px 16px; box-sizing: border-box; }
+.storage-directories-heading h2 { margin: 0; color: var(--ink); font: 700 14px/20px var(--sans); }
+.storage-directory-count { color: var(--ink3); font: 11.5px var(--mono); }
+.storage-directory-refresh { display: grid; place-items: center; flex: none; width: 30px; height: 30px; margin: -3px -6px -3px auto; border: 0; border-radius: 50%; padding: 0; background: transparent; color: var(--ink2); cursor: pointer; }
+.storage-directory-refresh:hover:not(:disabled) { background: var(--s3); color: var(--ink); }
+.storage-directory-refresh:disabled { opacity: .46; cursor: default; }
+.storage-directory-refresh:focus-visible { outline: 2px solid var(--acc); outline-offset: 3px; }
+.storage-directory-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(110px, 170px); align-items: center; min-height: 52px; gap: 14px; padding: 9px 16px; border-top: 1px solid var(--line); box-sizing: border-box; }
+.storage-directory-identity, .storage-directory-capacity { min-width: 0; }
+.storage-directory-path { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--ink2); font: 12px/18px var(--mono); }
+.storage-directory-path > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.storage-access-dot { flex: 0 0 7px; width: 7px; height: 7px; border-radius: 50%; }
+.storage-access-success { background: var(--ok); }
+.storage-access-warning { background: var(--warn); }
+.storage-access-unknown { box-sizing: border-box; border: 1px solid var(--ink3); background: transparent; }
+.storage-directory-row[data-stale="true"] .storage-access-success { background: var(--ink3); }
+.storage-directory-permission { margin: 2px 0 0 15px; color: var(--ink3); font-size: 12px; line-height: 18px; }
+.storage-directory-row[data-access="warning"] .storage-directory-permission, .storage-stale-label, .storage-capacity-warning { color: var(--warn); }
+.storage-directory-capacity-value { display: flex; justify-content: space-between; gap: 8px; color: var(--ink2); font: 11px/18px var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.storage-directory-capacity-value > :last-child:not(:first-child) { flex-shrink: 0; color: var(--ink3); }
+.storage-directory-capacity-value .storage-capacity-warning { color: var(--warn) !important; }
+.storage-capacity-meter { overflow: hidden; height: 3px; margin-top: 6px; border-radius: 2px; background: var(--line2); }
+.storage-capacity-meter > i { display: block; height: 100%; background: var(--ink2); }
+.storage-capacity-meter-warning > i { background: var(--warn); }
+.storage-capacity-detail { display: block; margin-top: 4px; color: var(--ink3); font: 10.5px/16px var(--mono); overflow-wrap: anywhere; }
+.storage-capacity-empty { color: var(--ink3); font-size: 11.5px; line-height: 17px; }
+.storage-capacity-empty > span, .storage-capacity-empty small { display: block; }
+.storage-capacity-empty small { font-size: 11px; }
+.storage-directory-notice { display: flex; flex-direction: column; gap: 2px; padding: 10px 16px; border-top: 1px solid var(--line); color: var(--warn); font-size: 12px; line-height: 1.65; overflow-wrap: anywhere; }
+.storage-directory-notice strong { font-weight: 600; }
+.storage-directory-notice span { color: var(--ink2); }
+.storage-directories-loading, .storage-directories-empty { margin: 0; padding: 18px 16px; border-top: 1px solid var(--line); color: var(--ink3); font-size: 12.5px; }
+.storage-directory-partial { margin: 0; padding: 9px 16px; border-top: 1px solid var(--line); color: var(--ink3); font-size: 12px; line-height: 1.6; }
+.storage-directories-note { margin: 0; padding: 11px 16px; border-top: 1px solid var(--line); color: var(--ink3); font-size: 12.5px; line-height: 1.6; }
+.ov-directory-capacity { min-width: 0; }
+.ov-directory-capacity .ov-metric-heading > span { font-size: 12.5px; line-height: 18px; }
+.ov-directory-capacity[data-capacity-warning="true"] .ov-progress > i { background: var(--warn); }
+.ov-directory-capacity .ov-directory-empty-meter { height: 3px; margin-top: 12px; }
+.ov-directory-capacity .ov-directory-note { min-height: 16.5px; }
+@media (max-width: 639px) {
+  .storage-directory-row { grid-template-columns: minmax(0, 1fr) minmax(112px, 42%); gap: 10px; padding: 10px 12px; }
+  .storage-directories-heading { padding-inline: 12px; }
+  .storage-directory-path > span { overflow-wrap: anywhere; white-space: normal; }
+  .storage-directory-capacity-value { flex-wrap: wrap; gap: 0 6px; }
+  .storage-directories-note, .storage-directory-partial, .storage-directory-notice { padding-inline: 12px; }
+  .ov-directory-capacity .ov-metric-heading { align-items: flex-start; }
+  .ov-directory-capacity .ov-metric-heading small { flex-shrink: 0; padding-top: 2px; }
+}

@@ -278,7 +278,15 @@ func inspectCatalog(ctx context.Context, tx pgx.Tx, schema string) (Catalog, jso
 			JOIN pg_catalog.pg_class c ON c.oid=def.adrelid JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
 			JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum=def.adnum
 			WHERE dep.refclassid='pg_catalog.pg_class'::regclass AND dep.refobjid=$2::regclass AND n.nspname=$1
-		) consumers ORDER BY table_name COLLATE "C",column_name COLLATE "C"`, schema, qualified(schema, sequence.Name), sequence.Table, sequence.Column)
+			UNION SELECT 'backup_publication_receipts'::text,'activity_id'::text
+			WHERE $5::boolean AND EXISTS (
+				SELECT 1 FROM pg_catalog.pg_class c
+				JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
+				JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid
+				WHERE n.nspname=$1 AND c.relname='backup_publication_receipts'
+					AND a.attname='activity_id' AND a.attnum>0 AND NOT a.attisdropped
+			)
+		) consumers ORDER BY table_name COLLATE "C",column_name COLLATE "C"`, schema, qualified(schema, sequence.Name), sequence.Table, sequence.Column, sequence.Name == "activity_entries_id_seq")
 		if err != nil {
 			return result, nil, fmt.Errorf("catalog sequence consumer query: %w", ErrSchema)
 		}

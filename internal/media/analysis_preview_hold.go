@@ -142,12 +142,12 @@ func (planner *analysisPreviewHoldPlanner) eof() error {
 // process success, complete diagnostics, descriptor identity and tool identity
 // have all been checked. A canceled or truncated pass never authorizes tail hold.
 func runAnalysisPreviewHoldPlan(ctx context.Context, tool *analysisTool, file *os.File, before os.FileInfo, info Info, stream Stream,
-	plan analysisVisualPlan, limits AnalysisLimits, budget *analysisPreviewHoldBudget) (analysisPreviewHoldProof, error) {
+	plan analysisVisualPlan, limits AnalysisLimits, budget *analysisPreviewHoldBudget, threads ...ImageExtractionThreads) (analysisPreviewHoldProof, error) {
 	log, err := newAnalysisPreviewHoldLog(info, stream, plan, limits, budget, nil)
 	if err != nil {
 		return analysisPreviewHoldProof{}, err
 	}
-	args, err := buildAnalysisPreviewHoldArgs(stream, plan, limits, nil)
+	args, err := buildAnalysisPreviewHoldArgs(stream, plan, limits, nil, threads...)
 	if err != nil {
 		return analysisPreviewHoldProof{}, err
 	}
@@ -183,7 +183,18 @@ func runAnalysisPreviewHoldPlan(ctx context.Context, tool *analysisTool, file *o
 	return proof, nil
 }
 
-func buildAnalysisPreviewHoldArgs(stream Stream, plan analysisVisualPlan, limits AnalysisLimits, proof *analysisPreviewHoldProof) ([]string, error) {
+func buildAnalysisPreviewHoldArgs(stream Stream, plan analysisVisualPlan, limits AnalysisLimits, proof *analysisPreviewHoldProof, options ...ImageExtractionThreads) ([]string, error) {
+	if len(options) > 1 {
+		return nil, ErrInvalidImageExtractionThreads
+	}
+	var selected ImageExtractionThreads
+	if len(options) == 1 {
+		selected = options[0]
+	}
+	threads, err := selected.decoderThreads()
+	if err != nil {
+		return nil, err
+	}
 	expression := "eq(n,0)"
 	if proof != nil {
 		if len(proof.points) == 0 || len(proof.points) > plan.frames {
@@ -211,11 +222,15 @@ func buildAnalysisPreviewHoldArgs(stream Stream, plan analysisVisualPlan, limits
 		return nil, fmt.Errorf("%w: preview selection filter argument", ErrAnalysisBudget)
 	}
 	args := []string{"-hide_banner", "-nostdin", "-nostats", "-loglevel", "repeat+level+info", "-debug_ts", "-xerror",
-		"-max_alloc", "268435456", "-copyts", "-fflags", "+nofillin-genpts", "-threads", "1", "-max_pixels", strconv.FormatInt(limits.MaxSourcePixels, 10),
+		"-max_alloc", "268435456", "-copyts", "-fflags", "+nofillin-genpts"}
+	if threads != 0 {
+		args = append(args, "-threads", strconv.Itoa(threads))
+	}
+	args = append(args, "-max_pixels", strconv.FormatInt(limits.MaxSourcePixels, 10),
 		"-filter_threads", "1", "-filter_complex_threads", "1", "-noautorotate", "-reinit_filter", "0",
 		"-protocol_whitelist", "file,pipe", "-format_whitelist", "matroska,webm,mov,mp4,m4a,3gp,3g2,mj2,mpegts,avi", "-i", "/proc/self/fd/3",
-		"-map", "0:" + strconv.Itoa(stream.Index), "-an", "-sn", "-dn", "-map_metadata", "-1", "-map_chapters", "-1",
-		"-vf", filter, "-fps_mode:v", "passthrough", "-enc_time_base:v", "filter", "-threads:v", "1"}
+		"-map", "0:"+strconv.Itoa(stream.Index), "-an", "-sn", "-dn", "-map_metadata", "-1", "-map_chapters", "-1",
+		"-vf", filter, "-fps_mode:v", "passthrough", "-enc_time_base:v", "filter", "-threads:v", "1")
 	if proof == nil {
 		return append(args, "-c:v", "wrapped_avframe", "-f", "null", "pipe:1"), nil
 	}

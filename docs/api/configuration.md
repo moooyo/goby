@@ -6,8 +6,11 @@ the real Audio embedded-image selector. Its source is complete; consolidated
 phase 1 verification remains pending.
 
 The selected Phase 4 port, CPU H.264 CRF and tone-mapping extensions below are
-implemented in source and await consolidated Phase 4 verification. Earlier
-acceptance records do not establish acceptance of these extensions.
+implemented in source. The later
+[managed transcoding increment](transcoding-options.md) adds native encoder
+preferences, encoding and extraction policy, codec selection, and a desired
+transcoding cache path. Consolidated verification of that increment is pending;
+earlier acceptance records do not establish acceptance of its source.
 
 **The selected phase 3 configuration contract is verified and closed within its
 recorded boundaries.** The current server fields, named management sections,
@@ -38,7 +41,7 @@ filesystem paths.
 | `GET /emby/System/Configuration` | None | `200`, backed server fields for an administrator/key; exactly `{}` for an ordinary viewer |
 | `GET /emby/System/Configuration/{key}` | None | Administrator/key: `encoding`, `subtitles`, or the Goby `tasks` section |
 | `POST /emby/System/Configuration` | Supported server fields below | Empty `204`; replaces supported name, metadata and desired-port settings; preserves other sections |
-| `POST /emby/System/Configuration/Partial` | Supported server fields plus H264Crf and the two tone-mapping flags | Empty `204`; applies only supplied writable fields |
+| `POST /emby/System/Configuration/Partial` | Supported server fields and the runtime encoding fields below | Empty `204`; applies only supplied writable fields |
 | `POST /emby/System/Configuration/{key}` | Supported fields of exactly one named section | Empty `204`; replaces that section using its documented omission rules |
 
 These use Emby token authority: an ordinary administrator login or a complete
@@ -64,7 +67,8 @@ All five routes set `Cache-Control: no-store` and `Pragma: no-cache`.
 
 Administrator/key total GET exposes `IsStartupWizardCompleted`,
 `PreferredMetadataLanguage`, `MetadataCountryCode`, `EnableInternetProviders`,
-`SortRemoveWords` and `HttpServerPortNumber`, plus `ServerName` when configured. The port is the
+`SortRemoveWords`, `HttpServerPortNumber`, `EnableRemoteAccess`,
+`LocalNetworkSubnets`, and `UICulture`, plus `ServerName` when configured. The port is the
 resolved desired HTTP configuration, not an assertion that a new socket is
 already active. Authenticated SystemInfo separately reports the actual running
 port and pending restart. The initialization Boolean is read from the actual
@@ -72,31 +76,49 @@ setup-completed marker or surviving users; it is not a writable placeholder.
 An unset name is omitted, never emitted as null. No native revision, defaults,
 override map, or deployment structure is added to this compatibility DTO.
 
-The `encoding` section contains `TranscodingMaxWidth`,
-`EnableSoftwareToneMapping` and `EnableHardwareToneMapping`. It also contains
-`H264Crf` only when the effective CPU H.264 rate-control mode is `capped_crf`.
-TranscodingMaxWidth is an integer `0..8192`; native MaxWidth is independent.
-H264Crf is an integer `18..35`. The two non-null booleans gate the actual software
-and Vulkan filter backends, respectively; the latter is not a universal hardware
-encoder or device switch. Native controls expose the complete CPU preset,
-rate-control, HEVC, thread and authorized hardware choices.
+The `encoding` section contains `TranscodingMaxWidth`, `H264Preset`,
+`EnableSoftwareToneMapping`, `EnableHardwareToneMapping`, `EnableHevcEncoding`,
+`EnableHardwareEncoding`, `DownMixAudioBoost`, `EnableSubtitleExtraction`,
+`EnableOnTheFlyAttachmentExtraction`, `TranscodingTempPath`, and
+`CodecConfigurations`. It also contains `H264Crf` only when the effective CPU
+H.264 rate-control mode is `capped_crf`. `TranscodingMaxWidth` is an integer
+`0..8192`; native `MaxWidth` is independent. `H264Crf` is an integer `1..51`.
+The two tone-mapping booleans gate the actual software and Vulkan filter backends,
+respectively; hardware encoding has its own flag. The native administrator
+groups additionally expose HEVC quality, per-codec threads, a validated subset
+of x264 parameters, and CPU tone-map algorithm and height choices. See
+[managed transcoding options](transcoding-options.md) for complete values and
+their actual consumers.
 
 | Compatibility field | Writable surface | Complete-object omission | Partial omission |
 | --- | --- | --- | --- |
 | `HttpServerPortNumber` | Full server and Partial | Clear only the port override to the deployment default; preserve native BindHost | Preserve |
 | `SortRemoveWords` | Full server and Partial | Reset to `[]`; an explicit array replaces all rules | Preserve |
+| `EnableRemoteAccess` | Full server and Partial | Preserve the latest saved policy | Preserve |
+| `LocalNetworkSubnets` | Full server and Partial | Preserve the latest saved policy; an explicit array replaces all entries | Preserve |
+| `UICulture` | Full server and Partial | Preserve the latest saved policy | Preserve |
 | `H264Crf` | Named encoding and Partial | If currently capped_crf, return to bitrate with CRF 23 while preserving the preset; if already bitrate, preserve the entire quality group including its inactive CRF | Preserve |
+| `H264Preset` | Named encoding and Partial | Preserve the resolved preset and its saved provenance | Preserve |
 | `EnableSoftwareToneMapping` | Named encoding and Partial | Clear the override to the deployment software-tone default | Preserve |
 | `EnableHardwareToneMapping` | Named encoding and Partial | Clear the override to the deployment Vulkan-tone default | Preserve |
+| `EnableHevcEncoding`, `EnableHardwareEncoding` | Named encoding and Partial | Preserve the resolved policy and its saved provenance | Preserve |
+| `DownMixAudioBoost` | Named encoding and Partial | Preserve the resolved policy and its saved provenance | Preserve |
+| `EnableSubtitleExtraction`, `EnableOnTheFlyAttachmentExtraction` | Named encoding and Partial | Preserve the resolved policy and its saved provenance | Preserve |
+| `TranscodingTempPath` | Named encoding and Partial | Preserve the desired path and its saved provenance | Preserve |
+| `CodecConfigurations` | Named encoding and Partial | Preserve the resolved encoder selection and its saved provenance | Preserve |
 
 An explicit H264Crf selects capped_crf and preserves the currently resolved CPU
 H.264 preset. It never widens the source, client, server or user bitrate ceilings.
 An explicit port must be an integer `1..65535`; deployment-owned port zero may
 appear in GET before a private ephemeral reservation, but is not writable.
-Null, fractions and exponent notation are invalid for these compatibility
-numbers, and null is invalid for the two booleans. Native group-null/reset is
-the explicit reset interface. Full server objects reject the encoding fields;
-named encoding objects reject the port.
+Null, fractions and exponent notation are invalid for the integer compatibility
+numbers. `DownMixAudioBoost` accepts a non-null finite number `0.1..10`; the policy
+and tone-mapping switches require non-null booleans. `H264Preset` selects an
+implemented native x264 preset. `TranscodingTempPath` requires a string and uses
+an empty string for the deployment path. `CodecConfigurations` requires the
+complete two-encoder array defined in the managed contract. Native group-null
+and reset remain the explicit reset interface. Full server objects reject the
+encoding fields; named encoding objects reject the port.
 
 The current named management sections share the native persisted Management
 object. They are closed projections, not arbitrary upstream configuration bags:
@@ -123,10 +145,11 @@ take precedence over these section errors. The reference's unknown-key `500`
 is recorded separately and is not copied into Goby's registry behavior.
 
 Fields such as case-sensitive-ID policy, undeclared metadata options,
-`EnableHardwareEncoding`, `EncodingThreadCount`, arbitrary codec parameters,
-and device paths remain unsupported. A write containing any unsupported field is rejected
-as a whole, even if its value resembles a current deployment value. The adapter
-does not accept an arbitrary upstream object and pretend to save it.
+obsolete `EncodingThreadCount`, native throttling settings, unsupported codec
+implementations, arbitrary codec parameters, and hardware device paths remain
+unsupported. A write containing any unsupported field is rejected as a whole,
+even if its value resembles a current deployment value. The adapter does not
+accept an arbitrary upstream object and pretend to save it.
 
 ## Input and mutation semantics
 
@@ -179,6 +202,29 @@ requires both the deployment provider gate and the runtime setting; enabling
 this HTTP field cannot override a disabled deployment. A changed configuration
 also produces a durable `ConfigurationChanged` signal; rejected writes, rolled
 back transactions and no-ops do not. See the [task contract](tasks.md).
+
+The three access-policy fields use the same persistent values and runtime
+consumers as the [native server-policy API](server-policy.md). Goby supports
+non-null remote-access booleans, at most 32 distinct canonical IPv4/IPv6 CIDRs
+without host bits, and interface cultures `zh-CN` and `en-US`. These are Goby's
+supported values, not additional restrictions declared by the upstream SDK.
+An empty subnet array is valid; loopback always remains local. Full as well as
+Partial omission preserves these policy fields so older complete-object clients
+cannot accidentally reset the current access boundary.
+
+A request containing both managed fields and policy fields locks and changes
+both singletons in one owned transaction. Validation, settings activity, durable
+configuration events, and the final authority check must all succeed before
+either record commits. Only a successful commit publishes either cache;
+managed values publish before policy revocation cancels existing operations.
+A policy-only change advances only the independent server-policy revision.
+Native managed-settings and server-policy CAS revisions remain independent.
+
+An authorized core configuration POST can explicitly disable access from its
+own address and complete its empty `204` response. The compatibility body has
+no native `ConfirmDisconnect` or revision field. Entry admission and the latest
+locked policy must both permit the peer; a previously admitted request cannot
+reopen an access boundary that another administrator has since closed.
 
 Not every GET-clone/POST is a database no-op. In `deployment` mode, total GET
 includes the deployment name. Explicitly posting that string establishes a

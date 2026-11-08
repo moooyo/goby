@@ -1,5 +1,6 @@
+import { adminLocale } from './i18n';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Paper, Skeleton, Stack, Typography } from '@mui/material';
+import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Paper, Skeleton, Stack, Typography } from './ui';
 import { ErrorNotice } from './components';
 import { audioWaveformApi } from './audioWaveformApi';
 import { activeAudioWaveform, audioWaveformStateLabels } from './audioWaveform';
@@ -53,7 +54,7 @@ export function AudioWaveformDialog({ itemId, itemName, currentUserId, onClose, 
             {item.Artifact.Stale && <Alert severity="warning">片源已经变化，已有波形仍保存在片源旁。播放器不会显示这些可能错位的波形；需要更新时请明确重新生成。</Alert>}
             {item.Artifact.Tracks.length > 0 ? <>
               <Typography variant="body2">已保存 {item.Artifact.Tracks.length} 条音轨的波形，覆盖影片时长 {ticksToSeconds(item.Artifact.DurationTicks)} 秒。</Typography>
-              <Stack component="ul" aria-label="已生成波形的音轨" spacing={1} sx={{ listStyle: 'none', m: 0, p: 0 }}>{item.Artifact.Tracks.map((track) => <Box component="li" key={track.StreamIndex} sx={{ borderTop: 1, borderColor: 'divider', pt: 1 }}><Typography variant="body2" sx={{ fontWeight: 600 }}>音轨 {track.StreamIndex}</Typography><Typography variant="caption" color="text.secondary">{track.Channels} 声道 · {(track.SampleRate / 1000).toLocaleString()} kHz{track.ChannelLayout ? ` · ${track.ChannelLayout}` : ''}</Typography></Box>)}</Stack>
+              <Stack component="ul" aria-label="已生成波形的音轨" spacing={1} sx={{ listStyle: 'none', m: 0, p: 0 }}>{item.Artifact.Tracks.map((track) => <Box component="li" key={track.StreamIndex} sx={{ borderTop: 1, borderColor: 'divider', pt: 1 }}><Typography variant="body2" sx={{ fontWeight: 600 }}>音轨 {track.StreamIndex}</Typography><Typography variant="caption" color="text.secondary">{track.Channels} 声道 · {(track.SampleRate / 1000).toLocaleString(adminLocale())} kHz{track.ChannelLayout ? ` · ${track.ChannelLayout}` : ''}</Typography></Box>)}</Stack>
             </> : !item.Artifact.Stale && <Typography variant="body2" color="text.secondary">尚无已保存的波形，生成时会分别处理当前片源的每条音轨。</Typography>}
           </Stack></Paper>
           <Stack direction="row" sx={{ alignItems: 'center', gap: 1, flexWrap: 'wrap' }}><Typography variant="body2">最近任务：</Typography><Chip size="small" label={audioWaveformStateLabels[item.State]} color={item.State === 'failed' ? 'error' : activeAudioWaveform(item) ? 'primary' : 'default'} /></Stack>

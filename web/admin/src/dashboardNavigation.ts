@@ -3,7 +3,7 @@ export type Page = 'overview' | 'users' | 'libraries' | 'tasks' | 'metadata' | '
 export type Group = 'overview' | 'media' | 'access' | 'system' | 'settings';
 export const groups: { id: Group; title: string; label: string; tabs: { page: Page; label: string }[] }[] = [
   { id: 'overview', title: 'Overview', label: 'Overview', tabs: [] },
-  { id: 'media', title: 'Media', label: 'Media', tabs: [{ page: 'libraries', label: 'Libraries' }, { page: 'artwork', label: 'Catalog artwork' }, { page: 'collections', label: 'Playlists & collections' }, { page: 'media-analysis', label: 'Media analysis' }] },
+  { id: 'media', title: 'Media', label: 'Media', tabs: [{ page: 'libraries', label: 'Libraries' }, { page: 'artwork', label: 'Catalog artwork' }, { page: 'collections', label: 'Collections' }, { page: 'media-analysis', label: 'Media analysis' }] },
   { id: 'access', title: 'Access control', label: 'Access', tabs: [{ page: 'users', label: 'Users' }, { page: 'devices', label: 'Devices' }, { page: 'sessions', label: 'Sessions' }, { page: 'api-keys', label: 'API keys' }] },
   { id: 'system', title: 'System', label: 'System', tabs: [{ page: 'tasks', label: 'Tasks' }, { page: 'observability', label: 'Activity & logs' }, { page: 'notifications', label: 'Notifications' }, { page: 'backups', label: 'Backups & recovery' }] },
   { id: 'settings', title: 'Settings', label: 'Settings', tabs: [{ page: 'settings', label: 'General' }, { page: 'settings-transcode', label: 'Transcode limits' }, { page: 'settings-hardware', label: 'Hardware acceleration' }, { page: 'settings-metadata', label: 'Metadata & subtitles' }, { page: 'providers', label: 'Online providers' }] },
@@ -36,6 +36,7 @@ export function pageFromLocation(pathname = window.location.pathname): Page {
   const exact = Object.entries(paths).find(([, value]) => value.replace(/\/+$/, '') === path);
   if (exact) return exact[0] as Page;
   const legacy = path.replace(/^\/admin\//, '');
+  if (legacy === 'playlists' || legacy === 'media/playlists') return 'collections';
   if (Object.prototype.hasOwnProperty.call(paths, legacy)) return legacy as Exclude<Page, 'metadata'>;
   return 'overview';
 }

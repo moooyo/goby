@@ -47,10 +47,10 @@ func (s *Server) itemAncestors(w http.ResponseWriter, r *http.Request) {
 		s.libraryError(w, r, err)
 		return
 	}
-	p := readItemPresentation(r)
+	p := s.readItemPresentation(r)
 	result := make([]map[string]any, 0, len(items))
 	for _, item := range items {
-		dto := s.itemDTOWithToken(item, nil, false, p.deliveryToken)
+		dto := s.itemDTOWithToken(item, nil, false, p.deliveryToken, p.transcoding)
 		if item.Type == "CollectionFolder" {
 			root, err := s.library.GetLibrary(r.Context(), item.LibraryID)
 			if err != nil {
@@ -105,10 +105,10 @@ func (s *Server) additionalParts(w http.ResponseWriter, r *http.Request) {
 		s.libraryError(w, r, err)
 		return
 	}
-	p := readItemPresentation(r)
+	p := s.readItemPresentation(r)
 	items := make([]map[string]any, 0, len(result.Items))
 	for _, item := range result.Items {
-		dto := s.itemDTOWithToken(item, p.fields, false, p.deliveryToken)
+		dto := s.itemDTOWithToken(item, p.fields, false, p.deliveryToken, p.transcoding)
 		p.applySwitches(dto)
 		items = append(items, dto)
 	}

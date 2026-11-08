@@ -18,6 +18,11 @@ import (
 
 const itemMetadataColumn = `COALESCE((SELECT ms.effective FROM item_metadata_state ms WHERE ms.item_id = i.id), i.local_metadata)`
 
+const itemProjectedMetadataColumn = `CASE WHEN i.type='Series' AND i.is_folder THEN
+	COALESCE(NULLIF(` + itemMetadataColumn + `,'null'::jsonb),'{}'::jsonb) || jsonb_build_object('DisplayOrder',
+		COALESCE((SELECT display_order FROM series_display_orders WHERE series_id=i.id),'Aired'))
+	ELSE ` + itemMetadataColumn + ` END`
+
 var itemAlbumChildCountColumn = `CASE WHEN i.type = 'MusicAlbum' AND i.is_folder THEN
 		(SELECT count(*) FROM items child WHERE child.parent_id = i.id AND child.library_id = i.library_id AND ` + ordinaryItemSQL("child") + `)
 	END`
@@ -25,7 +30,7 @@ var itemAlbumChildCountColumn = `CASE WHEN i.type = 'MusicAlbum' AND i.is_folder
 var itemColumns = `i.id, i.library_id, COALESCE(i.parent_id, ''), i.name,
 	i.sort_name, i.type, i.path, i.overview, i.is_folder, i.index_number,
 	i.parent_index_number, i.created_at, i.media,
-	` + itemMetadataColumn + `, ` + itemEntitiesColumn + `,
+	` + itemProjectedMetadataColumn + `, ` + itemEntitiesColumn + `,
 	` + itemAlbumChildCountColumn + `, ` + itemAlbumColumn + `, ` + itemTVParentsColumn + `, ` + itemIntroColumn + `, ` + itemCreditsColumn
 
 var itemAlbumAncestorsSQL = `WITH RECURSIVE album_ancestors AS (

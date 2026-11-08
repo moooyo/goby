@@ -39,13 +39,14 @@ type generation struct {
 	pendingSwitch       string
 	switchActivated     bool
 
-	mu           sync.Mutex
-	started      bool
-	stopping     bool
-	serveResult  chan error
-	serveDone    chan struct{}
-	watchDone    chan struct{}
-	failureClass string
+	mu              sync.Mutex
+	started         bool
+	stopping        bool
+	serveResult     chan error
+	serveDone       chan struct{}
+	watchDone       chan struct{}
+	failureClass    string
+	restartRequests chan struct{}
 
 	stopOnce         sync.Once
 	stopDone         chan struct{}
@@ -74,7 +75,7 @@ func prepareGeneration(ctx context.Context, runtime *recovery.Runtime, logger *s
 		parent = context.Background()
 	}
 	lifetime, cancelLifetime := context.WithCancel(parent)
-	g := &generation{pool: suppliedPool, lease: suppliedLease, ctx: lifetime, cancel: cancelLifetime}
+	g := &generation{pool: suppliedPool, lease: suppliedLease, ctx: lifetime, cancel: cancelLifetime, restartRequests: make(chan struct{}, 1)}
 	defer func() {
 		if recover() != nil {
 			prepared = nil
@@ -228,7 +229,7 @@ func prepareGeneration(ctx context.Context, runtime *recovery.Runtime, logger *s
 	}
 	g.app, err = server.New(startup, cfg, g.pool, users, logger, version,
 		server.WithDiagnostics(diag), server.WithRecovery(g.manager), server.WithDashboardAssets(assets),
-		server.WithPlaybackControlPool(g.playbackControlPool))
+		server.WithPlaybackControlPool(g.playbackControlPool), server.WithAdministratorRestart(g.requestAdministratorRestart))
 	if err != nil {
 		return nil, generationError("application generation initialization failed", err)
 	}
@@ -255,6 +256,19 @@ func prepareGeneration(ctx context.Context, runtime *recovery.Runtime, logger *s
 		return nil, err
 	}
 	return g, nil
+}
+
+// A restart rebuilds the owned application generation in the process loop. It
+// does not depend on Docker restart policy or release a live generation early.
+func (g *generation) requestAdministratorRestart() {
+	if g == nil {
+		return
+	}
+	select {
+	case <-g.ctx.Done():
+	case g.restartRequests <- struct{}{}:
+	default:
+	}
 }
 
 // Every non-nil listener transfers to the generation, including publication

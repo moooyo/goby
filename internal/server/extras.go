@@ -29,10 +29,10 @@ func (s *Server) embyExtraItems(w http.ResponseWriter, r *http.Request, trailers
 		s.libraryError(w, r, err)
 		return
 	}
-	p := readItemPresentation(r)
+	p := s.readItemPresentation(r)
 	items := make([]map[string]any, 0, len(result))
 	for _, entry := range result {
-		item := s.itemDTOWithToken(entry, p.fields, false, p.deliveryToken)
+		item := s.itemDTOWithToken(entry, p.fields, false, p.deliveryToken, p.transcoding)
 		p.applySwitches(item)
 		items = append(items, item)
 	}

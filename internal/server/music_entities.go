@@ -76,7 +76,7 @@ func (s *Server) musicEntityList(family string) http.HandlerFunc {
 			s.libraryError(w, r, err)
 			return
 		}
-		presentation := readItemPresentation(r)
+		presentation := s.readItemPresentation(r)
 		items := make([]map[string]any, 0, len(result.Items))
 		for _, entity := range result.Items {
 			dto := s.musicEntityDTO(entity, selected, presentation.fields, false)
@@ -98,7 +98,7 @@ func (s *Server) musicEntityByName(family string) http.HandlerFunc {
 			s.libraryError(w, r, err)
 			return
 		}
-		presentation := readItemPresentation(r)
+		presentation := s.readItemPresentation(r)
 		dto := s.musicEntityDTO(entity, family, presentation.fields, true)
 		presentation.applySwitches(dto)
 		jsonResponse(w, http.StatusOK, dto)

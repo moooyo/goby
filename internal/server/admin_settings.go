@@ -256,14 +256,16 @@ func decodeAdminSettingsReset(w http.ResponseWriter, r *http.Request) (settings.
 	invalid := make(map[string]string)
 	request := settings.ResetRequest{Revision: adminSettingsRevision(values["Revision"], invalid)}
 	var fields []settings.Field
-	if json.Unmarshal(values["Fields"], &fields) != nil || len(fields) < 1 || len(fields) > len(adminSettingsValueFields)+14 {
-		invalid["Fields"] = "Select between one and nineteen supported settings to reset."
+	if json.Unmarshal(values["Fields"], &fields) != nil || len(fields) < 1 || len(fields) > settings.MaxResetFields {
+		invalid["Fields"] = "Select between one and twenty-seven supported settings to reset."
 	} else {
 		seen := make(map[settings.Field]bool, len(fields))
 		for _, field := range fields {
 			switch field {
 			case settings.FieldServerName, settings.FieldMaxBitrate, settings.FieldMaxWidth, settings.FieldMaxHeight, settings.FieldMaxAudioChannels, settings.FieldTranscodingMaxWidth, settings.FieldManagement, settings.FieldMetadata, settings.FieldSubtitles, settings.FieldTasks,
-				settings.FieldRuntime, settings.FieldNetwork, settings.FieldHardware, settings.FieldThreads, settings.FieldH264, settings.FieldHEVC, settings.FieldSoftwareToneMapping, settings.FieldVulkanToneMapping, settings.FieldSorting:
+				settings.FieldRuntime, settings.FieldNetwork, settings.FieldHardware, settings.FieldThreads, settings.FieldH264, settings.FieldHEVC, settings.FieldSoftwareToneMapping, settings.FieldVulkanToneMapping, settings.FieldSorting,
+				settings.FieldTranscoding, settings.FieldTranscodingTempPath, settings.FieldSoftwareToneMapOptions, settings.FieldCodecConfigurations, settings.FieldCodecProfileLimits, settings.FieldRuntimeSubtitleOptions,
+				settings.FieldEnableThrottling, settings.FieldExtractionThreadCount:
 				if seen[field] {
 					invalid["Fields"] = "Select each supported setting at most once."
 				}
@@ -375,7 +377,7 @@ func (s *Server) settingsError(w http.ResponseWriter, r *http.Request, err error
 			case "Revision":
 				fields[field] = "Supply the current positive decimal revision string with room for its successor."
 			case "Fields":
-				fields[field] = "Select between one and nineteen unique supported settings."
+				fields[field] = "Select between one and twenty-seven supported settings to reset."
 			default:
 				fields["Body"] = "Supply supported settings values."
 			}

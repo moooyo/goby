@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Box, Button, Checkbox, FormControlLabel, MenuItem, Skeleton, Stack, TablePagination, TextField, Typography } from '@mui/material';
+import { Box, Button, Checkbox, FormControlLabel, MenuItem, Skeleton, Stack, TablePagination, TextField, Typography } from './ui';
 import { adminApi, isAbortError } from './api';
 import type { Library, MetadataItemsResponse } from './api';
+import type { CollectionMember } from './collectionsApi';
 import { ErrorNotice } from './components';
+import { useTranslation } from './i18n';
 
-export function CollectionItemPicker({ disabled, selected, onSelectedChange }: { disabled: boolean; selected: string[]; onSelectedChange: (ids: string[]) => void }) {
+export function CollectionItemPicker({ disabled, selected, onSelectedChange }: { disabled: boolean; selected: string[]; onSelectedChange: (ids: string[], addedItem?: CollectionMember) => void }) {
+  const { t, formatCount } = useTranslation();
   const [libraries, setLibraries] = useState<Library[]>([]);
   const [librariesLoading, setLibrariesLoading] = useState(true);
   const [librariesError, setLibrariesError] = useState<unknown>();
@@ -40,14 +43,14 @@ export function CollectionItemPicker({ disabled, selected, onSelectedChange }: {
     {librariesError != null && <ErrorNotice error={librariesError} retry={() => setRevision((value) => value + 1)} />}
     {error != null && <ErrorNotice error={error} retry={() => setRevision((value) => value + 1)} />}
     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-      <TextField select fullWidth label="Source library" value={libraryId} disabled={disabled || !libraries.length} onChange={(event) => { setLibraryId(event.target.value); setQuery({ term: '', page: 0 }); setSearch(''); }}>{libraries.map((library) => <MenuItem key={library.Id} value={library.Id}>{library.Name}</MenuItem>)}</TextField>
+      <TextField select fullWidth label="Source library" value={libraryId} disabled={disabled || !libraries.length} onChange={(event) => { setLibraryId(event.target.value); setQuery({ term: '', page: 0 }); setSearch(''); }}>{libraries.map((library) => <MenuItem key={library.Id} value={library.Id} translate="no">{library.Name}</MenuItem>)}</TextField>
       <TextField fullWidth label="Find media" value={search} disabled={disabled} onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); setQuery({ term: search.trim(), page: 0 }); } }} />
       <Button disabled={disabled || loading || !libraryId} onClick={() => setQuery({ term: search.trim(), page: 0 })}>Search</Button>
     </Stack>
     {(loading || librariesLoading) && <Skeleton variant="rounded" height={100} />}
     {!librariesLoading && librariesError == null && libraries.length === 0 && <Typography color="text.secondary">Create and scan a library before adding media.</Typography>}
-    {data && <Box sx={{ maxHeight: 310, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>{data.Items.map((item) => <Box key={item.Id} sx={{ px: 1.5, py: 0.5, borderBottom: 1, borderColor: 'divider' }}><FormControlLabel control={<Checkbox disabled={disabled || (!selected.includes(item.Id) && selected.length >= 1000)} checked={selected.includes(item.Id)} onChange={(event) => onSelectedChange(event.target.checked ? [...selected, item.Id] : selected.filter((id) => id !== item.Id))} />} label={<Box><Typography variant="body2" sx={{ fontWeight: 600 }}>{item.Name}</Typography><Typography variant="caption" color="text.secondary">{item.Type}{item.ParentName ? ` · ${item.ParentName}` : ''}{item.ProductionYear ? ` · ${item.ProductionYear}` : ''}</Typography></Box>} /></Box>)}{data.Items.length === 0 && <Typography sx={{ p: 2 }} color="text.secondary">No matching media.</Typography>}</Box>}
+    {data && <Box sx={{ maxHeight: 310, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>{data.Items.map((item) => <Box key={item.Id} sx={{ px: 1.5, py: 0.5, borderBottom: 1, borderColor: 'divider' }}><FormControlLabel control={<Checkbox disabled={disabled || (!selected.includes(item.Id) && selected.length >= 1000)} checked={selected.includes(item.Id)} onChange={(event) => onSelectedChange(event.target.checked ? [...selected, item.Id] : selected.filter((id) => id !== item.Id), event.target.checked ? { Id: item.Id, Name: item.Name, Type: item.Type } : undefined)} />} label={<Box><Typography variant="body2" translate="no" sx={{ fontWeight: 600 }}>{item.Name}</Typography><Typography variant="caption" color="text.secondary">{t(item.Type)}{item.ParentName && <> · <span translate="no">{item.ParentName}</span></>}{item.ProductionYear ? ` · ${item.ProductionYear}` : ''}</Typography></Box>} /></Box>)}{data.Items.length === 0 && <Typography sx={{ p: 2 }} color="text.secondary">No matching media.</Typography>}</Box>}
     {data && <TablePagination component="div" count={data.TotalRecordCount} page={query.page} rowsPerPage={25} rowsPerPageOptions={[25]} disabled={disabled || loading} onPageChange={(_event, page) => setQuery((current) => ({ ...current, page }))} sx={{ '& .MuiTablePagination-toolbar': { flexWrap: 'wrap', px: 0 }, '& .MuiTablePagination-spacer': { display: 'none' } }} />}
-    {selected.length > 0 && <Stack direction="row" sx={{ gap: 1, alignItems: 'center' }}><Typography variant="body2">{selected.length} selected across libraries</Typography><Button disabled={disabled} onClick={() => onSelectedChange([])}>Clear selection</Button></Stack>}
+    {selected.length > 0 && <Stack direction="row" sx={{ gap: 1, alignItems: 'center' }}><Typography variant="body2" aria-live="polite">{formatCount(selected.length, 'item selected across libraries', 'items selected across libraries')}</Typography><Button disabled={disabled} onClick={() => onSelectedChange([])}>Clear selection</Button></Stack>}
   </Stack>;
 }

@@ -17,6 +17,7 @@ import (
 
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
+	"github.com/moooyo/goby/internal/recovery"
 	"github.com/moooyo/goby/internal/tasks"
 )
 
@@ -192,9 +193,14 @@ func (s *Server) adminTasks(w http.ResponseWriter, r *http.Request) {
 		s.taskError(w, r, err)
 		return
 	}
+	backups, err := s.adminTaskDefinitionBackupResults(r, definitions)
+	if err != nil {
+		s.taskError(w, r, err)
+		return
+	}
 	items := make([]map[string]any, 0, len(definitions))
 	for _, definition := range definitions {
-		items = append(items, taskDefinitionDTO(definition))
+		items = append(items, taskDefinitionDTO(definition, backups))
 	}
 	jsonResponse(w, http.StatusOK, map[string]any{"Items": items, "TotalRecordCount": len(items)})
 }
@@ -213,7 +219,12 @@ func (s *Server) adminTask(w http.ResponseWriter, r *http.Request) {
 		s.taskError(w, r, err)
 		return
 	}
-	jsonResponse(w, http.StatusOK, map[string]any{"Task": taskDefinitionDTO(definition)})
+	backups, err := s.adminTaskDefinitionBackupResults(r, []tasks.DefinitionSummary{definition})
+	if err != nil {
+		s.taskError(w, r, err)
+		return
+	}
+	jsonResponse(w, http.StatusOK, map[string]any{"Task": taskDefinitionDTO(definition, backups)})
 }
 
 func (s *Server) startAdminTask(w http.ResponseWriter, r *http.Request) {
@@ -259,7 +270,12 @@ func (s *Server) adminTaskRuns(w http.ResponseWriter, r *http.Request) {
 		s.taskError(w, r, err)
 		return
 	}
-	jsonResponse(w, http.StatusOK, taskRunPageDTO(result))
+	backups, err := s.adminTaskBackupResults(r, result.Items)
+	if err != nil {
+		s.taskError(w, r, err)
+		return
+	}
+	jsonResponse(w, http.StatusOK, taskRunPageDTO(result, backups))
 }
 
 func (s *Server) adminTaskRun(w http.ResponseWriter, r *http.Request) {
@@ -285,7 +301,69 @@ func (s *Server) adminTaskRun(w http.ResponseWriter, r *http.Request) {
 		s.taskError(w, r, err)
 		return
 	}
-	jsonResponse(w, http.StatusOK, map[string]any{"Run": taskRunDTO(run), "Children": taskChildPageDTO(children)})
+	backups, err := s.adminTaskBackupResults(r, []tasks.RunSummary{run})
+	if err != nil {
+		s.taskError(w, r, err)
+		return
+	}
+	jsonResponse(w, http.StatusOK, map[string]any{"Run": taskRunDTO(run, backups), "Children": taskChildPageDTO(children)})
+}
+
+// This optional capability preserves existing recovery adapters and task DTOs.
+// Backup storage failure affects the result projection, not durable task state.
+type adminTaskBackupResultReader interface {
+	TaskBackupResults(context.Context, identity.Principal, []string) (map[string]recovery.TaskBackupResultView, error)
+}
+
+func (s *Server) adminTaskDefinitionBackupResults(r *http.Request, definitions []tasks.DefinitionSummary) (map[string]recovery.TaskBackupResultView, error) {
+	var runs []tasks.RunSummary
+	seen := make(map[string]bool)
+	for _, definition := range definitions {
+		if definition.Key != recovery.BackupTaskKey {
+			continue
+		}
+		for _, run := range []*tasks.RunSummary{definition.CurrentRun, definition.LastRun} {
+			if run != nil && !seen[run.ID] {
+				seen[run.ID] = true
+				runs = append(runs, *run)
+			}
+		}
+	}
+	return s.adminTaskBackupResults(r, runs)
+}
+
+func (s *Server) adminTaskBackupResults(r *http.Request, runs []tasks.RunSummary) (map[string]recovery.TaskBackupResultView, error) {
+	reader, available := s.recovery.(adminTaskBackupResultReader)
+	if !available || len(runs) == 0 {
+		return nil, nil
+	}
+	definition, err := s.taskStore.GetTarget(r.Context(), runs[0].TaskID)
+	if err != nil {
+		return nil, err
+	}
+	if definition.Key != recovery.BackupTaskKey {
+		return nil, nil
+	}
+	ids := make([]string, len(runs))
+	for index, run := range runs {
+		if run.TaskID != definition.ID {
+			return nil, tasks.ErrUnavailable
+		}
+		ids[index] = run.ID
+	}
+	result, err := reader.TaskBackupResults(r.Context(), adminTaskActor(r).Principal, ids)
+	if err == nil {
+		return result, nil
+	}
+	if errors.Is(err, identity.ErrUnauthorized) || errors.Is(err, identity.ErrInvalidCredentials) || errors.Is(err, identity.ErrClientSessionForbidden) ||
+		errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return nil, err
+	}
+	result = make(map[string]recovery.TaskBackupResultView, len(ids))
+	for _, id := range ids {
+		result[id] = recovery.TaskBackupResultView{Status: "unavailable"}
+	}
+	return result, nil
 }
 
 func (s *Server) cancelAdminTaskRun(w http.ResponseWriter, r *http.Request) {

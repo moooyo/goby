@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Alert, Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, MenuItem, Paper, Skeleton, Stack, TablePagination, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, MenuItem, Paper, Skeleton, Stack, TablePagination, TextField, Typography } from './ui';
 import { adminApi, isAbortError } from './api';
 import type { Library } from './api';
 import { ErrorNotice } from './components';
+import { useTranslation } from './i18n';
 import { getDeletionFolders } from './deletionFoldersApi';
 import type { DeletionFolder, DeletionFolders } from './deletionFoldersApi';
 
 function FolderPicker({ selected, disabled, onSelect, onClose }: { selected: string[]; disabled: boolean; onSelect: (item: DeletionFolder, checked: boolean) => void; onClose: () => void }) {
+  const { formatCount } = useTranslation();
   const [search, setSearch] = useState(''); const [query, setQuery] = useState({ SearchTerm: '', LibraryId: '', StartIndex: 0, Limit: 50 });
   const [result, setResult] = useState<DeletionFolders>(); const [libraries, setLibraries] = useState<Library[]>();
   const [loading, setLoading] = useState(true); const [error, setError] = useState<unknown>(null); const [libraryError, setLibraryError] = useState<unknown>(null); const [revision, setRevision] = useState(0);
@@ -30,7 +32,7 @@ function FolderPicker({ selected, disabled, onSelect, onClose }: { selected: str
     <Typography variant="body2" color="text.secondary">Select current libraries or indexed folders. Changes remain in the account draft until you save the user.</Typography>
     <Box component="form" onSubmit={searchFolders}><Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
       <TextField fullWidth label="Search deletion folders" value={search} onChange={(event) => setSearch(event.target.value)} disabled={disabled} slotProps={{ htmlInput: { maxLength: 256 } }} />
-      <TextField fullWidth select label="Deletion folder library" value={query.LibraryId} disabled={disabled || !libraries} onChange={(event) => setQuery((value) => ({ ...value, LibraryId: event.target.value, StartIndex: 0 }))}><MenuItem value="">All libraries</MenuItem>{libraries?.map((library) => <MenuItem key={library.Id} value={library.Id}>{library.Name}</MenuItem>)}</TextField>
+      <TextField fullWidth select label="Deletion folder library" value={query.LibraryId} disabled={disabled || !libraries} onChange={(event) => setQuery((value) => ({ ...value, LibraryId: event.target.value, StartIndex: 0 }))}><MenuItem value="">All libraries</MenuItem>{libraries?.map((library) => <MenuItem key={library.Id} value={library.Id} translate="no">{library.Name}</MenuItem>)}</TextField>
       <Button type="submit" variant="outlined" disabled={disabled || loading}>Search folders</Button>
     </Stack></Box>
     {error != null && <ErrorNotice error={error} retry={() => setRevision((value) => value + 1)} />}
@@ -40,7 +42,7 @@ function FolderPicker({ selected, disabled, onSelect, onClose }: { selected: str
       {result.Items.length === 0 && <Typography variant="body2" color="text.secondary">No matching current libraries or folders.</Typography>}
       <TablePagination component="div" count={result.TotalRecordCount} page={query.StartIndex / query.Limit} rowsPerPage={query.Limit} rowsPerPageOptions={[50]} onPageChange={(_event, page) => setQuery((value) => ({ ...value, StartIndex: page * value.Limit }))} disabled={loading || disabled} />
     </>}
-  </Stack></DialogContent><DialogActions sx={{ p: 3 }}><Typography variant="caption" color="text.secondary" sx={{ mr: 'auto' }}>{selected.length} selected grants</Typography><Button onClick={onClose}>Done choosing folders</Button></DialogActions></Dialog>;
+  </Stack></DialogContent><DialogActions sx={{ p: 3 }}><Typography variant="caption" color="text.secondary" sx={{ mr: 'auto' }}>{formatCount(selected.length, 'selected grant', 'selected grants')}</Typography><Button onClick={onClose}>Done choosing folders</Button></DialogActions></Dialog>;
 }
 
 export function DeletionFoldersField({ value, disabled, error, onChange }: { value: string[]; disabled: boolean; error?: string; onChange: (value: string[]) => void }) {

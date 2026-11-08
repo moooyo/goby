@@ -28,6 +28,9 @@ func (h *hlsRuntime) generatedWindowSlotResource(ctx context.Context, session *h
 	var retryFrom *hlsAdmission
 	retried := false
 	admissions := 0
+	var bufferTimer *time.Timer
+	var bufferDeadline time.Time
+	deliveryCredit := false
 	releaseReservation := func() {
 		if gate != nil {
 			reserved := gate
@@ -36,6 +39,11 @@ func (h *hlsRuntime) generatedWindowSlotResource(ctx context.Context, session *h
 		}
 	}
 	defer releaseReservation()
+	defer func() {
+		if bufferTimer != nil {
+			bufferTimer.Stop()
+		}
+	}()
 	for {
 		session.mu.Lock()
 		graph := session.windowGraph
@@ -128,6 +136,37 @@ func (h *hlsRuntime) generatedWindowSlotResource(ctx context.Context, session *h
 				return empty, nil, waitErr
 			}
 			continue
+		}
+		if !deliveryCredit {
+			if throttled, changed := h.bufferThrottleAdmissionLocked(session, plan); throttled {
+				session.accessed = time.Now()
+				session.mu.Unlock()
+				releaseReservation()
+				if bufferTimer == nil {
+					bufferTimer = time.NewTimer(hlsBufferDeliveryWait)
+					bufferDeadline = time.Now().Add(hlsBufferDeliveryWait)
+				}
+				if !time.Now().Before(bufferDeadline) {
+					deliveryCredit = true
+				}
+				if !deliveryCredit {
+					select {
+					case <-ctx.Done():
+						return empty, nil, ctx.Err()
+					case <-session.ctx.Done():
+						return empty, nil, transcode.ErrJobNotFound
+					case <-changed:
+					case <-bufferTimer.C:
+						// This specific authorized request must remain deliverable
+						// even if its client stops reporting playback progress.
+						deliveryCredit = true
+					}
+				}
+				if err := h.revalidateHLSBufferWait(ctx, session); err != nil {
+					return empty, nil, err
+				}
+				continue
+			}
 		}
 		if !h.generatedWindowRoomAvailableLocked(session, time.Now()) {
 			session.mu.Unlock()
@@ -229,6 +268,7 @@ func (h *hlsRuntime) runGeneratedWindowSlotAdmission(session *hlsSession, graph 
 			graph.slots[pending.first] = binding
 			session.producers = append(session.producers, producer)
 			session.accessed = time.Now()
+			notifyHLSBufferThrottleLocked(session)
 		}
 	}
 	if err != nil && record.ID != "" && !cleanupHandled {
@@ -267,6 +307,7 @@ func (h *hlsRuntime) discardGeneratedWindowBindingLocked(session *hlsSession, nu
 		h.releaseGeneratedWindowPinLocked(session, current.redirectPin)
 	}
 	delete(graph.slots, number)
+	notifyHLSBufferThrottleLocked(session)
 	for index, producer := range session.producers {
 		if producer.ownership == current.producer.ownership {
 			h.releaseProducer(session.key.scope, producer)

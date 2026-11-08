@@ -1,0 +1,52 @@
+:root {
+  color-scheme: dark;
+  --bg: #0c0c0d;
+  --s1: #111113;
+  --s2: #17171a;
+  --s3: #202024;
+  --line: rgba(243, 242, 240, .075);
+  --line2: rgba(243, 242, 240, .14);
+  --ink: #f3f2f0;
+  --ink2: rgba(243, 242, 240, .72);
+  --ink3: rgba(243, 242, 240, .56);
+  --acc: #e3b46a;
+  --acc-ink: #e3b46a;
+  --acc-soft: rgba(227, 180, 106, .13);
+  --on-acc: #16130e;
+  --ok: #8ed3b0;
+  --warn: #e8cf76;
+  --err: #e38e82;
+  --ok-soft: rgba(142, 211, 176, .1);
+  --warn-soft: rgba(232, 207, 118, .1);
+  --err-soft: rgba(227, 142, 130, .1);
+  --sans: 'Noto Sans SC Variable', 'Noto Sans SC', system-ui, 'Segoe UI', sans-serif;
+  --serif: 'Noto Serif SC Variable', 'Noto Serif SC', Georgia, serif;
+  --mono: 'IBM Plex Mono', 'Cascadia Code', Consolas, monospace;
+  --disp: 'League Gothic Variable', 'League Gothic', Impact, sans-serif;
+  --accent: var(--acc);
+  --accent-soft: var(--acc-soft);
+  --on-accent: var(--on-acc);
+  --display: var(--disp);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f3f2ee;
+  --s1: #faf9f6;
+  --s2: #ffffff;
+  --s3: #ebe9e3;
+  --line: rgba(26, 25, 23, .09);
+  --line2: rgba(26, 25, 23, .17);
+  --ink: #1a1917;
+  --ink2: rgba(26, 25, 23, .74);
+  --ink3: rgba(26, 25, 23, .62);
+  --acc: #d69d48;
+  --acc-ink: #8f5f17;
+  --acc-soft: rgba(214, 157, 72, .16);
+  --ok: #29754f;
+  --warn: #85680e;
+  --err: #b2493c;
+  --ok-soft: rgba(41, 117, 79, .09);
+  --warn-soft: rgba(133, 104, 14, .09);
+  --err-soft: rgba(178, 73, 60, .09);
+}

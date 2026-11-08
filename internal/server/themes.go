@@ -52,7 +52,7 @@ func (s *Server) embyThemeMedia(w http.ResponseWriter, r *http.Request) {
 		s.libraryError(w, r, err)
 		return
 	}
-	p := readItemPresentation(r)
+	p := s.readItemPresentation(r)
 	response := make(map[string]any, 3)
 	for _, group := range []struct {
 		name   string
@@ -66,7 +66,7 @@ func (s *Server) embyThemeMedia(w http.ResponseWriter, r *http.Request) {
 		for _, entry := range group.result.Items {
 			// Positive reference captures explicitly selected their detailed
 			// fields. A Theme request alone does not imply detail projection.
-			item := s.itemDTOWithToken(entry, p.fields, false, p.deliveryToken)
+			item := s.itemDTOWithToken(entry, p.fields, false, p.deliveryToken, p.transcoding)
 			p.applySwitches(item)
 			items = append(items, item)
 		}

@@ -17,6 +17,7 @@ import (
 )
 
 func (s *Server) registerExpectedEpisodeRoutes(mux *http.ServeMux) {
+	s.registerSeriesDisplayOrderRoutes(mux)
 	mux.HandleFunc("GET /admin/v1/series/{id}/episode-roster", s.requireAdmin(s.adminEpisodeRoster))
 	mux.HandleFunc("PUT /admin/v1/series/{id}/episode-roster", s.requireAdmin(s.replaceAdminEpisodeRoster))
 	mux.HandleFunc("DELETE /admin/v1/series/{id}/episode-roster", s.requireAdmin(s.withdrawAdminEpisodeRoster))

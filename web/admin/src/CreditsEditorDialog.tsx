@@ -1,7 +1,8 @@
+import { adminLocale, confirmAction, useTranslation } from './i18n';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Paper, Skeleton, Stack, TextField, Typography } from '@mui/material';
-import SaveOutlined from '@mui/icons-material/SaveOutlined';
+import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Paper, Skeleton, Stack, TextField, Typography } from './ui';
+import { SaveOutlined } from './icons';
 import { ApiError, isAbortError } from './api';
 import { ErrorNotice } from './components';
 import { fieldError } from './formFields';
@@ -32,6 +33,7 @@ export function CreditsEditorDialog({ itemId, itemName, currentUserId, onClose, 
   itemId: string; itemName: string; currentUserId: string; onClose: () => void; onTasks?: () => void;
   onNavigationGuardChange?: UserNavigationGuardChange; onActivityChange?: (value: CreditsEditorActivity) => void;
 }) {
+  const { countLabel } = useTranslation();
   const [saved, setSaved] = useState<ItemCredits>();
   const [draft, setDraft] = useState('');
   const [loading, setLoading] = useState(true);
@@ -85,11 +87,11 @@ export function CreditsEditorDialog({ itemId, itemName, currentUserId, onClose, 
   }, [itemId, revision]);
 
   function close() {
-    if (!locked && !inFlight.current && (!dirty || window.confirm('放弃尚未保存的片尾标记？'))) onClose();
+    if (!locked && !inFlight.current && (!dirty || confirmAction('放弃尚未保存的片尾标记？'))) onClose();
   }
 
   function reload() {
-    if (locked || inFlight.current || loading || (dirty && !window.confirm('放弃当前草稿，重新加载最新片源和片尾标记？'))) return;
+    if (locked || inFlight.current || loading || (dirty && !confirmAction('放弃当前草稿，重新加载最新片源和片尾标记？'))) return;
     setConfirmReset(false); setRevision((value) => value + 1);
   }
 
@@ -130,7 +132,7 @@ export function CreditsEditorDialog({ itemId, itemName, currentUserId, onClose, 
           {saved && <>
             <Paper component="section" aria-label="当前片源的片尾标记" variant="outlined" sx={{ p: 2 }}><Stack spacing={1}>
               <Stack direction="row" sx={{ alignItems: 'center', gap: 1, flexWrap: 'wrap' }}><Typography component="h3" variant="h4">当前片源</Typography><Chip size="small" variant="outlined" label={sourceLabel(saved.Effective)} /></Stack>
-              <Typography variant="body2">影片时长：{ticksToSeconds(saved.DurationTicks)} 秒</Typography>
+              <Typography variant="body2">影片时长：{ticksToSeconds(saved.DurationTicks)} {countLabel(Number(ticksToSeconds(saved.DurationTicks)), 'second', 'seconds')}</Typography>
               <Typography variant="body2">生效的片尾开始时间：{pointLabel(saved.Effective)}</Typography>
               <Typography variant="body2" color="text.secondary">可用的自动依据：{pointLabel(saved.Automatic)}{saved.Automatic ? `（${sourceLabel(saved.Automatic)}）` : ''}</Typography>
               {saved.Override && <Typography variant="body2" color="text.secondary">已保存的{saved.Override.Provenance === 'Import' ? '导入' : '人工'}标记：{pointLabel(saved.Override)}</Typography>}
@@ -143,7 +145,7 @@ export function CreditsEditorDialog({ itemId, itemName, currentUserId, onClose, 
               {saved.Detected.length > 0 && <Stack component="ul" aria-label="识别到的片尾区间" spacing={1} sx={{ listStyle: 'none', p: 0, m: 0 }}>{saved.Detected.map((segment, index) => <Box component="li" key={`${segment.StartTicks}-${segment.EndTicks}-${index}`}><Typography variant="body2">{ticksToSeconds(segment.StartTicks)}–{ticksToSeconds(segment.EndTicks)} 秒 · {creditsSourceLabels[segment.Source]}</Typography></Box>)}</Stack>}
               {saved.DetectedStatus === 'no_result' && !saved.DetectedStale && <Typography variant="body2" color="text.secondary">本次没有识别到可靠的片尾区间，原有人工或章节标记仍按优先级生效。</Typography>}
               {saved.DetectedReason && <Typography variant="caption" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>检测说明：{saved.DetectedReason === 'no_credits_detected' ? '没有识别到片尾' : saved.DetectedReason}</Typography>}
-              {saved.DetectedUpdatedAt && <Typography variant="caption" color="text.secondary">上次识别：{new Date(saved.DetectedUpdatedAt).toLocaleString()}</Typography>}
+              {saved.DetectedUpdatedAt && <Typography variant="caption" color="text.secondary">上次识别：{new Date(saved.DetectedUpdatedAt).toLocaleString(adminLocale())}</Typography>}
               <Typography variant="body2" color="text.secondary">播放优先使用人工或导入标记，其次使用片源章节，最后使用有效的自动结果。自动结果参与播放需要在媒体库设置中启用片尾识别。</Typography>
               <Typography variant="caption" color="text.secondary">分析剧集最后 450 秒、电影最后 900 秒；音频匹配沿用现有 Intro Skipper 匹配设置。</Typography>
               <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}><Button variant="outlined" disabled={!canAnalyze} onClick={() => void analysis.start(saved.DetectedRevision !== '0')} startIcon={analysis.busy ? <CircularProgress size={16} color="inherit" /> : undefined}>{saved.DetectedRevision === '0' ? '识别此影片片尾' : '重新识别此影片片尾'}</Button>{onTasks && <Button disabled={locked} onClick={onTasks}>查看识别任务</Button>}</Stack>

@@ -61,6 +61,13 @@ func (s *Store) ReplaceTriggers(ctx context.Context, actor Actor, request Replac
 		if err := s.checkTaskExecutor(definition.Key, actor); err != nil {
 			return err
 		}
+		if entry, exists := s.executors.lookup(definition.Key); exists {
+			if validator, ok := entry.Executor.(TriggerValidator); ok {
+				if err := validator.ValidateTaskTriggers(tx, rules); err != nil {
+					return err
+				}
+			}
+		}
 		changed := changedTaskScheduleFields(definition, request.ScheduleTimezone)
 		var now time.Time
 		if err := tx.QueryRow(`SELECT clock_timestamp()`).Scan(&now); err != nil {

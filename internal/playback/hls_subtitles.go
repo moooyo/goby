@@ -91,7 +91,10 @@ func hlsSubtitleTrack(stream media.Stream) (transcode.HLSSubtitleTrack, bool) {
 	return track, true
 }
 
-func clientAcceptsHLSSubtitle(stream media.Stream, container string, request Request, profile TranscodingProfile) bool {
+func clientAcceptsHLSSubtitle(stream media.Stream, container string, request Request, profile TranscodingProfile, source Source) bool {
+	if source.DisableSubtitleExtraction && !stream.IsExternal || !allowsPlainTextSubtitle(source, stream.Codec) {
+		return false
+	}
 	if _, valid := hlsSubtitleTrack(stream); !valid {
 		return false
 	}
@@ -121,7 +124,7 @@ func configureHLSSubtitleTracks(plan *transcode.Plan, source Source, request Req
 	}
 	var eligible []transcode.HLSSubtitleTrack
 	for _, stream := range source.Info.Streams {
-		if clientAcceptsHLSSubtitle(stream, plan.Container, request, profile) {
+		if clientAcceptsHLSSubtitle(stream, plan.Container, request, profile, source) {
 			track, _ := hlsSubtitleTrack(stream)
 			eligible = append(eligible, track)
 		}

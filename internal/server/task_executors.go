@@ -99,7 +99,7 @@ func (s *Server) managementTaskExecutors() (*tasks.ExecutorRegistry, error) {
 	intro := mediaAnalysisTaskExecutor{s.mediaAnalysis, library.TaskIntroAnalysisKey}
 	credits := mediaAnalysisTaskExecutor{s.mediaAnalysis, library.TaskCreditsAnalysisKey}
 	previews := mediaAnalysisTaskExecutor{s.mediaAnalysis, library.TaskPreviewGenerationKey}
-	return tasks.NewExecutorRegistry(
+	registrations := []tasks.ExecutorRegistration{
 		tasks.ExecutorRegistration{Key: tasks.MetadataRefreshKey, Name: "Refresh online metadata", Description: "Refresh supported metadata from configured providers for each library.", Category: "Metadata", Executor: managementTaskExecutor{s, tasks.MetadataRefreshKey}},
 		tasks.ExecutorRegistration{Key: tasks.SubtitleDownloadKey, Name: "Download missing subtitles", Description: "Download configured subtitle languages for supported movies and episodes.", Category: "Subtitles", Executor: managementTaskExecutor{s, tasks.SubtitleDownloadKey}},
 		tasks.ExecutorRegistration{Key: tasks.CacheMaintainKey, Name: "Maintain provider cache", Description: "Remove expired provider cache entries and enforce the configured entry limit.", Category: "Maintenance", Global: true, Executor: managementTaskExecutor{s, tasks.CacheMaintainKey}},
@@ -109,5 +109,12 @@ func (s *Server) managementTaskExecutors() (*tasks.ExecutorRegistry, error) {
 		tasks.ExecutorRegistration{Key: library.TaskBackgroundPreviewGenerationKey, Name: "Generate background clips", Description: "Generate persistent silent background clips beside their original media. Existing clips are retained unless explicitly regenerated.", Category: "Media analysis", Executor: backgroundPreviewTaskExecutor{s}},
 		tasks.ExecutorRegistration{Key: library.TaskAudioWaveformGenerationKey, Name: "Generate audio waveforms", Description: "Generate persistent per-track waveform envelopes beside their original media. Existing artifacts are retained unless explicitly regenerated.", Category: "Media analysis", Executor: audioWaveformTaskExecutor{s}},
 		tasks.ExecutorRegistration{Key: library.TaskSubtitleTimelineGenerationKey, Name: "Generate subtitle timelines", Description: "Generate persistent display intervals for embedded PGS/DVD subtitles, external SUP files, and multilingual IDX/SUB pairs. Existing artifacts are retained unless explicitly regenerated.", Category: "Media analysis", Executor: subtitleTimelineTaskExecutor{s}},
-	)
+		s.onlineImagesTaskRegistration(),
+	}
+	if manager, ok := s.recovery.(interface {
+		BackupPolicyTaskRegistration(library.OwnedTransactions) tasks.ExecutorRegistration
+	}); ok {
+		registrations = append(registrations, manager.BackupPolicyTaskRegistration(s.library))
+	}
+	return tasks.NewExecutorRegistry(registrations...)
 }

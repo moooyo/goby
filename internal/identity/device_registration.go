@@ -102,6 +102,9 @@ func (s *Store) issueLogin(ctx context.Context, issue loginIssue) (Credentials, 
 	if err != nil {
 		return Credentials{}, fmt.Errorf("create authentication session: %w", err)
 	}
+	if err := recordUserLoginActivity(ctx, tx, user.ID, createdAt); err != nil {
+		return Credentials{}, err
+	}
 	if err := activity.Record(ctx, tx, activity.Event{
 		Action: activity.ActionSessionLogin, Source: identityActivitySource(issue.kind),
 		Actor:    activity.Actor{Kind: activity.ActorUser, ID: user.ID, CredentialID: issue.sessionID},
@@ -151,5 +154,5 @@ func touchOrdinaryDevice(ctx context.Context, tx pgx.Tx, principal Principal, pe
 	if err != nil {
 		return fmt.Errorf("record ordinary device activity: %w", err)
 	}
-	return nil
+	return recordUserSessionActivity(ctx, tx, principal)
 }

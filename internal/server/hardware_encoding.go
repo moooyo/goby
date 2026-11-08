@@ -57,13 +57,17 @@ type hardwareEncodingRuntime struct {
 	softwareIdentity string
 	softwareExpires  time.Time
 	softwareEncoders map[string]bool
+	capabilityProbe  func(context.Context, string) (media.Capabilities, error)
+	compiled         media.Capabilities
+	compiledIdentity string
+	compiledObserved time.Time
 }
 
 func newHardwareEncodingRuntime() *hardwareEncodingRuntime {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &hardwareEncodingRuntime{entries: make(map[hardwareEncodingKey]hardwareEncodingEntry), slot: make(chan struct{}, 1),
 		ctx: ctx, cancel: cancel, now: time.Now, identify: media.HardwareEncodingIdentity, probe: media.ProbeHardwareEncoding,
-		toolIdentity: media.EncodingToolIdentity, encoders: media.ProbeVideoEncoders}
+		toolIdentity: media.EncodingToolIdentity, encoders: media.ProbeVideoEncoders, capabilityProbe: media.ProbeCapabilities}
 }
 
 func (runtime *hardwareEncodingRuntime) softwareAvailable(ctx context.Context, ffmpeg, encoder string, allowProbe bool) bool {
@@ -281,7 +285,8 @@ func (s *Server) resolveHardwareEncoding(ctx context.Context, limits playback.Co
 	if err := ctx.Err(); err != nil {
 		return decision, err
 	}
-	if decision.Plan != nil && (limits.HardwareUnavailable && transcode.VideoEncodingSupported(decision.Plan.VideoCodec) || !s.plannedHardwareAvailable(*decision.Plan)) {
+	if decision.Plan != nil && (limits.HardwareUnavailable && transcode.VideoEncodingSupported(decision.Plan.VideoCodec) &&
+		(!limits.DisableHardwareEncoding || planUsesHardware(*decision.Plan)) || !s.plannedHardwareAvailable(*decision.Plan)) {
 		return decision, errHLSRequestUnsupported
 	}
 	if decision.Plan == nil || !transcode.VideoEncodingSupported(decision.Plan.VideoCodec) || decision.Plan.Hardware.Encode != "vaapi" {
@@ -349,6 +354,12 @@ func (s *Server) resolveHardwareEncoding(ctx context.Context, limits playback.Co
 		return decision, errHLSRequestUnsupported
 	}
 	plan = softwareEncodingPlan(plan)
+	if !transcode.ConfiguredVideoEncodingAllowed(limits.CodecConfigurations, plan) {
+		return decision, errHLSRequestUnsupported
+	}
+	if limits.AdmittedVideoEncoding == (playback.AdmittedVideoEncoding{}) && !transcode.ConfiguredVideoProfileAllowed(limits.CodecProfileLimits, plan) {
+		return decision, errHLSRequestUnsupported
+	}
 	if limits.Execution != (transcode.ExecutionOptions{}) {
 		captured, err := transcode.CaptureExecution(plan, limits.Execution)
 		if err != nil {

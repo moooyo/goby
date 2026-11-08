@@ -445,7 +445,7 @@ func (s *Store) admitScheduledOccurrence(tx library.OwnedTx, definition Definiti
 		return scheduledOccurrenceReceipt{}, fmt.Errorf("read overlapping scheduled run: %w", err)
 	}
 	disposition := "overlap"
-	if runID != "" && isMediaAnalysisExecution(definition.Key) && source == "system_event" {
+	if runID != "" && (isMediaAnalysisExecution(definition.Key) || definition.Key == library.TaskOnlineImagesKey) && source == "system_event" {
 		// Keep the event unconsumed until a fresh child snapshot can include
 		// late requests, including a library absent from the active run.
 		return scheduledOccurrenceReceipt{}, &analysisAdmissionDeferred{AnalysisDeferral: AnalysisDeferral{TaskID: definition.ID, TaskKey: definition.Key, TriggerID: trigger.ID, Source: source}}

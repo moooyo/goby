@@ -70,6 +70,9 @@ func (extractor AnalysisExtractor) extractPreviews(ctx context.Context, file *os
 	if emit == nil {
 		return summary, fmt.Errorf("%w: preview callback is required", ErrAnalysisUnproven)
 	}
+	if _, err := extractor.ImageExtractionThreads.decoderThreads(); err != nil {
+		return summary, err
+	}
 	quality, err := analysisPreviewQuality(options.Quality)
 	if err != nil {
 		return summary, err
@@ -145,7 +148,7 @@ func (extractor AnalysisExtractor) extractPreviews(ctx context.Context, file *os
 			return summary, err
 		}
 	} else {
-		proof, err = runAnalysisPreviewHoldPlan(processContext, tool, file, before, info, stream, plan, limits, budget)
+		proof, err = runAnalysisPreviewHoldPlan(processContext, tool, file, before, info, stream, plan, limits, budget, extractor.ImageExtractionThreads)
 		if err != nil {
 			return summary, err
 		}
@@ -159,7 +162,7 @@ func (extractor AnalysisExtractor) extractPreviews(ctx context.Context, file *os
 	if err != nil {
 		return summary, err
 	}
-	args, err := buildAnalysisPreviewHoldArgs(stream, plan, limits, &proof)
+	args, err := buildAnalysisPreviewHoldArgs(stream, plan, limits, &proof, extractor.ImageExtractionThreads)
 	if err != nil {
 		return summary, err
 	}

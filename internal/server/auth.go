@@ -73,6 +73,12 @@ func (s *Server) requireAdmin(next http.HandlerFunc) http.HandlerFunc {
 				return
 			}
 		}
+		if time.Since(principal.LastSeenAt) >= identity.ClientSessionTouchInterval {
+			if err := s.identity.TouchAdministratorActivity(r.Context(), principal); err != nil {
+				s.identityError(w, r, err)
+				return
+			}
+		}
 		next(w, r.WithContext(context.WithValue(r.Context(), principalKey, principal)))
 	}
 }

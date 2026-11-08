@@ -1,4 +1,4 @@
-// Package activity records committed administrative facts without storing
+// Package activity records committed server facts without storing
 // request values, credentials, filesystem paths, or arbitrary diagnostic text.
 package activity
 
@@ -31,6 +31,8 @@ const (
 	ActionUserPasswordReset         Action = "user.password_reset"
 	ActionSessionLogin              Action = "session.login"
 	ActionSessionRevoked            Action = "session.revoked"
+	ActionPlaybackStarted           Action = "playback.started"
+	ActionPlaybackStopped           Action = "playback.stopped"
 	ActionApplicationKeyCreated     Action = "application_key.created"
 	ActionApplicationKeyRevealed    Action = "application_key.revealed"
 	ActionApplicationKeyRevoked     Action = "application_key.revoked"
@@ -54,6 +56,7 @@ const (
 	ActionBackupRequested           Action = "backup.requested"
 	ActionBackupCancelRequested     Action = "backup.cancel_requested"
 	ActionBackupFinished            Action = "backup.finished"
+	ActionBackupPublished           Action = "backup.published"
 	ActionBackupImported            Action = "backup.imported"
 	ActionBackupDeleteRequested     Action = "backup.delete_requested"
 	ActionBackupDeleted             Action = "backup.deleted"
@@ -197,6 +200,8 @@ const (
 // names alone, never before/after values; backup and restore events have none.
 // Root binding updates additionally retain adjacent previous/current revisions
 // and a canonical observation digest, never a path or an observation handle.
+// Playback observations retain a digest of their canonical play identity and
+// transition, never a client reference, device identifier, or source pathname.
 // The writer does not authorize the actor.
 type Event struct {
 	Action                 Action
@@ -214,15 +219,20 @@ type Event struct {
 }
 
 // Entry projects only explicit stored facts. ActorName is optional current-user
-// enrichment, not an immutable historical name. Name and Overview are fixed
-// application templates, independent of user-supplied text.
+// enrichment, not an immutable historical name. ResourceName is optional
+// current-item enrichment for playback observations. ResourceMediaType is an
+// optional current-item media classification for compatibility projections.
+// Name and Overview are fixed application templates, independent of
+// user-supplied text.
 type Entry struct {
 	ID   int64
 	Date time.Time
 	Event
-	ActorName string
-	Name      string
-	Overview  string
+	ActorName         string
+	ResourceName      string
+	ResourceMediaType string
+	Name              string
+	Overview          string
 }
 
 type QueryOptions struct {

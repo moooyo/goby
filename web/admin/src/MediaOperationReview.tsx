@@ -1,5 +1,6 @@
+import { confirmAction } from './i18n';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Box, Button, Checkbox, CircularProgress, FormControlLabel, Paper, Skeleton, Stack, TablePagination, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Checkbox, CircularProgress, FormControlLabel, Paper, Skeleton, Stack, TablePagination, TextField, Typography } from './ui';
 import { isAbortError } from './api';
 import { ErrorNotice } from './components';
 import { fieldError } from './formFields';
@@ -58,7 +59,7 @@ export function MediaOperationReview({ operation, reloadKey, onOperation, onChan
     }).catch((cause: unknown) => { if (!controller.signal.aborted && !isAbortError(cause)) setError(cause); }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [operation.Id, page, limit, reloadRevision, reloadKey]);
-  function discardAllowed(): boolean { return !inFlight.current && (!dirty || window.confirm('Discard unsaved cue changes on this page?')); }
+  function discardAllowed(): boolean { return !inFlight.current && (!dirty || confirmAction('Discard unsaved cue changes on this page?')); }
   function reload() { if (discardAllowed()) setReloadRevision((value) => value + 1); }
   function change(ordinal: number, patch: Partial<CueDraft>) { setDrafts((current) => current.map((draft) => draft.ordinal === ordinal ? { ...draft, ...patch } : draft)); setError(null); setNotice(''); }
   async function save() {

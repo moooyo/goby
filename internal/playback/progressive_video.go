@@ -50,6 +50,8 @@ type ProgressiveVideoDecision struct {
 // a worker or granting source access. Valid unsupported requirements return nil
 // Plan and reasons; malformed input returns an error.
 func PlanProgressiveVideo(source Source, request ProgressiveVideoRequest, limits ConversionLimits) (ProgressiveVideoDecision, error) {
+	source.DisableSubtitleExtraction = source.DisableSubtitleExtraction || limits.DisableSubtitleExtraction
+	source.DisableAssToText = source.DisableAssToText || limits.DisableAssToText
 	var result ProgressiveVideoDecision
 	if err := validateProgressiveVideoRequest(request); err != nil {
 		return result, err
@@ -142,7 +144,7 @@ func PlanProgressiveVideo(source Source, request ProgressiveVideoRequest, limits
 			continue
 		}
 		if request.BurnSubtitles {
-			if reason := configureEncodedSubtitle(&plan, source, selection.subtitle); reason != nil {
+			if reason := configureEncodedSubtitle(&plan, source, selection.subtitle, limits); reason != nil {
 				result.Reasons = appendConversionReasons(result.Reasons, *reason)
 				continue
 			}
@@ -186,6 +188,9 @@ func PlanProgressiveVideo(source Source, request ProgressiveVideoRequest, limits
 			if audio.present {
 				candidate.AudioStreamIndex, candidate.AudioCodec = selection.audio.Index, audio.codec
 				candidate.AudioBitrate, candidate.AudioChannels, candidate.AudioSampleRate = audio.bitrate, audio.channels, audio.rate
+				if limits.Execution != (transcode.ExecutionOptions{}) {
+					candidate.SourceAudioChannels = selection.audio.Channels
+				}
 				streams = append(streams, audio.output)
 			}
 			if videoCopy && request.StartTimeTicks > 0 {
@@ -311,7 +316,7 @@ func progressiveVideoTrack(plan *transcode.Plan, output *media.Stream, sourceBit
 		}
 		plan.VideoCodec, plan.VideoCopyCodec = "copy", strings.ToLower(output.Codec)
 	} else {
-		format, supported := progressiveVideoEncoding(request)
+		format, supported := progressiveVideoEncoding(request, limits)
 		if !supported {
 			return fail("VideoProfile", "The requested codec, profile, bit depth, and range combination is not supported.")
 		}
@@ -319,14 +324,19 @@ func progressiveVideoTrack(plan *transcode.Plan, output *media.Stream, sourceBit
 		if reason != nil {
 			return 0, reason
 		}
+		plan.VideoCodec, plan.VideoProfile, plan.VideoBitDepth = format.codec, format.profile, format.bitDepth
+		plan.Hardware, plan.VideoFilters = limits.Hardware, filters
+		selectVideoProcessingHardware(plan)
+		if plan.VideoFilters.Backend == "" && plan.VideoFilters.ToneMap != "" {
+			if limit := transcode.SoftwareToneMapHeightLimit(limits.Execution.SoftwareToneMapOptions); limit > 0 {
+				maxHeight = min(maxHeight, limit)
+			}
+		}
 		width, height, ok := progressiveVideoDimensions(output.Width, output.Height, maxWidth, maxHeight, request.Width, request.Height)
 		if !ok {
 			return fail("Width", "The requested dimensions cannot be constructed within the video limits.")
 		}
-		plan.VideoCodec, plan.VideoProfile, plan.VideoBitDepth = format.codec, format.profile, format.bitDepth
-		plan.Width, plan.Height, plan.Hardware = width, height, limits.Hardware
-		plan.VideoFilters = filters
-		selectVideoProcessingHardware(plan)
+		plan.Width, plan.Height = width, height
 		output.Width, output.Height = width, height
 		videoEncodedOutput(output, *plan)
 		fps := float64(0)

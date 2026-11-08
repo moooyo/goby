@@ -143,7 +143,7 @@ func VideoMP4Tag(p Plan) string {
 }
 
 func videoCPUQuality(p Plan) CPUQuality {
-	if p.ExecutionVersion == ExecutionVersion {
+	if p.ExecutionVersion == LegacyExecutionVersion || p.ExecutionVersion == ExecutionVersion {
 		switch p.VideoCodec {
 		case "h264":
 			return p.Execution.H264
@@ -152,6 +152,16 @@ func videoCPUQuality(p Plan) CPUQuality {
 		}
 	}
 	return CPUQuality{Preset: "veryfast", RateControl: "bitrate"}
+}
+
+func videoExecutionThreads(p Plan, encode string, threads int) int {
+	if p.ExecutionVersion == ExecutionVersion && encode == "software" && (p.VideoCodec == "h264" || p.VideoCodec == "hevc") {
+		quality := videoCPUQuality(p)
+		if quality.ThreadCountSet {
+			return quality.ThreadCount
+		}
+	}
+	return threads
 }
 
 // appendVideoRateControl preserves each output's bitrate cap. Only the selected
@@ -176,7 +186,12 @@ func appendVideoEncoderOptions(args []string, p Plan, encode string, threads int
 		args = append(args, "-pix_fmt", videoSoftwarePixelFormat(p))
 		switch p.VideoCodec {
 		case "h264":
-			return append(args, "-preset", videoCPUQuality(p).Preset, "-sc_threshold", "0", "-flags", "+cgop")
+			quality := videoCPUQuality(p)
+			args = append(args, "-preset", quality.Preset, "-sc_threshold", "0", "-flags", "+cgop")
+			if quality.X264Options != "" {
+				args = append(args, "-x264-params", quality.X264Options)
+			}
+			return args
 		case "hevc":
 			// x265 creates its own pools unless explicitly constrained. Closed
 			// GOPs and forced IDRs make each advertised HLS cut independently
@@ -185,8 +200,12 @@ func appendVideoEncoderOptions(args []string, p Plan, encode string, threads int
 			if p.Container == "mp4" {
 				repeatHeaders = "0"
 			}
-			return append(args, "-preset", videoCPUQuality(p).Preset, "-forced-idr", "1", "-flags", "+cgop",
-				"-x265-params", "pools=none:frame-threads="+strconv.Itoa(min(threads, 16))+":wpp=0:open-gop=0:scenecut=0:repeat-headers="+repeatHeaders)
+			parameters := "open-gop=0:scenecut=0:repeat-headers=" + repeatHeaders
+			encoderThreads := videoExecutionThreads(p, encode, threads)
+			if encoderThreads > 0 {
+				parameters = "pools=none:frame-threads=" + strconv.Itoa(min(encoderThreads, 16)) + ":wpp=0:" + parameters
+			}
+			return append(args, "-preset", videoCPUQuality(p).Preset, "-forced-idr", "1", "-flags", "+cgop", "-x265-params", parameters)
 		case "av1":
 			// libaom honors arbitrary forced frame timestamps. libsvtav1 does
 			// not, so selecting it here would silently break HLS segment cuts.

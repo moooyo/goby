@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Box, Button, Checkbox, Divider, FormControlLabel, MenuItem, Stack, Switch, TextField, Typography } from '@mui/material';
+import { Box, Button, Checkbox, Divider, FormControlLabel, MenuItem, Stack, Switch, TextField, Typography } from './ui';
 import { fieldError } from './formFields';
 import { accessDays, editableUnratedCategories } from './userPolicy';
 import { DeletionFoldersField } from './DeletionFoldersField';

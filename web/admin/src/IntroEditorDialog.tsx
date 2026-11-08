@@ -1,7 +1,8 @@
+import { confirmAction, useTranslation } from './i18n';
 import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
-import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Paper, Skeleton, Stack, TextField, Typography } from '@mui/material';
-import SaveOutlined from '@mui/icons-material/SaveOutlined';
+import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Paper, Skeleton, Stack, TextField, Typography } from './ui';
+import { SaveOutlined } from './icons';
 import { ApiError, isAbortError } from './api';
 import { ErrorNotice } from './components';
 import { fieldError } from './formFields';
@@ -27,6 +28,7 @@ function intervalLabel(interval: IntroInterval | null): string {
 export function IntroEditorDialog({ itemId, itemName, onClose, onNavigationGuardChange }: {
   itemId: string; itemName: string; onClose: () => void; onNavigationGuardChange: UserNavigationGuardChange;
 }) {
+  const { countLabel } = useTranslation();
   const [saved, setSaved] = useState<ItemIntro>();
   const [draft, setDraft] = useState<IntroDraft>({ start: '', end: '', provenance: 'Manual' });
   const [loading, setLoading] = useState(true);
@@ -67,9 +69,9 @@ export function IntroEditorDialog({ itemId, itemName, onClose, onNavigationGuard
     return () => controller.abort();
   }, [itemId, revision]);
 
-  function close() { if (!inFlight.current && !importing && (!dirty || window.confirm('Discard the unsaved intro interval?'))) onClose(); }
+  function close() { if (!inFlight.current && !importing && (!dirty || confirmAction('Discard the unsaved intro interval?'))) onClose(); }
   function reload() {
-    if (inFlight.current || importing || (dirty && !window.confirm('Discard your draft and reload the current media source and intro?'))) return;
+    if (inFlight.current || importing || (dirty && !confirmAction('Discard your draft and reload the current media source and intro?'))) return;
     setConfirmReset(false); setRevision((value) => value + 1);
   }
   function change(field: 'start' | 'end', value: string) {
@@ -123,7 +125,7 @@ export function IntroEditorDialog({ itemId, itemName, onClose, onNavigationGuard
           {saved && <>
             <Paper component="section" aria-label="Current intro source" variant="outlined" sx={{ p: 2 }}><Stack spacing={1}>
               <Stack direction="row" sx={{ alignItems: 'center', gap: 1, flexWrap: 'wrap' }}><Typography component="h3" variant="h4">Current media source</Typography><Chip size="small" variant="outlined" label={saved.Effective?.Provenance ?? 'No intro'} /></Stack>
-              <Typography variant="body2">Duration: {ticksToSeconds(saved.DurationTicks)} seconds</Typography>
+              <Typography variant="body2">Duration: {ticksToSeconds(saved.DurationTicks)} {countLabel(Number(ticksToSeconds(saved.DurationTicks)), 'second', 'seconds')}</Typography>
               <Typography variant="body2">Active intro: {intervalLabel(saved.Effective)}</Typography>
               <Typography variant="body2" color="text.secondary">Explicit chapter markers: {intervalLabel(saved.Automatic)}</Typography>
               <Typography variant="caption" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>Media source: {saved.MediaSourceId}</Typography>

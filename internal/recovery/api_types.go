@@ -103,9 +103,11 @@ type RollbackView struct {
 // A RequestId is a caller-generated 32-character lowercase hexadecimal value.
 // It identifies an admission attempt, not a storage filename. Repeating the
 // same admitted attempt never replaces its passphrase or starts another job.
+// A nil IncludeImages preserves the full-image default of earlier callers.
 type CreateRequest struct {
-	RequestId  string
-	Passphrase []byte `json:"-"`
+	RequestId     string
+	Passphrase    []byte `json:"-"`
+	IncludeImages *bool
 }
 
 type DeleteRequest struct {

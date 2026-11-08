@@ -21,6 +21,7 @@ import (
 func (s *Server) registerAdminMetadataRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /admin/v1/libraries/{id}/items", s.requireAdmin(s.adminMetadataItems))
 	mux.HandleFunc("GET /admin/v1/items/{id}/metadata", s.requireAdmin(s.adminItemMetadata))
+	mux.HandleFunc("GET /admin/v1/items/{id}/media-info", s.requireAdmin(s.adminItemMediaInfo))
 	mux.HandleFunc("PUT /admin/v1/items/{id}/metadata", s.requireAdmin(s.updateAdminItemMetadata))
 }
 
@@ -46,12 +47,16 @@ func (s *Server) adminMetadataItems(w http.ResponseWriter, r *http.Request) {
 func nativeMetadataItems(result library.MetadataItemResult, query library.MetadataItemQuery) map[string]any {
 	items := make([]map[string]any, 0, len(result.Items))
 	for _, item := range result.Items {
-		items = append(items, map[string]any{
+		projection := map[string]any{
 			"Id": item.ItemID, "LibraryId": item.LibraryID, "ParentId": item.ParentID,
 			"ParentName": item.ParentName, "Name": item.Name, "Type": item.Type, "Path": item.Path,
 			"IsFolder": item.IsFolder, "IndexNumber": item.IndexNumber, "ParentIndexNumber": item.ParentIndexNumber,
 			"ProductionYear": item.ProductionYear, "HasOverrides": item.HasOverrides, "LockedFieldCount": item.LockedFieldCount,
-		})
+		}
+		if item.Media != nil {
+			projection["Media"] = item.Media
+		}
+		items = append(items, projection)
 	}
 	return map[string]any{
 		"Library": map[string]any{"Id": result.Library.ID, "Name": result.Library.Name, "CollectionType": result.Library.CollectionType},

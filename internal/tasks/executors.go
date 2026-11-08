@@ -27,6 +27,8 @@ func CompatibilityKey(key string) string {
 		return "GobyRefreshOnlineMetadata"
 	case SubtitleDownloadKey:
 		return "DownloadSubtitles"
+	case library.TaskOnlineImagesKey:
+		return "GobyDownloadMissingImages"
 	case CacheMaintainKey:
 		return "GobyMaintainProviderCache"
 	case library.TaskIntroAnalysisKey:

@@ -1,10 +1,11 @@
+import { adminLocale, useTranslation } from './i18n';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Button, Chip, CircularProgress, FormControl, FormControlLabel, FormLabel, Paper, Radio, RadioGroup, Skeleton, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
-import CancelOutlined from '@mui/icons-material/CancelOutlined';
-import ExpandMoreRounded from '@mui/icons-material/ExpandMoreRounded';
-import PlayArrowRounded from '@mui/icons-material/PlayArrowRounded';
-import RefreshRounded from '@mui/icons-material/RefreshRounded';
-import ScienceOutlined from '@mui/icons-material/ScienceOutlined';
+import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Button, Chip, CircularProgress, FormControl, FormControlLabel, FormLabel, Paper, Radio, RadioGroup, Skeleton, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from './ui';
+import { CancelOutlined } from './icons';
+import { ExpandMoreRounded } from './icons';
+import { PlayArrowRounded } from './icons';
+import { RefreshRounded } from './icons';
+import { ScienceOutlined } from './icons';
 import { adminApi, ApiError, isAbortError } from './api';
 import type { MediaDiagnosticMode, MediaDiagnosticReport, MediaDiagnosticRunDetail, MediaDiagnosticRunResponse, MediaDiagnosticRunState, MediaDiagnosticRunSummary, MediaDiagnosticStage, MediaDiagnosticStageMode, MediaDiagnosticsResponse } from './api';
 import { ErrorNotice } from './components';
@@ -55,7 +56,7 @@ function uncertainStart(error: unknown): boolean {
 
 function displayTime(value?: string | null): string {
   if (!value || value.startsWith('0001-01-01T00:00:00')) return 'Not recorded';
-  return new Date(value).toLocaleString();
+  return new Date(value).toLocaleString(adminLocale());
 }
 
 function StateChip({ state }: { state: string }) {
@@ -71,6 +72,7 @@ async function loadRun(reference: RunReference, signal: AbortSignal): Promise<Me
 }
 
 function StageResult({ stage }: { stage: MediaDiagnosticStage }) {
+  const { countLabel } = useTranslation();
   const evidence = stage.Command?.Evidence;
   const elapsed = (stage.Command?.Elapsed ?? 0) + (stage.Verification?.Elapsed ?? 0);
   const content = stage.Video ?? stage.Audio;
@@ -94,11 +96,11 @@ function StageResult({ stage }: { stage: MediaDiagnosticStage }) {
       <AccordionSummary expandIcon={<ExpandMoreRounded />} sx={{ px: 0 }}><Typography variant="body2">Content and output details</Typography></AccordionSummary>
       <AccordionDetails sx={{ px: 0, pt: 0 }}><Stack spacing={1}>
         {video && <>
-          <Typography variant="body2">{video.Frames} frames · {video.Width} × {video.Height} · {video.PixelFormat || 'Format not recorded'}</Typography>
+          <Typography variant="body2">{video.Frames} {countLabel(video.Frames, 'frame', 'frames')} · {video.Width} × {video.Height} · {video.PixelFormat || 'Format not recorded'}</Typography>
           <Typography variant="body2">Highest frame-plane error: {Math.max(...video.FrameMetrics.flatMap((frame) => frame.Planes.map((plane) => plane.MeanAbsoluteError))).toFixed(2)} mean absolute; {Math.max(...video.FrameMetrics.flatMap((frame) => frame.Planes.map((plane) => plane.RootMeanSquareError))).toFixed(2)} RMS.</Typography>
         </>}
         {audio && <>
-          <Typography variant="body2">{audio.SampleFrames.toLocaleString()} sample frames · {audio.SampleRate.toLocaleString()} Hz · {audio.Channels} channels</Typography>
+          <Typography variant="body2">{audio.SampleFrames.toLocaleString(adminLocale())} {countLabel(audio.SampleFrames, 'sample frame', 'sample frames')} · {audio.SampleRate.toLocaleString(adminLocale())} Hz · {audio.Channels} {countLabel(audio.Channels, 'channel', 'channels')}</Typography>
           <Typography variant="body2">Channel normalized RMS errors: {audio.NormalizedRMSE.map((value) => value.toFixed(4)).join(' / ')}.</Typography>
         </>}
         {!video && !audio && <Typography variant="body2">Comparable content measurements were not produced.</Typography>}

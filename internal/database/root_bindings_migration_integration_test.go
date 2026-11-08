@@ -128,9 +128,14 @@ func rootBindingActivityChecks(t *testing.T, ctx context.Context, pool *pgxpool.
 			AND NOT (columns = ARRAY['action']::text[] OR columns = ARRAY['resource_kind']::text[]
 				OR columns = ARRAY['action','resource_kind']::text[])`
 		if len(laterManagement) != 0 && laterManagement[0] {
-			// Schema32 deliberately extends this one allowlist. The schema28
-			// recovery path still verifies the unchanged historical constraint.
-			filter += ` AND columns <> ARRAY['action','changed_fields']::text[]`
+			// Later management migrations deliberately extend these predicates.
+			// The terminal predicate is checked separately against its complete
+			// historical expression plus the exact schema71 publication case.
+			// The schema28 recovery path keeps the original equality check.
+			filter += ` AND columns <> ARRAY['action','changed_fields']::text[]
+				AND columns <> ARRAY['action','state']::text[]
+				AND name <> 'activity_entries_backup_publication_fact_check'
+				AND name <> 'activity_entries_playback_fact_check'`
 		}
 	}
 	var snapshot string
@@ -144,6 +149,67 @@ func rootBindingActivityChecks(t *testing.T, ctx context.Context, pool *pgxpool.
 		t.Fatalf("read root binding activity CHECK inventory: %v", err)
 	}
 	return snapshot
+}
+
+type rootBindingTerminalConstraint struct {
+	name, definition                           string
+	validated, deferrable, deferred, noInherit bool
+}
+
+func rootBindingTerminalCheck(t *testing.T, ctx context.Context, pool *pgxpool.Pool) rootBindingTerminalConstraint {
+	t.Helper()
+	rows, err := pool.Query(ctx, `SELECT c.conname,pg_get_constraintdef(c.oid),c.convalidated,c.condeferrable,c.condeferred,c.connoinherit
+		FROM pg_constraint c WHERE c.conrelid='activity_entries'::regclass AND c.contype='c'
+		AND ARRAY(SELECT a.attname::text FROM pg_attribute a WHERE a.attrelid=c.conrelid AND a.attnum=ANY(c.conkey)
+			ORDER BY a.attname::text COLLATE "C")=ARRAY['action','state']::text[]`)
+	if err != nil {
+		t.Fatal("inspect the original terminal predicate", err)
+	}
+	defer rows.Close()
+	var result rootBindingTerminalConstraint
+	count := 0
+	for rows.Next() {
+		count++
+		if err := rows.Scan(&result.name, &result.definition, &result.validated, &result.deferrable, &result.deferred, &result.noInherit); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := rows.Err(); err != nil || count != 1 {
+		t.Fatalf("terminal CHECK must remain uniquely identifiable by action/state: count=%d error=%v", count, err)
+	}
+	return result
+}
+
+func rootBindingAssertTerminalCheck(t *testing.T, ctx context.Context, pool *pgxpool.Pool, before rootBindingTerminalConstraint, current bool) {
+	t.Helper()
+	after := rootBindingTerminalCheck(t, ctx, pool)
+	expected := before
+	if current {
+		if !strings.HasPrefix(before.definition, "CHECK ") {
+			t.Fatal("unexpected original terminal predicate")
+		}
+		// Ask PostgreSQL to canonicalize the expected expression in an isolated
+		// temporary relation. Compare the entire original predicate plus one
+		// typed addition, never a substring or a weaker subset of accepted rows.
+		tx, err := pool.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer tx.Rollback(ctx)
+		if _, err = tx.Exec(ctx, `CREATE TEMP TABLE root_binding_terminal_expected (LIKE activity_entries) ON COMMIT DROP`); err != nil {
+			t.Fatal(err)
+		}
+		predicate := strings.TrimPrefix(before.definition, "CHECK ")
+		if _, err = tx.Exec(ctx, `ALTER TABLE pg_temp.root_binding_terminal_expected ADD CONSTRAINT expected_terminal CHECK ((`+predicate+`) OR (action='backup.published' AND state='completed'))`); err != nil {
+			t.Fatal("canonicalize the exact intended terminal extension", err)
+		}
+		if err = tx.QueryRow(ctx, `SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid='pg_temp.root_binding_terminal_expected'::regclass AND conname='expected_terminal'`).Scan(&expected.definition); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if after != expected {
+		t.Fatal("migration changed the terminal CHECK name, metadata, or predicate beyond its exact publication extension")
+	}
 }
 
 func TestStorageRootBindingMigrationPreservesSchema27RowsAndRenamedChecks(t *testing.T) {
@@ -161,6 +227,7 @@ func TestStorageRootBindingMigrationPreservesSchema27RowsAndRenamedChecks(t *tes
 				t.Fatalf("rename the original activity CHECKs: %v", err)
 			}
 			preserved := rootBindingActivityChecks(t, ctx, pool, true, !recovery)
+			terminal := rootBindingTerminalCheck(t, ctx, pool)
 			for range 2 {
 				if err := migrateRootBindings28(ctx, pool, recovery); err != nil {
 					t.Fatalf("migrate published roots to schema28: %v", err)
@@ -168,8 +235,9 @@ func TestStorageRootBindingMigrationPreservesSchema27RowsAndRenamedChecks(t *tes
 			}
 			rootBindingAssertOldTables(t, ctx, pool, tables)
 			if rootBindingActivityChecks(t, ctx, pool, true, !recovery) != preserved {
-				t.Fatal("migration replaced an unrelated activity CHECK or the original terminal CHECK")
+				t.Fatal("migration replaced an unrelated activity CHECK")
 			}
+			rootBindingAssertTerminalCheck(t, ctx, pool, terminal, !recovery)
 			wantVersion := currentMigrationVersion(t)
 			wantTables := currentMigrationTableCount
 			if recovery {

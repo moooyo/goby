@@ -9,13 +9,18 @@ import (
 
 func TestExecutionOptionsValidateClosedControls(t *testing.T) {
 	for name, mutate := range map[string]func(*ExecutionOptions){
-		"zero threads":       func(v *ExecutionOptions) { v.Threads = 0 },
-		"excess threads":     func(v *ExecutionOptions) { v.Threads = 65 },
-		"preset fragment":    func(v *ExecutionOptions) { v.H264.Preset = "fast -f null" },
-		"unselected preset":  func(v *ExecutionOptions) { v.HEVC.Preset = "faster" },
-		"unbounded CRF mode": func(v *ExecutionOptions) { v.H264.RateControl = "crf" },
-		"low CRF":            func(v *ExecutionOptions) { v.H264.CRF = 17 },
-		"high CRF":           func(v *ExecutionOptions) { v.HEVC.CRF = 36 },
+		"zero threads":                  func(v *ExecutionOptions) { v.Threads = 0 },
+		"excess threads":                func(v *ExecutionOptions) { v.Threads = 65 },
+		"preset fragment":               func(v *ExecutionOptions) { v.H264.Preset = "fast -f null" },
+		"unselected preset":             func(v *ExecutionOptions) { v.HEVC.Preset = "unknown" },
+		"unbounded CRF mode":            func(v *ExecutionOptions) { v.H264.RateControl = "crf" },
+		"low CRF":                       func(v *ExecutionOptions) { v.H264.CRF = 0 },
+		"high CRF":                      func(v *ExecutionOptions) { v.HEVC.CRF = 52 },
+		"negative codec threads":        func(v *ExecutionOptions) { v.H264.ThreadCount, v.H264.ThreadCountSet = -1, true },
+		"excess codec threads":          func(v *ExecutionOptions) { v.HEVC.ThreadCount, v.HEVC.ThreadCountSet = 17, true },
+		"missing codec thread presence": func(v *ExecutionOptions) { v.H264.ThreadCount = 1 },
+		"x264 file access":              func(v *ExecutionOptions) { v.H264.X264Options = "stats=/tmp/secret" },
+		"x264 on hevc":                  func(v *ExecutionOptions) { v.HEVC.X264Options = "subme=0" },
 	} {
 		t.Run(name, func(t *testing.T) {
 			value := DefaultExecutionOptions(2)
@@ -29,7 +34,7 @@ func TestExecutionOptionsValidateClosedControls(t *testing.T) {
 		for _, preset := range []string{"veryfast", "fast", "medium", "slow"} {
 			for _, crf := range []int{18, 35} {
 				value := DefaultExecutionOptions(threads)
-				value.H264, value.HEVC = CPUQuality{preset, "capped_crf", crf}, CPUQuality{preset, "bitrate", crf}
+				value.H264, value.HEVC = CPUQuality{Preset: preset, RateControl: "capped_crf", CRF: crf}, CPUQuality{Preset: preset, RateControl: "bitrate", CRF: crf}
 				if err := ValidateExecutionOptions(value); err != nil {
 					t.Fatalf("closed boundary rejected: %v", err)
 				}
@@ -45,10 +50,14 @@ func TestExecutionCaptureKeepsOnlyOutputAffectingIdentity(t *testing.T) {
 		t.Fatal(err)
 	}
 	for name, change := range map[string]func(*ExecutionOptions){
-		"other codec":                 func(v *ExecutionOptions) { v.HEVC = CPUQuality{"slow", "capped_crf", 18} },
-		"dormant CRF":                 func(v *ExecutionOptions) { v.H264.CRF = 35 },
-		"inactive software tone gate": func(v *ExecutionOptions) { v.SoftwareToneMapping = false },
-		"inactive Vulkan tone gate":   func(v *ExecutionOptions) { v.VulkanToneMapping = false },
+		"other codec":                   func(v *ExecutionOptions) { v.HEVC = CPUQuality{Preset: "slow", RateControl: "capped_crf", CRF: 18} },
+		"dormant CRF":                   func(v *ExecutionOptions) { v.H264.CRF = 35 },
+		"inactive software tone gate":   func(v *ExecutionOptions) { v.SoftwareToneMapping = false },
+		"inactive Vulkan tone gate":     func(v *ExecutionOptions) { v.VulkanToneMapping = false },
+		"inactive tone algorithm":       func(v *ExecutionOptions) { v.SoftwareToneMapOptions.SoftwareToneMapAlgorithm = "Reinhard" },
+		"equivalent codec thread count": func(v *ExecutionOptions) { v.H264.ThreadCount, v.H264.ThreadCountSet = 2, true },
+		"other codec thread count":      func(v *ExecutionOptions) { v.HEVC.ThreadCount, v.HEVC.ThreadCountSet = 1, true },
+		"inactive boost":                func(v *ExecutionOptions) { v.DownMixAudioBoost = 2 },
 	} {
 		t.Run(name, func(t *testing.T) {
 			options := DefaultExecutionOptions(2)
@@ -60,9 +69,12 @@ func TestExecutionCaptureKeepsOnlyOutputAffectingIdentity(t *testing.T) {
 		})
 	}
 	for name, change := range map[string]func(*ExecutionOptions){
-		"threads":    func(v *ExecutionOptions) { v.Threads = 3 },
-		"preset":     func(v *ExecutionOptions) { v.H264.Preset = "fast" },
-		"active CRF": func(v *ExecutionOptions) { v.H264.RateControl = "capped_crf" },
+		"threads":                 func(v *ExecutionOptions) { v.Threads = 3 },
+		"preset":                  func(v *ExecutionOptions) { v.H264.Preset = "fast" },
+		"active CRF":              func(v *ExecutionOptions) { v.H264.RateControl = "capped_crf" },
+		"codec threads":           func(v *ExecutionOptions) { v.H264.ThreadCount, v.H264.ThreadCountSet = 1, true },
+		"automatic codec threads": func(v *ExecutionOptions) { v.H264.ThreadCountSet = true },
+		"x264 options":            func(v *ExecutionOptions) { v.H264.X264Options = "subme=0" },
 	} {
 		t.Run(name, func(t *testing.T) {
 			options := DefaultExecutionOptions(2)
@@ -107,7 +119,7 @@ func TestExecutionLegacyRecordsDoNotAcquireInventedDefaults(t *testing.T) {
 	if err := json.Unmarshal(encoded, &decoded); err != nil || decoded != legacy {
 		t.Fatal("legacy plan did not round trip unchanged")
 	}
-	for _, version := range []int{-1, 2} {
+	for _, version := range []int{-1, 3} {
 		invalid := legacy
 		invalid.ExecutionVersion = version
 		if err := ValidatePlan(invalid); !errors.Is(err, ErrInvalidPlan) {

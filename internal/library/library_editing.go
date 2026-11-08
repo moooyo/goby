@@ -337,6 +337,11 @@ func (s *Store) updateLibraryAttempt(ctx context.Context, administrator *catalog
 			return LibraryEditing{}, err
 		}
 		previousIntro := EffectiveLibraryOptions(previous.Library).EnableIntroDetection
+		if !EffectiveLibraryOptions(previous.Library).EnableOnlineImages && options.EnableOnlineImages {
+			if err := systemevents.Record((catalogActivityTx{tx: tx}).Exec, systemevents.OnlineImagesRequested); err != nil {
+				return LibraryEditing{}, err
+			}
+		}
 		if previousIntro != options.EnableIntroDetection {
 			// Retain detection evidence, but every policy transition requires new
 			// publication, including first opt-in after a legacy global profile.

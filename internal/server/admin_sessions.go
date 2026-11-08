@@ -17,6 +17,7 @@ import (
 func (s *Server) registerAdminSessionRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /admin/v1/sessions", s.requireAdmin(s.adminSessions))
 	mux.HandleFunc("POST /admin/v1/sessions/{id}/revoke", s.requireAdmin(s.revokeAdminSession))
+	s.registerAdminPlaybackRoutes(mux)
 }
 
 func (s *Server) adminSessions(w http.ResponseWriter, r *http.Request) {

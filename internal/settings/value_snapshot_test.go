@@ -11,13 +11,20 @@ import (
 func valueSnapshotTestPublication(revision int64) Snapshot {
 	name := strconv.FormatInt(revision, 10)
 	threads := int(revision)
+	policy := DefaultTranscodingPolicy()
+	policy.DownMixAudioBoost = float64(revision%10 + 1)
+	codecs := transcode.DefaultCodecConfigurations()
+	codecs[0].Priority, codecs[1].Priority = int(revision), -int(revision)
+	execution := transcode.DefaultExecutionOptions(threads)
+	execution.DownMixAudioBoost = policy.DownMixAudioBoost
 	return Snapshot{Revision: revision, Effective: Values{ServerName: name, MaxBitrate: revision},
 		Overrides: Overrides{ServerName: &name}, Encoding: Encoding{TranscodingMaxWidth: int(revision)},
 		Management: Management{Subtitles: SubtitleOptions{DownloadLanguages: []string{"en", "fr"}}},
 		Sorting:    Sorting{SortRemoveWords: []string{"the", "a"}},
 		Runtime: RuntimeSnapshot{DesiredNetwork: NetworkValues{BindHost: name, HttpPort: int(revision)},
 			Hardware:  HardwareSelection{Decode: "software", Encode: "software", DeviceID: name},
-			Execution: transcode.DefaultExecutionOptions(threads), Overrides: RuntimeOverrides{Threads: &threads}}}
+			Execution: execution, Overrides: RuntimeOverrides{Threads: &threads},
+			Transcoding: policy, CodecConfigurations: codecs, DesiredTranscodingTempPath: "/cache/" + name}}
 }
 
 func TestManagedSettingsValueSnapshotKeepsOneRevisionDuringPublication(t *testing.T) {
@@ -34,7 +41,10 @@ func TestManagedSettingsValueSnapshotKeepsOneRevisionDuringPublication(t *testin
 				name := strconv.FormatInt(value.Revision, 10)
 				if value.Effective.ServerName != name || value.Effective.MaxBitrate != value.Revision ||
 					value.Encoding.TranscodingMaxWidth != int(value.Revision) || value.DesiredNetwork.BindHost != name ||
-					value.DesiredNetwork.HttpPort != int(value.Revision) || value.Hardware.DeviceID != name || value.Execution.Threads != int(value.Revision) {
+					value.DesiredNetwork.HttpPort != int(value.Revision) || value.Hardware.DeviceID != name || value.Execution.Threads != int(value.Revision) ||
+					value.Transcoding.DownMixAudioBoost != float64(value.Revision%10+1) || value.Execution.DownMixAudioBoost != value.Transcoding.DownMixAudioBoost ||
+					value.CodecConfigurations[0].Priority != int(value.Revision) || value.CodecConfigurations[1].Priority != -int(value.Revision) ||
+					value.DesiredTranscodingTempPath != "/cache/"+name {
 					t.Error("value projection mixed independently published revisions")
 					return
 				}

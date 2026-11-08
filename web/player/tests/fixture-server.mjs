@@ -156,6 +156,7 @@ async function handle(request, response) {
   if (!auth.includes(TOKEN)) return json(response, { ResponseStatus: { ErrorCode: 'Unauthorized', Message: 'Authentication is required.' } }, 401);
   if (manualDemo && await manualDemo.handleManualDemo({ request, response, route, url, state, body, directory, json, sendFile, sendPicsum })) return;
   if (route === '/Sessions/Logout') return json(response, {});
+  if (route === '/Sessions/Capabilities/Full' && request.method === 'POST') { response.writeHead(204); response.end(); return; }
   if (route === `/Users/${USER_ID}` || route === '/Users/Me') return json(response, state.user);
   if (route === `/Users/${USER_ID}/Views`) return json(response, { Items: LIBRARIES, TotalRecordCount: LIBRARIES.length });
   if (route === `/Users/${USER_ID}/ViewingStatistics`) return json(response, { EstimatedContentHours: 42, EstimatedContentTicks: '1512000000000', IsEstimate: true });
@@ -277,6 +278,10 @@ const server = createServer((request, response) => handle(request, response).cat
   if (!response.headersSent) json(response, { error: error.message }, 500);
   else response.end();
 }));
+// Control tests intercept WebSockets in the browser. Other fixture journeys
+// receive an explicit unavailable transport, never an invented success or a
+// request URL containing an authentication token in the fixture journal.
+server.on('upgrade', (_request, socket) => { socket.end('HTTP/1.1 503 Service Unavailable\r\nConnection: close\r\nContent-Length: 0\r\n\r\n'); });
 server.listen(port, '127.0.0.1', () => console.log(`Isolated player acceptance fixture: http://127.0.0.1:${port}`));
 process.on('SIGTERM', () => server.close());
 process.on('SIGINT', () => server.close());

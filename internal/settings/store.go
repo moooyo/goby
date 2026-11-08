@@ -19,15 +19,16 @@ import (
 // Store is one server's settings publisher. Its defaults never change during
 // that server lifetime. Direct SQL edits are not a supported hot-reload path.
 type Store struct {
-	owner                 library.OwnedTransactions
-	defaults              Values
-	hostName              string
-	runtimeDefaults       RuntimeValues
-	authorizedDevices     map[string]bool
-	availableDevices      map[string]bool
-	legacyHardwareDefault bool
-	publicationMu         sync.Mutex
-	current               atomic.Pointer[Snapshot]
+	owner                         library.OwnedTransactions
+	defaults                      Values
+	hostName                      string
+	runtimeDefaults               RuntimeValues
+	authorizedDevices             map[string]bool
+	availableDevices              map[string]bool
+	legacyHardwareDefault         bool
+	transcodingTempPathExclusions []string
+	publicationMu                 sync.Mutex
+	current                       atomic.Pointer[Snapshot]
 }
 
 // New loads the migration-created singleton after catalog ownership has been
@@ -48,6 +49,9 @@ func New(ctx context.Context, pool *pgxpool.Pool, owner library.OwnedTransaction
 	}
 	store := &Store{owner: owner, defaults: defaults, hostName: hostName, runtimeDefaults: runtimeDefaults,
 		authorizedDevices: authorized, availableDevices: available, legacyHardwareDefault: legacy}
+	if len(options) == 1 {
+		store.transcodingTempPathExclusions = append([]string(nil), options[0].TranscodingTempPathExclusions...)
+	}
 	var initial Snapshot
 	err = owner.WithOwnedTx(ctx, func(tx library.OwnedTx) error {
 		record, err := readRecord(tx.QueryRow("SELECT " + recordColumns + " FROM managed_settings WHERE id = 1"))
@@ -75,7 +79,11 @@ func (s *Store) Snapshot() Snapshot {
 func (s *Store) ValueSnapshot() ValueSnapshot {
 	snapshot := s.current.Load()
 	return ValueSnapshot{Revision: snapshot.Revision, Effective: snapshot.Effective, Encoding: snapshot.Encoding,
-		DesiredNetwork: snapshot.Runtime.DesiredNetwork, Hardware: snapshot.Runtime.Hardware, Execution: snapshot.Runtime.Execution}
+		DesiredNetwork: snapshot.Runtime.DesiredNetwork, Hardware: snapshot.Runtime.Hardware, Execution: snapshot.Runtime.Execution,
+		Transcoding: snapshot.Runtime.Transcoding, DesiredTranscodingTempPath: snapshot.Runtime.DesiredTranscodingTempPath,
+		CodecConfigurations: snapshot.Runtime.CodecConfigurations, CodecProfileLimits: snapshot.Runtime.CodecProfileLimits,
+		SubtitleOptions: snapshot.Runtime.SubtitleOptions, EnableThrottling: snapshot.Runtime.EnableThrottling,
+		ExtractionThreadCount: snapshot.Runtime.ExtractionThreadCount}
 }
 
 // TaskMaxConcurrent observes the current admission limit without copying
@@ -214,10 +222,18 @@ func (s *Store) Reset(ctx context.Context, actor Actor, request ResetRequest) (S
 }
 
 func (s *Store) change(ctx context.Context, actor Actor, revision *int64, replacement func(library.OwnedTx, settingsRecord) (settingsRecord, error)) (Snapshot, error) {
+	return s.changeWithPolicy(ctx, actor, revision, replacement, nil)
+}
+
+func (s *Store) changeWithPolicy(ctx context.Context, actor Actor, revision *int64, replacement func(library.OwnedTx, settingsRecord) (settingsRecord, error), policy *configurationPolicyChange) (Snapshot, error) {
 	// The lock extends beyond COMMIT through publication. An older committed
 	// writer cannot resume later and overwrite a newer runtime snapshot.
 	s.publicationMu.Lock()
 	defer s.publicationMu.Unlock()
+	if policy != nil {
+		policy.store.writeMu.Lock()
+		defer policy.store.writeMu.Unlock()
+	}
 	var committed Snapshot
 	err := s.owner.WithOwnedTx(ctx, func(tx library.OwnedTx) error {
 		if err := checkActor(tx, actor, true); err != nil {
@@ -239,6 +255,11 @@ func (s *Store) change(ctx context.Context, actor Actor, revision *int64, replac
 			!equalSorting(previous.Sorting, current.Sorting) ||
 			!equalRuntimeOverrides(previous.Runtime, current.Runtime.Overrides) {
 			return fmt.Errorf("%w: persisted state differs from the published application state", ErrStoredSettings)
+		}
+		if policy != nil {
+			if err := policy.lockCurrent(tx, actor); err != nil {
+				return err
+			}
 		}
 		next := previous
 		next.Overrides = cloneOverrides(previous.Overrides)
@@ -302,6 +323,11 @@ func (s *Store) change(ctx context.Context, actor Actor, revision *int64, replac
 				return err
 			}
 		}
+		if policy != nil {
+			if err := policy.apply(tx, actor); err != nil {
+				return err
+			}
+		}
 		// This must remain the final database operation before owner COMMIT.
 		return checkActor(tx, actor, false)
 	})
@@ -310,7 +336,13 @@ func (s *Store) change(ctx context.Context, actor Actor, revision *int64, replac
 	}
 	// A cancelled HTTP caller cannot cancel this synchronous post-commit step.
 	// A process crash here is recovered by New loading committed overrides.
-	return s.publish(committed), nil
+	result := s.publish(committed)
+	if policy != nil {
+		// Publish managed values before policy revocation cancels any admitted
+		// operation; observers then see both committed configuration values.
+		policy.store.publish(policy.committed)
+	}
+	return result, nil
 }
 
 // publish is also monotonic independently of the writer mutex. It returns the
@@ -396,6 +428,9 @@ func (s *Store) validateRecordValues(record settingsRecord) error {
 		return err
 	}
 	if err := validateRuntimeOverrides(record.Runtime); err != nil {
+		return err
+	}
+	if err := s.validateTranscodingTempPath(record.Runtime); err != nil {
 		return err
 	}
 	return validateValues(effectiveValues(s.defaults, record.Overrides, record.ServerNameMode, s.hostName))

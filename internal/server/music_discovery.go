@@ -142,7 +142,7 @@ func (s *Server) embyMusicSimilar(artist bool) http.HandlerFunc {
 				s.libraryError(w, r, err)
 				return
 			}
-			p := readItemPresentation(r)
+			p := s.readItemPresentation(r)
 			items := make([]map[string]any, 0, len(result.Items))
 			for _, entity := range result.Items {
 				item := s.musicEntityDTO(entity, "artists", p.fields, false)
@@ -162,10 +162,10 @@ func (s *Server) embyMusicSimilar(artist bool) http.HandlerFunc {
 }
 
 func (s *Server) sendMusicDiscoveryItems(w http.ResponseWriter, r *http.Request, userID string, result library.ItemResult) {
-	p := readItemPresentation(r)
+	p := s.readItemPresentation(r)
 	items := make([]map[string]any, 0, len(result.Items))
 	for _, entry := range result.Items {
-		item := s.itemDTOWithToken(entry, p.fields, false, p.deliveryToken)
+		item := s.itemDTOWithToken(entry, p.fields, false, p.deliveryToken, p.transcoding)
 		p.applySwitches(item)
 		items = append(items, item)
 	}

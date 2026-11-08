@@ -59,10 +59,13 @@ type Plan struct {
 	VideoBitrate           int64   `json:"VideoBitrate,omitempty"`
 	AudioBitrate           int64   `json:"AudioBitrate,omitempty"`
 	AudioChannels          int     `json:"AudioChannels,omitempty"`
-	AudioSampleRate        int     `json:"AudioSampleRate,omitempty"`
-	AudioBitDepth          int     `json:"AudioBitDepth,omitempty"`
-	AudioSourceSampleRate  int     `json:"AudioSourceSampleRate,omitempty"`
-	AudioSourceSampleCount int64   `json:"AudioSourceSampleCount,omitempty"`
+	// This source fact is retained only by a versioned surround-to-stereo
+	// encoding that applies the captured downmix gain. Historical plans omit it.
+	SourceAudioChannels    int   `json:"SourceAudioChannels,omitempty"`
+	AudioSampleRate        int   `json:"AudioSampleRate,omitempty"`
+	AudioBitDepth          int   `json:"AudioBitDepth,omitempty"`
+	AudioSourceSampleRate  int   `json:"AudioSourceSampleRate,omitempty"`
+	AudioSourceSampleCount int64 `json:"AudioSourceSampleCount,omitempty"`
 	// Sample seeking decodes from the beginning and trims in the input sample
 	// domain. It is used when the source demuxer cannot establish a precise seek.
 	AudioSampleSeek bool `json:"AudioSampleSeek,omitempty"`

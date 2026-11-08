@@ -13,6 +13,8 @@ import (
 	"github.com/moooyo/goby/internal/database"
 )
 
+const compatibilityMigrationAdministratorTables = "admin_notification_destinations admin_notification_deliveries provider_configuration backup_policy backup_policy_runs backup_publication_receipts server_policy_settings series_display_orders series_display_order_entries user_activity"
+
 // Only columns added after schema 20 are excluded. Every schema-20 field,
 // including the raw name, revision, timestamps, and migration history, remains
 // part of the comparison. Snapshots never leave PostgreSQL as parsed JSON.
@@ -121,10 +123,10 @@ func compatibilityMigrationPhase3Defaults(t *testing.T, ctx context.Context, poo
 		AND NOT EXISTS(SELECT 1 FROM artwork_images)
 		AND NOT EXISTS(SELECT 1 FROM entity_user_data)
 		AND NOT EXISTS(SELECT 1 FROM task_triggers WHERE system_event IS NOT NULL OR last_event_sequence IS DISTINCT FROM 0)
-		AND (SELECT count(*) FROM task_system_events)=9
+		AND (SELECT count(*) FROM task_system_events)=10
 		AND NOT EXISTS(SELECT 1 FROM task_system_events WHERE name NOT IN
 			('ServerStarted','LibraryChanged','ConfigurationChanged','IntroAnalysisRequested','PreviewGenerationRequested',
-			 'BackgroundPreviewGenerationRequested','AudioWaveformGenerationRequested','CreditsAnalysisRequested','SubtitleTimelineGenerationRequested')
+			 'BackgroundPreviewGenerationRequested','AudioWaveformGenerationRequested','CreditsAnalysisRequested','SubtitleTimelineGenerationRequested','OnlineImagesRequested')
 			OR sequence IS DISTINCT FROM 0 OR lifecycle_key IS DISTINCT FROM '' OR occurred_at IS NULL)
 		AND NOT EXISTS(SELECT 1 FROM task_system_event_receipts)
 		AND NOT EXISTS(SELECT 1 FROM managed_settings WHERE runtime_overrides IS DISTINCT FROM
@@ -147,6 +149,78 @@ func compatibilityMigrationPhase3Defaults(t *testing.T, ctx context.Context, poo
 		AND NOT EXISTS(SELECT 1 FROM notification_registrations) AND NOT EXISTS(SELECT 1 FROM notification_source_events)
 		AND NOT EXISTS(SELECT 1 FROM notification_deliveries)`).Scan(&valid); err != nil || !valid {
 		t.Fatalf("compatibility migration inferred phase 3 preferences, artwork, or system-event history: %v", err)
+	}
+}
+
+// Schemas 69-76 add explicit administrator defaults and a session-backed user
+// summary. They must not configure destinations, infer playback activity,
+// opt historical libraries into features, or fabricate an account login.
+func compatibilityMigrationAdministratorDefaults(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
+	t.Helper()
+	for _, check := range []struct{ name, statement string }{
+		{"notification destinations and delivery history", `SELECT
+			NOT EXISTS(SELECT 1 FROM admin_notification_destinations)
+			AND NOT EXISTS(SELECT 1 FROM admin_notification_deliveries)`},
+		{"encrypted provider configuration", `SELECT (SELECT count(*) FROM provider_configuration)=1
+			AND EXISTS(SELECT 1 FROM provider_configuration WHERE id=1 AND revision=1
+				AND configuration_ciphertext IS NULL AND updated_at IS NOT NULL)`},
+		{"backup policy and publication history", `SELECT (SELECT count(*) FROM backup_policy)=1
+			AND EXISTS(SELECT 1 FROM backup_policy WHERE id=1 AND keep_count=7 AND include_images
+				AND configured_kind='daily' AND configured_day_of_week IS NULL
+				AND configured_time_of_day_ticks=108000000000 AND configured_timezone='UTC'
+				AND secret_generation=1 AND passphrase_ciphertext IS NULL AND updated_at IS NOT NULL)
+			AND NOT EXISTS(SELECT 1 FROM backup_policy_runs)
+			AND NOT EXISTS(SELECT 1 FROM backup_publication_receipts)`},
+		{"global access policy", `SELECT (SELECT count(*) FROM server_policy_settings)=1
+			AND EXISTS(SELECT 1 FROM server_policy_settings WHERE id=1 AND revision=1 AND enable_remote_access
+				AND local_network_subnets=ARRAY['10.0.0.0/8','172.16.0.0/12','192.168.0.0/16','169.254.0.0/16','fc00::/7','fe80::/10']::text[]
+				AND ui_culture='zh-CN' AND updated_at IS NOT NULL)`},
+		{"unconfigured series display order", `SELECT NOT EXISTS(SELECT 1 FROM series_display_orders)
+			AND NOT EXISTS(SELECT 1 FROM series_display_order_entries)`},
+		{"retained-session user activity", `WITH expected(user_id,last_login_at,last_activity_at) AS (VALUES
+			('settings-migration-user','2024-01-01T00:00:00Z'::timestamptz,'2025-01-01T00:00:00Z'::timestamptz),
+			('settings-migration-disabled-user','2020-01-01T00:00:00Z'::timestamptz,'2021-01-01T00:00:00Z'::timestamptz),
+			('settings-migration-no-login-user',NULL::timestamptz,NULL::timestamptz))
+			SELECT NOT EXISTS((SELECT user_id,last_login_at,last_activity_at FROM user_activity)
+				EXCEPT ALL (SELECT * FROM expected))
+			AND NOT EXISTS((SELECT * FROM expected)
+				EXCEPT ALL (SELECT user_id,last_login_at,last_activity_at FROM user_activity))`},
+	} {
+		var valid bool
+		if err := pool.QueryRow(ctx, check.statement).Scan(&valid); err != nil || !valid {
+			t.Fatalf("compatibility migration changed administrator defaults or inferred %s: %v", check.name, err)
+		}
+	}
+	// Probe the changed INSERT default in a rolled-back transaction. Historical
+	// rows must still retain their exact three-key options object checked above.
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	var valid bool
+	if err := tx.QueryRow(ctx, `INSERT INTO libraries(id,name,collection_type)
+		VALUES('settings-migration-default-probe','Migration default probe','movies')
+		RETURNING revision=1 AND options='{"EnableLocalMetadata":true,"EnableLocalImages":true,"EnableEmbeddedArtwork":true,"EnableOnlineImages":false,"EnableIntroDetection":false,"EnablePreviewGeneration":false,"EnableBackgroundPreviewGeneration":false,"EnableAudioWaveformGeneration":false,"EnableCreditsDetection":false,"EnableSubtitleTimelineGeneration":false}'::jsonb`).Scan(&valid); err != nil || !valid {
+		t.Fatalf("compatibility migration did not install the exact opted-out defaults for a new library: %v", err)
+	}
+}
+
+func compatibilityMigrationAdministratorState(t *testing.T, ctx context.Context, pool *pgxpool.Pool) map[string]string {
+	t.Helper()
+	state := make(map[string]string)
+	for _, table := range strings.Fields(compatibilityMigrationAdministratorTables + " task_system_events") {
+		state[table] = settingsMigrationSnapshot(t, ctx, pool, table)
+	}
+	return state
+}
+
+func compatibilityMigrationAdministratorUnchanged(t *testing.T, ctx context.Context, pool *pgxpool.Pool, before map[string]string) {
+	t.Helper()
+	for table, snapshot := range before {
+		if settingsMigrationSnapshot(t, ctx, pool, table) != snapshot {
+			t.Errorf("reapplying compatibility migration changed administrator table %s", table)
+		}
 	}
 }
 
@@ -255,6 +329,13 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 			settingsMigrationVersion19(t, ctx, pool)
 			settingsMigrationSeedLegacy(t, ctx, pool)
 			settingsMigrationVersion20(t, ctx, pool)
+			// An account creation timestamp is not evidence of a login. Retain
+			// this source row in the same schema-20 preservation snapshots.
+			if _, err := pool.Exec(ctx, `INSERT INTO users(id,name,normalized_name,password_hash,created_at)
+				VALUES('settings-migration-no-login-user','Historical Account Without Login',
+				'historical account without login','synthetic-unissued-digest','2023-01-01T00:00:00Z')`); err != nil {
+				t.Fatal(err)
+			}
 			if _, err := pool.Exec(ctx, `UPDATE managed_settings SET revision = 9007199254740993,
 				server_name = NULLIF($1, ''), max_width = 7680,
 				max_bitrate = CASE WHEN $2 THEN 987654321 ELSE NULL END,
@@ -304,8 +385,10 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 				"item_credits_state", "background_preview_settings", "item_background_preview_settings", "background_preview_queue", "background_preview_requests",
 				"audio_waveform_queue", "audio_waveform_requests", "analysis_credits_detections", "analysis_credits_detection_sources",
 				"subtitle_timeline_queue", "subtitle_timeline_requests", "item_bitmap_subtitles")
+			currentTables = append(currentTables, strings.Fields(compatibilityMigrationAdministratorTables)...)
 			sort.Strings(currentTables)
 			var migratedSettings, migratedHistory, migratedAnalysisSettings string
+			var migratedAdministratorState map[string]string
 			for attempt := 1; attempt <= 2; attempt++ {
 				if err := database.Migrate(ctx, pool); err != nil {
 					t.Fatalf("compatibility migration attempt %d: %v", attempt, err)
@@ -315,6 +398,7 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 				}
 				compatibilityMigrationBindingDefaults(t, ctx, pool)
 				compatibilityMigrationPhase3Defaults(t, ctx, pool)
+				compatibilityMigrationAdministratorDefaults(t, ctx, pool)
 				compatibilityMigrationSortingDefaults(t, ctx, pool)
 				compatibilityMigrationAnalysisDefaults(t, ctx, pool)
 				compatibilityMigrationSourceCacheDefaults(t, ctx, pool)
@@ -368,8 +452,12 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 				if attempt == 1 {
 					migratedSettings, migratedHistory = currentSettings, currentHistory
 					migratedAnalysisSettings = currentAnalysisSettings
+					migratedAdministratorState = compatibilityMigrationAdministratorState(t, ctx, pool)
 				} else if currentSettings != migratedSettings || currentHistory != migratedHistory || currentAnalysisSettings != migratedAnalysisSettings {
 					t.Error("reapplying compatibility migration changed settings, mode, width, analysis defaults, or complete migration history")
+				}
+				if attempt > 1 {
+					compatibilityMigrationAdministratorUnchanged(t, ctx, pool, migratedAdministratorState)
 				}
 			}
 			// Reapplication must not reconstruct the mode from the raw name after
@@ -393,6 +481,8 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 				compatibilityMigrationSortingDefaults(t, ctx, pool)
 				compatibilityMigrationAnalysisDefaults(t, ctx, pool)
 				compatibilityMigrationSourceCacheDefaults(t, ctx, pool)
+				compatibilityMigrationAdministratorDefaults(t, ctx, pool)
+				compatibilityMigrationAdministratorUnchanged(t, ctx, pool, migratedAdministratorState)
 				if after := settingsMigrationSnapshot(t, ctx, pool, "managed_settings"); after != persisted {
 					t.Errorf("repeated compatibility migration changed persisted mode %s, width, or original settings", state.mode)
 				}

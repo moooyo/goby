@@ -390,12 +390,16 @@ func (s *Server) embyValidateDirectory(w http.ResponseWriter, r *http.Request) {
 	if !decodeLibraryEditingBody(w, r, &body) {
 		return
 	}
-	if body.ValidateWriteable || body.IsFile || body.Username != "" || body.Password != "" {
+	if body.IsFile || body.Username != "" || body.Password != "" {
 		s.libraryError(w, r, library.ErrInvalidInput)
 		return
 	}
 	actor := r.Context().Value(principalKey).(identity.Principal)
-	if _, err := s.library.ValidateServerDirectory(r.Context(), actor, identity.AdministratorEmby, r.URL.Query().Get("Path")); err != nil {
+	validate := s.library.ValidateServerDirectory
+	if body.ValidateWriteable {
+		validate = s.library.ValidateWritableServerDirectory
+	}
+	if _, err := validate(r.Context(), actor, identity.AdministratorEmby, r.URL.Query().Get("Path")); err != nil {
 		s.serverDirectoryError(w, r, err)
 		return
 	}

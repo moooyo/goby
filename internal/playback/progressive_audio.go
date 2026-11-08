@@ -195,6 +195,9 @@ func PlanProgressiveAudio(source Source, request ProgressiveAudioRequest, limits
 	for _, rate := range rates {
 		plan := progressiveAudioPlan(source, request, container, codec, audio.Index, audio.SampleRate, sourceSamples)
 		plan.AudioChannels, plan.AudioSampleRate = channels, rate
+		if limits.Execution != (transcode.ExecutionOptions{}) {
+			plan.SourceAudioChannels = selection.audio.Channels
+		}
 		outputSamples, samplesErr := transcode.ProgressiveOutputSamples(plan, rate)
 		if samplesErr != nil {
 			result.Reasons = appendConversionReasons(result.Reasons, *conversionReason("progressive_audio_sample_window_invalid", "StartTimeTicks", "The selected audio window contains no valid bounded output samples."))

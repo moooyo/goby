@@ -153,6 +153,7 @@ type nativeActivityActor struct {
 type nativeActivityResource struct {
 	Kind activity.ResourceKind `json:"Kind"`
 	ID   string                `json:"Id"`
+	Name *string               `json:"Name,omitempty"`
 }
 
 type nativeActivityEntry struct {
@@ -191,7 +192,7 @@ func nativeActivityDTO(page activity.Page, retention int) (nativeActivityPage, e
 	result := nativeActivityPage{Items: make([]nativeActivityEntry, 0, len(page.Items)), TotalRecordCount: page.TotalRecordCount,
 		StartIndex: page.StartIndex, Limit: page.Limit, RetentionDays: retention}
 	for _, entry := range page.Items {
-		if entry.ID < 1 || entry.Count < 0 || entry.Revision < 0 || entry.PreviousRevision < 0 || !nativeActivityRootBindingFactsValid(entry) {
+		if entry.ID < 1 || entry.Count < 0 || entry.Revision < 0 || entry.PreviousRevision < 0 || !nativeActivityObservationFactsValid(entry) {
 			return nativeActivityPage{}, activity.ErrUnavailable
 		}
 		item := nativeActivityEntry{ID: strconv.FormatInt(entry.ID, 10), Date: entry.Date.UTC(), Action: entry.Action, Severity: entry.Severity,
@@ -205,6 +206,12 @@ func nativeActivityDTO(page activity.Page, retention int) (nativeActivityPage, e
 		if entry.Actor.Kind == activity.ActorUser && entry.ActorName != "" {
 			value := entry.ActorName
 			item.Actor.Name = &value
+		}
+		if (entry.Action == activity.ActionPlaybackStarted || entry.Action == activity.ActionPlaybackStopped) &&
+			entry.ResourceName != "" && len(entry.ResourceName) <= 1024 && utf8.ValidString(entry.ResourceName) &&
+			strings.IndexFunc(entry.ResourceName, unicode.IsControl) < 0 {
+			value := entry.ResourceName
+			item.Resource.Name = &value
 		}
 		if entry.Revision > 0 {
 			value := strconv.FormatInt(entry.Revision, 10)
@@ -223,7 +230,17 @@ func nativeActivityDTO(page activity.Page, retention int) (nativeActivityPage, e
 	return result, nil
 }
 
-func nativeActivityRootBindingFactsValid(entry activity.Entry) bool {
+func nativeActivityObservationFactsValid(entry activity.Entry) bool {
+	if entry.Action == activity.ActionPlaybackStarted || entry.Action == activity.ActionPlaybackStopped {
+		return activity.ValidPlaybackObservation(entry.Event)
+	}
+	if entry.Action == activity.ActionBackupPublished {
+		return entry.Source == activity.SourceSystem && entry.Actor.Kind == activity.ActorSystem &&
+			entry.Actor.ID == "" && entry.Actor.CredentialID == "" && entry.Resource.Kind == activity.ResourceBackup &&
+			entry.Revision == 0 && entry.PreviousRevision == 0 && entry.Count == 0 &&
+			entry.State == activity.StateCompleted && len(entry.ChangedFields) == 0 &&
+			nativeActivityFingerprintValid(entry.ObservationFingerprint)
+	}
 	if entry.Action != activity.ActionLibraryRootBindingUpdated {
 		return entry.PreviousRevision == 0 && entry.ObservationFingerprint == ""
 	}
@@ -232,7 +249,11 @@ func nativeActivityRootBindingFactsValid(entry activity.Entry) bool {
 		entry.Count != 0 || entry.State != "" || len(entry.ChangedFields) != 0 || len(entry.ObservationFingerprint) != 64 {
 		return false
 	}
-	return strings.IndexFunc(entry.ObservationFingerprint, func(character rune) bool {
+	return nativeActivityFingerprintValid(entry.ObservationFingerprint)
+}
+
+func nativeActivityFingerprintValid(value string) bool {
+	return len(value) == 64 && strings.IndexFunc(value, func(character rune) bool {
 		return !(character >= '0' && character <= '9' || character >= 'a' && character <= 'f')
 	}) == -1
 }

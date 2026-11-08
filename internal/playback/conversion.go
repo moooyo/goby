@@ -21,7 +21,17 @@ type ConversionLimits struct {
 	Execution                                            transcode.ExecutionOptions
 	// HardwareUnavailable records a requested managed device that cannot be
 	// resolved in the startup-authorized inventory. Copy/audio remain usable.
-	HardwareUnavailable bool
+	HardwareUnavailable         bool
+	DisableHevcEncoding         bool
+	DisableHardwareEncoding     bool
+	DisableSubtitleExtraction   bool
+	DisableAttachmentExtraction bool
+	DisableAssToText            bool
+	CodecConfigurations         transcode.CodecConfigurations
+	CodecProfileLimits          transcode.CodecProfileLimits
+	// Retained dynamic revisions keep their actual accepted output tuple while
+	// independently checking current permissions, ceilings, and source facts.
+	AdmittedVideoEncoding AdmittedVideoEncoding
 }
 
 // ConversionDecision keeps original-file evaluation separate from the projected
@@ -52,6 +62,8 @@ type ConversionDecision struct {
 // Original-file evaluation stays separate from MPEG-TS, fragmented MP4, packed
 // audio, subtitle delivery, and explicitly requested adaptive output planning.
 func PlanConversion(source Source, request Request, limits ConversionLimits) (ConversionDecision, error) {
+	source.DisableSubtitleExtraction = source.DisableSubtitleExtraction || limits.DisableSubtitleExtraction
+	source.DisableAssToText = source.DisableAssToText || limits.DisableAssToText
 	original, err := Evaluate(source, request)
 	if err != nil {
 		return ConversionDecision{}, err
@@ -115,7 +127,7 @@ func PlanConversion(source Source, request Request, limits ConversionLimits) (Co
 			if !conversionModeAllowed(selection, kind, request, limits, videoCopy, audioCopy) {
 				continue
 			}
-			for _, candidate := range conversionEncodingCandidates(profile, kind, videoCopy, audioCopy) {
+			for _, candidate := range conversionAdmissionCandidates(conversionEncodingCandidates(profile, kind, videoCopy, audioCopy), limits) {
 				candidateProfile := candidate.profile
 				plan, projected, reason := conversionCandidate(source, request, limits, candidateProfile, kind, selection, videoCopy, audioCopy, false, candidate.video)
 				if reason != nil {
@@ -175,6 +187,20 @@ func PlanConversion(source Source, request Request, limits ConversionLimits) (Co
 }
 
 func normalizeConversionLimits(limits ConversionLimits) (ConversionLimits, error) {
+	if err := validateAdmittedVideoEncoding(limits.AdmittedVideoEncoding); err != nil {
+		return limits, err
+	}
+	if _, err := transcode.ResolveCodecConfigurations(limits.CodecConfigurations); err != nil {
+		return limits, fmt.Errorf("%w: invalid codec configurations", ErrInvalidRequest)
+	}
+	profileLimits, err := transcode.ResolveCodecProfileLimits(limits.CodecProfileLimits)
+	if err != nil {
+		return limits, fmt.Errorf("%w: invalid codec profile limits", ErrInvalidRequest)
+	}
+	limits.CodecProfileLimits = profileLimits
+	if limits.DisableHardwareEncoding {
+		limits.Hardware.Encode = "software"
+	}
 	if limits.Execution != (transcode.ExecutionOptions{}) {
 		if err := transcode.ValidateExecutionOptions(limits.Execution); err != nil {
 			return limits, fmt.Errorf("%w: invalid execution settings", ErrInvalidRequest)
@@ -328,7 +354,8 @@ func conversionCandidate(source Source, request Request, limits ConversionLimits
 		plan.SegmentSeconds = *profile.SegmentLength
 	}
 	projected := Source{ItemID: source.ItemID, MediaSourceID: source.MediaSourceID, ItemType: source.ItemType, Path: "output.ts",
-		Info: media.Info{Container: plan.Container, DurationTicks: source.Info.DurationTicks}}
+		Info: media.Info{Container: plan.Container, DurationTicks: source.Info.DurationTicks}, DisableSubtitleExtraction: source.DisableSubtitleExtraction,
+		DisableAssToText: source.DisableAssToText}
 	projected.Path = "output." + plan.Container
 	if plan.Container == "ts" {
 		projected.Info.Container = "mpegts"
@@ -409,6 +436,11 @@ func conversionCandidate(source Source, request Request, limits ConversionLimits
 			}
 			plan.VideoFilters = filters
 			selectVideoProcessingHardware(&plan)
+			if plan.VideoFilters.Backend == "" && plan.VideoFilters.ToneMap != "" {
+				if limit := transcode.SoftwareToneMapHeightLimit(limits.Execution.SoftwareToneMapOptions); limit > 0 {
+					caps.height = min(caps.height, limit)
+				}
+			}
 			videoEncodedOutput(video, plan)
 		}
 		videoOutputFraming(video, plan)
@@ -419,6 +451,9 @@ func conversionCandidate(source Source, request Request, limits ConversionLimits
 		stream := *selection.audio
 		audio = &stream
 		plan.AudioStreamIndex = audio.Index
+		if limits.Execution != (transcode.ExecutionOptions{}) {
+			plan.SourceAudioChannels = selection.audio.Channels
+		}
 		if audio.Channels < 1 || audio.Channels > 256 {
 			return fail("conversion_audio_channels_unknown", "AudioChannels", "Known source audio channels are required for conversion.")
 		}
@@ -463,7 +498,7 @@ func conversionCandidate(source Source, request Request, limits ConversionLimits
 		audio.AudioTiming = nil
 		projected.Info.Streams = append(projected.Info.Streams, *audio)
 	}
-	if reason := configureHLSSubtitle(&plan, source, request, profile, selection.subtitle, videoCopy); reason != nil {
+	if reason := configureHLSSubtitle(&plan, source, request, profile, selection.subtitle, videoCopy, limits); reason != nil {
 		return plan, projected, reason
 	}
 	if selection.subtitle != nil && plan.Subtitle.Mode == "" && !transcode.HasHLSSubtitles(plan) {
@@ -538,7 +573,14 @@ func conversionCandidate(source Source, request Request, limits ConversionLimits
 					return fail("conversion_video_copy_limit", "VideoCodec", "Copied video exceeds an output limit or lacks a usable bitrate planning budget.")
 				}
 			} else {
-				video.Width, video.Height = conversionDimensions(video.Width, video.Height, caps.width, caps.height)
+				if admitted := limits.AdmittedVideoEncoding; admitted != (AdmittedVideoEncoding{}) {
+					if admitted.Width > caps.width || admitted.Height > caps.height {
+						return fail("conversion_admitted_geometry_unavailable", "Width", "The retained encoded dimensions exceed a current server or client output ceiling.")
+					}
+					video.Width, video.Height = admitted.Width, admitted.Height
+				} else {
+					video.Width, video.Height = conversionDimensions(video.Width, video.Height, caps.width, caps.height)
+				}
 				fps := conversionFrameRate(video)
 				if fps <= 0 {
 					return fail("conversion_frame_rate_unknown", "VideoFramerate", "A known source frame rate is required for encoded video.")

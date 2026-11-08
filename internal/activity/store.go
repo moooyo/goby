@@ -70,10 +70,19 @@ func eventArguments(event Event) ([]any, error) {
 		event.Revision < 0 || event.Count < 0 || len(event.ChangedFields) > MaxChangedFields {
 		return nil, ErrInvalidInput
 	}
-	if event.Action == ActionLibraryRootBindingUpdated {
+	if event.Action == ActionBackupPublished {
+		if event.Source != SourceSystem || event.Actor.Kind != ActorSystem || event.Revision != 0 || event.PreviousRevision != 0 ||
+			!validObservationFingerprint(event.ObservationFingerprint) || event.Count != 0 || event.State != StateCompleted || len(event.ChangedFields) != 0 {
+			return nil, ErrInvalidInput
+		}
+	} else if event.Action == ActionLibraryRootBindingUpdated {
 		if event.Source != SourceNative || event.Actor.Kind != ActorUser || event.PreviousRevision < 1 ||
 			event.PreviousRevision == math.MaxInt64 || event.Revision != event.PreviousRevision+1 ||
 			!validObservationFingerprint(event.ObservationFingerprint) || event.Count != 0 || event.State != "" || len(event.ChangedFields) != 0 {
+			return nil, ErrInvalidInput
+		}
+	} else if event.Action == ActionPlaybackStarted || event.Action == ActionPlaybackStopped {
+		if !ValidPlaybackObservation(event) {
 			return nil, ErrInvalidInput
 		}
 	} else if event.PreviousRevision != 0 || event.ObservationFingerprint != "" {
@@ -84,7 +93,7 @@ func eventArguments(event Event) ([]any, error) {
 		if event.State != StateCompleted && event.State != StateFailed && event.State != StateCancelled && event.State != StateInterrupted {
 			return nil, ErrInvalidInput
 		}
-	case ActionRestoreApplied:
+	case ActionRestoreApplied, ActionBackupPublished:
 		if event.State != StateCompleted {
 			return nil, ErrInvalidInput
 		}
@@ -176,7 +185,7 @@ func actionResource(action Action) ResourceKind {
 		return ResourceLibraryRoot
 	case ActionScanRequested, ActionScanCancelRequested, ActionScanFinished:
 		return ResourceScan
-	case ActionMetadataUpdated, ActionItemDeleted, ActionSubtitleDeleted:
+	case ActionMetadataUpdated, ActionItemDeleted, ActionSubtitleDeleted, ActionPlaybackStarted, ActionPlaybackStopped:
 		return ResourceItem
 	case ActionSettingsUpdated:
 		return ResourceSettings
@@ -184,7 +193,7 @@ func actionResource(action Action) ResourceKind {
 		return ResourceTaskRun
 	case ActionTaskScheduleUpdated:
 		return ResourceTask
-	case ActionBackupRequested, ActionBackupCancelRequested, ActionBackupFinished, ActionBackupImported,
+	case ActionBackupRequested, ActionBackupCancelRequested, ActionBackupFinished, ActionBackupPublished, ActionBackupImported,
 		ActionBackupDeleteRequested, ActionBackupDeleted, ActionBackupDownloaded:
 		return ResourceBackup
 	case ActionRestoreRequested, ActionRestorePlanned, ActionRestoreApplyRequested, ActionRestoreApplied,

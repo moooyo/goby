@@ -18,10 +18,12 @@ type configuredStorageRoot struct {
 	path, absolute, anchor string
 }
 
-// StorageRoot reports directory readability without returning a content listing.
+// StorageRoot reports access observations without returning a content listing.
 type StorageRoot struct {
 	Path      string
 	Available bool
+	Readable  *bool `json:"Readable,omitempty"`
+	Writable  *bool `json:"Writable"`
 }
 
 type storageRootReader func(context.Context, *os.File) error
@@ -87,10 +89,14 @@ func splitConfiguredStoragePath(value string) (string, string) {
 // StorageRoots retains configuration order and spelling. Every actual read is
 // admitted against the canonical anchor selected when this Store was created.
 func (s *Store) StorageRoots(ctx context.Context, actor identity.Principal, audience identity.AdministratorAudience) ([]StorageRoot, error) {
-	return s.storageRootsWithReader(ctx, &catalogAdministrator{actor: actor, audience: audience}, readStorageRootDirectory)
+	return s.storageRootsWithAccess(ctx, &catalogAdministrator{actor: actor, audience: audience}, readStorageRootDirectory, true)
 }
 
 func (s *Store) storageRootsWithReader(ctx context.Context, administrator *catalogAdministrator, read storageRootReader) ([]StorageRoot, error) {
+	return s.storageRootsWithAccess(ctx, administrator, read, false)
+}
+
+func (s *Store) storageRootsWithAccess(ctx context.Context, administrator *catalogAdministrator, read storageRootReader, inspectAccess bool) ([]StorageRoot, error) {
 	if ctx == nil || read == nil {
 		return nil, ErrInvalidInput
 	}
@@ -119,17 +125,35 @@ func (s *Store) storageRootsWithReader(ctx context.Context, administrator *catal
 			return nil, err
 		}
 		var available bool
+		var writable *bool
+		reader := read
+		if inspectAccess {
+			reader = func(work context.Context, directory *os.File) error {
+				readErr := read(work, directory)
+				if readErr != nil && !errors.Is(readErr, io.EOF) {
+					return readErr
+				}
+				var err error
+				writable, err = observeDirectoryWriteAccess(work, directory)
+				return errors.Join(readErr, err)
+			}
+		}
 		err = operation.Run(ctx, "", primaryio.Foreground, func(work context.Context) error {
 			return s.runServerDirectoryWork(work, administrator, func(work context.Context, _ []string) error {
 				var err error
-				available, err = observeStorageRoot(work, root, read)
+				available, err = observeStorageRoot(work, root, reader)
 				return err
 			})
 		})
 		if err = errors.Join(err, operation.Close()); err != nil {
 			return nil, err
 		}
-		items = append(items, StorageRoot{Path: root.path, Available: available})
+		item := StorageRoot{Path: root.path, Available: available}
+		if inspectAccess {
+			readable := available
+			item.Readable, item.Writable = &readable, writable
+		}
+		items = append(items, item)
 	}
 	return items, ctx.Err()
 }

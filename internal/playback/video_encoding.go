@@ -48,11 +48,14 @@ func videoCodecContainerSupported(codec, container string) bool {
 	return transcode.VideoEncodingSupported(codec) && (container == "mp4" || container == "ts" && codec != "av1")
 }
 
-func progressiveVideoEncoding(request ProgressiveVideoRequest) (videoEncodingFormat, bool) {
+func progressiveVideoEncoding(request ProgressiveVideoRequest, limits ConversionLimits) (videoEncodingFormat, bool) {
 	for _, format := range videoEncodingFormats(strings.ToLower(request.VideoCodec), "mp4") {
 		if request.VideoProfile != "" && !strings.EqualFold(request.VideoProfile, format.profile) ||
 			request.VideoBitDepth != nil && *request.VideoBitDepth != format.bitDepth ||
 			strings.EqualFold(request.VideoRange, "HDR10") != (format.videoRange == "HDR10") {
+			continue
+		}
+		if !transcode.VideoProfileAllowed(limits.CodecProfileLimits, format.codec, format.profile) {
 			continue
 		}
 		return format, true

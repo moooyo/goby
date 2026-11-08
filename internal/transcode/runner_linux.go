@@ -247,6 +247,7 @@ func runAdmittedSource(ctx context.Context, executable, directory string, input 
 	var timer *time.Timer
 	retired := false
 	cancelSignalled := false
+	processPaused := false
 	cmd.Cancel = func() error {
 		groupMu.Lock()
 		defer groupMu.Unlock()
@@ -254,6 +255,12 @@ func runAdmittedSource(ctx context.Context, executable, directory string, input 
 			return os.ErrProcessDone
 		}
 		pid := cmd.Process.Pid
+		if processPaused {
+			// A stopped process cannot handle TERM until it runs again. This
+			// owner holds the same retirement fence as every throttle signal.
+			_ = syscall.Kill(-pid, syscall.SIGCONT)
+			processPaused = false
+		}
 		err := syscall.Kill(-pid, syscall.SIGTERM)
 		if errors.Is(err, syscall.ESRCH) {
 			return os.ErrProcessDone
@@ -282,6 +289,9 @@ func runAdmittedSource(ctx context.Context, executable, directory string, input 
 	}
 	var waitErr error
 	var cancelWasSignalled bool
+	bufferRuntime := playbackBufferRuntimeFromContext(ctx)
+	var bufferCancel context.CancelFunc
+	var bufferDone chan error
 	err = media.RunProcessWithRetirement(processCtx, cmd, func() error {
 		// This callback begins only after the child inherited its descriptors.
 		// The admitted runner joins it before returning or reaping the leader.
@@ -296,6 +306,47 @@ func runAdmittedSource(ctx context.Context, executable, directory string, input 
 		}
 		if live != nil {
 			live.start()
+		}
+		if bufferRuntime.controller != nil {
+			bufferContext, stopBuffer := context.WithCancel(processCtx)
+			bufferCancel, bufferDone = stopBuffer, make(chan error, 1)
+			go func() {
+				var bufferErr error
+				completed := false
+				defer func() {
+					_ = recover()
+					if !completed {
+						bufferErr = ErrProcess
+					}
+					if bufferErr != nil {
+						cancel()
+					}
+					bufferDone <- bufferErr
+				}()
+				bufferErr = bufferRuntime.run(bufferContext, func(paused bool) error {
+					groupMu.Lock()
+					defer groupMu.Unlock()
+					if retired || cancelSignalled {
+						return errPlaybackBufferProcessRetired
+					}
+					if processCtx.Err() != nil {
+						return context.Canceled
+					}
+					signal := syscall.SIGCONT
+					if paused {
+						signal = syscall.SIGSTOP
+					}
+					if err := syscall.Kill(-cmd.Process.Pid, signal); err != nil {
+						if errors.Is(err, syscall.ESRCH) {
+							return errPlaybackBufferProcessRetired
+						}
+						return err
+					}
+					processPaused = paused
+					return nil
+				})
+				completed = true
+			}()
 		}
 		if publish != nil {
 			publishStop, publishDone = make(chan struct{}), make(chan struct{})
@@ -339,6 +390,11 @@ func runAdmittedSource(ctx context.Context, executable, directory string, input 
 		cancelWasSignalled = cancelSignalled
 		return errors.Join(waitErr, signalErr)
 	})
+	var bufferErr error
+	if bufferCancel != nil {
+		bufferCancel()
+		bufferErr = <-bufferDone
+	}
 	if cmd.Process == nil {
 		return result, errors.Join(ErrStart, err)
 	}
@@ -392,13 +448,13 @@ func runAdmittedSource(ctx context.Context, executable, directory string, input 
 		result.ExitCode = cmd.ProcessState.ExitCode()
 	}
 	progress.finish()
-	processErr := errors.Join(err, retirementErr, hlsClockErr, windowInputErr, liveErr, progressiveErr, publicationErr)
+	processErr := errors.Join(err, bufferErr, retirementErr, hlsClockErr, windowInputErr, liveErr, progressiveErr, publicationErr)
 	// Context cancellation intentionally remains the public error priority.
 	// Retaining a partial VOD window needs a separate proof after all stdout,
 	// stderr, clock and private-publication workers have drained. Recheck the
 	// input here: the earlier source observation preceded publisher shutdown.
 	result.ProductionSealSafe = plan.SegmentMode == "vod" && plan.OutputMode == "" && plan.SourceMode == "" && !GeneratedHLS(plan) &&
-		transcodeSourceUnchanged(input, info) && waitErr == nil && retirementErr == nil && !errors.Is(processErr, media.ErrProcessRetirementUnknown) &&
+		transcodeSourceUnchanged(input, info) && waitErr == nil && bufferErr == nil && retirementErr == nil && !errors.Is(processErr, media.ErrProcessRetirementUnknown) &&
 		progress.err == nil && !stderr.failed && hlsClockErr == nil && liveErr == nil && progressiveErr == nil && publicationErr == nil &&
 		productionSealProcessExitSafe(err, cancelWasSignalled)
 	if failure := progress.failure; failure != nil {
@@ -416,7 +472,7 @@ func runAdmittedSource(ctx context.Context, executable, directory string, input 
 	if progress.err != nil {
 		return result, errors.Join(ErrProgress, processErr)
 	}
-	if waitErr != nil || err != nil || stderr.failed || progressiveErr != nil || publicationErr != nil || hlsClockErr != nil || liveErr != nil || retirementErr != nil || windowInputErr != nil {
+	if waitErr != nil || err != nil || bufferErr != nil || stderr.failed || progressiveErr != nil || publicationErr != nil || hlsClockErr != nil || liveErr != nil || retirementErr != nil || windowInputErr != nil {
 		return result, errors.Join(ErrProcess, processErr)
 	}
 	if windowInput != nil {

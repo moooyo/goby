@@ -62,6 +62,11 @@ func itemSortUsesUserData(fields string) bool {
 func itemOrderSQL(query Query, userParameter int) string {
 	fields, directions := strings.Split(query.SortBy, ","), strings.Split(query.SortOrder, ",")
 	clauses := make([]string, 0, len(fields)+2)
+	displayRank := ""
+	if seriesDisplayOrderBrowseQuery(query) {
+		displayRank = seriesDisplayOrderBrowseRankSQL()
+		clauses = append(clauses, "NULLIF("+displayRank+","+seriesDisplayOrderUnmappedRank+") "+directions[0]+" NULLS LAST")
+	}
 	lastDirection := "ASC"
 	for index, field := range fields {
 		direction := directions[0]
@@ -76,7 +81,11 @@ func itemOrderSQL(query Query, userParameter int) string {
 		case "DateCreated":
 			column = "i.created_at"
 		case "IndexNumber":
-			clauses = append(clauses, "i.parent_index_number "+direction)
+			parentIndex := "i.parent_index_number"
+			if displayRank != "" {
+				parentIndex = seriesDisplayOrderFallbackSQL(displayRank, parentIndex)
+			}
+			clauses = append(clauses, parentIndex+" "+direction)
 			column = "i.index_number"
 		case "ParentIndexNumber":
 			column = "i.parent_index_number"
@@ -96,6 +105,9 @@ func itemOrderSQL(query Query, userParameter int) string {
 			column = fmt.Sprintf("(SELECT data.last_played_at FROM user_item_data data WHERE data.item_id = i.id AND data.user_id = $%d::text)", userParameter)
 		case "PlayCount":
 			column = fmt.Sprintf("COALESCE((SELECT data.play_count FROM user_item_data data WHERE data.item_id = i.id AND data.user_id = $%d::text), 0)", userParameter)
+		}
+		if displayRank != "" {
+			column = seriesDisplayOrderFallbackSQL(displayRank, column)
 		}
 		clauses = append(clauses, column+" "+direction+" NULLS LAST")
 	}

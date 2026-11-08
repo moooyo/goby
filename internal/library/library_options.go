@@ -14,6 +14,7 @@ type LibraryOptions struct {
 	EnableLocalMetadata               bool
 	EnableLocalImages                 bool
 	EnableEmbeddedArtwork             bool
+	EnableOnlineImages                bool
 	EnableIntroDetection              bool
 	EnablePreviewGeneration           bool
 	EnableBackgroundPreviewGeneration bool
@@ -26,6 +27,7 @@ type LibraryOptionsUpdate struct {
 	EnableLocalMetadata               *bool
 	EnableLocalImages                 *bool
 	EnableEmbeddedArtwork             *bool
+	EnableOnlineImages                *bool
 	EnableIntroDetection              *bool
 	EnablePreviewGeneration           *bool
 	EnableBackgroundPreviewGeneration *bool
@@ -45,6 +47,7 @@ func (value *LibraryOptionsUpdate) UnmarshalJSON(data []byte) error {
 	*value = LibraryOptionsUpdate{}
 	fields := map[string]**bool{"enablelocalmetadata": &value.EnableLocalMetadata,
 		"enablelocalimages": &value.EnableLocalImages, "enableembeddedartwork": &value.EnableEmbeddedArtwork,
+		"enableonlineimages":   &value.EnableOnlineImages,
 		"enableintrodetection": &value.EnableIntroDetection, "enablepreviewgeneration": &value.EnablePreviewGeneration,
 		"enablebackgroundpreviewgeneration": &value.EnableBackgroundPreviewGeneration,
 		"enableaudiowaveformgeneration":     &value.EnableAudioWaveformGeneration,
@@ -80,6 +83,9 @@ func DefaultLibraryOptions() LibraryOptions {
 }
 
 func validateLibraryOptions(collectionType string, options LibraryOptions) error {
+	if options.EnableOnlineImages && collectionType != "movies" && collectionType != "tvshows" && collectionType != "mixed" {
+		return fmt.Errorf("%w: online images are supported only for movie, TV and mixed video libraries", ErrInvalidInput)
+	}
 	if options.EnableIntroDetection && collectionType != "tvshows" {
 		return fmt.Errorf("%w: intro detection is supported only for TV libraries", ErrInvalidInput)
 	}
@@ -120,6 +126,9 @@ func applyLibraryOptions(previous LibraryOptions, update *LibraryOptionsUpdate) 
 		}
 		if update.EnableEmbeddedArtwork != nil {
 			previous.EnableEmbeddedArtwork = *update.EnableEmbeddedArtwork
+		}
+		if update.EnableOnlineImages != nil {
+			previous.EnableOnlineImages = *update.EnableOnlineImages
 		}
 		if update.EnableIntroDetection != nil {
 			previous.EnableIntroDetection = *update.EnableIntroDetection

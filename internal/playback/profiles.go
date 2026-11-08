@@ -36,6 +36,12 @@ var (
 type Source struct {
 	ItemID, MediaSourceID, Path, ItemType string
 	Info                                  media.Info
+	// DisableSubtitleExtraction applies only to newly planned delivery of
+	// embedded text tracks. Sidecars, embedded playback, and burn-in remain valid.
+	DisableSubtitleExtraction bool
+	// DisableAssToText excludes new plain text representations of ASS/SSA.
+	// Style-preserving delivery, embedding, and burn-in remain available.
+	DisableAssToText bool
 }
 
 // Reason explains a declined original-file decision without exposing paths.
@@ -388,7 +394,7 @@ func ExternalSubtitleCandidateFormats(source Source, profile *DeviceProfile) map
 }
 
 func selectExternalSubtitle(source Source, profile *DeviceProfile, stream *media.Stream) (SubtitleDeliveryMethod, string) {
-	if !stream.IsTextSubtitleStream {
+	if !stream.IsTextSubtitleStream || source.DisableSubtitleExtraction && !stream.IsExternal {
 		return "", ""
 	}
 	var formats []string
@@ -403,6 +409,9 @@ func selectExternalSubtitle(source Source, profile *DeviceProfile, stream *media
 		formats = []string{"ssa", "ass", "vtt", "srt"}
 	default:
 		return "", ""
+	}
+	if !allowsPlainTextSubtitle(source, stream.Codec) {
+		formats = formats[:2]
 	}
 	if profile == nil {
 		// This describes indexed delivery facts, not proof that an unknown
@@ -425,6 +434,10 @@ func selectExternalSubtitle(source Source, profile *DeviceProfile, stream *media
 		}
 	}
 	return "", ""
+}
+
+func allowsPlainTextSubtitle(source Source, codec string) bool {
+	return !source.DisableAssToText || !strings.EqualFold(codec, "ass") && !strings.EqualFold(codec, "ssa")
 }
 
 func subtitleProfileFormatMatches(selector, format string) bool {

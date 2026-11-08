@@ -1,3 +1,4 @@
+import { confirmAction } from './i18n';
 import { useEffect } from 'react';
 
 export type UserNavigationGuard = () => boolean;
@@ -9,7 +10,7 @@ export function useUserDraftNavigation(dirty: boolean, busy: boolean, onGuardCha
       onGuardChange(undefined);
       return;
     }
-    onGuardChange(() => !busy && window.confirm(message));
+    onGuardChange(() => !busy && confirmAction(message));
     const beforeUnload = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
     window.addEventListener('beforeunload', beforeUnload);
     return () => {

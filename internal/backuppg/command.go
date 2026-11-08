@@ -228,9 +228,16 @@ func dumpCommand(ctx context.Context, options Options, exportedSnapshot string, 
 	if err := checkBackupExecutable(options.PGDump); err != nil {
 		return err
 	}
-	return runBackupOutput(ctx, timeout, limit, options.PGDump, commandEnvironment(values), nil, out,
+	arguments := []string{
 		"--format=custom", "--quote-all-identifiers", "--no-owner", "--no-acl", "--no-password", "--strict-names",
-		"--snapshot="+exportedSnapshot, "--schema="+pgx.Identifier{options.Schema}.Sanitize())
+		"--snapshot=" + exportedSnapshot, "--schema=" + pgx.Identifier{options.Schema}.Sanitize(),
+	}
+	if options.OmitManagedArtwork {
+		for _, table := range managedArtworkTables {
+			arguments = append(arguments, "--exclude-table-data="+pgx.Identifier{options.Schema, table}.Sanitize())
+		}
+	}
+	return runBackupOutput(ctx, timeout, limit, options.PGDump, commandEnvironment(values), nil, out, arguments...)
 }
 
 // decodeCommand never supplies a database connection to pg_restore. It only

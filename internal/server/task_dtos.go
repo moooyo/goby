@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/moooyo/goby/internal/recovery"
 	"github.com/moooyo/goby/internal/tasks"
 )
 
@@ -29,8 +30,8 @@ func taskTriggerDTO(trigger tasks.Trigger) map[string]any {
 		"CalculationError": trigger.CalculationError}
 }
 
-func taskRunDTO(run tasks.RunSummary) map[string]any {
-	return map[string]any{"Id": run.ID, "TaskId": run.TaskID, "TaskName": run.TaskName, "State": run.State,
+func taskRunDTO(run tasks.RunSummary, backupResults ...map[string]recovery.TaskBackupResultView) map[string]any {
+	dto := map[string]any{"Id": run.ID, "TaskId": run.TaskID, "TaskName": run.TaskName, "State": run.State,
 		"Source": run.Source, "RequestId": run.RequestID, "ScheduledFor": taskOptionalTime(run.ScheduledFor),
 		"MaxRuntimeTicks": taskTickString(run.MaxRuntimeTicks), "CreatedAt": run.CreatedAt.UTC(),
 		"StartedAt": taskOptionalTime(run.StartedAt), "DeadlineAt": taskOptionalTime(run.DeadlineAt), "StopRequestedAt": taskOptionalTime(run.StopRequestedAt),
@@ -38,6 +39,12 @@ func taskRunDTO(run tasks.RunSummary) map[string]any {
 		"TotalChildren": run.TotalChildren, "TerminalChildren": run.TerminalChildren, "CompletedChildren": run.CompletedChildren,
 		"FailedChildren": run.FailedChildren, "CancelledChildren": run.CancelledChildren, "InterruptedChildren": run.InterruptedChildren,
 		"UnavailableChildren": run.UnavailableChildren, "Scanned": run.Scanned, "Added": run.Added, "Updated": run.Updated}
+	if len(backupResults) > 0 {
+		if result, present := backupResults[0][run.ID]; present {
+			dto["BackupResult"] = result
+		}
+	}
+	return dto
 }
 
 func taskChildDTO(child tasks.Child) map[string]any {
@@ -47,7 +54,7 @@ func taskChildDTO(child tasks.Child) map[string]any {
 		"CreatedAt": child.CreatedAt.UTC(), "StartedAt": taskOptionalTime(child.StartedAt), "FinishedAt": taskOptionalTime(child.FinishedAt)}
 }
 
-func taskDefinitionDTO(definition tasks.DefinitionSummary) map[string]any {
+func taskDefinitionDTO(definition tasks.DefinitionSummary, backupResults ...map[string]recovery.TaskBackupResultView) map[string]any {
 	triggers := make([]map[string]any, 0, len(definition.Triggers))
 	var next *time.Time
 	for _, trigger := range definition.Triggers {
@@ -59,10 +66,10 @@ func taskDefinitionDTO(definition tasks.DefinitionSummary) map[string]any {
 	}
 	var current, last any
 	if definition.CurrentRun != nil {
-		current = taskRunDTO(*definition.CurrentRun)
+		current = taskRunDTO(*definition.CurrentRun, backupResults...)
 	}
 	if definition.LastRun != nil {
-		last = taskRunDTO(*definition.LastRun)
+		last = taskRunDTO(*definition.LastRun, backupResults...)
 	}
 	return map[string]any{"Id": definition.ID, "Key": definition.Key, "Name": definition.Name, "Description": definition.Description,
 		"Category": definition.Category, "IsHidden": definition.IsHidden, "Enabled": definition.Enabled,
@@ -70,10 +77,10 @@ func taskDefinitionDTO(definition tasks.DefinitionSummary) map[string]any {
 		"Triggers": triggers, "CurrentRun": current, "LastRun": last, "NextRunAt": taskOptionalTime(next)}
 }
 
-func taskRunPageDTO(page tasks.RunSummaryPage) map[string]any {
+func taskRunPageDTO(page tasks.RunSummaryPage, backupResults ...map[string]recovery.TaskBackupResultView) map[string]any {
 	items := make([]map[string]any, 0, len(page.Items))
 	for _, run := range page.Items {
-		items = append(items, taskRunDTO(run))
+		items = append(items, taskRunDTO(run, backupResults...))
 	}
 	return map[string]any{"Items": items, "TotalRecordCount": page.TotalRecordCount, "StartIndex": page.StartIndex, "Limit": page.Limit}
 }

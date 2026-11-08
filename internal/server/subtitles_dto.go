@@ -10,6 +10,7 @@ import (
 
 	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/settings"
 )
 
 // Playback planning combines primary probe facts with separately indexed
@@ -100,7 +101,7 @@ func externalSubtitleDisplayTitle(source library.Subtitle, language string) stri
 	return base + " " + suffix
 }
 
-func itemMediaStreamsDTO(item library.Item) []map[string]any {
+func itemMediaStreamsDTO(item library.Item, policies ...settings.TranscodingPolicy) []map[string]any {
 	if item.Media == nil {
 		return []map[string]any{}
 	}
@@ -164,10 +165,40 @@ func itemMediaStreamsDTO(item library.Item) []map[string]any {
 		// Sidecar families share one stable public stream-index namespace.
 		sort.SliceStable(streams, func(i, j int) bool { return streams[i]["Index"].(int) < streams[j]["Index"].(int) })
 	}
+	if len(policies) > 0 {
+		applySubtitleDeliveryPolicy(map[string]any{"MediaStreams": streams}, policies[0])
+	}
 	return streams
 }
 
-func addSubtitleDeliveryCredentials(dto map[string]any, itemID, token string, formats map[int]string) {
+// The response-local policy controls delivery claims without removing indexed
+// tracks or changing sidecar delivery and embedded playback metadata.
+func applySubtitleDeliveryPolicy(dto map[string]any, policy settings.TranscodingPolicy) {
+	if streams, ok := dto["MediaStreams"].([]map[string]any); ok {
+		for _, stream := range streams {
+			if stream["Type"] == "Attachment" && !policy.EnableOnTheFlyAttachmentExtraction {
+				delete(stream, "DeliveryUrl")
+			}
+			if stream["Type"] == "Subtitle" && stream["IsExternal"] != true && !policy.EnableSubtitleExtraction {
+				stream["SupportsExternalStream"] = false
+				if stream["DeliveryMethod"] == "External" {
+					delete(stream, "DeliveryMethod")
+				}
+				delete(stream, "DeliveryUrl")
+			}
+		}
+	}
+	if sources, ok := dto["MediaSources"].([]map[string]any); ok {
+		for _, source := range sources {
+			applySubtitleDeliveryPolicy(source, policy)
+		}
+	}
+}
+
+func addSubtitleDeliveryCredentials(dto map[string]any, itemID, token string, formats map[int]string, policies ...settings.TranscodingPolicy) {
+	if len(policies) > 0 {
+		applySubtitleDeliveryPolicy(dto, policies[0])
+	}
 	if streams, ok := dto["MediaStreams"].([]map[string]any); ok {
 		for _, stream := range streams {
 			index, ok := stream["Index"].(int)
@@ -218,11 +249,17 @@ func subtitleAttachmentURL(itemID string, index int, token string) string {
 
 func (s *Server) itemDTOForRequest(r *http.Request, item library.Item, fields []string, detail bool) map[string]any {
 	token, _, _ := parseEmbyCredentials(r)
-	return s.itemDTOWithToken(item, fields, detail, token)
+	return s.itemDTOWithToken(item, fields, detail, token, s.requestSettings(r).Transcoding)
 }
 
-func (s *Server) itemDTOWithToken(item library.Item, fields []string, detail bool, token string) map[string]any {
+func (s *Server) itemDTOWithToken(item library.Item, fields []string, detail bool, token string, policies ...settings.TranscodingPolicy) map[string]any {
+	var policy settings.TranscodingPolicy
+	if len(policies) > 0 {
+		policy = policies[0]
+	} else {
+		policy = s.currentSettingsSnapshot().Transcoding
+	}
 	dto := s.itemDTO(item, fields, detail)
-	addSubtitleDeliveryCredentials(dto, item.ID, token, nil)
+	addSubtitleDeliveryCredentials(dto, item.ID, token, nil, policy)
 	return dto
 }

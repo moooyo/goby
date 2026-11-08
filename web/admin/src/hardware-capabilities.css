@@ -1,0 +1,41 @@
+.hardware-capabilities { min-width: 0; }
+.hardware-capabilities-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 14px; }
+.hardware-capabilities-toolbar p { flex: 1 1 230px; margin: 0; font-size: 12px; line-height: 1.65; color: var(--ink3); }
+.hardware-capabilities-refresh { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; border: 1px solid var(--line2); border-radius: 999px; padding: 5px 12px; background: var(--s2); color: var(--ink); font: 600 12px/18px var(--sans); cursor: pointer; }
+.hardware-capabilities-refresh:hover:not(:disabled) { background: var(--s3); }
+.hardware-capabilities-refresh:disabled { opacity: .5; cursor: default; }
+.hardware-capabilities-summary { display: flex; flex-wrap: wrap; gap: 5px 15px; margin: 14px 0 8px; color: var(--ink2); font-size: 11.5px; line-height: 18px; }
+.hardware-capabilities-table-wrap { width: 100%; margin-top: 12px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.hardware-capabilities-table { border-collapse: collapse; table-layout: fixed; width: 100%; color: var(--ink2); font-size: 11.5px; line-height: 17px; }
+.hardware-capabilities-table th, .hardware-capabilities-table td { border-bottom: 1px solid var(--line); padding: 8px 7px; text-align: center; overflow-wrap: anywhere; }
+.hardware-capabilities-table thead th { background: var(--s2); color: var(--ink3); font-weight: 600; }
+.hardware-capabilities-table thead tr:first-child th:first-child { width: 22%; text-align: left; padding-left: 12px; }
+.hardware-capabilities-table tbody th { color: var(--ink); font-size: 12px; text-align: left; padding-left: 12px; font-weight: 600; }
+.hardware-capabilities-table tbody tr:last-child > * { border-bottom: 0; }
+.hardware-codec-status { display: inline-flex; align-items: baseline; justify-content: center; gap: 4px; font-size: 11px; }
+.hardware-codec-status > i { flex: none; display: inline-block; width: 4px; height: 4px; border-radius: 50%; background: var(--acc); align-self: center; }
+.hardware-codec-present { color: var(--ink); }
+.hardware-codec-absent, .hardware-codec-unknown { color: var(--ink3); }
+.hardware-capabilities-proof-row > td { padding: 0 12px !important; background: var(--s2); text-align: left; }
+.hardware-capabilities-proof-row details { padding: 8px 0; }
+.hardware-capabilities-proof-row summary { display: list-item; color: var(--ink2); font-size: 11.5px; cursor: pointer; }
+.hardware-capabilities-proof-row summary > span { margin-left: 5px; color: var(--ink3); font-family: var(--mono); }
+.hardware-capabilities-proof-row details p { margin: 9px 0; color: var(--ink3); line-height: 1.65; }
+.hardware-capabilities-proof-row ul { margin: 0; padding: 0; list-style: none; }
+.hardware-capabilities-proof-row li { padding: 9px 0; border-top: 1px solid var(--line); }
+.hardware-capabilities-proof-row li > div { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 5px 10px; }
+.hardware-capabilities-proof-row li strong { font-weight: 600; }
+.hardware-capabilities-proof-row li code { display: block; margin-top: 5px; font: 11px/18px var(--mono); }
+.hardware-capabilities-proof-row li small { display: block; color: var(--ink3); font-size: 10.5px; margin-top: 4px; overflow-wrap: anywhere; }
+.hardware-capabilities-note { margin: 10px 0 0; color: var(--ink3); font-size: 11.5px; line-height: 1.65; }
+.hardware-capabilities-sampled { margin: 10px 0 0; color: var(--ink3); font-size: 10.5px; line-height: 1.65; }
+.hardware-capabilities-sampled time { font-family: var(--mono); }
+.hardware-capabilities-loading { padding: 24px 12px; color: var(--ink3); font-size: 12px; text-align: center; }
+.hardware-capabilities-notice { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; margin-top: 12px; background: var(--s2); border: 1px solid var(--line); border-radius: 10px; color: var(--warn); font-size: 12px; line-height: 1.65; overflow-wrap: anywhere; }
+.hardware-capabilities-notice button { align-self: flex-start; margin-top: 3px; border: 0; background: transparent; padding: 3px 0; color: var(--acc-ink); font: 600 12px/18px var(--sans); cursor: pointer; }
+@media (max-width: 639px) {
+  .hardware-capabilities-table th, .hardware-capabilities-table td { padding: 7px 4px; }
+  .hardware-capabilities-table thead tr:first-child th:first-child, .hardware-capabilities-table tbody th { padding-left: 8px; width: 23%; }
+  .hardware-capabilities-table tbody th { font-size: 11px; }
+  .hardware-codec-status { font-size: 10.5px; line-height: 16px; }
+}

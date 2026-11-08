@@ -145,7 +145,7 @@ func softwareVideoProcessingFilter(p Plan) string {
 		// merely relabeling PQ/HLG pixels as BT.709 would not create SDR.
 		filters = append(filters,
 			"zscale=transferin="+f.SourceTransfer+":primariesin=2020:matrixin="+matrix+":rangein="+sourceRange+":transfer=linear:npl=100",
-			"format=gbrpf32le", "zscale=primaries=709", "tonemap=tonemap=hable:desat=2.0",
+			"format=gbrpf32le", "zscale=primaries=709", softwareToneMapFilter(p),
 			"zscale=primaries=709:transfer=709:matrix=709:range=limited:dither=error_diffusion",
 			"format="+videoSoftwareFormat(p),
 			"sidedata=mode=delete:type=MASTERING_DISPLAY_METADATA",

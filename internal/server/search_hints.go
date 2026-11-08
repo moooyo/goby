@@ -139,7 +139,7 @@ func (s *Server) embySearchEntity(w http.ResponseWriter, r *http.Request) {
 		s.libraryError(w, r, err)
 		return
 	}
-	p := readItemPresentation(r)
+	p := s.readItemPresentation(r)
 	dto := s.entityDTO(entity, p.fields, true)
 	dto["GobyReference"] = map[string]string{"Kind": "Entity", "Id": strconv.FormatInt(entity.ID, 10)}
 	dto["GobyNavigationUrl"] = searchHintURL("/emby/Search/Entities/"+strconv.FormatInt(entity.ID, 10), userID, "")

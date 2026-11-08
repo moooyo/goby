@@ -18,6 +18,7 @@ func (m *Manager) Create(ctx context.Context, actor identity.Principal, request 
 	if ValidatePassphrase(request.Passphrase) != nil || !hexID(request.RequestId, 32) {
 		return OperationView{}, ErrInvalid
 	}
+	includeImages := request.IncludeImages == nil || *request.IncludeImages
 	if err := m.authorize(ctx, actor); err != nil {
 		return OperationView{}, err
 	}
@@ -29,7 +30,16 @@ func (m *Manager) Create(ctx context.Context, actor identity.Principal, request 
 	if !m.engine.canCreate() {
 		return OperationView{}, ErrUnavailable
 	}
-	fingerprint := requestFingerprint(struct{ Kind, Generation string }{"create", m.current.Digest})
+	content := struct {
+		Kind, Generation string
+		IncludeImages    *bool `json:",omitempty"`
+	}{Kind: "create", Generation: m.current.Digest}
+	if !includeImages {
+		content.IncludeImages = &includeImages
+	}
+	// Full-image requests retain the fingerprint of older create receipts.
+	// An omitted option and explicit true are the same admitted content.
+	fingerprint := requestFingerprint(content)
 	if existing, err := m.findRequestLocked(request.RequestId, "create", fingerprint, actor.User.ID); err != nil || existing != nil {
 		if err != nil {
 			return OperationView{}, err
@@ -66,7 +76,7 @@ func (m *Manager) Create(ctx context.Context, actor identity.Principal, request 
 	m.startLocked(id, func(work context.Context) {
 		defer clear(passphrase)
 		defer writer.Close()
-		manifest, err := m.engine.Create(work, writer, passphrase)
+		manifest, err := m.engine.CreateWithOptions(work, writer, passphrase, CreateOptions{IncludeImages: includeImages})
 		if err != nil {
 			abortWriter(writer, writerErrorCode(err))
 			m.failJob(id, err)
@@ -134,6 +144,10 @@ func (m *Manager) publishPrepared(ctx context.Context, id string, writer *backup
 	}
 	if _, err := writer.Publish(ctx, proof, summary); err != nil {
 		_ = m.updateOperation(id, "interrupted", "publication", "storage_unavailable", nil)
+		return
+	}
+	if err := m.recordBackupPublished(ctx, op.BackupID, proof.Digest, proof.Size); err != nil {
+		_ = m.updateOperation(id, "interrupted", "publication", "audit_unavailable", nil)
 		return
 	}
 	_ = m.updateOperation(id, "completed", "finished", "", func(op *operationRecord) { op.Manifest = nil })

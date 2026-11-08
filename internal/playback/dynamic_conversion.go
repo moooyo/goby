@@ -6,6 +6,8 @@ import "github.com/moooyo/goby/internal/transcode"
 // for an authorized nonseekable input. Unknown duration is preserved as zero;
 // no finite-file timeline or sample-accurate seek claim is invented.
 func PlanDynamicConversion(source Source, request Request, limits ConversionLimits) (ConversionDecision, error) {
+	source.DisableSubtitleExtraction = source.DisableSubtitleExtraction || limits.DisableSubtitleExtraction
+	source.DisableAssToText = source.DisableAssToText || limits.DisableAssToText
 	if request.StartTimeTicks != nil && *request.StartTimeTicks != 0 {
 		return ConversionDecision{}, ErrInvalidRequest
 	}
@@ -67,7 +69,7 @@ func PlanDynamicConversion(source Source, request Request, limits ConversionLimi
 			if !conversionModeAllowed(selection, kind, request, limits, videoCopy, audioCopy) {
 				continue
 			}
-			for _, candidate := range conversionEncodingCandidates(profile, kind, videoCopy, audioCopy) {
+			for _, candidate := range conversionAdmissionCandidates(conversionEncodingCandidates(profile, kind, videoCopy, audioCopy), limits) {
 				candidateProfile := candidate.profile
 				plan, projected, reason := conversionCandidate(source, request, limits, candidateProfile, kind, selection, videoCopy, audioCopy, true, candidate.video)
 				if reason != nil {

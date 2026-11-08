@@ -101,9 +101,17 @@ func (s *Server) readSubtitleContentFor(ctx context.Context, subject library.Sub
 	return s.readSubtitleContentForExtraction(ctx, subject, itemID, sourceID, index, format, nil)
 }
 
-func (s *Server) readSubtitleContentForExtraction(ctx context.Context, subject library.Subject, itemID, sourceID string, index int, format subtitle.Format, cached *hlsSubtitleExtractionRead) (library.SubtitleContent, error) {
+func (s *Server) readSubtitleContentForExtraction(ctx context.Context, subject library.Subject, itemID, sourceID string, index int, format subtitle.Format, cached *hlsSubtitleExtractionRead, admittedExtraction ...bool) (library.SubtitleContent, error) {
 	if index < 0 || sourceID == "" {
 		return library.SubtitleContent{}, library.ErrInvalidInput
+	}
+	// Standalone downloads use this request's committed settings. A bound HLS
+	// track keeps its admission even when a later request sees new settings.
+	extractEmbedded := cached != nil
+	if len(admittedExtraction) > 0 {
+		extractEmbedded = admittedExtraction[0]
+	} else if !extractEmbedded {
+		extractEmbedded = s.settingsForContext(ctx).Transcoding.EnableSubtitleExtraction
 	}
 	file, source, err := s.library.OpenMediaFor(ctx, subject, itemID, sourceID)
 	if err != nil {
@@ -130,6 +138,9 @@ func (s *Server) readSubtitleContentForExtraction(ctx context.Context, subject l
 		}
 		if stream.CodecType != "subtitle" {
 			return library.SubtitleContent{}, library.ErrNotFound
+		}
+		if !extractEmbedded {
+			return library.SubtitleContent{}, subtitle.ErrUnsupportedFormat
 		}
 		if media.SubtitleExtractFormat(stream.Codec) == "" {
 			return library.SubtitleContent{}, subtitle.ErrUnsupportedFormat
@@ -249,6 +260,10 @@ func (s *Server) subtitleAttachment(w http.ResponseWriter, r *http.Request) {
 	index, err := strconv.Atoi(r.PathValue("Index"))
 	if err != nil || index < 0 || index > 4095 || r.PathValue("MediaSourceId") == "" {
 		s.subtitleError(w, r, subtitle.ErrInvalidRange)
+		return
+	}
+	if !s.requestSettings(r).Transcoding.EnableOnTheFlyAttachmentExtraction {
+		apiError(w, r, http.StatusServiceUnavailable, "subtitle_attachment_extraction_disabled", "On-the-fly attachment extraction is disabled.")
 		return
 	}
 	select {

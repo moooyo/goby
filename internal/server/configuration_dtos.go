@@ -2,7 +2,7 @@ package server
 
 import "github.com/moooyo/goby/internal/settings"
 
-// These fields have real backing behavior. Deployment paths, credentials,
+// These fields have real backing behavior. Unmanaged deployment paths, credentials,
 // upstream migration markers, and unsupported encoding options are omitted.
 func serverConfigurationDTO(view settings.Configuration) map[string]any {
 	result := map[string]any{"IsStartupWizardCompleted": view.StartupWizardCompleted}
@@ -12,6 +12,12 @@ func serverConfigurationDTO(view settings.Configuration) map[string]any {
 	result["EnableInternetProviders"] = snapshot.Management.Metadata.EnableInternetProviders
 	result["SortRemoveWords"] = append([]string{}, snapshot.Sorting.SortRemoveWords...)
 	result["HttpServerPortNumber"] = snapshot.Runtime.DesiredNetwork.HttpPort
+	if view.ServerPolicy != nil {
+		policy := view.ServerPolicy.Values
+		result["EnableRemoteAccess"] = policy.EnableRemoteAccess
+		result["LocalNetworkSubnets"] = append([]string{}, policy.LocalNetworkSubnets...)
+		result["UICulture"] = policy.UICulture
+	}
 	switch snapshot.ServerNameMode {
 	case settings.ServerNameDeployment:
 		result["ServerName"] = snapshot.Defaults.ServerName
@@ -28,9 +34,19 @@ func serverConfigurationDTO(view settings.Configuration) map[string]any {
 
 func encodingConfigurationDTO(snapshot settings.Snapshot) map[string]any {
 	result := map[string]any{
-		"TranscodingMaxWidth":       snapshot.Encoding.TranscodingMaxWidth,
-		"EnableSoftwareToneMapping": snapshot.Runtime.Execution.SoftwareToneMapping,
-		"EnableHardwareToneMapping": snapshot.Runtime.Execution.VulkanToneMapping,
+		"TranscodingMaxWidth":                snapshot.Encoding.TranscodingMaxWidth,
+		"EnableSoftwareToneMapping":          snapshot.Runtime.Execution.SoftwareToneMapping,
+		"EnableHardwareToneMapping":          snapshot.Runtime.Execution.VulkanToneMapping,
+		"H264Preset":                         snapshot.Runtime.Execution.H264.Preset,
+		"EnableHevcEncoding":                 snapshot.Runtime.Transcoding.EnableHevcEncoding,
+		"EnableHardwareEncoding":             snapshot.Runtime.Transcoding.EnableHardwareEncoding,
+		"EnableThrottling":                   snapshot.Runtime.EnableThrottling,
+		"ExtractionThreadCount":              snapshot.Runtime.ExtractionThreadCount,
+		"DownMixAudioBoost":                  snapshot.Runtime.Transcoding.DownMixAudioBoost,
+		"EnableSubtitleExtraction":           snapshot.Runtime.Transcoding.EnableSubtitleExtraction,
+		"EnableOnTheFlyAttachmentExtraction": snapshot.Runtime.Transcoding.EnableOnTheFlyAttachmentExtraction,
+		"TranscodingTempPath":                snapshot.Runtime.DesiredTranscodingTempPath,
+		"CodecConfigurations":                snapshot.Runtime.CodecConfigurations,
 	}
 	if snapshot.Runtime.Execution.H264.RateControl == "capped_crf" {
 		result["H264Crf"] = snapshot.Runtime.Execution.H264.CRF

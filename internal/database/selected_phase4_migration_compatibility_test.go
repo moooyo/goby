@@ -11,10 +11,27 @@ import (
 
 func assertSelectedPhase4MigrationDefaults(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
 	t.Helper()
+	version, err := database.SchemaVersion(ctx, pool)
+	if err != nil {
+		t.Fatalf("read the runtime default migration version: %v", err)
+	}
+	runtimeDefault := `{"Network":null,"Hardware":null,"Threads":null,"H264":null,"HEVC":null,"SoftwareToneMapping":null,"VulkanToneMapping":null}`
+	if version >= 77 {
+		runtimeDefault = `{"Network":null,"Hardware":null,"Threads":null,"H264":null,"HEVC":null,"SoftwareToneMapping":null,"VulkanToneMapping":null,"Transcoding":null,"TranscodingTempPath":null,"SoftwareToneMapOptions":null,"CodecConfigurations":null}`
+	}
+	if version >= 78 {
+		runtimeDefault = `{"Network":null,"Hardware":null,"Threads":null,"H264":null,"HEVC":null,"SoftwareToneMapping":null,"VulkanToneMapping":null,"Transcoding":null,"TranscodingTempPath":null,"SoftwareToneMapOptions":null,"CodecConfigurations":null,"EnableThrottling":null,"ExtractionThreadCount":null,"CodecProfileLimits":null,"SubtitleOptions":null}`
+	}
+	// Schemas 77 and 78 change future INSERT defaults while retaining the migrated
+	// singleton's exact seven-key neutral payload.
 	var valid bool
 	if err := pool.QueryRow(ctx, `SELECT
 		NOT EXISTS(SELECT 1 FROM managed_settings WHERE runtime_overrides IS DISTINCT FROM
 		'{"Network":null,"Hardware":null,"Threads":null,"H264":null,"HEVC":null,"SoftwareToneMapping":null,"VulkanToneMapping":null}'::jsonb)
+		AND EXISTS(SELECT 1 FROM pg_attribute attribute JOIN pg_attrdef definition
+			ON definition.adrelid=attribute.attrelid AND definition.adnum=attribute.attnum
+			WHERE attribute.attrelid='managed_settings'::regclass AND attribute.attname='runtime_overrides'
+				AND pg_get_expr(definition.adbin,definition.adrelid)=quote_literal($1::jsonb::text)||'::jsonb')
 		AND (SELECT count(*) FROM notification_transport)=1
 		AND EXISTS(SELECT 1 FROM notification_transport WHERE id=1 AND revision=1 AND NOT enabled AND endpoint=''
 			AND allowed_networks='{}'::text[] AND credential_ciphertext IS NULL AND credential_generation=1)
@@ -22,7 +39,7 @@ func assertSelectedPhase4MigrationDefaults(t *testing.T, ctx context.Context, po
 		AND EXISTS(SELECT 1 FROM notification_journal_state WHERE id=1 AND sequence=0)
 		AND NOT EXISTS(SELECT 1 FROM notification_registrations)
 		AND NOT EXISTS(SELECT 1 FROM notification_source_events)
-		AND NOT EXISTS(SELECT 1 FROM notification_deliveries)`).Scan(&valid); err != nil || !valid {
+		AND NOT EXISTS(SELECT 1 FROM notification_deliveries)`, runtimeDefault).Scan(&valid); err != nil || !valid {
 		t.Fatalf("migration inferred target runtime choices, notification credentials or work: %v", err)
 	}
 }

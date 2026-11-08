@@ -39,6 +39,7 @@ type Config struct {
 	Diagnostics           diagnostics.Config
 	Recovery              RecoveryConfig
 	ActivityRetentionDays int
+	Updates               UpdateConfig              `json:"-"`
 	OnlineProviders       OnlineProvidersConfig     `json:"-"`
 	DynamicSources        []DynamicSourceDefinition `json:"-"`
 }
@@ -108,6 +109,10 @@ func Load() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+	c.Updates, err = loadUpdates()
+	if err != nil {
+		return Config{}, err
+	}
 	c.OnlineProviders, err = loadOnlineProviders()
 	if err != nil {
 		return Config{}, err
@@ -171,6 +176,9 @@ func (c Config) Validate() error {
 		return err
 	}
 	if err := c.OnlineProviders.Validate(); err != nil {
+		return err
+	}
+	if err := c.Updates.Validate(); err != nil {
 		return err
 	}
 	if err := validateDynamicSources(c.DynamicSources); err != nil {

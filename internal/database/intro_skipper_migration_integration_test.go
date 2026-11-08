@@ -40,8 +40,8 @@ func TestIntroSkipperMigrationPreservesHistoricalPublicationAuthority(t *testing
 				'detections',(SELECT jsonb_agg(jsonb_build_object('row',to_jsonb(d),'xmin',d.xmin::text)) FROM analysis_detections d),
 				'decisions',(SELECT jsonb_agg(jsonb_build_object('row',to_jsonb(d),'xmin',d.xmin::text)) FROM analysis_intro_decisions d),
 				'cache',(SELECT jsonb_agg(jsonb_build_object('row',to_jsonb(c),'xmin',c.xmin::text)) FROM analysis_feature_cache c),
-				'events',(SELECT jsonb_agg(to_jsonb(e) ORDER BY name) FROM task_system_events e
-					WHERE name NOT IN ('BackgroundPreviewGenerationRequested','AudioWaveformGenerationRequested','CreditsAnalysisRequested','SubtitleTimelineGenerationRequested')))::text`
+				'events',(SELECT jsonb_agg(jsonb_build_object('row',to_jsonb(e),'xmin',e.xmin::text) ORDER BY name) FROM task_system_events e
+					WHERE name NOT IN ('BackgroundPreviewGenerationRequested','AudioWaveformGenerationRequested','CreditsAnalysisRequested','SubtitleTimelineGenerationRequested','OnlineImagesRequested')))::text`
 			var before, after string
 			if err := pool.QueryRow(ctx, retainedQuery).Scan(&before); err != nil {
 				t.Fatal(err)
@@ -56,8 +56,8 @@ func TestIntroSkipperMigrationPreservesHistoricalPublicationAuthority(t *testing
 			if err := pool.QueryRow(ctx, retainedQuery).Scan(&after); err != nil || after != before {
 				t.Fatalf("migration changed existing settings, publication, evidence, cache, or scheduled rebuilds: %v", err)
 			}
-			// Schema57 appends one neutral event without scheduling a rebuild or
-			// mutating the five event rows included in the historical snapshot.
+			// Later migrations append only their known neutral events. The five
+			// original event rows and xmin values remain in the snapshot above.
 			var backgroundEvent bool
 			if err := pool.QueryRow(ctx, `SELECT count(*)=CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=57)
 				THEN 1 ELSE 0 END FROM task_system_events WHERE name='BackgroundPreviewGenerationRequested'
@@ -81,6 +81,14 @@ func TestIntroSkipperMigrationPreservesHistoricalPublicationAuthority(t *testing
 				THEN 1 ELSE 0 END FROM task_system_events WHERE name='SubtitleTimelineGenerationRequested'
 				AND sequence=0 AND lifecycle_key='' AND occurred_at IS NOT NULL`).Scan(&subtitleTimelineEvent); err != nil || !subtitleTimelineEvent {
 				t.Fatalf("migration did not append the exact neutral subtitle timeline event: %v", err)
+			}
+			var onlineImagesEvent bool
+			if err := pool.QueryRow(ctx, `SELECT
+				(SELECT count(*) FROM task_system_events WHERE name='OnlineImagesRequested')=
+					CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=75) THEN 1 ELSE 0 END
+				AND NOT EXISTS(SELECT 1 FROM task_system_events WHERE name='OnlineImagesRequested'
+					AND (sequence IS DISTINCT FROM 0 OR lifecycle_key IS DISTINCT FROM '' OR occurred_at IS NULL))`).Scan(&onlineImagesEvent); err != nil || !onlineImagesEvent {
+				t.Fatalf("migration did not append the exact neutral online-image event: %v", err)
 			}
 			var retained string
 			if err := pool.QueryRow(ctx, `SELECT jsonb_agg(to_jsonb(m) ORDER BY version)::text FROM schema_migrations m WHERE version<=53`).Scan(&retained); err != nil || retained != history {

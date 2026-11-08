@@ -272,3 +272,35 @@ profile/source changes, failed/canceled regeneration, and explicit replacement.
 These establish the selected deployment/media and capability paths at their
 original sources. They do not replace frozen-image release acceptance or imply
 a public production rollout.
+
+## Remote control
+
+An authenticated player registers its actual video controls through
+`POST /emby/Sessions/Capabilities/Full` and maintains a scoped
+`/embywebsocket` connection. The implemented commands are single-item
+`PlayNow`, `Stop`, `Pause`, `Unpause`, `PlayPause`, `Seek`, and
+`DisplayMessage`. Queued `PlayNext`/`PlayLast`, multi-item playlists, and sync
+are not advertised. A requested source, audio/subtitle selection, and start
+position are preserved; an absent requested source fails instead of selecting
+another version. Remote playback always opens this browser's built-in player.
+
+Playback state is reported from the media element. A command's HTTP acceptance
+is not an execution acknowledgement, and the browser may require a local user
+gesture before starting or resuming media. The player displays that restriction
+without reporting an invented playing state. An early pause or seek remains
+effective when the source finishes opening. Stopping reports the final observed
+position and returns to the item's details.
+
+Messages render as text. Messages without a positive timeout use a native modal
+dialog with keyboard dismissal and focus restoration; timed notices leave
+playback controls available and pause their dismissal timer while hovered or
+focused. Connection status appears in player settings. Reconnection uses bounded
+backoff and repeats capability registration, and logout, rejected credentials,
+and page teardown close the old receiver. The application does not log the
+authenticated WebSocket URL or browser error event. Playback APIs and WebSockets
+continue to use the player's token, independently of administrator cookies.
+
+The protocol follows Emby's [remote-control guide](https://dev.emby.media/doc/restapi/Remote-Control.html)
+and [WebSocket guide](https://dev.emby.media/doc/restapi/Web-Socket.html).
+The isolated browser cases are in `tests/remote-control.spec.ts`; their results
+must be recorded by the task's verification owner before claiming acceptance.

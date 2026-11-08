@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Box, Button, IconButton, LinearProgress, MenuItem, Paper, Skeleton, Stack, TablePagination, TextField, Tooltip, Typography } from '@mui/material';
-import RefreshRounded from '@mui/icons-material/RefreshRounded';
-import VideoSettingsRounded from '@mui/icons-material/VideoSettingsRounded';
+import { Box, Button, IconButton, LinearProgress, MenuItem, Paper, Skeleton, Stack, TablePagination, TextField, Tooltip, Typography } from './ui';
+import { RefreshRounded } from './icons';
+import { VideoSettingsRounded } from './icons';
 import { ErrorNotice } from './components';
 import { MediaOperationDialog } from './MediaOperationDialog';
 import { MediaOperationProgress, MediaOperationStatusChip, mediaOperationKindLabel, mediaOperationStateLabel } from './MediaOperationStatus';

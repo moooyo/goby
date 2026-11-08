@@ -34,7 +34,19 @@ test('administrator setup, users, persistent session, and mobile navigation', as
     await page.getByLabel(/^Administrator username/).fill(name);
     await page.getByLabel(/^Password/).fill(password);
     await page.getByRole('button', { name: 'Create administrator', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Add your first library', exact: true })).toBeVisible();
+    await capture('setup-first-library-desktop.png');
+    await page.getByRole('button', { name: 'Skip for now', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Remote access', exact: true })).toBeVisible();
+    await expect(page.getByRole('combobox', { name: 'Default interface language', exact: true })).toBeEnabled();
+    await capture('setup-network-desktop.png');
+    await page.getByRole('button', { name: 'Continue', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Your server is ready', exact: true })).toBeVisible();
+    await capture('setup-ready-desktop.png');
+    await page.getByRole('button', { name: 'Finish setup', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Sign in to Goby' })).toBeVisible();
+    await expect(page.getByLabel(/^Username/)).toHaveValue('');
+    await expect(page.getByLabel(/^Password/)).toHaveValue('');
     await expect(page.getByText('Your administrator account is ready. Sign in to continue.')).toBeVisible();
   }
 

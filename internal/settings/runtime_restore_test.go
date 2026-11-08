@@ -18,6 +18,10 @@ func TestRuntimeRestoreReplacesOnlyTargetHostChoicesInCallerTransaction(t *testi
 		H264:                &transcode.CPUQuality{Preset: "slow", RateControl: "capped_crf", CRF: 20},
 		HEVC:                &transcode.CPUQuality{Preset: "medium", RateControl: "bitrate", CRF: 30},
 		SoftwareToneMapping: settingsTestPointer(false), VulkanToneMapping: settingsTestPointer(true),
+		TranscodingTempPath: settingsTestPointer("/source/private-transcodes"),
+		EnableThrottling:    settingsTestPointer(true), ExtractionThreadCount: settingsTestPointer(0),
+		CodecProfileLimits: &transcode.CodecProfileLimits{H264: "baseline", HEVC: "main"},
+		SubtitleOptions:    &RuntimeSubtitleOptions{AllowAssToText: false},
 	}
 	encoded, err := json.Marshal(source)
 	if err != nil {
@@ -27,7 +31,8 @@ func TestRuntimeRestoreReplacesOnlyTargetHostChoicesInCallerTransaction(t *testi
 		t.Fatal(err)
 	}
 	target := TargetHostSettings{Network: &NetworkOverrides{BindHost: settingsTestPointer("127.0.0.1"), HttpPort: settingsTestPointer(10096)},
-		Hardware: &HardwareSelection{Decode: "software", Encode: "software"}, Threads: settingsTestPointer(3)}
+		Hardware: &HardwareSelection{Decode: "software", Encode: "software"}, Threads: settingsTestPointer(3),
+		TranscodingTempPath: settingsTestPointer("/target/private-transcodes")}
 	before := settingsRowSnapshot(t, ctx, pool)
 	tx, err := pool.Begin(ctx)
 	if err != nil {
@@ -35,7 +40,8 @@ func TestRuntimeRestoreReplacesOnlyTargetHostChoicesInCallerTransaction(t *testi
 	}
 	defer tx.Rollback(ctx)
 	readTarget, err := ReadTargetHostSettings(ctx, tx)
-	if err != nil || !reflect.DeepEqual(readTarget.Network, source.Network) || !reflect.DeepEqual(readTarget.Hardware, source.Hardware) || !reflect.DeepEqual(readTarget.Threads, source.Threads) {
+	if err != nil || !reflect.DeepEqual(readTarget.Network, source.Network) || !reflect.DeepEqual(readTarget.Hardware, source.Hardware) || !reflect.DeepEqual(readTarget.Threads, source.Threads) ||
+		!reflect.DeepEqual(readTarget.TranscodingTempPath, source.TranscodingTempPath) {
 		t.Fatalf("target transaction capture lost current host choices: %v", err)
 	}
 	changed, err := NormalizeRestoredHostSettings(ctx, tx, target)
@@ -50,8 +56,11 @@ func TestRuntimeRestoreReplacesOnlyTargetHostChoicesInCallerTransaction(t *testi
 	after, err := decodeStoredRuntime(raw)
 	if err != nil || revision != 9007199254740994 || !reflect.DeepEqual(after.Network, target.Network) ||
 		!reflect.DeepEqual(after.Hardware, target.Hardware) || !reflect.DeepEqual(after.Threads, target.Threads) ||
+		!reflect.DeepEqual(after.TranscodingTempPath, target.TranscodingTempPath) ||
 		!reflect.DeepEqual(after.H264, source.H264) || !reflect.DeepEqual(after.HEVC, source.HEVC) ||
-		!reflect.DeepEqual(after.SoftwareToneMapping, source.SoftwareToneMapping) || !reflect.DeepEqual(after.VulkanToneMapping, source.VulkanToneMapping) {
+		!reflect.DeepEqual(after.SoftwareToneMapping, source.SoftwareToneMapping) || !reflect.DeepEqual(after.VulkanToneMapping, source.VulkanToneMapping) ||
+		!reflect.DeepEqual(after.EnableThrottling, source.EnableThrottling) || !reflect.DeepEqual(after.ExtractionThreadCount, source.ExtractionThreadCount) ||
+		!reflect.DeepEqual(after.CodecProfileLimits, source.CodecProfileLimits) || !reflect.DeepEqual(after.SubtitleOptions, source.SubtitleOptions) {
 		t.Fatal("restore imported source host choices or changed portable encoding policy")
 	}
 	changed, err = NormalizeRestoredHostSettings(ctx, tx, target)
@@ -80,7 +89,9 @@ func TestRuntimeRestoreReplacesOnlyTargetHostChoicesInCallerTransaction(t *testi
 		t.Fatal(err)
 	}
 	after, err = decodeStoredRuntime(raw)
-	if err != nil || after.Network != nil || after.Hardware != nil || after.Threads != nil || !reflect.DeepEqual(after.H264, source.H264) {
+	if err != nil || after.Network != nil || after.Hardware != nil || after.Threads != nil || after.TranscodingTempPath != nil || !reflect.DeepEqual(after.H264, source.H264) ||
+		!reflect.DeepEqual(after.EnableThrottling, source.EnableThrottling) || !reflect.DeepEqual(after.ExtractionThreadCount, source.ExtractionThreadCount) ||
+		!reflect.DeepEqual(after.CodecProfileLimits, source.CodecProfileLimits) || !reflect.DeepEqual(after.SubtitleOptions, source.SubtitleOptions) {
 		t.Fatal("offline restore did not preserve target deployment ownership")
 	}
 }

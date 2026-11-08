@@ -241,7 +241,7 @@ func BuildArgs(p Plan, threads int) ([]string, error) {
 				forcedFrames += "," + tickSeconds(cut-p.StartTicks)
 			}
 		}
-		args = append(args, "-c:v", codec, "-threads:v", threadCount, "-bf", "0",
+		args = append(args, "-c:v", codec, "-threads:v", strconv.Itoa(videoExecutionThreads(p, encode, threads)), "-bf", "0",
 			"-force_key_frames", forcedFrames)
 		args = appendHLSVideoFilter(args, p, decode, encode)
 		args = AppendVideoColorArgs(args, p)
@@ -269,8 +269,12 @@ func BuildArgs(p Plan, threads int) ([]string, error) {
 			sampleRate = 48000
 		}
 		args = append(args, "-c:a", codec, "-threads:a", threadCount, "-b:a", strconv.FormatInt(bitrate, 10), "-ac", strconv.Itoa(channels), "-ar", strconv.Itoa(sampleRate))
+		filter := ""
 		if p.AudioSampleSeek {
-			args = append(args, "-af", audioSampleSeekFilter(p, sampleRate))
+			filter = audioSampleSeekFilter(p, sampleRate)
+		}
+		if filter = appendDownMixAudioFilter(p, filter); filter != "" {
+			args = append(args, "-af", filter)
 		}
 		if p.AudioCodec == "aac" {
 			args = append(args, "-profile:a", "aac_low")

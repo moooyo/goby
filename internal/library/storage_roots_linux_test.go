@@ -177,8 +177,13 @@ func TestStorageRootsCancellationRetainsWorkersPhasesAndRootIsolation(t *testing
 		return len(serverDirectoryWorkers) == 0 && originalMediaReadGovernor.Stats().Active == beforeIO.Active && originalMediaReadOwners.Stats().RegisteredOwners == beforeOwners
 	}, "actual storage-root worker retirement")
 	items, err = store.StorageRoots(ctx, actor, identity.AdministratorNative)
-	if err != nil || !reflect.DeepEqual(items, []StorageRoot{{Path: second, Available: true}, {Path: approved, Available: true}}) || reads.Load() != 4 {
+	if err != nil || len(items) != 2 || items[0].Path != second || items[1].Path != approved || reads.Load() != 4 {
 		t.Fatalf("storage roots did not recover after syscall completion: items=%+v reads=%d err=%v", items, reads.Load(), err)
+	}
+	for _, item := range items {
+		if !item.Available || item.Readable == nil || !*item.Readable {
+			t.Fatalf("recovered root did not retain its actual read observation: %+v", item)
+		}
 	}
 }
 

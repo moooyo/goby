@@ -3,6 +3,7 @@ package activity
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 	"unicode"
 	"unicode/utf8"
@@ -32,9 +33,14 @@ SELECT (SELECT count(*) FROM filtered), COALESCE((
 		'Resource',jsonb_build_object('Kind',p.resource_kind,'ID',p.resource_id),
 		'RequestID',p.request_id,'Revision',p.revision,'PreviousRevision',p.previous_revision,
 		'ObservationFingerprint',p.observation_fingerprint,'Count',p.affected_count,
-		'State',p.state,'ChangedFields',p.changed_fields,'ActorName',COALESCE(u.name,''))
+		'State',p.state,'ChangedFields',p.changed_fields,'ActorName',COALESCE(u.name,''),
+		'ResourceName',COALESCE(i.name,''),
+		'ResourceMediaType',CASE WHEN i.type = 'Audio' THEN 'Audio'
+			WHEN i.type IN ('Movie','Episode','Video','MusicVideo') THEN 'Video' ELSE '' END)
 		ORDER BY p.created_at DESC,p.id DESC)
 	FROM page p LEFT JOIN users u ON p.actor_kind = 'user' AND u.id = p.actor_id
+	LEFT JOIN items i ON p.action IN ('playback.started','playback.stopped')
+		AND p.resource_kind = 'item' AND i.id = p.resource_id
 ), '[]'::jsonb)`
 
 // QueryOwned returns a bounded page and matching total from one SQL snapshot.
@@ -92,7 +98,18 @@ func QueryOwned(queryRow func(string, ...any) Row, options QueryOptions) (Page, 
 		if !validDisplayName(entry.ActorName) {
 			entry.ActorName = ""
 		}
+		if !validItemDisplayName(entry.ResourceName) {
+			entry.ResourceName = ""
+		}
+		if entry.ResourceMediaType != "Audio" && entry.ResourceMediaType != "Video" {
+			entry.ResourceMediaType = ""
+		}
 		entry.Name, entry.Overview = description(entry.Action, entry.State)
+		if entry.Action == ActionPlaybackStarted || entry.Action == ActionPlaybackStopped {
+			if !ValidPlaybackObservation(entry.Event) {
+				return Page{}, fmt.Errorf("%w: stored playback activity is invalid", ErrUnavailable)
+			}
+		}
 		if entry.Action == ActionLibraryRootBindingUpdated {
 			if _, err := eventArguments(entry.Event); err != nil {
 				return Page{}, fmt.Errorf("%w: stored root binding activity is invalid", ErrUnavailable)
@@ -102,6 +119,10 @@ func QueryOwned(queryRow func(string, ...any) Row, options QueryOptions) (Page, 
 		}
 	}
 	return result, nil
+}
+
+func validItemDisplayName(value string) bool {
+	return len(value) <= 1024 && utf8.ValidString(value) && strings.IndexFunc(value, unicode.IsControl) < 0
 }
 
 func validDisplayName(value string) bool {
@@ -130,6 +151,10 @@ func description(action Action, state State) (string, string) {
 		return "Session issued", "A login completed and its session was issued."
 	case ActionSessionRevoked:
 		return "Session revoked", "A session was revoked."
+	case ActionPlaybackStarted:
+		return "Playback started", "An authorized player reported playback starting."
+	case ActionPlaybackStopped:
+		return "Playback stopped", "An authorized player's playback stop was committed."
 	case ActionApplicationKeyCreated:
 		return "Application key created", "An application key was created."
 	case ActionApplicationKeyRevealed:
@@ -176,6 +201,8 @@ func description(action Action, state State) (string, string) {
 		return "Backup cancellation requested", "A backup cancellation request was persisted."
 	case ActionBackupFinished:
 		return terminalDescription("Backup", state)
+	case ActionBackupPublished:
+		return "Backup available", "An encrypted backup was published and is ready to download."
 	case ActionBackupImported:
 		return "Backup imported", "A backup was imported into the managed backup inventory."
 	case ActionBackupDeleteRequested:

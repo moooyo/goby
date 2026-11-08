@@ -96,10 +96,14 @@ func (jobs *dynamicTestJobs) CancelJob(string, transcode.Scope) error {
 }
 func (*dynamicTestJobs) Close(context.Context) error { return nil }
 
-func dynamicServerFixture(t *testing.T) (*Server, identity.Principal, dynamicsource.Lease, playback.Request, *dynamicTestJobs) {
+func dynamicServerFixture(t *testing.T, connectors ...dynamicsource.Connector) (*Server, identity.Principal, dynamicsource.Lease, playback.Request, *dynamicTestJobs) {
 	t.Helper()
 	principal := identity.Principal{User: identity.User{ID: "viewer", Policy: []byte(`{}`)}, SessionID: "auth", Client: identity.Client{DeviceID: "device"}, Kind: "emby", PeerIP: "127.0.0.1"}
-	manager, err := dynamicsource.New(context.Background(), []dynamicsource.Definition{{ItemID: "42", URL: "https://configured.invalid/secret-url", Headers: map[string]string{"Authorization": "secret"}, Infinite: true, MaxReconnects: 2}}, dynamicsource.Options{Connector: dynamicTestConnector{}, Authorize: func(context.Context, dynamicsource.Owner, string, string) error { return nil }})
+	var connector dynamicsource.Connector = dynamicTestConnector{}
+	if len(connectors) > 0 {
+		connector = connectors[0]
+	}
+	manager, err := dynamicsource.New(context.Background(), []dynamicsource.Definition{{ItemID: "42", URL: "https://configured.invalid/secret-url", Headers: map[string]string{"Authorization": "secret"}, Infinite: true, MaxReconnects: 2}}, dynamicsource.Options{Connector: connector, Authorize: func(context.Context, dynamicsource.Owner, string, string) error { return nil }})
 	if err != nil {
 		t.Fatal(err)
 	}

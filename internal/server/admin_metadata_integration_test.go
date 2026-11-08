@@ -180,7 +180,7 @@ func TestHTTPAdminMetadataReadContractsAuthorizationAndQueries(t *testing.T) {
 		t.Fatal("native metadata pagination did not retain the library-scoped total and stable order")
 	}
 	library := objectValue(t, listing, "Library")
-	if len(library) != 3 || library["Id"] != f.libraryID || library["CollectionType"] != "movies" || len(items[0]) != 13 {
+	if len(library) != 3 || library["Id"] != f.libraryID || library["CollectionType"] != "movies" || len(items[0]) != 14 {
 		t.Fatal("native metadata list did not use its bounded library/item summaries")
 	}
 	if items[0]["IndexNumber"] != nil || items[0]["ParentIndexNumber"] != nil || items[0]["HasOverrides"] != false || items[0]["LockedFieldCount"] != float64(0) {

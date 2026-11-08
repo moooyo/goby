@@ -158,6 +158,9 @@ func normalizeRestoredIdentityWithHost(ctx context.Context, tx pgx.Tx, master []
 	if err := identity.NormalizeNotificationRestore(ctx, tx); err != nil {
 		return RestoredDatabase{}, err
 	}
+	if err := NormalizeBackupPolicyRestore(ctx, tx); err != nil {
+		return RestoredDatabase{}, err
+	}
 	tag, err := tx.Exec(ctx, `UPDATE play_sessions SET state='Expired',
 		stopped_at=COALESCE(stopped_at,clock_timestamp()),updated_at=GREATEST(updated_at,clock_timestamp())
 		WHERE state IN ('Prepared','Playing','Paused')`)

@@ -1,7 +1,8 @@
+import { confirmAction } from './i18n';
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Skeleton, Stack, Switch, Typography, useMediaQuery } from '@mui/material';
-import SaveOutlined from '@mui/icons-material/SaveOutlined';
+import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Skeleton, Stack, Switch, Typography, useMediaQuery } from './ui';
+import { SaveOutlined } from './icons';
 import { adminApi, ApiError, isAbortError } from './api';
 import type { LocalCredentials, LocalCredentialsInput } from './api';
 import { ErrorNotice } from './components';
@@ -60,9 +61,9 @@ export function LocalCredentialsDialog({ userId, userName, hasPassword, isCurren
     setPassword(''); setPasswordConfirmation(''); setPin(''); setPinConfirmation(''); setClearPassword(false); setClearPin(false);
   }
   function changed() { setNotice(''); setError(null); }
-  function close() { if (!inFlight.current && (!dirty || window.confirm('Discard unsaved local credentials?'))) onClose(); }
+  function close() { if (!inFlight.current && (!dirty || confirmAction('Discard unsaved local credentials?'))) onClose(); }
   function reload() {
-    if (inFlight.current || (dirty && !window.confirm('Discard your draft and reload saved local credentials?'))) return;
+    if (inFlight.current || (dirty && !confirmAction('Discard your draft and reload saved local credentials?'))) return;
     clearSecrets(); setConfirming(false); setRevision((value) => value + 1);
   }
   function submit(event: FormEvent<HTMLFormElement>) {

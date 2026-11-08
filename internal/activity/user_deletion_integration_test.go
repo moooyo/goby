@@ -63,12 +63,14 @@ func TestUserDeletionMigrationPreservesEveryPublishedActionAndHistory(t *testing
 		t.Fatal("user deletion migration rewrote existing activity history")
 	}
 	// The full upgrade adds user deletion in schema 29, the two media deletion
-	// actions in schema 34, and library editing in schema 36. Every earlier
+	// actions in schema 34, library editing in schema 36, backup publication
+	// in schema 71, and playback observations in schema 76. Every earlier
 	// action and historical activity row must remain unchanged.
-	want := append(slices.Clone(published), "'user.deleted'", "'item.deleted'", "'subtitle.deleted'", "'library.updated'")
+	want := append(slices.Clone(published), "'user.deleted'", "'item.deleted'", "'subtitle.deleted'", "'library.updated'",
+		"'backup.published'", "'playback.started'", "'playback.stopped'")
 	slices.Sort(want)
-	if !slices.Equal(readActions(), want) {
-		t.Fatal("activity upgrade did not preserve the original actions and add exactly the declared actions")
+	if actual := readActions(); !slices.Equal(actual, want) {
+		t.Fatalf("activity upgrade did not preserve the original actions and add exactly the declared actions: got %v, want %v", actual, want)
 	}
 	insertActivityEvent(t, ctx, pool, event)
 	page := queryActivityPage(t, ctx, pool, activity.QueryOptions{Action: activity.ActionUserDeleted, ActorID: event.Actor.ID})

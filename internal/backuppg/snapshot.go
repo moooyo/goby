@@ -155,7 +155,7 @@ func (snapshot *Snapshot) Facts(ctx context.Context) (backupformat.SourceFacts, 
 	if err != nil {
 		return backupformat.SourceFacts{}, err
 	}
-	tables, err := fingerprints(ctx, snapshot.tx, snapshot.plan.catalog)
+	tables, err := exportFingerprints(ctx, snapshot.tx, snapshot.plan.catalog, snapshot.plan.options.OmitManagedArtwork)
 	if err != nil {
 		return backupformat.SourceFacts{}, err
 	}
@@ -201,8 +201,22 @@ func (snapshot *Snapshot) Dump(ctx context.Context, out io.Writer) error {
 }
 
 func fingerprints(ctx context.Context, tx pgx.Tx, catalog Catalog) ([]backupformat.TableFact, error) {
+	return exportFingerprints(ctx, tx, catalog, false)
+}
+
+// Export facts describe the selected archive contents. Omitted artwork sets
+// and payloads are empty together, so restoration cannot retain overrides
+// whose owned bytes were deliberately left out of the archive.
+func exportFingerprints(ctx context.Context, tx pgx.Tx, catalog Catalog, omitManagedArtwork bool) ([]backupformat.TableFact, error) {
 	result := make([]backupformat.TableFact, 0, len(catalog.Tables))
 	for _, table := range catalog.Tables {
+		if omitManagedArtwork && managedArtworkTable(table.Name) {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+			result = append(result, emptyManagedArtworkFact(table.Name))
+			continue
+		}
 		order := make([]string, len(table.SortKey))
 		for index, column := range table.SortKey {
 			order[index] = `t.` + pgx.Identifier{column}.Sanitize() + `::text COLLATE "C" NULLS FIRST`

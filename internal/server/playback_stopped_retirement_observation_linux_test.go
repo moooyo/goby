@@ -34,17 +34,6 @@ func stoppedRetirementObservationErrno(err error) int {
 	return 0
 }
 
-// This remains an unknown observation. Only a fresh complete observation of
-// the same pidfd and captured start identity can later establish retirement.
-func (facts stoppedRetirementObservationFacts) retryExitedStatESRCH(exited bool) bool {
-	return exited && facts.Stage == "stat_unknown" && facts.PIDFDObserved &&
-		facts.PIDFDReady > 0 && facts.PIDFDErrno == 0 &&
-		facts.PIDFDRevents&(unix.POLLIN|unix.POLLHUP) != 0 &&
-		facts.PIDFDRevents&(unix.POLLERR|unix.POLLNVAL) == 0 &&
-		facts.StatObserved && facts.StatErrno == int(syscall.ESRCH) && facts.StatClass == "esrch" &&
-		facts.ExpectedStart != 0 && facts.SeenStart == 0 && !facts.StartMismatch && !facts.GroupObserved
-}
-
 // This observation-only copy retains the frozen helper's strict acceptance:
 // same pidfd exit plus actual stat ENOENT, then a read-only absent group probe.
 // ESRCH at stat is recorded as unknown, pending actual diagnosis, not accepted.

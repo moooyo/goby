@@ -52,6 +52,11 @@ func (m *Manager) Status(ctx context.Context, actor identity.Principal) (StatusV
 			break
 		}
 	}
+	if m.automaticBackupID != "" {
+		// Automatic work is controlled through its durable task run, not the
+		// separate native recovery-operation namespace.
+		view.Busy, view.ActiveOperationId = true, ""
+	}
 	for _, slot := range m.data.Slots {
 		if slot.Slot == m.current.DatabaseSlot {
 			continue

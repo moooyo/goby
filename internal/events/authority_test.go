@@ -46,7 +46,13 @@ func TestPublicationAuthorityRejectsMixedAndIncompleteIdentities(t *testing.T) {
 	sub := subscribeTestScope(t, hub, "target-user", "target-session", "target-device")
 	for _, invalid := range []Authority{
 		{UserID: "sender-user", SessionID: "sender-session"},
-		{Kind: "admin", UserID: "sender-user", SessionID: "sender-session"},
+		{Kind: "system", UserID: "sender-user", SessionID: "sender-session"},
+		{Kind: "unknown", UserID: "sender-user", SessionID: "sender-session"},
+		{Kind: "admin", UserID: "sender-user"},
+		{Kind: "admin", SessionID: "sender-session"},
+		{Kind: "admin", UserID: "sender-user", SessionID: "sender-session", CredentialID: "sender-key"},
+		{Kind: "admin", UserID: "sender-user", SessionID: "sender-session", ClientSessionID: "sender-client"},
+		{Kind: "admin", UserID: "sender-user", SessionID: "sender-session", ApplicationKeyID: 17},
 		{Kind: "emby", UserID: "sender-user"},
 		{Kind: "emby", SessionID: "sender-session"},
 		{Kind: "emby", UserID: "sender-user", SessionID: "sender-session", PeerIP: strings.Repeat("x", maxScopeFieldBytes+1)},
@@ -61,5 +67,28 @@ func TestPublicationAuthorityRejectsMixedAndIncompleteIdentities(t *testing.T) {
 		if _, err := hub.PublishScope(sub.Scope(), Envelope{MessageType: "Changed", Authority: invalid}); !errors.Is(err, ErrInvalidEvent) {
 			t.Errorf("mixed or incomplete publication authority accepted: %v", err)
 		}
+	}
+}
+
+func TestNativePublicationAuthorityRemainsImmutableAndOffWire(t *testing.T) {
+	hub := newTestHub(t, Options{})
+	sub := subscribeTestScope(t, hub, "target-user", "target-session", "target-device")
+	want := Authority{Kind: "admin", UserID: "administrator", SessionID: "cookie-session", PeerIP: "127.0.0.1"}
+	envelope := Envelope{MessageType: "GeneralCommand", Data: json.RawMessage(`{"Name":"DisplayMessage"}`), Authority: want}
+	if count, err := hub.PublishScope(sub.Scope(), envelope); err != nil || count != 1 {
+		t.Fatalf("publish native authority = (%d, %v)", count, err)
+	}
+	envelope.Authority.Kind = "emby"
+	envelope.Authority.SessionID = "replacement-session"
+	event := nextTestEvent(t, sub)
+	if event.Authority() != want {
+		t.Fatal("queued native authority changed after publication")
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(event.Bytes(), &fields); err != nil || len(fields) != 3 || fields["Authority"] != nil {
+		t.Fatal("administrator-cookie authority entered the wire envelope")
+	}
+	if data, err := json.Marshal(want); err != nil || string(data) != "{}" {
+		t.Fatal("native publication authority can be serialized")
 	}
 }

@@ -22,7 +22,7 @@ func (s *Server) bootstrapStatus(w http.ResponseWriter, r *http.Request) {
 		s.identityError(w, r, err)
 		return
 	}
-	jsonResponse(w, 200, map[string]bool{"Initialized": initialized})
+	jsonResponse(w, 200, map[string]any{"Initialized": initialized, "UICulture": s.serverUICulture()})
 }
 
 func (s *Server) bootstrap(w http.ResponseWriter, r *http.Request) {

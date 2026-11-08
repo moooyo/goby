@@ -75,7 +75,7 @@ func buildGeneratedHLSArgs(p Plan, threads int) ([]string, error) {
 			if p.SourceMode == "stream" {
 				keyframes = "expr:if(isnan(prev_forced_t),1,gte(t,prev_forced_t+" + strconv.Itoa(p.SegmentSeconds) + "))"
 			}
-			args = append(args, "-c:v", codec, "-threads:v", threadCount, "-bf", "0", "-force_key_frames", keyframes)
+			args = append(args, "-c:v", codec, "-threads:v", strconv.Itoa(videoExecutionThreads(p, encode, threads)), "-bf", "0", "-force_key_frames", keyframes)
 			args = appendHLSVideoFilter(args, rendition, decode, encode)
 			if p.FrameRate > 0 {
 				args = append(args, "-r", strconv.FormatFloat(p.FrameRate, 'f', -1, 64), "-g", strconv.Itoa(int(math.Ceil(p.FrameRate*float64(p.SegmentSeconds)))))
@@ -102,8 +102,12 @@ func buildGeneratedHLSArgs(p Plan, threads int) ([]string, error) {
 				sampleRate = 48000
 			}
 			args = append(args, "-c:a", codec, "-threads:a", threadCount, "-b:a", strconv.FormatInt(bitrate, 10), "-ac", strconv.Itoa(channels), "-ar", strconv.Itoa(sampleRate))
+			filter := ""
 			if p.AudioSampleSeek {
-				args = append(args, "-af", audioSampleSeekFilter(p, sampleRate))
+				filter = audioSampleSeekFilter(p, sampleRate)
+			}
+			if filter = appendDownMixAudioFilter(p, filter); filter != "" {
+				args = append(args, "-af", filter)
 			}
 			if p.AudioCodec == "aac" {
 				args = append(args, "-profile:a", "aac_low")

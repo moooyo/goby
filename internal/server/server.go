@@ -22,38 +22,41 @@ import (
 	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/notifications"
+	"github.com/moooyo/goby/internal/providerconfig"
 	"github.com/moooyo/goby/internal/settings"
 	"github.com/moooyo/goby/internal/systemstatus"
 	"github.com/moooyo/goby/internal/tasks"
 	"github.com/moooyo/goby/internal/transcode"
+	"github.com/moooyo/goby/internal/updates"
 )
 
 type Server struct {
-	cfg                    config.Config
-	db                     *pgxpool.Pool
-	playbackControlDB      *pgxpool.Pool
-	identity               *identity.Store
-	log                    *slog.Logger
-	version                string
-	serverID               string
-	limiter                *loginLimiter
-	library                *library.Store
-	images                 *imageCache
-	streamSlots            chan struct{}
-	originals              *originalStreamRuntime
-	subtitleSlots          chan struct{}
-	eventHub               *events.Hub
-	sockets                *socketRuntime
-	notifier               *userDataNotifier
-	catalogNotifier        *libraryNotifier
-	hls                    *hlsRuntime
-	dynamicSources         *dynamicsource.Manager
-	dynamicStreams         *dynamicStreamRuntime
-	mediaPolicyOnce        sync.Once
-	mediaPolicy            *mediaPolicyRuntime
-	playbackStopIntents    playbackStopIntentGate
-	playbackUnknownInputMu sync.Mutex
-	playbackUnknownInputs  *[maxPlaybackAdmissionReferences]*playbackOwnedInput
+	cfg                       config.Config
+	db                        *pgxpool.Pool
+	playbackControlDB         *pgxpool.Pool
+	identity                  *identity.Store
+	log                       *slog.Logger
+	version                   string
+	serverID                  string
+	limiter                   *loginLimiter
+	library                   *library.Store
+	images                    *imageCache
+	streamSlots               chan struct{}
+	originals                 *originalStreamRuntime
+	subtitleSlots             chan struct{}
+	eventHub                  *events.Hub
+	sockets                   *socketRuntime
+	notifier                  *userDataNotifier
+	catalogNotifier           *libraryNotifier
+	hls                       *hlsRuntime
+	activeTranscodingTempPath string
+	dynamicSources            *dynamicsource.Manager
+	dynamicStreams            *dynamicStreamRuntime
+	mediaPolicyOnce           sync.Once
+	mediaPolicy               *mediaPolicyRuntime
+	playbackStopIntents       playbackStopIntentGate
+	playbackUnknownInputMu    sync.Mutex
+	playbackUnknownInputs     *[maxPlaybackAdmissionReferences]*playbackOwnedInput
 	// Qualification enables these only after the complete correlated file-HLS
 	// ownership/admission chain and actual stop/recreation matrix are accepted.
 	correlatedHLSOwnershipEnabled bool
@@ -65,6 +68,10 @@ type Server struct {
 	taskStore                     *tasks.Store
 	taskManager                   *tasks.Manager
 	settings                      *settings.Store
+	serverPolicy                  *settings.ServerPolicyStore
+	restartController             *adminRestartController
+	updates                       *updates.Service
+	providerConfiguration         *providerconfig.Store
 	diagnostics                   *diagnostics.Store
 	mediaDiagnostics              *mediaDiagnosticRuntime
 	mediaOperations               *mediaOperationsRuntime
@@ -96,6 +103,10 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 		return nil, err
 	}
 	app := &Server{cfg: cfg, db: db, identity: users, log: logger, version: version, serverID: id, limiter: newLoginLimiter(), images: newImageCache(), streamSlots: make(chan struct{}, 64), subtitleSlots: make(chan struct{}, 4), sockets: newSocketRuntime()}
+	app.updates, err = updates.New(updates.Options{CurrentVersion: version, FeedURL: cfg.Updates.FeedURL})
+	if err != nil {
+		return nil, fmt.Errorf("configure update source: %w", err)
+	}
 	app.correlatedHLSOwnershipEnabled = true
 	app.correlatedHLSEarlyStopEnabled = true
 	for _, option := range options {
@@ -132,6 +143,13 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 	app.library, app.eventHub = catalog, hub
 	app.managedHardware = newManagedHardwareInventory(cfg.Transcoding)
 	app.originals = newOriginalStreamRuntime()
+	if err := app.initializeSettings(ctx); err != nil {
+		app.originals.stop()
+		app.sockets.cancel()
+		_ = hub.Close()
+		_ = catalog.Close(ctx)
+		return nil, err
+	}
 	app.hls, err = newHLSRuntime(ctx, app)
 	if err != nil {
 		app.originals.stop()
@@ -142,7 +160,12 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 	}
 	app.notifier = newUserDataNotifier(catalog, hub)
 	app.catalogNotifier = newLibraryNotifier(catalog, hub)
-	if err := app.initializeSettings(ctx); err != nil {
+	app.serverPolicy, err = settings.NewServerPolicy(ctx, app.library)
+	if err != nil {
+		_ = app.Close(context.Background())
+		return nil, err
+	}
+	if err := app.initializeProviderConfiguration(ctx); err != nil {
 		_ = app.Close(context.Background())
 		return nil, err
 	}
@@ -215,12 +238,18 @@ func (s *Server) initializeSettings(ctx context.Context) error {
 	if execution == (transcode.ExecutionOptions{}) {
 		execution = transcode.DefaultExecutionOptions(limits.Threads)
 	}
+	extractionThreads := limits.ResolvedExtractionThreadCount()
 	runtimeDefaults := settings.RuntimeOptions{
 		Network:  settings.NetworkValues{BindHost: binding.BindHost, HttpPort: binding.HttpPort},
 		Hardware: s.managedHardware.defaultSelection(), Execution: execution,
-		AuthorizedDeviceIDs:   s.managedHardware.authorizedDeviceIDs(),
-		AvailableDeviceIDs:    s.managedHardware.availableDeviceIDs(),
-		LegacyHardwareDefault: s.managedHardware.legacyDefault(),
+		Transcoding: settings.DefaultTranscodingPolicy(), TranscodingTempPath: limits.CacheDirectory,
+		CodecProfileLimits: limits.CodecProfileLimits,
+		SubtitleOptions:    &settings.RuntimeSubtitleOptions{AllowAssToText: !limits.DisableAssToText},
+		EnableThrottling:   limits.EnableThrottling, ExtractionThreadCount: &extractionThreads,
+		TranscodingTempPathExclusions: s.cfg.TranscodingTempPathExclusions(),
+		AuthorizedDeviceIDs:           s.managedHardware.authorizedDeviceIDs(),
+		AvailableDeviceIDs:            s.managedHardware.availableDeviceIDs(),
+		LegacyHardwareDefault:         s.managedHardware.legacyDefault(),
 	}
 	store, err := settings.New(ctx, s.db, s.library, settings.Values{
 		ServerName: s.cfg.ServerName, MaxBitrate: limits.MaxBitrate,
@@ -259,6 +288,9 @@ func (s *Server) initializeTasks(ctx context.Context) error {
 }
 
 func (s *Server) Close(ctx context.Context) error {
+	if s.updates != nil {
+		s.updates.Close()
+	}
 	if s.correlatedHLSOwnershipEnabled {
 		// Closing rejects new lifetime owners. Existing loans/callbacks still
 		// release only after actual domain work and descriptor/worker join.
@@ -308,6 +340,9 @@ func (s *Server) Handler() http.Handler {
 	s.registerAdminMediaAnalysisRoutes(mux)
 	s.registerAdminRuntimeResourcesRoutes(mux)
 	s.registerAdminSettingsRoutes(mux)
+	s.registerAdminServerPolicyRoutes(mux)
+	s.registerCoreUpdateRoutes(mux)
+	s.registerCoreRestartRoutes(mux)
 	s.registerAdminBackupRoutes(mux)
 	s.registerConfigurationRoutes(mux)
 	s.registerUserSettingsRoutes(mux)
@@ -405,6 +440,13 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 		w.Header().Set("Referrer-Policy", "same-origin")
 		w.Header().Set("X-Frame-Options", "DENY")
 		w.Header().Set("Cache-Control", "no-store")
+		var finishPolicy func()
+		var policyAllowed bool
+		r, finishPolicy, policyAllowed = s.admitServerPolicy(w, r)
+		if !policyAllowed {
+			return
+		}
+		defer finishPolicy()
 		if s.embyCORS(w, r) {
 			return
 		}

@@ -162,6 +162,17 @@ func (e *Engine) release() { <-e.gate }
 // Abort on any error. Neither a partially written file nor a successful return
 // grants publication authority. The writer's ID becomes the archive ID.
 func (e *Engine) Create(ctx context.Context, writer *backupstore.Writer, passphrase []byte) (manifest backupformat.Manifest, resultErr error) {
+	return e.CreateWithOptions(ctx, writer, passphrase, CreateOptions{IncludeImages: true})
+}
+
+// CreateOptions selects content without changing the default full backup path.
+// Excluded managed artwork also excludes its override state and user avatars;
+// ordinary metadata and references to source-folder images remain intact.
+type CreateOptions struct {
+	IncludeImages bool
+}
+
+func (e *Engine) CreateWithOptions(ctx context.Context, writer *backupstore.Writer, passphrase []byte, content CreateOptions) (manifest backupformat.Manifest, resultErr error) {
 	if e == nil || e.pool == nil || e.vault == nil || writer == nil || ValidatePassphrase(passphrase) != nil {
 		return manifest, ErrInvalid
 	}
@@ -183,7 +194,9 @@ func (e *Engine) Create(ctx context.Context, writer *backupstore.Writer, passphr
 			manifest, resultErr = backupformat.Manifest{}, ErrUnavailable
 		}
 	}()
-	snapshot, err := backuppg.OpenSnapshot(ctx, e.pool, e.options)
+	options := e.options
+	options.OmitManagedArtwork = !content.IncludeImages
+	snapshot, err := backuppg.OpenSnapshot(ctx, e.pool, options)
 	if err != nil {
 		return manifest, err
 	}

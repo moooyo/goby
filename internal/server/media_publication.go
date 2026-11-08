@@ -26,7 +26,8 @@ func (h *hlsRuntime) registerVerified(ctx context.Context, principal identity.Pr
 		return nil, err
 	}
 	defer parent.release()
-	session, created, err := h.registerWithPlaybackOwner(principal, source, playID, decision, start, parent)
+	session, created, err := h.registerWithPlaybackOwner(principal, source, playID, decision, start, parent,
+		h.server != nil && h.server.settingsForContext(ctx).EnableThrottling)
 	if err != nil {
 		return nil, err
 	}

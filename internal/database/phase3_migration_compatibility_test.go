@@ -33,6 +33,7 @@ func assertPhase3MigrationDefaults(t *testing.T, ctx context.Context, pool *pgxp
 			+CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=58) THEN 1 ELSE 0 END
 			+CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=59) THEN 1 ELSE 0 END
 			+CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=60) THEN 1 ELSE 0 END
+			+CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=75) THEN 1 ELSE 0 END
 		AND (SELECT count(*) FROM task_system_events WHERE name IN
 			('ServerStarted','LibraryChanged','ConfigurationChanged') AND sequence=0
 			AND lifecycle_key='' AND occurred_at IS NOT NULL)=3
@@ -48,6 +49,8 @@ func assertPhase3MigrationDefaults(t *testing.T, ctx context.Context, pool *pgxp
 			AND sequence=0 AND lifecycle_key='' AND occurred_at IS NOT NULL)=CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=59) THEN 1 ELSE 0 END
 		AND (SELECT count(*) FROM task_system_events WHERE name='SubtitleTimelineGenerationRequested'
 			AND sequence=0 AND lifecycle_key='' AND occurred_at IS NOT NULL)=CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=60) THEN 1 ELSE 0 END
+		AND (SELECT count(*) FROM task_system_events WHERE name='OnlineImagesRequested'
+			AND sequence=0 AND lifecycle_key='' AND occurred_at IS NOT NULL)=CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=75) THEN 1 ELSE 0 END
 		AND NOT EXISTS(SELECT 1 FROM task_system_event_receipts)`).Scan(&valid); err != nil || !valid {
 		t.Fatalf("migration inferred phase 3 library, preference, artwork, or event state: %v", err)
 	}

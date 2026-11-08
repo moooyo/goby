@@ -171,6 +171,11 @@ func TestAdminBackupJSONRejectsLossyUnknownDuplicateAndUnboundedInput(t *testing
 		{"escaped duplicate", strings.TrimSuffix(valid, "}") + `,"\u0052equestId":"` + backupTestID + `"}`, "application/json", 400, "invalid_input"},
 		{"missing", `{"RequestId":"` + backupTestID + `"}`, "application/json", 400, "invalid_input"},
 		{"null", `{"RequestId":"` + backupTestID + `","Passphrase":null}`, "application/json", 400, "invalid_input"},
+		{"null image option", strings.TrimSuffix(valid, "}") + `,"IncludeImages":null}`, "application/json", 400, "invalid_input"},
+		{"string image option", strings.TrimSuffix(valid, "}") + `,"IncludeImages":"false"}`, "application/json", 400, "invalid_input"},
+		{"number image option", strings.TrimSuffix(valid, "}") + `,"IncludeImages":0}`, "application/json", 400, "invalid_input"},
+		{"duplicate image option", strings.TrimSuffix(valid, "}") + `,"IncludeImages":true,"IncludeImages":false}`, "application/json", 400, "invalid_input"},
+		{"wrong case image option", strings.TrimSuffix(valid, "}") + `,"includeImages":false}`, "application/json", 400, "invalid_input"},
 		{"array", `[]`, "application/json", 400, "invalid_input"},
 		{"trailing", valid + ` {}`, "application/json", 400, "invalid_input"},
 		{"utf8", strings.Replace(valid, "twelve", "\xff", 1), "application/json", 400, "invalid_input"},
@@ -194,6 +199,36 @@ func TestAdminBackupJSONRejectsLossyUnknownDuplicateAndUnboundedInput(t *testing
 			backupTestError(t, response, test.code, test.errorCode)
 			if len(manager.recorded()) != 0 {
 				t.Fatal("invalid JSON reached recovery admission")
+			}
+		})
+	}
+}
+
+func TestAdminBackupCreateAcceptsOptionalImageContentSelection(t *testing.T) {
+	for _, test := range []struct {
+		name, option string
+		present      bool
+		include      bool
+	}{
+		{name: "default"},
+		{name: "include", option: `,"IncludeImages":true`, present: true, include: true},
+		{name: "exclude", option: `,"IncludeImages":false`, present: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			manager := &backupTestManager{}
+			response := httptest.NewRecorder()
+			body := `{"RequestId":"` + backupTestID + `","Passphrase":"manual-backup-passphrase"` + test.option + `}`
+			(&Server{recovery: manager}).adminBackupRequest(backupTestResponse{response}, backupTestRequest(body), "create")
+			calls := manager.recorded()
+			if response.Code != http.StatusAccepted || len(calls) != 1 || calls[0].action != "create" {
+				t.Fatal("valid image content selection did not reach manual backup admission")
+			}
+			request := calls[0].request.(recovery.CreateRequest)
+			if (request.IncludeImages != nil) != test.present || request.IncludeImages != nil && *request.IncludeImages != test.include {
+				t.Fatal("manual image option lost its explicit value or omission")
+			}
+			if request.RequestId != backupTestID || len(request.Passphrase) != len("manual-backup-passphrase") || !bytes.Equal(request.Passphrase, make([]byte, len(request.Passphrase))) {
+				t.Fatal("image option changed request identity or caller-owned passphrase cleanup")
 			}
 		})
 	}

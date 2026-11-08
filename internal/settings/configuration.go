@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
@@ -13,11 +14,28 @@ import (
 // credential. Viewers receive no settings or initialization information; the
 // HTTP adapter may project the observed empty total-configuration object.
 func (s *Store) GetConfiguration(ctx context.Context, actor Actor) (Configuration, error) {
+	return s.getConfiguration(ctx, actor, nil)
+}
+
+// GetConfigurationWithPolicy observes both committed publishers while holding
+// their writer locks in the same order used by a combined configuration write.
+func (s *Store) GetConfigurationWithPolicy(ctx context.Context, actor Actor, policy *ServerPolicyStore) (Configuration, error) {
+	if policy == nil {
+		return Configuration{}, ErrUnavailable
+	}
+	return s.getConfiguration(ctx, actor, policy)
+}
+
+func (s *Store) getConfiguration(ctx context.Context, actor Actor, policy *ServerPolicyStore) (Configuration, error) {
 	if actor.Audience != identity.AdministratorEmby {
 		return Configuration{}, identity.ErrUnauthorized
 	}
 	s.publicationMu.Lock()
 	defer s.publicationMu.Unlock()
+	if policy != nil {
+		policy.writeMu.Lock()
+		defer policy.writeMu.Unlock()
+	}
 	var result Configuration
 	err := s.owner.WithOwnedTx(ctx, func(tx library.OwnedTx) error {
 		err := checkActor(tx, actor, true)
@@ -38,6 +56,10 @@ func (s *Store) GetConfiguration(ctx context.Context, actor Actor) (Configuratio
 			return err
 		}
 		result = Configuration{Snapshot: s.Snapshot(), StartupWizardCompleted: initialized, CanManage: true}
+		if policy != nil {
+			copy := policy.Snapshot()
+			result.ServerPolicy = &copy
+		}
 		return checkActor(tx, actor, false)
 	})
 	if err != nil {
@@ -50,6 +72,20 @@ func (s *Store) GetConfiguration(ctx context.Context, actor Actor) (Configuratio
 // section to the latest locked record, preserving unrelated native fields.
 // Native Update retains its separate revision-CAS and replacement contract.
 func (s *Store) ApplyConfiguration(ctx context.Context, actor Actor, mutation ConfigurationMutation) (Snapshot, error) {
+	return s.applyConfiguration(ctx, actor, mutation, nil)
+}
+
+// ApplyConfigurationWithPolicy applies supported server-policy fields and
+// managed settings in one owned transaction. It carries no client revision;
+// the native stores retain their independent revision-CAS contracts.
+func (s *Store) ApplyConfigurationWithPolicy(ctx context.Context, actor Actor, mutation ConfigurationMutation, policy *ServerPolicyStore, clientAddress string) (Snapshot, error) {
+	if policy == nil {
+		return Snapshot{}, ErrUnavailable
+	}
+	return s.applyConfiguration(ctx, actor, mutation, &configurationPolicyChange{store: policy, clientAddress: clientAddress})
+}
+
+func (s *Store) applyConfiguration(ctx context.Context, actor Actor, mutation ConfigurationMutation, policy *configurationPolicyChange) (Snapshot, error) {
 	if actor.Audience != identity.AdministratorEmby {
 		return Snapshot{}, identity.ErrUnauthorized
 	}
@@ -58,9 +94,26 @@ func (s *Store) ApplyConfiguration(ctx context.Context, actor Actor, mutation Co
 	mutation.MetadataCountryCode = clonePointer(mutation.MetadataCountryCode)
 	mutation.StartupWizardCompleted = clonePointer(mutation.StartupWizardCompleted)
 	mutation.EnableInternetProviders = clonePointer(mutation.EnableInternetProviders)
+	mutation.EnableRemoteAccess = clonePointer(mutation.EnableRemoteAccess)
+	mutation.UICulture = clonePointer(mutation.UICulture)
 	mutation.EnableSoftwareToneMapping = clonePointer(mutation.EnableSoftwareToneMapping)
 	mutation.EnableHardwareToneMapping = clonePointer(mutation.EnableHardwareToneMapping)
+	mutation.EnableHevcEncoding = clonePointer(mutation.EnableHevcEncoding)
+	mutation.EnableHardwareEncoding = clonePointer(mutation.EnableHardwareEncoding)
+	mutation.DownMixAudioBoost = clonePointer(mutation.DownMixAudioBoost)
+	mutation.EnableSubtitleExtraction = clonePointer(mutation.EnableSubtitleExtraction)
+	mutation.EnableOnTheFlyAttachmentExtraction = clonePointer(mutation.EnableOnTheFlyAttachmentExtraction)
+	mutation.TranscodingTempPath = clonePointer(mutation.TranscodingTempPath)
+	mutation.H264Preset = clonePointer(mutation.H264Preset)
+	mutation.CodecConfigurations = clonePointer(mutation.CodecConfigurations)
+	mutation.AllowAssToText = clonePointer(mutation.AllowAssToText)
+	mutation.EnableThrottling = clonePointer(mutation.EnableThrottling)
+	mutation.ExtractionThreadCount = clonePointer(mutation.ExtractionThreadCount)
 	mutation.Tasks = clonePointer(mutation.Tasks)
+	if mutation.LocalNetworkSubnets != nil {
+		copy := slices.Clone(*mutation.LocalNetworkSubnets)
+		mutation.LocalNetworkSubnets = &copy
+	}
 	if mutation.SortRemoveWords != nil {
 		copy := cloneSorting(Sorting{SortRemoveWords: *mutation.SortRemoveWords}).SortRemoveWords
 		mutation.SortRemoveWords = &copy
@@ -72,7 +125,13 @@ func (s *Store) ApplyConfiguration(ctx context.Context, actor Actor, mutation Co
 	if err := validateConfigurationMutation(mutation); err != nil {
 		return Snapshot{}, err
 	}
-	return s.change(ctx, actor, nil, func(tx library.OwnedTx, previous settingsRecord) (settingsRecord, error) {
+	if policy == nil && hasConfigurationPolicy(mutation) {
+		return Snapshot{}, ErrUnavailable
+	}
+	if policy != nil {
+		policy.mutation = mutation
+	}
+	return s.changeWithPolicy(ctx, actor, nil, func(tx library.OwnedTx, previous settingsRecord) (settingsRecord, error) {
 		if mutation.StartupWizardCompleted != nil {
 			actual, err := readInitialized(tx)
 			if err != nil {
@@ -117,13 +176,15 @@ func (s *Store) ApplyConfiguration(ctx context.Context, actor Actor, mutation Co
 			// compatibility ceiling. Native MaxWidth is never changed here.
 			previous.Encoding.TranscodingMaxWidth = mutation.TranscodingMaxWidth
 		case ConfigurationSubtitles:
-			previous.Management.Subtitles = *mutation.Subtitles
+			if mutation.Subtitles != nil {
+				previous.Management.Subtitles = *mutation.Subtitles
+			}
 		case ConfigurationTasks:
 			previous.Management.Tasks = *mutation.Tasks
 		}
 		previous.Runtime = s.applyRuntimeConfiguration(previous.Runtime, mutation)
 		return previous, nil
-	})
+	}, policy)
 }
 
 func configurationNameMode(value *string) ServerNameMode {
@@ -143,6 +204,9 @@ func validateConfigurationMutation(value ConfigurationMutation) error {
 	if err := validateRuntimeConfiguration(value); err != nil {
 		return err
 	}
+	if err := validateConfigurationPolicy(value); err != nil {
+		return err
+	}
 	if value.SortRemoveWords != nil {
 		if value.Section != ConfigurationFull && value.Section != ConfigurationPartial {
 			return invalid("sorting belongs to server configuration")
@@ -159,10 +223,12 @@ func validateConfigurationMutation(value ConfigurationMutation) error {
 		}
 		management := DefaultManagement()
 		if value.Section == ConfigurationSubtitles {
-			if value.Subtitles == nil || value.Tasks != nil {
+			if value.Subtitles == nil && value.AllowAssToText == nil || value.Tasks != nil {
 				return invalid("supply subtitle configuration")
 			}
-			management.Subtitles = *value.Subtitles
+			if value.Subtitles != nil {
+				management.Subtitles = *value.Subtitles
+			}
 		} else {
 			if value.Tasks == nil || value.Subtitles != nil {
 				return invalid("supply task configuration")

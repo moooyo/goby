@@ -65,6 +65,7 @@ func (h *hlsRuntime) applyPlaybackSnapshot(play library.PlaySession) {
 		}
 		session.demand = hlsPlaybackDemand{initialized: true, revision: play.PlaybackRevision,
 			state: play.State, paused: play.State == "Paused", position: play.PositionTicks, updated: play.UpdatedAt, initialIntent: intent}
+		notifyHLSBufferThrottleLocked(session)
 		seek := previous.initialized && (play.PositionTicks < previous.position-hlsProductionLookaheadTicks ||
 			play.PositionTicks > previous.position+hlsProductionLookaheadTicks)
 		if !hlsLegacyDemandPlan(session.key.plan) {
@@ -94,6 +95,7 @@ func (h *hlsRuntime) applyPlaybackSnapshot(play library.PlaySession) {
 			}
 			session.accessed = time.Now()
 			session.mu.Unlock()
+			h.syncPlaybackBufferDemand(session)
 			continue
 		}
 		transition := session.demand.paused || previous.initialized && previous.paused != session.demand.paused || seek
@@ -109,6 +111,7 @@ func (h *hlsRuntime) applyPlaybackSnapshot(play library.PlaySession) {
 		}
 		session.accessed = time.Now()
 		session.mu.Unlock()
+		h.syncPlaybackBufferDemand(session)
 	}
 }
 

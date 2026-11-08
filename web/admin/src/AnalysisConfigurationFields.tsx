@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Accordion, AccordionDetails, AccordionSummary, Box, Stack, TextField, Typography } from '@mui/material';
-import ExpandMoreRounded from '@mui/icons-material/ExpandMoreRounded';
+import { Accordion, AccordionDetails, AccordionSummary, Box, Stack, TextField, Typography } from './ui';
+import { ExpandMoreRounded } from './icons';
 import { fieldError } from './formFields';
 import { analysisNumberFields, introSkipperFields } from './mediaAnalysis';
 import type { AnalysisDraft, AnalysisErrors, AnalysisField } from './mediaAnalysis';

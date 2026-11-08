@@ -130,8 +130,21 @@ func TestConfigurationClosedQueriesAndNamedRegistry(t *testing.T) {
 			t.Fatal("named configuration registry accepted an unsupported name or treated it as a path")
 		}
 	}
-	data, err := json.Marshal(encodingConfigurationDTO(settings.Snapshot{Encoding: settings.Encoding{TranscodingMaxWidth: 96}}))
-	if err != nil || string(data) != `{"EnableHardwareToneMapping":false,"EnableSoftwareToneMapping":false,"TranscodingMaxWidth":96}` {
+	defaults := settings.DefaultRuntimeOptions()
+	snapshot := settings.Snapshot{Encoding: settings.Encoding{TranscodingMaxWidth: 96}, Runtime: settings.RuntimeSnapshot{
+		Execution: defaults.Execution, Transcoding: defaults.Transcoding, CodecConfigurations: defaults.CodecConfigurations,
+		EnableThrottling: defaults.EnableThrottling, ExtractionThreadCount: *defaults.ExtractionThreadCount,
+		DesiredTranscodingTempPath: "/srv/managed-transcodes",
+	}}
+	data, err := json.Marshal(encodingConfigurationDTO(snapshot))
+	want, _ := json.Marshal(map[string]any{
+		"TranscodingMaxWidth": 96, "EnableHardwareToneMapping": true, "EnableSoftwareToneMapping": true,
+		"H264Preset": "veryfast", "EnableHevcEncoding": true, "EnableHardwareEncoding": true, "DownMixAudioBoost": 1,
+		"EnableThrottling": false, "ExtractionThreadCount": 1,
+		"EnableSubtitleExtraction": true, "EnableOnTheFlyAttachmentExtraction": true,
+		"TranscodingTempPath": "/srv/managed-transcodes", "CodecConfigurations": defaults.CodecConfigurations,
+	})
+	if err != nil || string(data) != string(want) {
 		t.Fatal("named encoding DTO exposed an unrelated native setting")
 	}
 }

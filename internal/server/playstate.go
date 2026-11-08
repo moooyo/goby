@@ -202,11 +202,11 @@ func (s *Server) resumeItems(w http.ResponseWriter, r *http.Request) {
 		s.libraryError(w, r, err)
 		return
 	}
-	p := readItemPresentation(r)
+	p := s.readItemPresentation(r)
 	items := make([]map[string]any, 0, len(result.Items))
 	if !zeroLimit {
 		for _, item := range result.Items {
-			dto := s.itemDTOWithToken(item, p.fields, false, p.deliveryToken)
+			dto := s.itemDTOWithToken(item, p.fields, false, p.deliveryToken, p.transcoding)
 			p.applySwitches(dto)
 			items = append(items, dto)
 		}

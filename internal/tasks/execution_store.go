@@ -30,6 +30,9 @@ func (s *Store) nextAnalysisRun(ctx context.Context, previousKey string) (string
 }
 
 func (s *Store) snapshotChildren(tx library.OwnedTx, runID, key string) (int64, error) {
+	if key == library.TaskOnlineImagesKey {
+		return library.SnapshotOnlineImageTaskChildren(tx, runID)
+	}
 	if key == library.TaskSubtitleTimelineGenerationKey {
 		tag, err := tx.Exec(`INSERT INTO task_run_children(id,run_id,library_id,library_name,ordinal)
 			SELECT md5($1||':'||l.id),$1,l.id,l.name,(row_number() OVER (ORDER BY l.id)-1)::integer FROM libraries l

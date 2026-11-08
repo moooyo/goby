@@ -21,6 +21,7 @@ func (s *Server) registerLibraryRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /admin/v1/jobs", s.requireAdmin(s.listJobs))
 	mux.HandleFunc("POST /admin/v1/jobs/{id}/cancel", s.requireAdmin(s.cancelJob))
 	mux.HandleFunc("GET /admin/v1/storage/roots", s.requireAdmin(s.storageRoots))
+	mux.HandleFunc("GET /admin/v1/storage/library-directories", s.requireAdmin(s.libraryStorageDirectories))
 	mux.HandleFunc("GET /emby/Users/{UserId}/Views", s.requireEmby(s.embyViews))
 	mux.HandleFunc("GET /emby/Users/{UserId}/Items/Root", s.requireEmby(s.embyRoot))
 	mux.HandleFunc("GET /emby/Users/{UserId}/Items", s.requireEmby(s.embyItems))
@@ -63,6 +64,8 @@ func libraryErrorInfo(err error) (int, string, string) {
 		return 404, "not_found", "The library resource was not found."
 	case errors.Is(err, library.ErrForbidden):
 		return 403, "access_denied", "The resource or directory is not permitted."
+	case errors.Is(err, library.ErrDirectoryNotWritable):
+		return 422, "directory_not_writable", "The service does not have write access to this directory. Check its permissions and mount mode."
 	case errors.Is(err, library.ErrLibraryConflict):
 		return 409, "library_conflict", "The library changed. Reload its current revision before editing."
 	case errors.Is(err, library.ErrDirectoryLimit):

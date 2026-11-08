@@ -1,7 +1,8 @@
 # Goby
 
 Goby is a Linux media server with an Emby-compatible API, implemented in Go with
-PostgreSQL and FFmpeg. Its React + Material UI dashboard is for administration.
+PostgreSQL and FFmpeg. Its React dashboard uses accessible native controls and
+static CSS for administration.
 Goby now also has a [standalone React + Vite player](web/player/README.md),
 alongside supported third-party playback clients. The player builds and deploys
 separately from the Go executable. The project license has not yet been selected.

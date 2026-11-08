@@ -1,0 +1,195 @@
+.backup-policy-modal {
+  border-radius: 18px;
+}
+
+.backup-policy-modal .goby-dialog-layout,
+.backup-policy-modal .backup-policy-form {
+  min-height: 0;
+  max-height: inherit;
+}
+
+.backup-policy-form {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.backup-policy-form > .goby-dialog-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.backup-policy-description,
+.backup-policy-note {
+  margin: 0;
+  color: var(--ink3);
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.backup-policy-description {
+  color: var(--ink2);
+  font-size: 13px;
+}
+
+.backup-policy-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.backup-policy-section h3 {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.backup-policy-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.backup-policy-section-heading > .goby-button {
+  flex-shrink: 0;
+}
+
+.backup-policy-section .goby-control-label {
+  justify-content: space-between;
+  flex-direction: row-reverse;
+  gap: 14px;
+  min-height: 40px;
+  margin: 0;
+}
+
+.backup-policy-section .goby-control-label > :last-child {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.backup-policy-retention-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.backup-policy-retention-presets > .goby-button {
+  flex: 1 1 80px;
+}
+
+.backup-policy-note a {
+  color: var(--acc-ink);
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+
+.backup-policy-note a[aria-disabled="true"] {
+  color: var(--ink3);
+  cursor: not-allowed;
+}
+
+.backup-schedule-summary {
+  min-width: 0;
+  color: var(--ink2);
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.backup-schedule-summary ul {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.backup-schedule-summary li > span {
+  display: block;
+}
+
+.backup-schedule-summary.is-unavailable,
+.backup-schedule-disabled {
+  color: var(--warn);
+}
+
+.backup-schedule-disabled {
+  display: inline-block;
+  margin-left: 8px;
+}
+
+.backup-schedule-next {
+  display: block;
+  margin-top: 8px;
+  color: var(--ink3);
+}
+
+.backup-policy-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.backup-policy-field-error {
+  margin: 0;
+  color: var(--err);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.backup-policy-current dl {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+}
+
+.backup-policy-current dl > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  align-items: baseline;
+  gap: 12px;
+}
+
+.backup-policy-current dt {
+  color: var(--ink3);
+  font-size: 12px;
+}
+
+.backup-policy-current dd {
+  margin: 0;
+  color: var(--ink2);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.backup-policy-actions-spacer {
+  flex: 1;
+}
+
+.backup-policy-form .goby-dialog-actions {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 639px) {
+  .backup-policy-form .goby-dialog-actions > :first-child {
+    flex-basis: 100%;
+    justify-content: flex-start;
+    padding-left: 0;
+  }
+}

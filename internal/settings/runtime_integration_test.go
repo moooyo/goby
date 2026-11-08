@@ -75,7 +75,11 @@ func TestRuntimeOverridesPersistReloadAndResetAgainstCurrentDefaults(t *testing.
 	if err := json.Unmarshal(encoded, &persisted); err != nil {
 		t.Fatal(err)
 	}
-	if len(persisted) != 7 || string(persisted["Hardware"]) != "null" || string(persisted["HEVC"]) != "null" || string(persisted["VulkanToneMapping"]) != "null" {
+	if len(persisted) != 15 || string(persisted["Hardware"]) != "null" || string(persisted["HEVC"]) != "null" || string(persisted["VulkanToneMapping"]) != "null" ||
+		string(persisted["Transcoding"]) != "null" || string(persisted["TranscodingTempPath"]) != "null" ||
+		string(persisted["SoftwareToneMapOptions"]) != "null" || string(persisted["CodecConfigurations"]) != "null" ||
+		string(persisted["EnableThrottling"]) != "null" || string(persisted["ExtractionThreadCount"]) != "null" ||
+		string(persisted["CodecProfileLimits"]) != "null" || string(persisted["SubtitleOptions"]) != "null" {
 		t.Fatal("runtime persistence lost its complete nullable group shape")
 	}
 	row := settingsRowSnapshot(t, ctx, pool)

@@ -11,8 +11,9 @@ import (
 
 const maxProviderCredentialBytes = 16384
 
-// OnlineProvidersConfig contains startup-only operator credentials. Managed
-// settings independently control whether internet providers may be used.
+// OnlineProvidersConfig contains operator credential defaults and the immutable
+// deployment network gate. Encrypted administrator overrides may replace the
+// credential defaults for new work; managed settings also gate internet use.
 type OnlineProvidersConfig struct {
 	Enabled                bool   `json:"-"`
 	TMDBToken              string `json:"-"`

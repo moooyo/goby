@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Icon, MediaImage, PlayerLogo } from '../components';
 import { useApp } from '../context';
+import { RemoteControlStatus } from '../components/RemoteControl';
 import { api } from '../lib/api';
 import { availablePlayers } from '../lib/players';
 import { languageLabel } from '../lib/format';
@@ -155,6 +156,7 @@ export function SettingsPage() {
         <section className="settings-section">
           <h2>播放</h2>
           <div className="settings-card">
+            <SettingRow label="远程控制" description="连接后，管理员可以控制此浏览器的播放并发送消息。浏览器限制自动播放时仍需在此设备点按播放。"><RemoteControlStatus/></SettingRow>
             <SettingRow label="默认画质" description="片源低于所选画质时直接播放原画"><Segments<PlayerPreferences['quality']> label="默认画质" value={prefs.quality} options={[{ value: 'original', label: '原画' }, { value: '1080p', label: '1080p' }, { value: '720p', label: '720p' }, { value: '480p', label: '480p' }]} onChange={(quality) => update({ quality })} /></SettingRow>
             <SettingRow label="默认音轨"><Segments label="默认音轨" value={audioValue} options={audioOptions} onChange={(audioLanguage) => update({ audioLanguage })} /></SettingRow>
             <SettingRow label="默认字幕"><Segments label="默认字幕" value={subtitleValue} options={subtitleOptions} onChange={(value) => update(value === 'none' ? { subtitleMode: 'None' } : { subtitleLanguage: value, subtitleMode: 'Always' })} /></SettingRow>

@@ -12,12 +12,14 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/moooyo/goby/internal/artwork"
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/providers"
 )
 
 func (s *Server) registerProviderRoutes(mux *http.ServeMux) {
+	s.registerProviderConfigurationRoutes(mux)
 	mux.HandleFunc("GET /emby/Items/{Id}/RemoteSearch/Subtitles/{Language}", s.requireEmby(s.embyProviderSubtitleSearch))
 	mux.HandleFunc("POST /emby/Items/{Id}/RemoteSearch/Subtitles/{SubtitleId}", s.requireEmby(s.embyProviderSubtitleDownload))
 	mux.HandleFunc("GET /admin/v1/providers", s.requireAdmin(s.adminProviders))
@@ -26,6 +28,7 @@ func (s *Server) registerProviderRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /admin/v1/items/{id}/providers/apply", s.requireAdmin(s.adminProviderApply))
 	mux.HandleFunc("POST /admin/v1/items/{id}/providers/refresh", s.requireAdmin(s.adminProviderRefresh))
 	mux.HandleFunc("POST /admin/v1/items/{id}/providers/images", s.requireAdmin(s.adminProviderImages))
+	mux.HandleFunc("POST /admin/v1/items/{id}/providers/images/missing", s.requireAdmin(s.adminProviderMissingImage))
 	mux.HandleFunc("POST /admin/v1/items/{id}/providers/image", s.requireAdmin(s.adminProviderImage))
 	mux.HandleFunc("GET /admin/v1/items/{id}/providers/image-preview", s.requireAdmin(s.adminProviderImagePreview))
 	mux.HandleFunc("POST /admin/v1/items/{id}/providers/subtitles/search", s.requireAdmin(s.adminProviderSubtitleSearch))
@@ -50,7 +53,7 @@ func providerBody(w http.ResponseWriter, r *http.Request, target any) bool {
 		return false
 	}
 	data, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 64<<10))
-	if err != nil || !utf8.Valid(data) || !metadataUniqueJSON(data) {
+	if err != nil || !utf8.Valid(data) || !adminSettingsUnicode(data) || !metadataUniqueJSON(data) {
 		apiError(w, r, http.StatusBadRequest, "invalid_input", "Supply one bounded UTF-8 JSON object without duplicate fields.")
 		return false
 	}
@@ -97,6 +100,11 @@ func (s *Server) providerError(w http.ResponseWriter, r *http.Request, err error
 		apiError(w, r, http.StatusConflict, "source_changed", "The media source changed. Search for subtitles again.")
 	case errors.Is(err, library.ErrSubtitleTargetNotWritable):
 		apiError(w, r, http.StatusConflict, "subtitle_target_not_writable", "The media directory is not writable by Goby. Configure a writable media mount before downloading subtitles.")
+	case errors.Is(err, artwork.ErrManagedLimit), errors.Is(err, artwork.ErrManagedStorage), errors.Is(err, artwork.ErrManagedConflict),
+		errors.Is(err, artwork.ErrManagedTarget), errors.Is(err, artwork.ErrInvalidOptions), errors.Is(err, artwork.ErrInvalidImage),
+		errors.Is(err, artwork.ErrUnsupportedFormat), errors.Is(err, artwork.ErrLimitExceeded), errors.Is(err, identity.ErrInvalidCredentials),
+		errors.Is(err, identity.ErrClientSessionForbidden):
+		s.artworkManagementError(w, r, err)
 	default:
 		s.adminMetadataError(w, r, err)
 	}
@@ -266,25 +274,75 @@ func (s *Server) adminProviderImages(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) adminProviderImage(w http.ResponseWriter, r *http.Request) {
+	s.serveProviderImageSelection(w, r, providers.New(s.onlineProviderConfig()).DownloadImage)
+}
+
+func providerArtworkRevision(raw json.RawMessage) (string, bool, error) {
+	if len(raw) == 0 {
+		return "", false, nil
+	}
+	var revision string
+	if json.Unmarshal(raw, &revision) != nil || revision == "" || len(revision) > 78 || len(revision) > 1 && revision[0] == '0' {
+		return "", true, library.ErrInvalidInput
+	}
+	for _, digit := range revision {
+		if digit < '0' || digit > '9' {
+			return "", true, library.ErrInvalidInput
+		}
+	}
+	return revision, true, nil
+}
+
+func (s *Server) serveProviderImageSelection(w http.ResponseWriter, r *http.Request, download func(context.Context, providers.RemoteImage) ([]byte, error)) {
 	var input struct {
 		providerSelectionRequest
-		ImageID    string `json:"ImageId"`
-		ImageType  string `json:"ImageType"`
-		ImageIndex int    `json:"ImageIndex"`
+		ImageID         string          `json:"ImageId"`
+		ImageType       string          `json:"ImageType"`
+		ImageIndex      int             `json:"ImageIndex"`
+		ArtworkRevision json.RawMessage `json:"ArtworkRevision"`
 	}
 	if !providerBody(w, r, &input) {
+		return
+	}
+	artworkRevision, replaceManaged, err := providerArtworkRevision(input.ArtworkRevision)
+	if err != nil {
+		s.artworkManagementError(w, r, err)
 		return
 	}
 	actor, detail, ok := s.providerItem(w, r)
 	if !ok {
 		return
 	}
+	if replaceManaged {
+		if input.Revision != detail.Revision {
+			s.artworkManagementError(w, r, library.ErrRevisionConflict)
+			return
+		}
+		release, admitted := admitArtworkMutation()
+		if !admitted {
+			s.artworkManagementError(w, r, artwork.ErrManagedLimit)
+			return
+		}
+		defer release()
+	}
 	selected := providers.RemoteImage{Selection: input.selection(detail), ImageID: input.ImageID, ImageType: input.ImageType}
 	ctx, cancel := context.WithTimeout(r.Context(), 90*time.Second)
 	defer cancel()
-	data, err := providers.New(s.onlineProviderConfig()).DownloadImage(ctx, selected)
+	data, err := download(ctx, selected)
 	if err != nil {
 		s.providerError(w, r, err)
+		return
+	}
+	if replaceManaged {
+		result, collection, err := s.library.ReplaceProviderImageArtwork(ctx, actor, detail.ItemID, input.Revision, artworkRevision, selected, input.ImageIndex, data)
+		if err != nil {
+			s.artworkManagementError(w, r, err)
+			return
+		}
+		jsonResponse(w, http.StatusOK, struct {
+			library.ProviderImageResult
+			Artwork map[string]any `json:"Artwork"`
+		}{ProviderImageResult: result, Artwork: nativeArtworkCollection("items", detail.ItemID, collection)})
 		return
 	}
 	result, err := s.library.SelectProviderImage(ctx, actor, detail.ItemID, input.Revision, selected, input.ImageIndex, data)

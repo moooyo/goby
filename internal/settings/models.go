@@ -75,12 +75,19 @@ type Snapshot struct {
 // Readers that need overrides must use Snapshot; management options have
 // their own projections.
 type ValueSnapshot struct {
-	Revision       int64
-	Effective      Values
-	Encoding       Encoding
-	DesiredNetwork NetworkValues
-	Hardware       HardwareSelection
-	Execution      transcode.ExecutionOptions
+	Revision                   int64
+	Effective                  Values
+	Encoding                   Encoding
+	DesiredNetwork             NetworkValues
+	Hardware                   HardwareSelection
+	Execution                  transcode.ExecutionOptions
+	Transcoding                TranscodingPolicy
+	DesiredTranscodingTempPath string
+	CodecConfigurations        transcode.CodecConfigurations
+	EnableThrottling           bool
+	ExtractionThreadCount      int
+	CodecProfileLimits         transcode.CodecProfileLimits
+	SubtitleOptions            RuntimeSubtitleOptions
 }
 
 type Actor struct {
@@ -103,6 +110,9 @@ type UpdateRequest struct {
 
 type Field string
 
+// MaxResetFields bounds the complete closed reset registry, including Runtime.
+const MaxResetFields = 27
+
 const (
 	FieldServerName          Field = "ServerName"
 	FieldMaxBitrate          Field = "MaxBitrate"
@@ -121,6 +131,7 @@ type ResetRequest struct {
 // Snapshot and initialization value must not be projected when CanManage=false.
 type Configuration struct {
 	Snapshot               Snapshot
+	ServerPolicy           *ServerPolicySnapshot
 	StartupWizardCompleted bool
 	CanManage              bool
 }
@@ -140,24 +151,38 @@ const (
 // missing Partial name preserves the current state. Full omissions reset only
 // that configuration section, never unrelated native overrides.
 type ConfigurationMutation struct {
-	Section                     ConfigurationSection
-	ServerNamePresent           bool
-	ServerName                  *string
-	TranscodingMaxWidthPresent  bool
-	TranscodingMaxWidth         int
-	StartupWizardCompleted      *bool
-	PreferredMetadataLanguage   *string
-	MetadataCountryCode         *string
-	EnableInternetProviders     *bool
-	Subtitles                   *SubtitleOptions
-	Tasks                       *TaskOptions
-	HttpServerPortNumberPresent bool
-	HttpServerPortNumber        int
-	H264CrfPresent              bool
-	H264Crf                     int
-	EnableSoftwareToneMapping   *bool
-	EnableHardwareToneMapping   *bool
-	SortRemoveWords             *[]string
+	Section                            ConfigurationSection
+	ServerNamePresent                  bool
+	ServerName                         *string
+	TranscodingMaxWidthPresent         bool
+	TranscodingMaxWidth                int
+	StartupWizardCompleted             *bool
+	PreferredMetadataLanguage          *string
+	MetadataCountryCode                *string
+	EnableInternetProviders            *bool
+	EnableRemoteAccess                 *bool
+	LocalNetworkSubnets                *[]string
+	UICulture                          *string
+	Subtitles                          *SubtitleOptions
+	AllowAssToText                     *bool
+	Tasks                              *TaskOptions
+	HttpServerPortNumberPresent        bool
+	HttpServerPortNumber               int
+	H264CrfPresent                     bool
+	H264Crf                            int
+	EnableSoftwareToneMapping          *bool
+	EnableHardwareToneMapping          *bool
+	EnableHevcEncoding                 *bool
+	EnableHardwareEncoding             *bool
+	EnableThrottling                   *bool
+	ExtractionThreadCount              *int
+	DownMixAudioBoost                  *float64
+	EnableSubtitleExtraction           *bool
+	EnableOnTheFlyAttachmentExtraction *bool
+	TranscodingTempPath                *string
+	H264Preset                         *string
+	CodecConfigurations                *transcode.CodecConfigurations
+	SortRemoveWords                    *[]string
 }
 
 type ValidationError struct{ Fields map[string]string }

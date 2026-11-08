@@ -33,6 +33,7 @@ type dynamicStreamSession struct {
 	key             dynamicStreamKey
 	scope           transcode.Scope
 	request         playback.Request
+	admissionPolicy dynamicTranscodingAdmissionPolicy
 	output          playback.Source
 	subtitleSource  playback.Source
 	subtitleView    playback.HLSSubtitleView
@@ -54,6 +55,28 @@ type dynamicStreamSession struct {
 	ctx             context.Context
 	cancel          context.CancelFunc
 	closed          bool
+}
+
+// Admission policy is detached from output authority. A retained revision
+// rechecks current permissions, source facts, and ceilings while retaining the
+// encoder and extraction choices that produced its immutable output.
+type dynamicTranscodingAdmissionPolicy struct {
+	DisableHevcEncoding         bool
+	DisableHardwareEncoding     bool
+	DisableSubtitleExtraction   bool
+	DisableAttachmentExtraction bool
+	DisableAssToText            bool
+	CodecConfigurations         transcode.CodecConfigurations
+	CodecProfileLimits          transcode.CodecProfileLimits
+}
+
+func captureDynamicTranscodingAdmissionPolicy(limits playback.ConversionLimits) dynamicTranscodingAdmissionPolicy {
+	return dynamicTranscodingAdmissionPolicy{
+		DisableHevcEncoding: limits.DisableHevcEncoding, DisableHardwareEncoding: limits.DisableHardwareEncoding,
+		DisableSubtitleExtraction: limits.DisableSubtitleExtraction, DisableAttachmentExtraction: limits.DisableAttachmentExtraction,
+		DisableAssToText:    limits.DisableAssToText,
+		CodecConfigurations: limits.CodecConfigurations, CodecProfileLimits: limits.CodecProfileLimits,
+	}
 }
 
 type dynamicStreamRuntime struct {
@@ -111,13 +134,34 @@ func (s *Server) dynamicLimits(ctx context.Context, principal identity.Principal
 // and output ceilings, but it keeps the execution choices already admitted for
 // that revision. A settings edit alone must not select another processing graph
 // or retire a producer while its old manifest is being read.
-func (s *Server) dynamicRevisionLimits(ctx context.Context, principal identity.Principal, request playback.Request, r *http.Request, revision transcode.Plan) (playback.ConversionLimits, error) {
+func (s *Server) dynamicRevisionLimits(ctx context.Context, principal identity.Principal, request playback.Request, r *http.Request, revision transcode.Plan, policy dynamicTranscodingAdmissionPolicy) (playback.ConversionLimits, error) {
 	limits, err := s.dynamicLimits(ctx, principal, request, r)
 	if err != nil {
 		return limits, err
 	}
 	limits.Hardware, limits.Execution = revision.Hardware, revision.Execution
 	limits.HardwareUnavailable = !s.plannedHardwareAvailable(revision)
+	limits.DisableHevcEncoding, limits.DisableHardwareEncoding = policy.DisableHevcEncoding, policy.DisableHardwareEncoding
+	limits.DisableSubtitleExtraction, limits.DisableAttachmentExtraction = policy.DisableSubtitleExtraction, policy.DisableAttachmentExtraction
+	limits.DisableAssToText = policy.DisableAssToText
+	limits.CodecConfigurations = policy.CodecConfigurations
+	limits.CodecProfileLimits = policy.CodecProfileLimits
+	// Active filter preferences are canonicalized out of execution once their
+	// dimensions are concrete. Revalidation uses those exact dimensions while
+	// still checking the current output ceilings and client profile predicates.
+	width, height := revision.Width, revision.Height
+	for slot := 0; slot < min(revision.HLS.RenditionCount, transcode.MaxHLSRenditions); slot++ {
+		width = max(width, revision.HLS.Renditions[slot].Width)
+		height = max(height, revision.HLS.Renditions[slot].Height)
+	}
+	if transcode.VideoEncodingSupported(revision.VideoCodec) {
+		rangeName := ""
+		if revision.VideoFilters.OutputRange == "hdr10" {
+			rangeName = "HDR10"
+		}
+		limits.AdmittedVideoEncoding = playback.AdmittedVideoEncoding{Codec: revision.VideoCodec, Profile: transcode.VideoOutputProfile(revision),
+			Container: revision.Container, VideoRange: rangeName, BitDepth: transcode.VideoOutputBitDepth(revision), Width: width, Height: height}
+	}
 	return limits, nil
 }
 
@@ -237,7 +281,7 @@ func (s *Server) dynamicPlaybackDTO(r *http.Request, principal identity.Principa
 			return nil, dynamicsource.ErrUnavailable
 		}
 		lifetime, cancel := context.WithCancel(s.hls.ctx)
-		session = &dynamicStreamSession{id: hex.EncodeToString(random[:]), key: key, request: request, output: conversion.OutputSource, infinite: lease.Infinite,
+		session = &dynamicStreamSession{id: hex.EncodeToString(random[:]), key: key, request: request, admissionPolicy: captureDynamicTranscodingAdmissionPolicy(limits), output: conversion.OutputSource, infinite: lease.Infinite,
 			subtitleSource: dynamicPlaybackSource(lease), subtitleView: conversion.SubtitleView, principal: principal, changed: make(chan struct{}),
 			accessed: time.Now(), presenceUpdated: time.Now(), ctx: lifetime, cancel: cancel, scope: transcode.Scope{UserID: principal.User.ID, AuthSessionID: principal.SessionID,
 				DeviceID: principal.Client.DeviceID, ApplicationKey: principal.IsApplicationKey(), ApplicationClientID: principal.ClientSessionID,
@@ -398,7 +442,7 @@ func (s *Server) findDynamicSession(r *http.Request, values map[string]string) (
 		}
 		return nil, lease, err
 	}
-	limits, err := s.dynamicRevisionLimits(r.Context(), principal, session.request, r, session.key.plan)
+	limits, err := s.dynamicRevisionLimits(r.Context(), principal, session.request, r, session.key.plan, session.admissionPolicy)
 	if err != nil {
 		if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
 			s.retireDynamicSession(session)
@@ -497,7 +541,7 @@ func (s *Server) startDynamicEpochLocked(ctx context.Context, session *dynamicSt
 	}()
 	request := &http.Request{Method: http.MethodGet}
 	request = request.WithContext(context.WithValue(ctx, principalKey, principal))
-	limits, err := s.dynamicRevisionLimits(ctx, principal, session.request, request, session.key.plan)
+	limits, err := s.dynamicRevisionLimits(ctx, principal, session.request, request, session.key.plan, session.admissionPolicy)
 	if err != nil {
 		return err
 	}
