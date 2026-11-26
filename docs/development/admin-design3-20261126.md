@@ -158,3 +158,8 @@ its overall deadline and its partial results are not counted as a complete
 comparison. This follow-up used a loopback static server and synthetic APIs;
 it did not rerun the full suite, validate a backend, or run the specialized
 native media fixtures.
+
+A review follow-up restored the assertions that a guarded action opens exactly
+one confirmation and that the Media processing menu item remains selected after
+reload. All 12 media processing cases and the explicit TypeScript check passed
+again on `test-env`.

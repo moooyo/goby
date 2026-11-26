@@ -213,23 +213,35 @@ async function choose(parent: Locator, label: string, option: string): Promise<v
 }
 
 async function confirmPrompt(page: Page, action: () => Promise<unknown>, message: string, accept = false): Promise<void> {
-  const [observed] = await Promise.all([
-    page.waitForEvent('dialog').then(async (prompt) => {
-      const details = { type: prompt.type(), message: prompt.message() };
-      if (accept) await prompt.accept(); else await prompt.dismiss();
-      return details;
-    }),
-    action(),
-  ]);
-  expect(observed).toEqual({ type: 'confirm', message });
+  const observed: { type: string; message: string }[] = [];
+  const handled: Promise<void>[] = [];
+  const record = (prompt: Dialog) => {
+    observed.push({ type: prompt.type(), message: prompt.message() });
+    // Dismiss any extra prompt so it cannot block the action or go unnoticed.
+    handled.push(accept && observed.length === 1 ? prompt.accept() : prompt.dismiss());
+  };
+  page.on('dialog', record);
+  try {
+    await action();
+    await Promise.all(handled);
+  } finally {
+    page.off('dialog', record);
+  }
+  expect(observed).toEqual([{ type: 'confirm', message }]);
+}
+
+function mediaProcessingView(page: Page): Locator {
+  return page.getByRole('group', { name: 'Task views', exact: true, includeHidden: true })
+    .getByRole('button', { name: 'Media processing', exact: true, includeHidden: true });
 }
 
 async function openOperations(page: Page): Promise<Locator> {
   await page.goto('/admin/system/tasks');
   await page.locator('summary[aria-label="More task views"]').click();
   const panel = page.getByRole('region', { name: 'Media processing', exact: true });
-  const view = page.getByRole('group', { name: 'Task views', exact: true }).getByRole('button', { name: 'Media processing', exact: true });
+  const view = mediaProcessingView(page);
   await changeList(page, panel, '?StartIndex=0&Limit=25', () => view.click());
+  await expect(view).toHaveAttribute('aria-pressed', 'true');
   return panel;
 }
 
@@ -295,6 +307,7 @@ test('operation filters and pagination send exact queries and restore the media 
   expect(await page.evaluate(() => window.history.state?.tasksTab)).toBe('media-processing');
   await changeList(page, panel, '?StartIndex=0&Limit=25', () => page.reload());
   await expect(rows).toHaveCount(25);
+  await expect(mediaProcessingView(page)).toHaveAttribute('aria-pressed', 'true');
   expect(api.writes()).toEqual([]);
 });
 
@@ -400,7 +413,7 @@ test('OCR review saves only edited cues, paginates images, and guards dirty task
   // The modal makes the background inert. Dispatch directly to exercise the
   // task-view guard rather than pretending the background controls are clickable.
   try {
-    await views.getByRole('button', { name: 'Media processing', exact: true, includeHidden: true }).dispatchEvent('click');
+    await mediaProcessingView(page).dispatchEvent('click');
     expect(prompts).toEqual([]);
   } finally {
     page.off('dialog', dismiss);
