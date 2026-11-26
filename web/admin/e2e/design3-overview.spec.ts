@@ -57,6 +57,21 @@ test('the sidebar stays neutral until both reads and retains dated results acros
   } finally { release(); }
 });
 
+test('the phone attention panel fills the available width with eight-pixel gutters', async ({ page, api }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/admin/');
+  await page.getByRole('button', { name: 'Needs attention', exact: true }).click();
+  const bell = page.getByRole('dialog', { name: 'Needs attention', exact: true });
+  await expect(bell.getByRole('heading', { name: 'Needs attention 0' })).toBeVisible();
+  await expect.poll(async () => {
+    const rect = await bell.boundingBox();
+    return rect && { left: Math.round(rect.x), right: Math.round(390 - rect.x - rect.width) };
+  }).toEqual({ left: 8, right: 8 });
+  await noOverflow(page);
+  await evidence(page, testInfo, 'design3-phone-attention');
+  expect(api.writes()).toHaveLength(0);
+});
+
 test('the overview timestamps successful reads rather than ticking the browser clock', async ({ page, api }) => {
   const start = new Date('2026-11-26T14:00:00Z');
   await page.clock.install({ time: start });

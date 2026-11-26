@@ -105,4 +105,5 @@ a.attention-entry[aria-disabled='true'] { opacity: .45; cursor: wait; }
   .header-breadcrumb { gap: 4px; font-size: 12px; }
   .header-breadcrumb > span { max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .header-popup { right: 8px; }
+  .attention-popup { width: calc(100% - 16px); max-width: none; }
 }
