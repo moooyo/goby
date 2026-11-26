@@ -7,7 +7,8 @@ import { dashboardTargetURL, pageURL } from './dashboardNavigation';
 import type { DashboardTarget, Page } from './dashboardNavigation';
 import type { DashboardStatus } from './useDashboardStatus';
 import { latestSuccessfulRead, sidebarStatus } from './dashboardServerStatus';
-import { translateText, useAdminPreferences, useTranslation } from './i18n';
+import { useAdminPreferences, useTranslation } from './i18n';
+import { searchDashboardCommands } from './dashboardCommandSearch';
 import { BackupOutlined, CloseRounded, CollectionsBookmarkRounded, MonitorHeartOutlined, SpaceDashboardOutlined, LightModeOutlined, DarkModeOutlined, LogoutRounded, MenuRounded, NotificationsOutlined, PeopleOutlineRounded, PlaylistAddCheckRounded, RefreshRounded, SearchRounded, SpeedOutlined, SubtitlesRounded, TuneRounded, VpnKeyOutlined, VideoLibraryOutlined, AudioWaveformOutlined, NavigateNextRounded, WarningAmberRounded } from './icons';
 import type { IconProps } from './icons';
 import './shell.css';
@@ -151,10 +152,7 @@ export function DashboardShell({ user, page, libraryId, status, onAttentionVisib
     { page: 'overview', label: 'Toggle theme', icon: theme === 'dark' ? LightModeOutlined : DarkModeOutlined, category: 'Commands', run: () => { toggleTheme(); setPaletteOpen(false); } },
     { page: 'overview', label: 'Sign out', icon: LogoutRounded, category: 'Commands', run: () => { setPaletteOpen(false); onSignOut(); } },
   ]);
-  const matches = commands.filter((item) => {
-    const aliases = item.page === 'users' ? ['devices', 'sessions', 'logins', 'sign-ins', 'login', translateText('Devices', 'zh'), translateText('Sessions', 'zh'), translateText('Sign in', 'zh')] : [];
-    return [item.label, t(item.label), t(item.category), ...aliases].join(' ').toLocaleLowerCase(locale).includes(query.trim().toLocaleLowerCase(locale));
-  });
+  const matches = searchDashboardCommands(commands, query, locale, t);
 
   useLayoutEffect(() => {
     if (!paletteOpen || !dialog.current?.open || matches.length === 0) return;

@@ -224,6 +224,27 @@ test('an uncertain overview scan retains the same task request ID for explicit r
   expect(api.writes().map(({ path, body }) => [path, body])).toEqual([[requestPath, { RequestId }], [requestPath, { RequestId }]]);
 });
 
+test('all new search aliases rank the corresponding destination first and Enter opens it', async ({ page, api }) => {
+  await page.goto('/admin/');
+  await expect(page.getByRole('heading', { name: 'Overview', exact: true })).toBeVisible();
+  for (const [query, label, route] of [
+    ['账户', 'Users', '/admin/access/users'], ['计划', 'Tasks', '/admin/system/tasks'],
+    ['硬件加速', 'Transcoding', '/admin/settings/transcode'], ['在线提供方', 'Metadata & subtitles', '/admin/settings/metadata'], ['gailan', 'Overview', '/admin/'],
+  ]) {
+    await page.keyboard.press('Control+k');
+    const palette = page.getByRole('dialog', { name: 'Search or jump to' });
+    const search = palette.getByRole('combobox');
+    await search.fill(query);
+    const first = palette.getByRole('option').first();
+    await expect(first).toContainText(label);
+    await expect(first).not.toContainText(query);
+    await expect(first).toHaveAttribute('aria-selected', 'true');
+    await search.press('Enter');
+    await expect(page).toHaveURL(new RegExp(`${route}$`));
+  }
+  expect(api.writes()).toHaveLength(0);
+});
+
 test('old access paths and cached tabs fall back to Users; the palette offers only the Users destination', async ({ page, api }) => {
   await page.addInitScript(() => { if (!sessionStorage.getItem('goby.dashboard.tabs')) sessionStorage.setItem('goby.dashboard.tabs', JSON.stringify({ access: 'sessions' })); });
   for (const old of ['access/sessions', 'access/devices', 'sessions', 'devices']) {
