@@ -23,7 +23,8 @@ func seedDeletionFolderCatalog(t *testing.T, ctx context.Context, pool *pgxpool.
 		('virtual-playlist','virtual-library',NULL,'Virtual Playlist','Virtual Playlist','Playlist',true);
 		INSERT INTO items(id,library_id,root_id,parent_id,name,sort_name,type,is_folder,path,relative_path) VALUES
 		('grant-folder','grant-library','grant-root','grant-library','Nested Folder','Nested Folder','Folder',true,'/grant/media/nested','nested'),
-		('grant-series','grant-library','grant-root','grant-library','Synthetic Series','Synthetic Series','Series',true,'','synthetic'),
+		('grant-series','grant-library','grant-root','grant-library','Synthetic Series','Synthetic Series','Series',true,'','//series/#recycle'),
+		('recycled-folder','grant-library','grant-root','grant-library','Recycled Folder','Recycled Folder','Folder',true,'/grant/media/#recycle','#recycle'),
 		('grant-leaf','grant-library','grant-root','grant-folder','Movie','Movie','Movie',false,'/grant/media/nested/movie.mkv','nested/movie.mkv'),
 		('reserved-folder','grant-library','grant-root','grant-library','Reserved','Reserved','Folder',true,'/grant/media/reserved','reserved'),
 		('wrong-root-folder','other-library','grant-root','other-library','Wrong root','Wrong root','Folder',true,'','wrong');

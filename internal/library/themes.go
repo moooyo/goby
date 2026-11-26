@@ -11,6 +11,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/moooyo/goby/internal/database"
 	"github.com/moooyo/goby/internal/metadata"
 )
 
@@ -251,6 +252,7 @@ func readThemePopulations(ctx context.Context, tx pgx.Tx, owners []themeOwner, a
 			AND ($2::boolean OR i.library_id = ANY($3::text[])) AND i.library_id = $4)
 		FROM item_theme_resources association JOIN items i ON i.id = association.resource_item_id
 		WHERE association.active AND association.owner_item_id = ANY($1::text[])
+		AND `+database.CatalogPathVisibleSQL("i")+`
 		GROUP BY association.owner_item_id`, ids, access.all, access.folders, owners[0].libraryID)
 	if err != nil {
 		return nil, fmt.Errorf("query theme populations: %w", err)

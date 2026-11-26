@@ -286,7 +286,7 @@ func (state *scanState) walk(relative string, current hierarchy, depth int) (res
 	// Keep the raw listing in reconciliation evidence. Exclusion is a scan
 	// policy, not evidence that a system directory is absent from storage.
 	entries = slices.DeleteFunc(entries, func(entry os.DirEntry) bool {
-		return entry.IsDir() && excludedScanPath(entry.Name(), true)
+		return entry.IsDir() && database.CatalogPathExcluded(entry.Name(), true)
 	})
 	entries, err = state.classifyExtraDirectory(relative, entries, info)
 	if err == nil {
@@ -306,7 +306,15 @@ func (state *scanState) walk(relative string, current hierarchy, depth int) (res
 	folderType := current.folderType
 	folderWarnings := state.warnings
 	if relative != "." && state.library.CollectionType == "tvshows" && current.seriesID == "" {
-		if number, ok := tvSeasonNumber(filepath.Base(relative)); depth == 1 && ok && !tvShowMetadataPresent(entries) && slices.ContainsFunc(entries, tvVideoEntry) {
+		number, namedSeason := tvSeasonNumber(filepath.Base(relative))
+		var rootSeason bool
+		if depth == 1 && namedSeason {
+			rootSeason, err = state.tvRootSeasonHasVideo(relative, info, entries, MaxThemeAncestorDepth-depth)
+			if err != nil {
+				return err
+			}
+		}
+		if rootSeason {
 			id, err := state.folder("//series/root", "", cleanName(filepath.Base(state.root.path)), "Series", state.library.ID, 0, ".")
 			if err != nil {
 				return err
@@ -1151,7 +1159,7 @@ func (state *scanState) findStoredFile(relative string, info os.FileInfo) (store
 func (state *scanState) findStoredFileForRole(relative string, info os.FileInfo, role scannedMediaRole) (storedFile, error) {
 	// The exact lookup already has a scanner-approved path. Keep attachment
 	// role compatibility here; only the inode fallback needs a path filter.
-	visibility := database.CatalogOrdinaryItemSQL("items")
+	visibility := database.OrdinaryItemRoleSQL("items")
 	switch role {
 	case scannedRoleTheme:
 		visibility = "NOT EXISTS(SELECT 1 FROM item_extra_resources role WHERE role.resource_item_id=items.id)"
@@ -1193,7 +1201,7 @@ func (state *scanState) findStoredFileForRole(relative string, info os.FileInfo,
 	excluded := state.claimedScannedIDs(relative, role)
 	rows, err := state.store.pool.Query(state.task.ctx, "SELECT "+storedFileColumns+` FROM items
 		WHERE library_id = $1 AND file_identity = $2 AND NOT is_folder AND file_size = $3
-		AND modified_at = $4 AND NOT (id=ANY($5::text[])) AND `+includedScanPathSQL("items")+` AND `+visibility+` ORDER BY created_at, id LIMIT 8`,
+		AND modified_at = $4 AND NOT (id=ANY($5::text[])) AND `+database.CatalogPathVisibleSQL("items")+` AND `+visibility+` ORDER BY created_at, id LIMIT 8`,
 		state.library.ID, identity, info.Size(), catalogModifiedTime(info), excluded)
 	if err != nil {
 		return storedFile{}, err

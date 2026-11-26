@@ -1057,7 +1057,8 @@ func readThemeActiveResources(ctx context.Context, source themeRowQuerier, owner
 	if err := source.QueryRow(ctx, `SELECT COALESCE(jsonb_agg(jsonb_build_object('id',id,'root',root_id,
 		'path',relative_path,'kind',kind) ORDER BY id),'[]'::jsonb) FROM (
 		SELECT i.id,i.root_id,i.relative_path,r.kind FROM item_theme_resources r JOIN items i ON i.id=r.resource_item_id
-		WHERE r.owner_item_id=$1 AND r.active ORDER BY i.id LIMIT $2) active`, ownerID, MaxThemeResourcesPerOwner+1).Scan(&raw); err != nil {
+		WHERE r.owner_item_id=$1 AND r.active AND `+database.CatalogPathVisibleSQL("i")+`
+		ORDER BY i.id LIMIT $2) active`, ownerID, MaxThemeResourcesPerOwner+1).Scan(&raw); err != nil {
 		return nil, err
 	}
 	var result []themeActiveResource
@@ -1541,7 +1542,7 @@ func (s *Store) planThemePublication(task *scanTask, library Library, owner them
 		future = append(future, file.candidate)
 	}
 	for _, resource := range active {
-		if incoming[resource.ID] || excludedScanPath(resource.Relative, false) {
+		if incoming[resource.ID] {
 			continue
 		}
 		classification, err := classifyThemePath(resource.Relative, 0)
@@ -1704,7 +1705,7 @@ func (s *Store) publishThemeOwnerAttempt(task *scanTask, library Library, owner 
 		count(*) FILTER(WHERE NOT `+directItemSQL("i")+`),
 		count(*) FILTER(WHERE NOT (i.id=ANY($2::text[])) AND NOT (COALESCE(i.root_id,'')=ANY($3::text[]))),
 		count(*) FILTER(WHERE NOT (i.id=ANY($2::text[])) AND NOT (COALESCE(i.root_id,'')=ANY($4::text[])))
-		FROM item_theme_resources r JOIN items i ON i.id=r.resource_item_id WHERE r.owner_item_id=$1 AND r.active AND `+includedScanPathSQL("i"),
+		FROM item_theme_resources r JOIN items i ON i.id=r.resource_item_id WHERE r.owner_item_id=$1 AND r.active AND `+database.CatalogPathVisibleSQL("i"),
 		owner.id, expected, retiredRoots, possibleRoots).Scan(&invalid, &remaining, &possibleRemaining); err != nil {
 		return false, err
 	}
@@ -1768,7 +1769,7 @@ func (s *Store) publishThemeOwnerAttempt(task *scanTask, library Library, owner 
 	var activeCount, invalidCount, expectedCount int
 	if err := tx.QueryRow(task.ctx, `SELECT count(*),count(*) FILTER(WHERE NOT `+directItemSQL("i")+`),
 		count(*) FILTER(WHERE i.id=ANY($2::text[])) FROM item_theme_resources r JOIN items i ON i.id=r.resource_item_id
-		WHERE r.owner_item_id=$1 AND r.active AND `+includedScanPathSQL("i"), owner.id, expected).Scan(&activeCount, &invalidCount, &expectedCount); err != nil {
+		WHERE r.owner_item_id=$1 AND r.active AND `+database.CatalogPathVisibleSQL("i"), owner.id, expected).Scan(&activeCount, &invalidCount, &expectedCount); err != nil {
 		return false, err
 	}
 	if activeCount > MaxThemeResourcesPerOwner || invalidCount != 0 || expectedCount != len(expected) {
@@ -1882,7 +1883,9 @@ func (state *scanState) finishThemeScan() (resultErr error) {
 	// the new classifier declines to promote them as direct candidates.
 	rows, err := state.store.pool.Query(state.task.ctx, `SELECT i.id,i.relative_path,r.owner_item_id,owner.type
 		FROM item_theme_resources r JOIN items i ON i.id=r.resource_item_id JOIN items owner ON owner.id=r.owner_item_id
-		WHERE i.root_id=$1 AND r.active AND r.owner_item_id<>$2 ORDER BY r.owner_item_id,i.id`, state.root.id, state.library.ID)
+		WHERE i.root_id=$1 AND r.active AND r.owner_item_id<>$2
+		AND `+database.CatalogPathVisibleSQL("i")+` AND `+database.CatalogPathVisibleSQL("owner")+`
+		ORDER BY r.owner_item_id,i.id`, state.root.id, state.library.ID)
 	if err != nil {
 		return err
 	}
@@ -1896,9 +1899,6 @@ func (state *scanState) finishThemeScan() (resultErr error) {
 		if err := rows.Scan(&id, &relative, &ownerID, &itemType); err != nil {
 			rows.Close()
 			return err
-		}
-		if excludedScanPath(relative, false) {
-			continue
 		}
 		if owners[ownerID] == nil {
 			owners[ownerID] = &retainedOwner{owner: themeDirectoryOwner{id: ownerID, itemType: itemType}}
@@ -2047,7 +2047,8 @@ func (s *Store) finishCollectionThemes(task *scanTask, library Library, shared *
 		seen[file.id] = true
 	}
 	rows, err := s.pool.Query(task.ctx, `SELECT i.id,i.root_id,i.relative_path FROM items i
-		JOIN item_theme_resources r ON r.resource_item_id=i.id WHERE r.owner_item_id=$1 AND r.active`, library.ID)
+		JOIN item_theme_resources r ON r.resource_item_id=i.id WHERE r.owner_item_id=$1 AND r.active
+		AND `+database.CatalogPathVisibleSQL("i"), library.ID)
 	if err != nil {
 		return 0, err
 	}
@@ -2057,7 +2058,7 @@ func (s *Store) finishCollectionThemes(task *scanTask, library Library, shared *
 			rows.Close()
 			return 0, err
 		}
-		if seen[id] || !completeRoots[rootID] || excludedScanPath(relative, false) {
+		if seen[id] || !completeRoots[rootID] {
 			continue
 		}
 		classification, err := classifyThemePath(relative, 0)

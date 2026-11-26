@@ -9,28 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/moooyo/goby/internal/database"
 )
-
-// Keep this pattern valid in both Go and PostgreSQL. Requiring a trailing
-// slash matches only directory components, not prefixes or file names.
-const scanSystemDirectoryPattern = `(^|/)(#recycle|@eaDir|[$]RECYCLE[.]BIN)/`
-
-var scanSystemDirectory = regexp.MustCompile(scanSystemDirectoryPattern)
-
-func excludedScanPath(relative string, directory bool) bool {
-	if directory {
-		relative += "/"
-	}
-	return scanSystemDirectory.MatchString(relative)
-}
-
-// Older scans may have indexed these directories. Keep their rows and user
-// data, but do not expose them as media or treat exclusion as proof of absence.
-func includedScanPathSQL(alias string) string {
-	item := pgx.Identifier{alias}.Sanitize()
-	return `((` + item + `.relative_path || CASE WHEN ` + item + `.is_folder THEN '/' ELSE '' END) COLLATE "C" !~ '` + scanSystemDirectoryPattern + `')`
-}
 
 func tvSeasonNumber(name string) (int, bool) {
 	if strings.EqualFold(name, "Specials") {
@@ -46,6 +26,12 @@ func tvSeasonNumber(name string) (int, bool) {
 
 func tvVideoEntry(entry os.DirEntry) bool {
 	return entry.Type().IsRegular() && !ignoredName(entry.Name()) && extensionKind(entry.Name()) == "video"
+}
+
+var tvDiscDirectory = regexp.MustCompile(`(?i)^(disc|disk|cd)[ ._-]*[0-9]{1,3}$`)
+
+type tvSeasonReadBudget struct {
+	entries, bytes int
 }
 
 // Directory classification needs only the marker's name and type. Disabling
@@ -107,6 +93,40 @@ func (state *scanState) tvSeriesDirectory(relative string, info os.FileInfo, ent
 	if !hasSeason || remainingDepth < 1 {
 		return false, nil
 	}
+	return state.tvChildDirectoryHasVideo(relative, info, entries, remainingDepth, func(name string) bool {
+		_, ok := tvSeasonNumber(name)
+		return ok
+	})
+}
+
+// A registered root may itself be a show. In that case, keep its immediate
+// season directory even if the episodes are all in a single disc level.
+func (state *scanState) tvRootSeasonHasVideo(relative string, info os.FileInfo, entries []os.DirEntry, remainingDepth int) (bool, error) {
+	if tvShowMetadataPresent(entries) {
+		return false, nil
+	}
+	for _, entry := range entries {
+		if tvVideoEntry(entry) {
+			return true, nil
+		}
+	}
+	return state.tvChildDirectoryHasVideo(relative, info, entries, remainingDepth, tvDiscDirectory.MatchString)
+}
+
+func (state *scanState) tvChildDirectoryHasVideo(relative string, info os.FileInfo, entries []os.DirEntry, remainingDepth int,
+	matches func(string) bool) (bool, error) {
+	if remainingDepth < 1 {
+		return false, nil
+	}
+	var names []string
+	for _, entry := range entries {
+		if entry.IsDir() && !ignoredName(entry.Name()) && matches(entry.Name()) {
+			names = append(names, entry.Name())
+		}
+	}
+	if len(names) == 0 {
+		return false, nil
+	}
 	var found bool
 	budget := tvSeasonReadBudget{entries: maxScanDirectoryEntries, bytes: maxScanDirectoryBytes}
 	err := state.runPrimaryScanMetadata(state.task.ctx, func(ctx context.Context) (resultErr error) {
@@ -121,15 +141,8 @@ func (state *scanState) tvSeriesDirectory(relative string, info os.FileInfo, ent
 		if err != nil || !themeSnapshotEqual(info, before) {
 			return errors.Join(ErrRootBindingConflict, err)
 		}
-		for _, entry := range entries {
-			if err := ctx.Err(); err != nil {
-				return err
-			}
-			name := entry.Name()
-			if _, ok := tvSeasonNumber(name); !entry.IsDir() || ignoredName(name) || !ok {
-				continue
-			}
-			found, err = state.tvSeasonHasVideo(ctx, parent, relative, name, remainingDepth-1, &budget)
+		for _, name := range names {
+			found, err = state.tvLookaheadHasVideo(ctx, parent, relative, name, remainingDepth-1, &budget)
 			if err != nil {
 				return err
 			}
@@ -149,13 +162,7 @@ func (state *scanState) tvSeriesDirectory(relative string, info os.FileInfo, ent
 	return found, scanReadFailure(err)
 }
 
-var tvDiscDirectory = regexp.MustCompile(`(?i)^(disc|disk|cd)[ ._-]*[0-9]{1,3}$`)
-
-type tvSeasonReadBudget struct {
-	entries, bytes int
-}
-
-func (state *scanState) tvSeasonHasVideo(ctx context.Context, parent *os.Root, relative, name string, remainingDepth int, budget *tvSeasonReadBudget) (_ bool, resultErr error) {
+func (state *scanState) tvLookaheadHasVideo(ctx context.Context, parent *os.Root, relative, name string, remainingDepth int, budget *tvSeasonReadBudget) (_ bool, resultErr error) {
 	if err := ctx.Err(); err != nil {
 		return false, err
 	}
@@ -190,7 +197,7 @@ func (state *scanState) tvSeasonHasVideo(ctx context.Context, parent *os.Root, r
 			return true
 		}
 		path := filepath.ToSlash(filepath.Join(relative, entryName))
-		if state.themePathReserved(path) || state.extraPathReserved(path) {
+		if database.CatalogPathExcluded(path, entry.IsDir()) || state.themePathReserved(path) || state.extraPathReserved(path) {
 			return false
 		}
 		switch {
@@ -198,7 +205,7 @@ func (state *scanState) tvSeasonHasVideo(ctx context.Context, parent *os.Root, r
 			found = true
 		case remainingDepth > 0 && entry.IsDir() && tvDiscDirectory.MatchString(entryName):
 			// Check one disc level, not an arbitrary subtree under the season.
-			found, childErr = state.tvSeasonHasVideo(ctx, root, relative, entryName, 0, budget)
+			found, childErr = state.tvLookaheadHasVideo(ctx, root, relative, entryName, 0, budget)
 		}
 		return found || childErr != nil
 	}); err != nil {

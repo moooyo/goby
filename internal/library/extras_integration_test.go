@@ -11,6 +11,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/moooyo/goby/internal/database"
 )
 
 func extraTestResource(t *testing.T, ctx context.Context, store *Store, id, owner, libraryID, relative, kind string) {
@@ -242,6 +243,54 @@ func TestStoreExtraQueriesRetainInactiveIdentityAndRejectInvalidActivePopulation
 	}
 }
 
+func TestStoreAuxiliaryReadsHideResourcesOfSystemDirectoryOwner(t *testing.T) {
+	ctx, store := extraTestFixture(t)
+	subject := Subject{UserID: "restricted"}
+	ids := []string{"theme-seed", "theme-song", "extra-alpha", "extra-trailer", "theme-one"}
+	if items, err := store.GetItemsByIDFor(ctx, subject, ids); err != nil || len(items) != len(ids) {
+		t.Fatalf("expected the owner, its resources, and the control before the path change: %v, %v", queryItemIDs(items), err)
+	}
+	// Model a previously accepted owner move without changing either resource
+	// path, ownership, or reservation. These links remain structurally valid.
+	if _, err := store.pool.Exec(ctx, `UPDATE items SET path='/media/b/#recycle/'||relative_path,
+		relative_path='#recycle/'||relative_path WHERE id='theme-seed'`); err != nil {
+		t.Fatal(err)
+	}
+	before := extraTestState(t, ctx, store)
+	for _, id := range ids[:len(ids)-1] {
+		if _, err := store.GetItemFor(ctx, subject, id); !errors.Is(err, ErrNotFound) {
+			t.Errorf("direct read exposed %s with a hidden owner: %v", id, err)
+		}
+	}
+	if items, err := store.GetItemsByIDFor(ctx, subject, ids); err != nil || !reflect.DeepEqual(queryItemIDs(items), []string{"theme-one"}) {
+		t.Errorf("batch read did not return only the visible control: %v, %v", queryItemIDs(items), err)
+	}
+	if _, err := store.QueryThemeMedia(ctx, "theme-seed", ThemeQuery{Subject: subject, EnableThemeSongs: true}); !errors.Is(err, ErrNotFound) {
+		t.Errorf("theme query accepted a hidden owner: %v", err)
+	}
+	if _, err := store.QuerySpecialFeatures(ctx, "theme-seed", subject); !errors.Is(err, ErrNotFound) {
+		t.Errorf("extra query accepted a hidden owner: %v", err)
+	}
+	if after := extraTestState(t, ctx, store); after != before {
+		t.Error("visibility filtering modified retained catalog data")
+	}
+	version, err := database.SchemaVersion(ctx, store.pool)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tx, err := store.pool.BeginTx(ctx, pgx.TxOptions{AccessMode: pgx.ReadOnly})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rollback(tx)
+	if err := database.ValidateThemeState(ctx, tx, version); err != nil {
+		t.Errorf("catalog visibility invalidated stored theme roles: %v", err)
+	}
+	if err := database.ValidateExtraState(ctx, tx, version); err != nil {
+		t.Errorf("catalog visibility invalidated stored extra roles: %v", err)
+	}
+}
+
 func TestStoreExtraQueriesRejectCombinedOverflowWithoutEndpointBypass(t *testing.T) {
 	ctx, store := extraTestFixture(t)
 	if _, err := store.pool.Exec(ctx, `INSERT INTO items(id,library_id,root_id,parent_id,name,sort_name,type,is_folder,relative_path,path)
@@ -256,11 +305,18 @@ func TestStoreExtraQueriesRejectCombinedOverflowWithoutEndpointBypass(t *testing
 		SELECT id,'theme-seed','clip',true FROM items WHERE id LIKE 'extra-bulk-%'`); err != nil {
 		t.Fatal(err)
 	}
+	extraTestResource(t, ctx, store, "extra-excluded", "theme-seed", "library-b", "Seed/@eaDir/featurettes/Retained.mp4", ExtraKindClip)
+	if resources, err := readExtraActiveResources(ctx, store.pool, "theme-seed"); err != nil || len(resources) != MaxExtraResourcesPerOwner {
+		t.Errorf("excluded history consumed an extra publication slot: count=%d, error=%v", len(resources), err)
+	}
 	features, err := store.QuerySpecialFeatures(ctx, "theme-seed", Subject{UserID: "restricted"})
 	if err != nil || len(features) != MaxExtraResourcesPerOwner-1 {
 		t.Fatalf("boundary population was silently truncated: %v", err)
 	}
 	extraTestResource(t, ctx, store, "extra-overflow", "theme-seed", "library-b", "Seed/trailers/Overflow.mp4", ExtraKindTrailer)
+	if _, err := readExtraActiveResources(ctx, store.pool, "theme-seed"); !errors.Is(err, ErrInvalidInput) {
+		t.Errorf("extra publication accepted visible overflow: %v", err)
+	}
 	for _, query := range []func(context.Context, string, Subject, ...QueryProjection) ([]Item, error){store.QuerySpecialFeatures, store.QueryLocalTrailers} {
 		if items, err := query(ctx, "theme-seed", Subject{UserID: "restricted"}); !errors.Is(err, ErrUnavailable) || items != nil {
 			t.Fatalf("endpoint selection bypassed combined overflow: %v", err)

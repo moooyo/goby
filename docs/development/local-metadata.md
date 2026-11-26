@@ -36,10 +36,11 @@ a season or replace a file's identity. A directory can be a show regardless of
 its name, including `All`.
 
 Scans skip the directory subtrees named exactly `#recycle`, `@eaDir`, and
-`$RECYCLE.BIN`. Earlier catalog records under these paths are hidden from
-browsing without deleting records, user data or media files. An ordinary rescan
-can correct a grouping folder previously classified as a show without changing
-its registered root or the IDs of items at unchanged paths.
+`$RECYCLE.BIN`. Earlier catalog records under these paths and their attached
+media are hidden from catalog reads without deleting records, user data, or
+media files. File names and virtual show names are not directory components.
+An ordinary rescan can correct a grouping folder previously classified as a
+show without changing its registered root or the IDs of items at unchanged paths.
 
 The parser also recognizes an `artist` document, but artist NFO ingestion is
 not implemented by this increment. Current artist catalog endpoints use the

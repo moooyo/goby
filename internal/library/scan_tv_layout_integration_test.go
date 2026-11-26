@@ -136,6 +136,43 @@ func TestStoreTVScanSeparatesFlatShowsAndKeepsWrappedSpecials(t *testing.T) {
 	}
 }
 
+func TestStoreTVScanKeepsSyntheticShowWithSystemDirectoryName(t *testing.T) {
+	ctx, _, store, allowedRoot, userID := libraryIntegrationStore(t, &libraryFixtureProber{})
+	root := filepath.Join(allowedRoot, "television")
+	path := libraryIntegrationFile(t, root, "#recycle.S01E01.mp4", "video:flat-episode")
+	collection := libraryIntegrationCreate(t, ctx, store, "Flat television", "tvshows", root)
+	libraryIntegrationScan(t, ctx, store, collection.ID, "Completed")
+
+	result := libraryIntegrationQuery(t, ctx, store, Query{UserID: userID, ParentID: collection.ID, Recursive: true})
+	if result.TotalRecordCount != 3 {
+		t.Errorf("catalog has %d items, want the virtual show, season, and physical episode", result.TotalRecordCount)
+	}
+	episode := libraryIntegrationItemByPath(t, result.Items, path)
+	if episode.Series == nil || episode.Series.Name != "#recycle" || episode.Season == nil {
+		t.Fatalf("legitimate virtual ancestors were hidden: %+v", episode)
+	}
+	if show, err := store.GetItem(ctx, userID, episode.Series.ID); err != nil || show.Type != "Series" || show.Path != "" {
+		t.Errorf("direct read lost the virtual show: %+v, %v", show, err)
+	}
+}
+
+func TestStoreTVScanKeepsRootSeasonWithOnlyDiscEpisodes(t *testing.T) {
+	ctx, _, store, allowedRoot, userID := libraryIntegrationStore(t, &libraryFixtureProber{})
+	root := filepath.Join(allowedRoot, "Root Show")
+	path := libraryIntegrationFile(t, root, "Season 1/Disc 1/Root.Show.S01E02.mp4", "video:disc-episode")
+	collection := libraryIntegrationCreate(t, ctx, store, "Television root show", "tvshows", root)
+	libraryIntegrationScan(t, ctx, store, collection.ID, "Completed")
+
+	items := libraryIntegrationQuery(t, ctx, store, Query{UserID: userID, ParentID: collection.ID, Recursive: true}).Items
+	season := libraryIntegrationItemByPath(t, items, filepath.Join(root, "Season 1"))
+	episode := libraryIntegrationItemByPath(t, items, path)
+	if season.Type != "Season" || season.IndexNumber != 1 || episode.Type != "Episode" || episode.ParentID != season.ID ||
+		episode.Series == nil || episode.Series.Name != "Root Show" || episode.Series.ID != season.ParentID ||
+		episode.ParentIndexNumber != 1 || episode.IndexNumber != 2 {
+		t.Errorf("disc fixture lost its physical season or root show: season=%+v episode=%+v", season, episode)
+	}
+}
+
 func TestStoreTVScanKeepsShowWhenLocalMetadataIsDisabled(t *testing.T) {
 	ctx, _, store, allowedRoot, userID := libraryIntegrationStore(t, &libraryFixtureProber{})
 	root := filepath.Join(allowedRoot, "television")

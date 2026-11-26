@@ -81,6 +81,54 @@ func (f auxiliaryCatalogFixture) snapshot(t *testing.T) string {
 	return extraScanTestSnapshot(t, f.ctx, f.pool, f.library.ID)
 }
 
+func TestAuxiliaryScanSkipsAttachmentsOfSystemDirectoryOwner(t *testing.T) {
+	for _, role := range []string{"theme", "extra"} {
+		t.Run(role, func(t *testing.T) {
+			f := newAuxiliaryCatalogFixture(t, role, true)
+			resource := f.resource(t)
+			newRelative := "#recycle/Film/Main.mp4"
+			newPath := filepath.Join(f.root, "movies", filepath.FromSlash(newRelative))
+			if err := os.MkdirAll(filepath.Dir(newPath), 0o700); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Rename(f.owner.Path, newPath); err != nil {
+				t.Fatal(err)
+			}
+			// Keep the attachment at an ordinary path without a new candidate
+			// layout. The rescan must not treat a hidden owner as missing or
+			// reassign it merely because the historical source is still present.
+			retainedRelative := "Film/Retained" + filepath.Ext(f.source)
+			retainedPath := filepath.Join(f.root, "movies", filepath.FromSlash(retainedRelative))
+			if err := os.Rename(f.source, retainedPath); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := f.pool.Exec(f.ctx, `UPDATE items SET path=v.path,relative_path=v.relative_path
+				FROM (VALUES ($1::text,$2::text,$3::text),($4,$5,$6)) v(id,path,relative_path) WHERE items.id=v.id`,
+				f.owner.ID, newPath, newRelative, resource.id, retainedPath, retainedRelative); err != nil {
+				t.Fatal(err)
+			}
+			table := "theme_reserved_paths"
+			if role == "extra" {
+				table = "extra_reserved_paths"
+			}
+			if _, err := f.pool.Exec(f.ctx, `INSERT INTO `+table+`(root_id,relative_path,is_directory)
+				SELECT root_id,relative_path,false FROM items WHERE id=$1`, resource.id); err != nil {
+				t.Fatal(err)
+			}
+			before := f.snapshot(t)
+			if job := libraryIntegrationScan(t, f.ctx, f.store, f.library.ID, "Completed"); job.Error != "" {
+				t.Errorf("the excluded owner blocked scan completion: %s", job.Error)
+			}
+			if _, err := f.store.GetItem(f.ctx, f.userID, resource.id); !errors.Is(err, ErrNotFound) {
+				t.Errorf("attachment of excluded owner is still visible: %v", err)
+			}
+			if after := f.snapshot(t); after != before {
+				t.Error("rescan modified the excluded owner's accepted resource")
+			}
+		})
+	}
+}
+
 func TestAuxiliaryCatalogChangesLifecyclePreservesIdentityAndUserData(t *testing.T) {
 	for _, role := range []string{"theme", "extra"} {
 		t.Run(role, func(t *testing.T) {

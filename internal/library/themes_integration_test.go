@@ -408,11 +408,18 @@ func TestStoreThemeMediaRejectsCyclesDepthAndResourceOverflowWithoutTruncation(t
 		SELECT id,'theme-seed',CASE WHEN type='Audio' THEN 'song' ELSE 'video' END,true FROM items WHERE id LIKE 'theme-bulk-%'`); err != nil {
 		t.Fatal(err)
 	}
+	themeTestResource(t, ctx, store, "theme-excluded", "song", "theme-seed", "library-b", "$RECYCLE.BIN/Seed/theme.mp3")
+	if resources, err := readThemeActiveResources(ctx, store.pool, "theme-seed"); err != nil || len(resources) != MaxThemeResourcesPerOwner {
+		t.Errorf("excluded history consumed a theme publication slot: count=%d, error=%v", len(resources), err)
+	}
 	result := themeTestQuery(t, ctx, store, "theme-seed", query)
 	if result.ThemeSongsResult.TotalRecordCount+result.ThemeVideosResult.TotalRecordCount != MaxThemeResourcesPerOwner {
 		t.Fatal("the boundary population was paged or truncated")
 	}
 	themeTestResource(t, ctx, store, "theme-overflow-video", "video", "theme-seed", "library-b", "Seed/backdrops/overflow.mp4")
+	if _, err := readThemeActiveResources(ctx, store.pool, "theme-seed"); !errors.Is(err, ErrInvalidInput) {
+		t.Errorf("theme publication accepted visible overflow: %v", err)
+	}
 	query.EnableThemeVideos = false
 	if _, err := store.QueryThemeMedia(ctx, "theme-seed", query); !errors.Is(err, ErrUnavailable) {
 		t.Fatalf("disabled video projection bypassed the combined owner resource limit: %v", err)
