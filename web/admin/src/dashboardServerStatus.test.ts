@@ -1,11 +1,17 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { sidebarStatus } from './dashboardServerStatus.ts';
+import { latestSuccessfulRead, sidebarStatus } from './dashboardServerStatus.ts';
 
 const checking = { loading: true };
 const ok = { data: {}, loading: false, readAt: 123 };
 const newer = { ...ok, readAt: 456 };
 const problem = new Error('Offline');
+
+test('the page timestamp only advances on a successful read and survives refresh failure', () => {
+  assert.equal(latestSuccessfulRead(checking, { loading: false, error: problem }), undefined);
+  assert.equal(latestSuccessfulRead({ ...ok, error: problem }, checking), 123);
+  assert.equal(latestSuccessfulRead(ok, { ...newer, loading: true }), 456);
+});
 
 test('the sidebar only indicates readiness after both initial reads', () => {
   assert.deepEqual(sidebarStatus(checking, ok), { state: 'checking', complete: false, retainedAt: undefined });

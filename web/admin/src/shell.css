@@ -27,7 +27,7 @@
 .header-breadcrumb > svg { width: 12px; height: 12px; color: var(--ink3); }
 .header-breadcrumb strong { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .header-spacer { flex: 1; }
-.header-clock { margin-right: 6px; font: 11px 'IBM Plex Mono', var(--sans); color: var(--ink3); white-space: nowrap; }
+.header-updated { margin-right: 6px; font: 11px 'IBM Plex Mono', var(--sans); color: var(--ink3); white-space: nowrap; }
 .shell-icon { display: inline-grid; place-items: center; flex-shrink: 0; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--ink2); }
 .shell-icon:hover { background: var(--s3); color: var(--ink); }
 .shell-icon > svg { width: 17px; height: 17px; }
@@ -101,7 +101,7 @@ a.attention-entry[aria-disabled='true'] { opacity: .45; cursor: wait; }
 }
 @media (max-width: 639px) {
   .admin-header { padding: 0 10px 0 8px; gap: 4px; }
-  .header-clock, .header-theme { display: none; }
+  .header-updated, .header-theme { display: none; }
   .header-breadcrumb { gap: 4px; font-size: 12px; }
   .header-breadcrumb > span { max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .header-popup { right: 8px; }

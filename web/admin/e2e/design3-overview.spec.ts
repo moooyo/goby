@@ -57,7 +57,36 @@ test('the sidebar stays neutral until both reads and retains dated results acros
   } finally { release(); }
 });
 
+test('the overview timestamps successful reads rather than ticking the browser clock', async ({ page, api }) => {
+  const start = new Date('2026-11-26T14:00:00Z');
+  await page.clock.install({ time: start });
+  await page.clock.pauseAt(new Date(start.getTime() + 1_000));
+  const paths = ['/admin/v1/overview', '/admin/v1/system/status', directoriesPath, policyPath, tasksPath, '/admin/v1/jobs', '/admin/v1/libraries', '/admin/v1/settings'];
+  for (const path of paths) api.handlers.set(`GET ${path}`, (route) => json(route, { Error: { Code: 'offline', Message: 'No observation' } }, 503));
+  await page.goto('/admin/');
+  const updated = page.locator('.admin-header time');
+  await expect(page.getByText('Could not check service status', { exact: true })).toBeVisible();
+  await expect(updated).toHaveCount(0);
+
+  for (const path of paths) api.handlers.delete(`GET ${path}`);
+  await page.getByRole('button', { name: 'Refresh overview' }).click();
+  await expect(updated).toHaveAttribute('datetime', '2026-11-26T14:00:01.000Z');
+  await expect(updated).toHaveText(/^Data updated at \d{2}:\d{2}:\d{2}$/);
+  await page.clock.runFor(2_000);
+  await expect(updated).toHaveAttribute('datetime', '2026-11-26T14:00:01.000Z');
+  await page.getByRole('button', { name: 'Refresh overview' }).click();
+  await expect(updated).toHaveAttribute('datetime', '2026-11-26T14:00:03.000Z');
+  await page.getByRole('button', { name: 'Account: Dashboard administrator' }).click();
+  await page.getByRole('menuitemradio', { name: '中文' }).click();
+  await expect(updated).toHaveText(/^数据更新于 \d{2}:\d{2}:\d{2}$/);
+  await page.getByRole('navigation', { name: 'Administration' }).getByRole('link', { name: /^用户/ }).click();
+  await expect(updated).toHaveCount(0);
+});
+
 test('attention shares ordered issues, independent checks, and recovery between the overview and bell', async ({ page, api }) => {
+  const clockStart = Date.now();
+  await page.clock.install({ time: clockStart });
+  await page.clock.pauseAt(clockStart + 1_000);
   const partial = { ...run(85, 'completed', 3), TerminalChildren: 20, CompletedChildren: 19 };
   const failing = { ...run(84, 'failed'), ErrorMessage: 'Work item failed' };
   const old = run(83, 'failed', 25);

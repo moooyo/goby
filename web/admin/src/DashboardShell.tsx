@@ -6,7 +6,7 @@ import { AttentionChecks } from './AttentionChecks';
 import { dashboardTargetURL, pageURL } from './dashboardNavigation';
 import type { DashboardTarget, Page } from './dashboardNavigation';
 import type { DashboardStatus } from './useDashboardStatus';
-import { sidebarStatus } from './dashboardServerStatus';
+import { latestSuccessfulRead, sidebarStatus } from './dashboardServerStatus';
 import { translateText, useAdminPreferences, useTranslation } from './i18n';
 import { BackupOutlined, CloseRounded, CollectionsBookmarkRounded, MonitorHeartOutlined, SpaceDashboardOutlined, LightModeOutlined, DarkModeOutlined, LogoutRounded, MenuRounded, NotificationsOutlined, PeopleOutlineRounded, PlaylistAddCheckRounded, RefreshRounded, SearchRounded, SpeedOutlined, SubtitlesRounded, TuneRounded, VpnKeyOutlined, VideoLibraryOutlined, AudioWaveformOutlined, NavigateNextRounded, WarningAmberRounded } from './icons';
 import type { IconProps } from './icons';
@@ -53,7 +53,9 @@ export function DashboardShell({ user, page, libraryId, status, onAttentionVisib
   const overview = status.overview.data;
   const system = status.system.data;
   const serverStatus = sidebarStatus(status.overview, status.system);
-  const [now, setNow] = useState(() => new Date());
+  // Other pages do not publish their own read times to the shell. A successful
+  // global status check is not a successful load of the page's actual data.
+  const updatedAt = page === 'overview' ? latestSuccessfulRead(status.overview, status.system, status.directories, status.backup, status.tasks, status.jobs, status.libraries, status.settings) : undefined;
   const nav = useRef<HTMLElement>(null);
   const navTrigger = useRef<HTMLButtonElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -74,11 +76,6 @@ export function DashboardShell({ user, page, libraryId, status, onAttentionVisib
   useEffect(() => {
     document.title = `${breadcrumbTitle} · Goby`;
   }, [breadcrumbTitle]);
-
-  useEffect(() => {
-    const timer = setInterval(() => { if (document.visibilityState === 'visible') setNow(new Date()); }, 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   useEffect(() => {
     const desktop = window.matchMedia('(min-width: 1240px)');
@@ -191,7 +188,9 @@ export function DashboardShell({ user, page, libraryId, status, onAttentionVisib
         <button ref={navTrigger} className="shell-icon nav-toggle" onClick={() => { setNavOpen(true); setMenu(null); }} aria-label={t('Open navigation')} aria-controls="admin-navigation" aria-expanded={navOpen}><MenuRounded /></button>
         <div className="header-breadcrumb">{(page === 'metadata' || page === 'artwork') && <><a href={pageURL('libraries')} onClick={(event) => navigate({ page: 'libraries' }, event)}>{t('Libraries')}</a><NavigateNextRounded /></>}<strong>{breadcrumbTitle}</strong></div>
         <div className="header-spacer" />
-        {page === 'overview' && <span className="header-clock">{t('Updates every 5 s')} · {new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(now)}</span>}
+        {updatedAt !== undefined && <time className="header-updated" dateTime={new Date(updatedAt).toISOString()}>{t('Data updated at {time}', {
+          time: new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).format(updatedAt),
+        })}</time>}
         <button className="shell-icon header-theme" aria-label={t('Toggle theme')} title={t('Toggle theme')} onClick={toggleTheme}>{theme === 'dark' ? <DarkModeOutlined /> : <LightModeOutlined />}</button>
         <button ref={attentionTrigger} className="shell-icon attention-trigger" aria-label={t('Needs attention')} aria-expanded={menu === 'attention'} aria-controls={menu === 'attention' ? 'attention-menu' : undefined} onClick={() => setMenu(menu === 'attention' ? null : 'attention')}><NotificationsOutlined />{(attentionCount > 0 || attention.checks.some((check) => check.state === 'failed' || check.state === 'unknown' && !['task-status', 'scan-status', 'library-status'].includes(check.id))) && <i aria-hidden="true" />}</button>
         <button ref={accountTrigger} className="account-avatar" aria-label={`${t('Account')}: ${user.Name}`} aria-haspopup="menu" aria-expanded={menu === 'account'} aria-controls={menu === 'account' ? 'account-menu' : undefined} onClick={() => setMenu(menu === 'account' ? null : 'account')}>{user.Name.trim().slice(0, 1).toLocaleUpperCase(locale)}</button>

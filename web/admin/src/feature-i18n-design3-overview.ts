@@ -11,6 +11,7 @@ export const design3OverviewChinese: Record<string, string> = {
   'Server status checked': '服务器状态已检查',
   'Server status refresh failed': '无法刷新服务器状态',
   'Refresh failed · showing results from {time}': '刷新失败 · 显示 {time} 的上次结果',
+  'Data updated at {time}': '数据更新于 {time}',
   'Service': '服务',
   'Storage': '存储',
   '{count} active': '{count} 路进行中',
