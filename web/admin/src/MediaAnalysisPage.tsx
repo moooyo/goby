@@ -252,6 +252,9 @@ export function MediaAnalysisPage({ currentUserId, onTasks, onTaskRun, onLibrari
         {tasks.data && activeTasks.length === 0 && <div className="analysis-empty analysis-empty-compact"><strong>{t('No active analysis tasks')}</strong><p>{t('Enabled libraries can queue work after a scan or according to their task schedule.')}</p></div>}
         {activeTasks.map(({ task, run }) => <div className="analysis-task-row" key={run.Id}>
           <div className="analysis-task-top"><i className="analysis-live-dot" aria-hidden="true" /><strong>{t(task.Name)}</strong><RunStatusChip state={run.State} /></div>
+          {run.StartedAt && <time className="analysis-task-started" dateTime={run.StartedAt}>{t('Started at {time}', {
+            time: new Date(run.StartedAt).toLocaleString(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+          })}</time>}
           <RunProgress run={run} compact />
           <div className="analysis-task-actions">
             <Button size="small" onClick={() => viewTask(run.Id)}>{t('View task')}</Button>

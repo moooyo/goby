@@ -266,7 +266,9 @@ test('analysis lists actual task outcomes and deep-links to the reported run', a
   const failed = taskRun('c'.repeat(32), 'credits', { State: 'failed', ErrorCode: 'child_failed', ErrorMessage: 'A source could not be decoded.', FinishedAt: stamp, TerminalChildren: 3, CompletedChildren: 2, FailedChildren: 1 });
   const unrelated = taskRun('d'.repeat(32), 'downloads', { State: 'failed', FinishedAt: stamp, TerminalChildren: 3, CompletedChildren: 2, FailedChildren: 1 });
   const running = taskRun('e'.repeat(32), 'previews');
-  const tasks = [task('credits', 'media.credits_analysis', 'Analyze credits', null, failed), task('previews', 'media.preview_generation', 'Generate seek previews', running, null), task('downloads', 'subtitles.download', 'Download missing subtitles', null, unrelated)];
+  const queued = taskRun('f'.repeat(32), 'intro', { State: 'pending', StartedAt: null });
+  const tasks = [task('credits', 'media.credits_analysis', 'Analyze credits', null, failed), task('previews', 'media.preview_generation', 'Generate seek previews', running, null),
+    task('intro', 'media.intro_analysis', 'Detect episode introductions', queued, null), task('downloads', 'subtitles.download', 'Download missing subtitles', null, unrelated)];
   api.handlers.set('GET /admin/v1/tasks', (route) => json(route, { Items: tasks, TotalRecordCount: tasks.length }));
   api.handlers.set(`GET /admin/v1/task-runs/${failed.Id}`, (route, request) => {
     const params = new URL(request.url()).searchParams;
@@ -279,6 +281,9 @@ test('analysis lists actual task outcomes and deep-links to the reported run', a
   await expect(matrix.getByRole('progressbar')).toHaveCount(0);
   const queue = page.getByRole('region', { name: 'Queue' });
   await expect(queue).toContainText('Generate seek previews');
+  await expect(queue).toContainText('Detect episode introductions');
+  await expect(queue.locator('time')).toHaveCount(1);
+  await expect(queue.locator('time')).toHaveAttribute('datetime', running.StartedAt!);
   const failures = page.getByRole('region', { name: 'Failures and interruptions' });
   await expect(failures).toContainText('A source could not be decoded.');
   await expect(failures).toContainText('Partial failure');
