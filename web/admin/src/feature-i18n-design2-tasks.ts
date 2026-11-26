@@ -27,6 +27,7 @@ export const design2TasksChinese: Record<string, string> = {
   'Active runs created earlier are also shown.': '较早创建且仍未结束的运行也会显示。',
   'No runs could be loaded for this view.': '当前视图未能加载运行记录。',
   'No task runs in the last 24 hours.': '最近 24 小时没有运行记录。',
+  'No running or queued tasks.': '没有正在运行或排队的任务。',
   'Showing {count} of {total} loaded runs': '显示已加载记录中的 {count} / {total} 条',
   'Show more runs': '显示更多运行',
   'API key #{id}': 'API 密钥 #{id}',

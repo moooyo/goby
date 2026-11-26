@@ -156,6 +156,30 @@ test('manual-only tasks remain runnable beside recorded runs and task type filte
   expect(state.saves).toEqual([]);
 });
 
+test('the in-progress history filter only shows running and queued entries', async ({ page, api }) => {
+  const scan = task('scan-task', 'library.scan', 'Scan media libraries', 'Library');
+  scan.CurrentRun = run(scan, 'running');
+  const analysis = task('analysis-task', 'analysis.intros', 'Analyze episode introductions', 'Media analysis');
+  analysis.CurrentRun = run(analysis, 'pending');
+  const backup = task();
+  backup.LastRun = run(backup, 'completed', 'backup-last-run');
+  const stopping = task('stopping-task', 'library.refresh_media', 'Refresh media details', 'Library');
+  stopping.CurrentRun = run(stopping, 'stopping');
+  installTasks(api, [scan, analysis, backup, stopping]);
+  await page.goto(tasksPath);
+  const filters = page.getByRole('group', { name: 'Task type filter' });
+  await expect(filters.getByRole('button')).toHaveText(['All', 'In progress', 'Scans', 'Analysis', 'Backups']);
+  await filters.getByRole('button', { name: 'In progress', exact: true }).click();
+  const history = page.getByRole('table', { name: 'Recent task runs' });
+  await expect(history.getByRole('row')).toHaveCount(3);
+  await expect(history).toContainText(scan.Name);
+  await expect(history).toContainText(analysis.Name);
+  await expect(history).not.toContainText(backup.Name);
+  await expect(history).not.toContainText(stopping.Name);
+  await expect(taskRow(page, backup.Name).getByRole('button', { name: 'Start task' })).toBeEnabled();
+  expect(api.writes()).toHaveLength(0);
+});
+
 test('a task deep link retains system events and exact tick values when adding another OR rule', async ({ page, api }) => {
   const definition = task('analysis-task', 'analysis.intros', 'Analyze episode introductions', 'Media analysis', [
     trigger({ Id: 'event-rule', Kind: 'system_event', SystemEvent: 'LibraryChanged', TimeOfDayTicks: null, MaxRuntimeTicks: '10000001', NextFireAt: null }),

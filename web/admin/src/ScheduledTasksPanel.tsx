@@ -18,6 +18,7 @@ import type { TaskPanelStatus } from './TasksPage';
 import { useTaskResource } from './useTaskResource';
 import { useTaskHistory } from './useTaskHistory';
 import { TaskHistoryNotice } from './TaskHistoryNotice';
+import { isQueuedOrRunningTask } from './taskRunState';
 import { useTaskInitiators } from './useTaskInitiators';
 import { TaskInitiatorNotice, TaskRunOrigin } from './TaskRunOrigin';
 import { useUserDraftNavigation } from './userDraftNavigation';
@@ -50,8 +51,10 @@ function runDuration(run: TaskRun, locale: string): string {
 }
 
 type TaskKind = 'all' | 'scan' | 'analysis' | 'backup';
-const taskKindChoices: { value: TaskKind; label: string }[] = [
-  { value: 'all', label: 'All' }, { value: 'scan', label: 'Scans' }, { value: 'analysis', label: 'Analysis' }, { value: 'backup', label: 'Backups' },
+type TaskRunFilter = TaskKind | 'in-progress';
+const taskKindChoices: { value: TaskRunFilter; label: string }[] = [
+  { value: 'all', label: 'All' }, { value: 'in-progress', label: 'In progress' }, { value: 'scan', label: 'Scans' },
+  { value: 'analysis', label: 'Analysis' }, { value: 'backup', label: 'Backups' },
 ];
 
 function taskKind(task: TaskDefinition): Exclude<TaskKind, 'all'> | 'other' {
@@ -88,7 +91,7 @@ function nextRunTime(task: TaskDefinition, locale: string): string | undefined {
 
 export function ScheduledTasksPanel({ currentUserId, onNavigationGuardChange, onStatusChange, onTaskQueryCleared }: { currentUserId: string; onNavigationGuardChange: UserNavigationGuardChange; onStatusChange?: (status: TaskPanelStatus) => void; onTaskQueryCleared?: () => void }) {
   const { t, locale, formatCount } = useTranslation();
-  const [runFilter, setRunFilter] = useState<TaskKind>('all');
+  const [runFilter, setRunFilter] = useState<TaskRunFilter>('all');
   const [visibleRunLimit, setVisibleRunLimit] = useState(100);
   const [starting, setStarting] = useState<string>();
   const [stopping, setStopping] = useState<string>();
@@ -197,7 +200,8 @@ export function ScheduledTasksPanel({ currentUserId, onNavigationGuardChange, on
       } : undefined,
     });
   }, [onStatusChange, statusMessage, resource.paused, resource.error, resource.loading, history.loading, initiators.loading, refreshTasks, busy, summary, scanTask, start, starting, pending]);
-  const latest = history.items.filter(({ task }) => runFilter === 'all' || taskKind(task) === runFilter);
+  const latest = history.items.filter(({ task, run }) => runFilter === 'all'
+    || (runFilter === 'in-progress' ? isQueuedOrRunningTask(run) : taskKind(task) === runFilter));
   const visibleRuns = latest.slice(0, visibleRunLimit);
   const zones = [...new Set(tasks.map((task) => task.ScheduleTimezone))];
   function requestStop(task: TaskDefinition, run: TaskRun) { setStopError(undefined); setStopCandidate({ task, run }); }
@@ -235,7 +239,7 @@ export function ScheduledTasksPanel({ currentUserId, onNavigationGuardChange, on
             <div className="system-run-row system-run-head" role="row"><span role="columnheader">{t('Task')}</span><span role="columnheader">{t('Status')}</span><span role="columnheader">{t('Started')}</span><span role="columnheader">{t('Duration')}</span><span role="columnheader">{t('Result')}</span></div>
             {visibleRuns.map(({ task, run }) => <div role="row" className="system-run-row" data-run-id={run.Id} data-active={isActiveTaskRun(run) || undefined} key={run.Id}><span role="cell" className="system-run-name"><button type="button" className="system-run-open" aria-label={t('View runs') + ' · ' + t(task.Name)} onClick={() => setViewing({ task, run })}>{t(task.Name)}</button><small>{t(task.Category)}<span aria-hidden="true"> · </span><TaskRunOrigin source={run.Source} actor={initiators.byRun.get(run.Id)} loading={initiators.loading} /></small></span><span role="cell"><TaskStateBadge run={run} /></span><span role="cell">{run.StartedAt ? <time className="system-mono" dateTime={run.StartedAt} title={new Date(run.StartedAt).toLocaleString(locale)}>{new Date(run.StartedAt).toLocaleString(locale, { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</time> : '—'}</span><span role="cell" className="system-mono">{t(runDuration(run, locale))}</span><TaskResult task={task} run={run} /></div>)}
           </div>
-          {latest.length === 0 && !history.loading && <div className="system-table-empty">{t(history.issues.length ? 'No runs could be loaded for this view.' : runFilter === 'all' ? 'No task runs in the last 24 hours.' : 'No matching task runs.')}</div>}
+          {latest.length === 0 && !history.loading && <div className="system-table-empty">{t(history.issues.length ? 'No runs could be loaded for this view.' : runFilter === 'all' ? 'No task runs in the last 24 hours.' : runFilter === 'in-progress' ? 'No running or queued tasks.' : 'No matching task runs.')}</div>}
           {latest.length > 100 && <div className="system-task-history-more"><span>{t('Showing {count} of {total} loaded runs', { count: visibleRuns.length.toLocaleString(locale), total: latest.length.toLocaleString(locale) })}</span>{visibleRuns.length < latest.length && <Button size="small" onClick={() => setVisibleRunLimit((value) => value + 100)}>Show more runs</Button>}</div>}
         </section>
       </div>
