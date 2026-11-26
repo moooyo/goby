@@ -2,7 +2,9 @@
 .users-panel-header, .users-toolbar, .users-pagination { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 5px 12px 5px 16px; }
 .users-panel-header { min-height: 44px; }
 .users-panel-header h2 { margin: 0; font-size: 14px; font-weight: 700; }
-.users-panel-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-inline-start: auto; }
+.users-panel-header .access-mono { font-family: 'IBM Plex Mono', var(--sans); }
+.users-panel-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-inline-start: auto; max-width: 100%; }
+.users-panel-actions .users-disable-matches { max-width: 100%; white-space: normal; }
 .users-toolbar { min-height: 49px; padding-block: 8px; border-top: 1px solid var(--line); }
 .users-groups { flex: 0 1 auto; min-width: 0; }
 .users-groups .goby-segment:focus-visible { outline-offset: -2px; }

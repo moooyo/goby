@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test';
 import type { LoginSession, ManagedUser, UpdateUserInput, User } from '../src/api';
 import { administrator, expect, json, stamp, test } from './dashboard-fixture';
+import { evidence, noOverflow } from './dashboard-review';
 import { initialUserRevision, installUserDesignFixture, viewerId } from './user-design-fixture';
 
 // All writes in these cases go through the synthetic dashboard transport.
@@ -60,7 +61,7 @@ test('loads the visible page first and reprioritizes unread accounts in a 20,000
     await expect(page.getByText('The list may be incomplete.', { exact: false })).toBeVisible();
     await row(page, 'Account 001').getByRole('checkbox').check();
     await expect(page.getByRole('button', { name: 'Disable', exact: true })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: /Disable these accounts/ })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /^Disable \d+ matching member accounts?$/ })).toHaveCount(0);
 
     await groups.getByRole('button', { name: /^All / }).click();
     await page.getByRole('button', { name: 'Go to next page' }).click();
@@ -78,6 +79,39 @@ test('loads the visible page first and reprioritizes unread accounts in a 20,000
     expect(api.reads(userList)).toHaveLength(1);
     expect(api.writes()).toHaveLength(0);
   } finally { background.release(); }
+});
+
+test.describe('Chinese batch disable scope on a phone', () => {
+  test.use({ preferences: { language: 'zh', theme: 'dark' }, viewport: { width: 390, height: 844 } });
+
+  test('the inactivity action names the search scope and counts eligible accounts across pages', async ({ api, page }, testInfo) => {
+    const matching = Array.from({ length: 51 }, (_, index) => account(index + 1, { Name: `Matching member ${index + 1}` }));
+    const accounts = [
+      ...matching, administrator, account(52, { Name: 'Matching administrator', IsAdministrator: true }),
+      account(53, { Name: 'Matching disabled', IsDisabled: true }), account(54, { Name: 'Unrelated member' }),
+      account(55, { Name: 'Matching recent login' }),
+    ];
+    api.handlers.set(`GET ${userList}`, (route) => json(route, { Items: accounts, TotalRecordCount: accounts.length }));
+    api.handlers.set(`GET ${loginActivity}`, (route, request) => {
+      const ids = new Set(new URL(request.url()).searchParams.get('UserIds')!.split(','));
+      return json(route, { Items: accounts.filter(({ Id }) => ids.has(Id)).map((user) => activity(user.Id, user.Id === accounts.at(-1)?.Id ? stamp : stale)), ObservedAt: stamp });
+    });
+    await page.goto(userURL);
+    const idle = page.getByRole('group', { name: '账户分组' }).getByRole('button', { name: /^90 天内无登录记录/ });
+    await expect(idle).toHaveText('90 天内无登录记录 55');
+    await idle.click();
+    await page.getByRole('searchbox', { name: '查找账户' }).fill('Matching');
+    const action = page.getByRole('button', { name: '停用当前搜索命中的 51 个普通账户', exact: true });
+    await expect(action).toBeVisible();
+    await expect(page.locator('.users-panel-header .access-mono')).toHaveCSS('font-family', /Noto Sans SC/);
+    await expect(page.getByRole('table', { name: '服务器用户' }).getByRole('row')).toHaveCount(51);
+    await noOverflow(page);
+    await evidence(page, testInfo, 'design3-disable-matching-members-mobile');
+    await action.click();
+    const confirmation = page.getByRole('dialog', { name: '停用 51 个账户？', exact: true });
+    await expect(confirmation).toContainText('范围包括当前搜索命中的所有页面。依据已读取的记录，仅停用 90 天内无登录记录的普通账户，不包含管理员或已停用的账户。');
+    expect(api.writes()).toHaveLength(0);
+  });
 });
 
 test('batch disabling preserves the latest complete policy, skips conflicts, and stops without cancelling a write', async ({ api, page }) => {
@@ -109,9 +143,9 @@ test('batch disabling preserves the latest complete policy, skips conflicts, and
   await page.goto(userURL);
   await page.getByRole('group', { name: 'Account groups' }).getByRole('button', { name: /No login in 90 days/ }).click();
   try {
-    await page.getByRole('button', { name: 'Disable these accounts (4)', exact: true }).click();
+    await page.getByRole('button', { name: 'Disable 4 matching member accounts', exact: true }).click();
     const confirmation = page.getByRole('dialog', { name: 'Disable accounts (4)?', exact: true });
-    await expect(confirmation).toContainText('Administrator accounts are excluded.');
+    await expect(confirmation).toContainText('Administrator and disabled accounts are excluded.');
     await confirmation.getByRole('button', { name: 'Disable accounts (4)', exact: true }).click();
     await secondRequest.promise;
     const progress = page.getByRole('dialog', { name: 'Disabling accounts', exact: true });
@@ -128,7 +162,7 @@ test('batch disabling preserves the latest complete policy, skips conflicts, and
     await expect(summary.getByRole('progressbar')).toHaveAttribute('aria-valuetext', '2 of 4 processed');
     await summary.getByRole('button', { name: 'Done', exact: true }).click();
     await expect(row(page, 'Account 002')).toContainText('Disabled');
-    await expect(page.getByRole('button', { name: 'Disable these accounts (3)', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Disable 3 matching member accounts', exact: true })).toBeVisible();
     expect(calls).toEqual(['GET account-1', 'PUT account-1', 'GET account-2', 'PUT account-2']);
     expect(reads).toBe(2);
   } finally { paused.release(); }

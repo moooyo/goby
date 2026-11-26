@@ -68,11 +68,11 @@ test('omitted and failed activity never qualifies as no recorded login', async (
   await expect(page.getByText('Some login records are unavailable.', { exact: false })).toBeVisible();
   await expect(table.getByRole('row').filter({ hasText: accounts[1].Name })).toContainText('No login recorded');
   await expect(table.getByRole('row').filter({ hasText: uncertain.Name })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /Disable these accounts/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^Disable \d+ matching member accounts?$/ })).toHaveCount(0);
   recovered = true;
   await page.getByRole('button', { name: 'Retry', exact: true }).click();
   await expect(idle).toHaveText('No login in 90 days 2');
-  await expect(page.getByRole('button', { name: 'Disable these accounts (1)', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Disable 1 matching member account', exact: true })).toBeVisible();
   expect(api.writes()).toHaveLength(0);
 });
 

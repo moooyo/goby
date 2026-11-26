@@ -233,7 +233,7 @@ export function UsersPage({ currentUser, onCurrentUserUpdated, onNavigationGuard
         <h2>{t('Accounts')}</h2>
         {directory && <span className="access-mono">{groupLabels[group]} · {groupCount(group)}</span>}
         <div className="users-panel-actions">
-          {idleTargets.length > 0 && <Button variant="outlined" color="error" size="small" startIcon={<BlockOutlined />} onClick={() => prepareDisable('idle', idleTargets)}>{t('Disable these accounts ({count})', { count: count(idleTargets.length) })}</Button>}
+          {idleTargets.length > 0 && <Button className="users-disable-matches" variant="outlined" color="error" size="small" startIcon={<BlockOutlined />} onClick={() => prepareDisable('idle', idleTargets)}>{t(idleTargets.length === 1 ? 'Disable {count} matching member account' : 'Disable {count} matching member accounts', { count: count(idleTargets.length) })}</Button>}
           <IconButton size="small" onClick={refresh} disabled={loading} aria-label="Refresh users" title="Refresh users"><RefreshRounded fontSize="small" /></IconButton>
         </div>
       </header>
@@ -304,7 +304,9 @@ export function UsersPage({ currentUser, onCurrentUserUpdated, onNavigationGuard
       title: t('Disable accounts ({count})?', { count: count(batch.targets.length) }),
       action: t('Disable accounts ({count})', { count: count(batch.targets.length) }),
       description: t('Disabling ends all logins for these accounts and prevents new ones. Their accounts, permissions, and playback history are kept. You can enable the accounts again later.'),
-      note: t(batch.source === 'idle' ? 'These accounts are chosen from the loaded login records and the current search. Administrator accounts are excluded.' : 'The last enabled administrator cannot be disabled.'),
+      note: t(batch.source === 'idle'
+        ? 'This includes enabled member accounts matching the current search across all pages, with no login in the past {days} days according to the loaded records. Administrator and disabled accounts are excluded.'
+        : 'The last enabled administrator cannot be disabled.', { days: idleLoginDays }),
       selfWarning: batch.targets.some((user) => user.Id === currentUser.Id) ? t('This selection includes your own account. If it is disabled, you will be signed out of the dashboard.') : undefined,
     }} />}
   </Box>;
