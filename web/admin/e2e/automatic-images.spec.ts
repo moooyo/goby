@@ -150,7 +150,7 @@ test.describe('automatic image policy in Chinese on a phone', () => {
   test('the opt-in explanation remains readable and scrollable', async ({ page, api }, testInfo) => {
     installLibrary(api);
     await page.goto('/admin/media/libraries');
-    await page.getByRole('button', { name: `More actions for ${library.Name}`, exact: true }).click();
+    await page.getByRole('button', { name: `「${library.Name}」的更多操作`, exact: true }).click();
     await page.getByRole('menuitem', { name: '媒体库设置', exact: true }).click();
     const sheet = page.getByRole('dialog', { name: '媒体库设置', exact: true });
     const policy = sheet.getByRole('checkbox', { name: '自动下载缺失图片', exact: true });

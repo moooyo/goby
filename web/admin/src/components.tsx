@@ -12,6 +12,12 @@ export function Brand({ light = false, compact = false }: { light?: boolean; com
   </div>;
 }
 
+export function NamedMessage({ template, name }: { template: string; name: string }) {
+  const { t } = useTranslation();
+  const [before, after] = t(template).split('{name}');
+  return <>{before}<span translate="no">{name}</span>{after}</>;
+}
+
 export function errorText(error: unknown) {
   return error instanceof Error ? error.message : 'The request could not be completed. Please try again.';
 }

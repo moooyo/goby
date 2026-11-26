@@ -78,6 +78,30 @@ test('library results use latest exact-scope jobs and distinguish unreadable, un
   expect(api.writes()).toHaveLength(0);
 });
 
+for (const language of ['en', 'zh'] as const) test.describe(`${language} library receipts`, () => {
+  test.use({ preferences: { language, theme: 'light' } });
+
+  test('localizes scan and refresh admissions without translating the library name', async ({ page, api }) => {
+    const zh = language === 'zh';
+    const namedLibrary = { ...library, Name: 'Movies {name} 与收藏' };
+    api.handlers.set(`GET ${libraryList}`, (route) => json(route, { Items: [namedLibrary], TotalRecordCount: 1 }));
+    api.handlers.set(`POST ${libraryList}/${library.Id}/scan`, (route, request) => json(route, { Job: scan('admitted-job', library.Id, { ForceProbe: request.postData() != null, Status: 'pending', FinishedAt: null }) }, 202));
+    await page.goto('/admin/media/libraries');
+    const row = page.getByRole('row').filter({ hasText: namedLibrary.Name });
+    const receipt = page.locator('.goby-snackbar .goby-alert-message');
+    await row.getByRole('button', { name: zh ? `扫描媒体库「${namedLibrary.Name}」` : `Scan library ${namedLibrary.Name}`, exact: true }).click();
+    await expect(receipt).toHaveText(zh ? `已受理扫描「${namedLibrary.Name}」的请求。` : `Scan requested for ${namedLibrary.Name}.`);
+    await expect(receipt.locator('[translate="no"]')).toHaveText(namedLibrary.Name);
+    await row.getByRole('button', { name: zh ? `「${namedLibrary.Name}」的更多操作` : `More actions for ${namedLibrary.Name}`, exact: true }).click();
+    const refresh = zh ? '刷新媒体详情' : 'Refresh media details';
+    await page.getByRole('menuitem', { name: refresh, exact: true }).click();
+    await page.getByRole('dialog', { name: zh ? `${refresh}？` : `${refresh}?`, exact: true }).getByRole('button', { name: refresh, exact: true }).click();
+    await expect(receipt).toHaveText(zh ? `已受理刷新「${namedLibrary.Name}」媒体详情的请求。` : `Media details refresh requested for ${namedLibrary.Name}.`);
+    await expect(receipt.locator('[translate="no"]')).toHaveText(namedLibrary.Name);
+    expect(api.writes().map(({ body }) => body)).toEqual([null, { ForceProbe: true }]);
+  });
+});
+
 test('item-type choices follow library content and send one exact server filter with search', async ({ page, api }) => {
   const musicLibrary: Library = { ...library, Id: 'music-library', Name: 'Music catalog', CollectionType: 'music' };
   api.handlers.set(`GET ${libraryList}`, (route) => json(route, { Items: [library, seriesLibrary, musicLibrary], TotalRecordCount: 3 }));

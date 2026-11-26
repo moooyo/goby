@@ -18,7 +18,8 @@ import { PermMediaOutlined } from './icons';
 import { MonitorHeartOutlined, StorageOutlined } from './icons';
 import { adminApi, ApiError, isAbortError } from './api';
 import type { Job, Library, LibraryInput, LibraryResponse, LibrariesResponse, LibraryStorageDirectory, StorageRootsResponse } from './api';
-import { ErrorNotice, PageHeading } from './components';
+import { errorText, ErrorNotice, NamedMessage, PageHeading } from './components';
+import { libraryProcessingReceipt } from './libraryReceipts';
 import { fieldError } from './formFields';
 import { RootBindingDialog } from './RootBindingDialog';
 import { LibraryEditorDialog } from './LibraryEditorDialog';
@@ -45,6 +46,11 @@ const collectionTypes: { value: LibraryInput['CollectionType']; label: string }[
 function collectionName(value: string) {
   return collectionTypes.find((type) => type.value === value)?.label ?? value;
 }
+
+type LibraryReceipt = { action?: 'scans' | 'processing'; details?: string[] } & (
+  { template: string; name: string } | { count: number }
+);
+type LibraryActionError = { cause: unknown } | { scans: { name: string; reason: string }[] } | { template: string; name: string; reason: string };
 
 const activeScan = (job: Job) => ['pending', 'queued', 'running'].includes(job.Status.toLowerCase());
 const pollLibraryScans = ({ byLibrary }: Awaited<ReturnType<typeof latestLibraryScans>>) => Object.values(byLibrary).some(activeScan);
@@ -297,7 +303,7 @@ export function LibrariesPage({ onTasks, onBackgroundTasks = onTasks, onAnalysis
   const [roots, setRoots] = useState<StorageRootsResponse>();
   const [error, setError] = useState<unknown>(null);
   const [rootsError, setRootsError] = useState<unknown>(null);
-  const [actionError, setActionError] = useState<unknown>(null);
+  const [actionError, setActionError] = useState<LibraryActionError>();
   const [loading, setLoading] = useState(true);
   const [revision, setRevision] = useState(0);
   const [creating, setCreating] = useState(false);
@@ -307,7 +313,7 @@ export function LibrariesPage({ onTasks, onBackgroundTasks = onTasks, onAnalysis
   const [editingLibrary, setEditingLibrary] = useState<Library>();
   const [unconfirmedRefreshes, setUnconfirmedRefreshes] = useState<Set<string>>(new Set());
   const [scanning, setScanning] = useState<Set<string>>(new Set());
-  const [notice, setNotice] = useState<{ message: string; taskLink: boolean; background?: boolean }>();
+  const [notice, setNotice] = useState<LibraryReceipt>();
   const [menu, setMenu] = useState<{ anchor: HTMLElement; library: Library }>();
   const [counts, setCounts] = useState<Record<string, number | undefined>>({});
   const [countRevision, setCountRevision] = useState(0);
@@ -380,12 +386,12 @@ export function LibrariesPage({ onTasks, onBackgroundTasks = onTasks, onAnalysis
   async function scanLibrary(library: Library) {
     if (scanning.has(library.Id) || unconfirmedRefreshes.has(library.Id)) return;
     setScanning((ids) => new Set(ids).add(library.Id));
-    setActionError(null);
+    setActionError(undefined);
     try {
       await adminApi.scanLibrary(library.Id);
-      setNotice({ message: `Scan requested for ${library.Name}.`, taskLink: true });
+      setNotice({ template: 'Scan requested for {name}.', name: library.Name, action: 'scans' });
     } catch (cause) {
-      if (!isAbortError(cause)) setActionError(cause);
+      if (!isAbortError(cause)) setActionError({ cause });
     } finally {
       setScanning((ids) => { const next = new Set(ids); next.delete(library.Id); return next; });
       refreshScanResults();
@@ -395,55 +401,31 @@ export function LibrariesPage({ onTasks, onBackgroundTasks = onTasks, onAnalysis
   async function scanAll() {
     if (!libraries || libraries.Items.length === 0 || scanning.size > 0 || unconfirmedRefreshes.size > 0) return;
     setScanning(new Set(libraries.Items.map((library) => library.Id)));
-    setActionError(null);
+    setActionError(undefined);
     const results = await Promise.allSettled(libraries.Items.map((library) => adminApi.scanLibrary(library.Id)));
     setScanning(new Set());
     refreshScanResults();
-    const failures = results.flatMap((result, index) => result.status === 'rejected' ? [`${libraries.Items[index].Name}: ${result.reason instanceof Error ? result.reason.message : t('The request could not be completed.')}`] : []);
-    if (failures.length > 0) setActionError(new Error(failures.join('\n')));
+    const failures = results.flatMap((result, index) => result.status === 'rejected' ? [{ name: libraries.Items[index].Name, reason: errorText(result.reason) }] : []);
+    if (failures.length > 0) setActionError({ scans: failures });
     const started = results.filter((result) => result.status === 'fulfilled').length;
-    if (started > 0) setNotice({ message: `${t('Scan requested')}: ${formatCount(started, 'library', 'libraries')}.`, taskLink: true });
+    if (started > 0) setNotice({ count: started, action: 'scans' });
   }
 
-  function libraryCreated(result: LibraryResponse) {
-    setCreating(false);
-    const imagesEnabled = ['movies', 'tvshows', 'mixed'].includes(result.Library.CollectionType) && result.Library.LibraryOptions?.EnableOnlineImages === true;
-    const imageNotice = imagesEnabled ? ` ${t('Automatic image downloads are enabled.')} ${t('View image download progress in Tasks.')}` : '';
-    if (result.ScanError) {
-      setNotice(imagesEnabled ? { message: imageNotice.trim(), taskLink: true, background: true } : undefined);
-      setActionError(new Error(`Library ${result.Library.Name} was created, but its first scan could not start. ${result.ScanError.Message} Use Scan library to try again.`));
-    } else {
-      setActionError(null);
-      const introEnabled = result.Library.CollectionType === 'tvshows' && result.Library.LibraryOptions?.EnableIntroDetection === true;
-      const previewsEnabled = ['movies', 'tvshows', 'mixed'].includes(result.Library.CollectionType) && result.Library.LibraryOptions?.EnablePreviewGeneration === true;
-      const backgroundPreviewsEnabled = ['movies', 'tvshows', 'mixed'].includes(result.Library.CollectionType) && result.Library.LibraryOptions?.EnableBackgroundPreviewGeneration === true;
-      const audioWaveformsEnabled = ['movies', 'tvshows', 'mixed'].includes(result.Library.CollectionType) && result.Library.LibraryOptions?.EnableAudioWaveformGeneration === true; const subtitleTimelinesEnabled = ['movies', 'tvshows', 'mixed'].includes(result.Library.CollectionType) && result.Library.LibraryOptions?.EnableSubtitleTimelineGeneration === true;
-      const creditsEnabled = ['movies', 'tvshows', 'mixed'].includes(result.Library.CollectionType) && result.Library.LibraryOptions?.EnableCreditsDetection === true;
-      const backgroundEnabled = introEnabled || creditsEnabled || previewsEnabled || backgroundPreviewsEnabled || audioWaveformsEnabled || subtitleTimelinesEnabled;
-      setNotice({ message: `Library ${result.Library.Name} created.${result.Job ? ' A scan has been requested.' : ''}${introEnabled ? ' Automatic intro detection is enabled.' : ''}${creditsEnabled ? ' Automatic credits detection is enabled.' : ''}${previewsEnabled ? ' Automatic seek previews are enabled.' : ''}${backgroundPreviewsEnabled ? ' Automatic background clips are enabled.' : ''}${audioWaveformsEnabled ? ' Automatic audio waveforms are enabled.' : ''}${subtitleTimelinesEnabled ? ' Automatic subtitle timelines are enabled.' : ''}${backgroundEnabled ? ' View background processing progress in Tasks.' : ''}${imageNotice}`, taskLink: Boolean(result.Job) || backgroundEnabled || imagesEnabled, background: backgroundEnabled || imagesEnabled });
-    }
+  function libraryChanged(result: LibraryResponse, created: boolean) {
+    if (created) setCreating(false);
+    else setEditingLibrary(undefined);
+    const { Name: name, CollectionType, LibraryOptions } = result.Library;
+    const details = libraryProcessingReceipt(CollectionType, LibraryOptions, Boolean(result.ScanError));
+    const template = created ? 'Library {name} created.' : 'Library {name} saved.';
+    setActionError(result.ScanError ? {
+      template: created ? 'Library {name} was created, but its first scan could not start. Use Scan library to try again.' : 'Library {name} was saved, but its scan could not start.',
+      name, reason: result.ScanError.Message,
+    } : undefined);
+    setNotice(result.ScanError && !details.length ? undefined : {
+      template, name, details: created && result.Job ? ['A scan has been requested.', ...details] : details,
+      action: details.length ? 'processing' : result.Job ? 'scans' : undefined,
+    });
     refresh();
-  }
-
-  function librarySaved(result: LibraryResponse) {
-    setEditingLibrary(undefined);
-    refresh();
-    const videoLibrary = ['movies', 'tvshows', 'mixed'].includes(result.Library.CollectionType);
-    const imagesEnabled = videoLibrary && result.Library.LibraryOptions?.EnableOnlineImages === true;
-    const imageNotice = imagesEnabled ? ` ${t('Automatic image downloads are enabled.')} ${t('View image download progress in Tasks.')}` : '';
-    const introEnabled = result.Library.CollectionType === 'tvshows' && result.Library.LibraryOptions?.EnableIntroDetection === true;
-    const creditsEnabled = videoLibrary && result.Library.LibraryOptions?.EnableCreditsDetection === true;
-    const previewsEnabled = videoLibrary && result.Library.LibraryOptions?.EnablePreviewGeneration === true;
-    const backgroundPreviewsEnabled = videoLibrary && result.Library.LibraryOptions?.EnableBackgroundPreviewGeneration === true;
-    const audioWaveformsEnabled = videoLibrary && result.Library.LibraryOptions?.EnableAudioWaveformGeneration === true;
-    const subtitleTimelinesEnabled = videoLibrary && result.Library.LibraryOptions?.EnableSubtitleTimelineGeneration === true;
-    const backgroundEnabled = introEnabled || creditsEnabled || previewsEnabled || backgroundPreviewsEnabled || audioWaveformsEnabled || subtitleTimelinesEnabled;
-    if (result.ScanError) {
-      setActionError(new Error(`Library saved, but the scan could not start. ${result.ScanError.Message}`));
-      setNotice(imagesEnabled ? { message: imageNotice.trim(), taskLink: true, background: true } : undefined);
-    } else {
-      setNotice({ message: `Library ${result.Library.Name} saved.${introEnabled ? ' Automatic intro detection is enabled.' : ''}${creditsEnabled ? ' Automatic credits detection is enabled.' : ''}${previewsEnabled ? ' Automatic seek previews are enabled.' : ''}${backgroundPreviewsEnabled ? ' Automatic background clips are enabled.' : ''}${audioWaveformsEnabled ? ' Automatic audio waveforms are enabled.' : ''}${subtitleTimelinesEnabled ? ' Automatic subtitle timelines are enabled.' : ''}${backgroundEnabled ? ' View background processing progress in Tasks.' : ''}${imageNotice}`, taskLink: Boolean(result.Job) || backgroundEnabled || imagesEnabled, background: backgroundEnabled || imagesEnabled });
-    }
   }
 
   return (
@@ -452,7 +434,11 @@ export function LibrariesPage({ onTasks, onBackgroundTasks = onTasks, onAnalysis
       <Stack spacing={2.25}>
         {error != null && <ErrorNotice error={error} retry={refresh} />}
         {rootsError != null && <ErrorNotice error={rootsError} retry={refresh} />}
-        {actionError != null && <ErrorNotice error={actionError} />}
+        {actionError && ('cause' in actionError ? <ErrorNotice error={actionError.cause} /> : <Alert severity="error">
+          {'scans' in actionError ? <ul>{actionError.scans.map(({ name, reason }, index) => <li key={index}><span translate="no">{name}</span>: {t(reason)}</li>)}</ul> : <>
+            <NamedMessage template={actionError.template} name={actionError.name} /> {t(actionError.reason)}
+          </>}
+        </Alert>)}
         {!libraries && loading && <Stack spacing={1} role="status" aria-label="Loading libraries"><Skeleton variant="rounded" height={72} /><Skeleton variant="rounded" height={72} /><Skeleton variant="rounded" height={72} /></Stack>}
         {libraries && libraries.Items.length === 0 && <Paper variant="outlined" className="media-empty-state">
           <VideoLibraryOutlined sx={{ fontSize: 32, color: 'var(--ink3)' }} />
@@ -474,7 +460,7 @@ export function LibrariesPage({ onTasks, onBackgroundTasks = onTasks, onAnalysis
                   <td className="media-library-result"><ScanResult library={library} job={job} loading={scans.loading} failed={scans.error != null} atLimit={scans.data?.atLimit} /></td>
                   <td className="media-library-paths"><DirectoryStatus paths={library.Paths} directories={directoryResource.directories} loading={directoryResource.loading} stale={directoryResource.error != null} /></td>
                   <td className="media-library-last"><LastScan library={library} job={job} loading={scans.loading} />{unconfirmedRefreshes.has(library.Id) && <span className="media-secondary-line media-warning">{t('Check the last request in Tasks')}</span>}</td>
-                  <td className="media-row-actions"><Tooltip title="Scan library"><IconButton size="small" onClick={() => void scanLibrary(library)} aria-label={`Scan library ${library.Name}`} disabled={scanning.has(library.Id) || unconfirmedRefreshes.has(library.Id)}>{scanning.has(library.Id) ? <CircularProgress size={15} color="inherit" /> : <RefreshRounded sx={{ fontSize: 15 }} />}</IconButton></Tooltip><Tooltip title="Manage items"><IconButton size="small" onClick={() => onManageItems(library)} aria-label={`Manage items in ${library.Name}`}><ListAltRounded sx={{ fontSize: 15 }} /></IconButton></Tooltip><IconButton size="small" aria-label={`More actions for ${library.Name}`} aria-haspopup="menu" aria-controls={menu?.library.Id === library.Id ? 'library-actions-menu' : undefined} aria-expanded={menu?.library.Id === library.Id ? true : undefined} onClick={(event) => setMenu({ anchor: event.currentTarget, library })}><MoreVertRounded sx={{ fontSize: 15 }} /></IconButton></td>
+                  <td className="media-row-actions"><Tooltip title="Scan library"><IconButton size="small" onClick={() => void scanLibrary(library)} aria-label={t('Scan library {name}', { name: library.Name })} disabled={scanning.has(library.Id) || unconfirmedRefreshes.has(library.Id)}>{scanning.has(library.Id) ? <CircularProgress size={15} color="inherit" /> : <RefreshRounded sx={{ fontSize: 15 }} />}</IconButton></Tooltip><Tooltip title="Manage items"><IconButton size="small" onClick={() => onManageItems(library)} aria-label={t('Manage items in {name}', { name: library.Name })}><ListAltRounded sx={{ fontSize: 15 }} /></IconButton></Tooltip><IconButton size="small" aria-label={t('More actions for {name}', { name: library.Name })} aria-haspopup="menu" aria-controls={menu?.library.Id === library.Id ? 'library-actions-menu' : undefined} aria-expanded={menu?.library.Id === library.Id ? true : undefined} onClick={(event) => setMenu({ anchor: event.currentTarget, library })}><MoreVertRounded sx={{ fontSize: 15 }} /></IconButton></td>
                 </tr>;
               })}</tbody>
             </table>
@@ -493,12 +479,17 @@ export function LibrariesPage({ onTasks, onBackgroundTasks = onTasks, onAnalysis
         <Divider />
         <MenuItem disabled={Boolean(menu && scanning.has(menu.library.Id))} onClick={() => { setDeleting(menu?.library); setMenu(undefined); }} sx={{ color: 'error.main' }}><ListItemIcon sx={{ color: 'inherit' }}><DeleteOutlineRounded fontSize="small" /></ListItemIcon>Delete library</MenuItem>
       </Menu>
-      {creating && roots && <CreateLibraryDialog roots={roots} onClose={(needsRefresh) => { setCreating(false); if (needsRefresh) refresh(); }} onCreated={libraryCreated} onNavigationGuardChange={onNavigationGuardChange} />}
-      {deleting && <DeleteLibraryDialog library={deleting} onClose={() => setDeleting(undefined)} onDeleted={() => { setNotice({ message: `Library ${deleting.Name} deleted. Media files were kept.`, taskLink: false }); setDeleting(undefined); refresh(); }} />}
-      {refreshingMedia && <RefreshMediaDialog library={refreshingMedia} outcomeUnknown={unconfirmedRefreshes.has(refreshingMedia.Id)} onUnknown={() => { setUnconfirmedRefreshes((ids) => new Set(ids).add(refreshingMedia.Id)); refreshScanResults(); }} onClose={() => setRefreshingMedia(undefined)} onStarted={() => { setNotice({ message: `Media details refresh requested for ${refreshingMedia.Name}.`, taskLink: true }); setRefreshingMedia(undefined); refreshScanResults(); }} onTasks={onTasks} />}
+      {creating && roots && <CreateLibraryDialog roots={roots} onClose={(needsRefresh) => { setCreating(false); if (needsRefresh) refresh(); }} onCreated={(result) => libraryChanged(result, true)} onNavigationGuardChange={onNavigationGuardChange} />}
+      {deleting && <DeleteLibraryDialog library={deleting} onClose={() => setDeleting(undefined)} onDeleted={() => { setNotice({ template: 'Library {name} deleted. Media files were kept.', name: deleting.Name }); setDeleting(undefined); refresh(); }} />}
+      {refreshingMedia && <RefreshMediaDialog library={refreshingMedia} outcomeUnknown={unconfirmedRefreshes.has(refreshingMedia.Id)} onUnknown={() => { setUnconfirmedRefreshes((ids) => new Set(ids).add(refreshingMedia.Id)); refreshScanResults(); }} onClose={() => setRefreshingMedia(undefined)} onStarted={() => { setNotice({ template: 'Media details refresh requested for {name}.', name: refreshingMedia.Name, action: 'scans' }); setRefreshingMedia(undefined); refreshScanResults(); }} onTasks={onTasks} />}
       {bindingLibrary && <RootBindingDialog key={bindingLibrary.Id} library={bindingLibrary} onClose={() => { setBindingLibrary(undefined); directoryResource.reload(); }} onNavigationGuardChange={onNavigationGuardChange} />}
-      {editingLibrary && <LibraryEditorDialog key={editingLibrary.Id} libraryId={editingLibrary.Id} onClose={() => setEditingLibrary(undefined)} onSaved={librarySaved} onNavigationGuardChange={onNavigationGuardChange} />}
-      <Snackbar open={Boolean(notice)} autoHideDuration={notice?.taskLink ? 10000 : 6000} onClose={() => setNotice(undefined)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}><Alert severity="success" variant="filled" action={notice?.taskLink ? <Button color="inherit" size="small" onClick={notice.background ? onBackgroundTasks : onTasks}>View tasks</Button> : undefined} onClose={() => setNotice(undefined)}>{notice?.message}</Alert></Snackbar>
+      {editingLibrary && <LibraryEditorDialog key={editingLibrary.Id} libraryId={editingLibrary.Id} onClose={() => setEditingLibrary(undefined)} onSaved={(result) => libraryChanged(result, false)} onNavigationGuardChange={onNavigationGuardChange} />}
+      <Snackbar open={Boolean(notice)} autoHideDuration={notice?.action ? 10000 : 6000} onClose={() => setNotice(undefined)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+        <Alert severity="success" variant="filled" action={notice?.action ? <Button color="inherit" size="small" onClick={notice.action === 'processing' ? onBackgroundTasks : onTasks}>View tasks</Button> : undefined} onClose={() => setNotice(undefined)}>
+          {notice && ('name' in notice ? <NamedMessage template={notice.template} name={notice.name} /> : t('Scans requested for {count}.', { count: formatCount(notice.count, 'library', 'libraries') }))}
+          {notice?.details?.map((message) => <span key={message}> {t(message)}</span>)}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
