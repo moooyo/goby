@@ -78,7 +78,8 @@ func (s *Store) queryExtraItems(ctx context.Context, ownerID string, subject Sub
 		i.library_id=$2 AND ($3::boolean OR i.library_id=ANY($4::text[]))
 		AND `+database.ExtraResourceItemSQL("i", true)+`) FROM item_extra_resources association
 		LEFT JOIN items i ON i.id=association.resource_item_id
-		WHERE association.owner_item_id=$1 AND association.active`,
+		WHERE association.owner_item_id=$1 AND association.active
+		AND (i.id IS NULL OR `+includedScanPathSQL("i")+`)`,
 		ownerID, libraryID, access.all, access.folders).Scan(&active, &valid)
 	if err != nil {
 		return nil, fmt.Errorf("read extra population: %w", err)
@@ -91,7 +92,7 @@ func (s *Store) queryExtraItems(ctx context.Context, ownerID string, subject Sub
 		WHERE association.owner_item_id=$1 AND association.active
 		AND (association.kind='trailer')=$2 AND i.library_id=$3
 		AND ($4::boolean OR i.library_id=ANY($5::text[]))
-		AND `+database.ExtraResourceItemSQL("i", true)+` AND `+access.itemPolicySQL("i")+`
+		AND `+includedScanPathSQL("i")+` AND `+database.ExtraResourceItemSQL("i", true)+` AND `+access.itemPolicySQL("i")+`
 		ORDER BY lower(i.sort_name) COLLATE "C", i.id`, ownerID, trailers, libraryID, access.all, access.folders)
 	if err != nil {
 		return nil, fmt.Errorf("query extra resources: %w", err)

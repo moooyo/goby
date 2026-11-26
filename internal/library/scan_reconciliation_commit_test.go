@@ -106,6 +106,10 @@ func TestScanReconciliationPhysicalMembersRequireExactCurrentScope(t *testing.T)
 		{"empty physical path", func(item *scanReconciliationItem) { item.path = "" }},
 		{"wrong physical path", func(item *scanReconciliationItem) { item.path = filepath.Join(rootPath, "other.mkv") }},
 		{"root directory", func(item *scanReconciliationItem) { item.relative, item.path = ".", rootPath }},
+		{"excluded descendant", func(item *scanReconciliationItem) {
+			item.relative = "missing/#recycle/movie.mkv"
+			item.path = filepath.Join(rootPath, filepath.FromSlash(item.relative))
+		}},
 		{"parent traversal", func(item *scanReconciliationItem) { item.relative = "../movie.mkv" }},
 	} {
 		t.Run(test.name, func(t *testing.T) {

@@ -1541,7 +1541,7 @@ func (s *Store) planThemePublication(task *scanTask, library Library, owner them
 		future = append(future, file.candidate)
 	}
 	for _, resource := range active {
-		if incoming[resource.ID] {
+		if incoming[resource.ID] || excludedScanPath(resource.Relative, false) {
 			continue
 		}
 		classification, err := classifyThemePath(resource.Relative, 0)
@@ -1704,7 +1704,7 @@ func (s *Store) publishThemeOwnerAttempt(task *scanTask, library Library, owner 
 		count(*) FILTER(WHERE NOT `+directItemSQL("i")+`),
 		count(*) FILTER(WHERE NOT (i.id=ANY($2::text[])) AND NOT (COALESCE(i.root_id,'')=ANY($3::text[]))),
 		count(*) FILTER(WHERE NOT (i.id=ANY($2::text[])) AND NOT (COALESCE(i.root_id,'')=ANY($4::text[])))
-		FROM item_theme_resources r JOIN items i ON i.id=r.resource_item_id WHERE r.owner_item_id=$1 AND r.active`,
+		FROM item_theme_resources r JOIN items i ON i.id=r.resource_item_id WHERE r.owner_item_id=$1 AND r.active AND `+includedScanPathSQL("i"),
 		owner.id, expected, retiredRoots, possibleRoots).Scan(&invalid, &remaining, &possibleRemaining); err != nil {
 		return false, err
 	}
@@ -1768,7 +1768,7 @@ func (s *Store) publishThemeOwnerAttempt(task *scanTask, library Library, owner 
 	var activeCount, invalidCount, expectedCount int
 	if err := tx.QueryRow(task.ctx, `SELECT count(*),count(*) FILTER(WHERE NOT `+directItemSQL("i")+`),
 		count(*) FILTER(WHERE i.id=ANY($2::text[])) FROM item_theme_resources r JOIN items i ON i.id=r.resource_item_id
-		WHERE r.owner_item_id=$1 AND r.active`, owner.id, expected).Scan(&activeCount, &invalidCount, &expectedCount); err != nil {
+		WHERE r.owner_item_id=$1 AND r.active AND `+includedScanPathSQL("i"), owner.id, expected).Scan(&activeCount, &invalidCount, &expectedCount); err != nil {
 		return false, err
 	}
 	if activeCount > MaxThemeResourcesPerOwner || invalidCount != 0 || expectedCount != len(expected) {
@@ -1896,6 +1896,9 @@ func (state *scanState) finishThemeScan() (resultErr error) {
 		if err := rows.Scan(&id, &relative, &ownerID, &itemType); err != nil {
 			rows.Close()
 			return err
+		}
+		if excludedScanPath(relative, false) {
+			continue
 		}
 		if owners[ownerID] == nil {
 			owners[ownerID] = &retainedOwner{owner: themeDirectoryOwner{id: ownerID, itemType: itemType}}
@@ -2054,7 +2057,7 @@ func (s *Store) finishCollectionThemes(task *scanTask, library Library, shared *
 			rows.Close()
 			return 0, err
 		}
-		if seen[id] || !completeRoots[rootID] {
+		if seen[id] || !completeRoots[rootID] || excludedScanPath(relative, false) {
 			continue
 		}
 		classification, err := classifyThemePath(relative, 0)

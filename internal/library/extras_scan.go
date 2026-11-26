@@ -292,7 +292,7 @@ func (state *scanState) publishExtraOwnerAttempt(ownerID string, files []*prepar
 	}
 	retire := []string{}
 	for _, resource := range active {
-		if incoming[resource.ID] {
+		if incoming[resource.ID] || excludedScanPath(resource.Relative, false) {
 			continue
 		}
 		classification, err := classifyExtraPath(resource.Relative, 0)
@@ -401,7 +401,8 @@ func (state *scanState) publishExtraOwnerAttempt(ownerID string, files []*prepar
 	}
 	var count, invalid int
 	if err := tx.QueryRow(state.task.ctx, `SELECT count(*),count(*) FILTER(WHERE NOT `+database.ExtraResourceItemSQL("i", true)+`)
-		FROM item_extra_resources r JOIN items i ON i.id=r.resource_item_id WHERE r.owner_item_id=$1 AND r.active`, ownerID).Scan(&count, &invalid); err != nil {
+		FROM item_extra_resources r JOIN items i ON i.id=r.resource_item_id
+		WHERE r.owner_item_id=$1 AND r.active AND `+includedScanPathSQL("i"), ownerID).Scan(&count, &invalid); err != nil {
 		return extraTransactionFailure(err)
 	}
 	if count != len(expected) || invalid != 0 {
@@ -492,7 +493,7 @@ func (state *scanState) finishExtraScan() error {
 		}
 	}
 	rows, err := state.store.pool.Query(state.task.ctx, `SELECT DISTINCT r.owner_item_id FROM item_extra_resources r
-		JOIN items i ON i.id=r.resource_item_id WHERE i.root_id=$1 AND r.active`, state.root.id)
+		JOIN items i ON i.id=r.resource_item_id WHERE i.root_id=$1 AND r.active AND `+includedScanPathSQL("i"), state.root.id)
 	if err != nil {
 		return err
 	}

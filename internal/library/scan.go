@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/artwork"
+	"github.com/moooyo/goby/internal/database"
 	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/primaryio"
 )
@@ -281,6 +283,11 @@ func (state *scanState) walk(relative string, current hierarchy, depth int) (res
 	if err != nil {
 		return err
 	}
+	// Keep the raw listing in reconciliation evidence. Exclusion is a scan
+	// policy, not evidence that a system directory is absent from storage.
+	entries = slices.DeleteFunc(entries, func(entry os.DirEntry) bool {
+		return entry.IsDir() && excludedScanPath(entry.Name(), true)
+	})
 	entries, err = state.classifyExtraDirectory(relative, entries, info)
 	if err == nil {
 		entries, err = state.classifyThemeDirectory(relative, entries, info)
@@ -296,10 +303,28 @@ func (state *scanState) walk(relative string, current hierarchy, depth int) (res
 	defer delete(state.directoryIdentities, directoryKey)
 	defer func() { delete(state.imageDirectories, directoryKey) }()
 	defer func() { delete(state.subtitleDirectories, directoryKey) }()
-	// A directory containing audio files is the album boundary. Local metadata
-	// may describe this existing hierarchy but cannot choose a different kind.
 	folderType := current.folderType
 	folderWarnings := state.warnings
+	if relative != "." && state.library.CollectionType == "tvshows" && current.seriesID == "" {
+		if number, ok := tvSeasonNumber(filepath.Base(relative)); depth == 1 && ok && !tvShowMetadataPresent(entries) && slices.ContainsFunc(entries, tvVideoEntry) {
+			id, err := state.folder("//series/root", "", cleanName(filepath.Base(state.root.path)), "Series", state.library.ID, 0, ".")
+			if err != nil {
+				return err
+			}
+			current.seriesID, current.parentID = id, id
+			folderType, current.folderIndex = "Season", number
+		} else {
+			series, err := state.tvSeriesDirectory(relative, info, entries, MaxThemeAncestorDepth-depth)
+			if err != nil {
+				return err
+			}
+			if series {
+				folderType = "Series"
+			}
+		}
+	}
+	// A directory containing audio files is the album boundary. Local metadata
+	// may describe this existing hierarchy but cannot choose a different kind.
 	albumDirectory := (state.library.CollectionType == "music" || state.library.CollectionType == "mixed") && containsAudio(entries)
 	if relative == "." {
 		if albumDirectory {
@@ -353,23 +378,12 @@ func (state *scanState) walk(relative string, current hierarchy, depth int) (res
 				}
 			}
 			next := current
-			itemType, number := "Folder", 0
-			if state.library.CollectionType == "tvshows" || (state.library.CollectionType == "mixed" && current.seriesID != "") {
-				if matches := seasonPattern.FindStringSubmatch(entry.Name()); len(matches) != 0 {
-					number, _ = strconv.Atoi(matches[1])
-					itemType = "Season"
-					if next.seriesID == "" {
-						next.seriesID, err = state.folder("//series/root", "", cleanName(filepath.Base(state.root.path)), "Series", state.library.ID, 0, ".")
-						if err != nil {
-							return err
-						}
-					}
-					next.parentID = next.seriesID
-				} else if current.seriesID == "" && depth == 0 {
-					itemType = "Series"
+			next.folderType, next.folderIndex = "Folder", 0
+			if current.seriesID != "" && (state.library.CollectionType == "tvshows" || state.library.CollectionType == "mixed") {
+				if number, ok := tvSeasonNumber(entry.Name()); ok {
+					next.folderType, next.folderIndex, next.parentID = "Season", number, next.seriesID
 				}
 			}
-			next.folderType, next.folderIndex = itemType, number
 			if err := state.walk(path, next, depth+1); err != nil {
 				return err
 			}
@@ -1135,7 +1149,9 @@ func (state *scanState) findStoredFile(relative string, info os.FileInfo) (store
 }
 
 func (state *scanState) findStoredFileForRole(relative string, info os.FileInfo, role scannedMediaRole) (storedFile, error) {
-	visibility := ordinaryItemSQL("items")
+	// The exact lookup already has a scanner-approved path. Keep attachment
+	// role compatibility here; only the inode fallback needs a path filter.
+	visibility := database.CatalogOrdinaryItemSQL("items")
 	switch role {
 	case scannedRoleTheme:
 		visibility = "NOT EXISTS(SELECT 1 FROM item_extra_resources role WHERE role.resource_item_id=items.id)"
@@ -1177,7 +1193,7 @@ func (state *scanState) findStoredFileForRole(relative string, info os.FileInfo,
 	excluded := state.claimedScannedIDs(relative, role)
 	rows, err := state.store.pool.Query(state.task.ctx, "SELECT "+storedFileColumns+` FROM items
 		WHERE library_id = $1 AND file_identity = $2 AND NOT is_folder AND file_size = $3
-		AND modified_at = $4 AND NOT (id=ANY($5::text[])) AND `+visibility+` ORDER BY created_at, id LIMIT 8`,
+		AND modified_at = $4 AND NOT (id=ANY($5::text[])) AND `+includedScanPathSQL("items")+` AND `+visibility+` ORDER BY created_at, id LIMIT 8`,
 		state.library.ID, identity, info.Size(), catalogModifiedTime(info), excluded)
 	if err != nil {
 		return storedFile{}, err

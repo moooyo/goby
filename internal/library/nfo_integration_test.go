@@ -226,7 +226,10 @@ func TestStoreDirectoryNFOMetadataKeepsFilesystemKinds(t *testing.T) {
 	series := nfoCatalogItem(t, ctx, store, userID, television.ID, seriesPath)
 	season := nfoCatalogItem(t, ctx, store, userID, television.ID, filepath.Dir(episodePath))
 	album := nfoCatalogItem(t, ctx, store, userID, music.ID, filepath.Dir(audioPath))
-	nfoAssertMetadata(t, series, nfoExpectedMetadata(t, seriesDocument))
+	wantSeries := nfoExpectedMetadata(t, seriesDocument)
+	// The item projection supplies the catalog's default display order.
+	wantSeries.DisplayOrder = "Aired"
+	nfoAssertMetadata(t, series, wantSeries)
 	nfoAssertMetadata(t, season, nfoExpectedMetadata(t, seasonDocument))
 	nfoAssertMetadata(t, album, nfoExpectedMetadata(t, albumDocument))
 	if series.Type != "Series" || !series.IsFolder || season.Type != "Season" || !season.IsFolder || season.ParentID != series.ID || season.IndexNumber != 1 || album.Type != "MusicAlbum" || !album.IsFolder {
@@ -341,7 +344,9 @@ func TestStoreRootSeriesNFODescribesSyntheticRepresentative(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read root series representative: %v", err)
 	}
-	nfoAssertMetadata(t, series, nfoExpectedMetadata(t, document))
+	wantSeries := nfoExpectedMetadata(t, document)
+	wantSeries.DisplayOrder = "Aired"
+	nfoAssertMetadata(t, series, wantSeries)
 	season := nfoCatalogItem(t, ctx, store, userID, library.ID, filepath.Dir(episodePath))
 	episode := nfoCatalogItem(t, ctx, store, userID, library.ID, episodePath)
 	if series.Type != "Series" || !series.IsFolder || series.ParentID != library.ID || season.Type != "Season" || season.ParentID != series.ID || season.IndexNumber != 1 || episode.Type != "Episode" || episode.ParentID != season.ID || episode.IndexNumber != 2 || episode.ParentIndexNumber != 1 {
