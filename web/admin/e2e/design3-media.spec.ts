@@ -1,6 +1,6 @@
 import type { Job, Library, LibraryStorageDirectory, MetadataDetail, TaskDefinition, TaskRun } from '../src/api';
 import type { MetadataCandidate } from '../src/providersApi';
-import { csrf, expect, json, library, movieMetadata, seriesLibrary, stamp, test } from './dashboard-fixture';
+import { analysisItem, csrf, expect, json, library, movieMetadata, seriesLibrary, stamp, test } from './dashboard-fixture';
 
 const libraryList = '/admin/v1/libraries';
 const directoriesPath = '/admin/v1/storage/library-directories';
@@ -195,6 +195,27 @@ test('a music-only catalog has an analysis empty state without inventory reads o
   await expect(page.getByRole('combobox', { name: 'Filter library' })).toHaveCount(0);
   await expect(page.getByRole('combobox', { name: 'Credits analysis library' })).toHaveCount(0);
   expect(api.reads('/admin/v1/media-analysis/items')).toHaveLength(0);
+});
+
+for (const language of ['en', 'zh'] as const) test.describe(`${language} analysis labels`, () => {
+  test.use({ preferences: { language, theme: 'light' } });
+
+  test('localizes the analysis headings and distinguishes library and item detection', async ({ page, api }) => {
+    const zh = language === 'zh';
+    api.handlers.set(`GET /admin/v1/items/${analysisItem.Id}/credits`, (route) => json(route, {
+      ItemId: analysisItem.Id, MediaSourceId: analysisItem.MediaSourceId, SourceRevision: analysisItem.SourceRevision, Revision: '1', DurationTicks: 1_000_000_000,
+      Automatic: null, Effective: null, Override: null, OverrideStale: false, LastEditedBy: '', LastEditedAt: null,
+      Detected: [], DetectedStale: false, DetectedRevision: '0', DetectedStatus: 'not_analyzed', DetectedReason: '', DetectedUpdatedAt: null,
+    }));
+    await page.goto('/admin/media/analysis');
+    const table = page.getByRole('table', { name: zh ? '媒体分析条目' : 'Media analysis items' });
+    await expect(table.getByRole('columnheader')).toHaveText(zh ? ['条目', '片头分析', 'BIF 预览', '片尾标记'] : ['Item', 'Intro analysis', 'Seek previews', 'Credits markers']);
+    await expect(page.getByRole('button', { name: zh ? '检测此媒体库的片尾' : 'Detect credits in this library', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: zh ? '重新检测此媒体库的片尾' : 'Detect credits in this library again', exact: true })).toBeVisible();
+    await table.getByRole('button', { name: zh ? /^查看「.+」的片尾标记$/ : /^View credits markers for / }).click();
+    const dialog = page.getByRole('dialog', { name: zh ? '片尾标记' : 'Credits marker', exact: true });
+    await expect(dialog.getByRole('button', { name: zh ? '识别此影片片尾' : 'Detect credits', exact: true })).toBeVisible();
+  });
 });
 
 function taskRun(Id: string, TaskId: string, fields: Partial<TaskRun> = {}): TaskRun {

@@ -146,10 +146,10 @@ export function MediaAnalysisResults({ libraries, disabled, refresh, currentUser
     {hasVideoLibraries && data && data.Items.length > 0 && <>
       <TableContainer sx={{ borderRadius: 0, display: { xs: 'none', md: 'block' } }}>
         <Table aria-label="Media analysis items" sx={{ '& td, & th': { px: 2.5 } }}>
-          <TableHead><TableRow><TableCell sx={{ width: '36%' }}>Item</TableCell><TableCell sx={{ width: '26%' }}>Intro analysis</TableCell><TableCell>Seek previews</TableCell><TableCell>片尾标记</TableCell></TableRow></TableHead>
+          <TableHead><TableRow><TableCell sx={{ width: '36%' }}>{t('Item')}</TableCell><TableCell sx={{ width: '26%' }}>{t('Intro analysis')}</TableCell><TableCell>{t('Seek previews')}</TableCell><TableCell>{t('Credits markers')}</TableCell></TableRow></TableHead>
           <TableBody>{data.Items.map((item) => <TableRow key={item.Id} hover>
             <TableCell component="th" scope="row"><Button disabled={disabled} onClick={() => setDetail(item.Id)} aria-label={t('View analysis for {name}', { name: item.Name })} sx={{ color: 'text.primary', display: 'block', minHeight: 0, minWidth: 0, p: 0, borderRadius: 0.5, textAlign: 'left', overflowWrap: 'anywhere', fontSize: 13, fontWeight: 600 }}>{item.Name || 'Untitled media'}</Button><Typography component="div" variant="caption" color="text.secondary" sx={{ mt: 0.25 }}>{libraries?.find((library) => library.Id === item.LibraryId)?.Name ?? 'Unknown library'} · {item.Type}</Typography></TableCell>
-            <TableCell><IntroStatus item={item} /></TableCell><TableCell><PreviewStatus previews={item.Previews} /></TableCell><TableCell>{['Movie', 'Episode'].includes(item.Type) && <Button disabled={disabled} onClick={() => setCreditsItem(item)} aria-label={`查看「${item.Name}」的片尾标记`}>查看与识别</Button>}</TableCell>
+            <TableCell><IntroStatus item={item} /></TableCell><TableCell><PreviewStatus previews={item.Previews} /></TableCell><TableCell>{['Movie', 'Episode'].includes(item.Type) && <Button disabled={disabled} onClick={() => setCreditsItem(item)} aria-label={t('View credits markers for {name}', { name: item.Name })}>Review and detect</Button>}</TableCell>
           </TableRow>)}</TableBody>
         </Table>
       </TableContainer>
@@ -162,7 +162,7 @@ export function MediaAnalysisResults({ libraries, disabled, refresh, currentUser
             <Stack spacing={0.75}><Typography variant="caption" color="text.secondary">Intro analysis</Typography><IntroStatus item={item} /></Stack>
             <Stack spacing={0.75} sx={{ alignItems: 'flex-start' }}><Typography variant="caption" color="text.secondary">Seek previews</Typography><PreviewStatus previews={item.Previews} /></Stack>
           </Box>
-          {['Movie', 'Episode'].includes(item.Type) && <Button disabled={disabled} onClick={() => setCreditsItem(item)} aria-label={`查看「${item.Name}」的片尾标记`} sx={{ mt: 1 }}>片尾标记与识别</Button>}
+          {['Movie', 'Episode'].includes(item.Type) && <Button disabled={disabled} onClick={() => setCreditsItem(item)} aria-label={t('View credits markers for {name}', { name: item.Name })} sx={{ mt: 1 }}>Credits markers and detection</Button>}
         </Box>)}
       </Box>
     </>}

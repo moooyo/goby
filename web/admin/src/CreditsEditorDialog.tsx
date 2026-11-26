@@ -120,7 +120,7 @@ export function CreditsEditorDialog({ itemId, itemName, currentUserId, onClose, 
   return <>
     <Dialog open fullWidth maxWidth="sm" onClose={close} aria-labelledby="credits-editor-title">
       <Box component="form" noValidate onSubmit={submit} sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
-        <DialogTitle id="credits-editor-heading"><Typography component="span" variant="h3" id="credits-editor-title">片尾标记</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, overflowWrap: 'anywhere' }}>{itemName}</Typography></DialogTitle>
+        <DialogTitle id="credits-editor-heading"><Typography component="span" variant="h3" id="credits-editor-title">Credits marker</Typography><Typography translate="no" variant="body2" color="text.secondary" sx={{ mt: 0.5, overflowWrap: 'anywhere' }}>{itemName}</Typography></DialogTitle>
         <DialogContent aria-busy={loading || locked}><Stack spacing={2.5} sx={{ pt: 0.5 }}>
           {error != null && <ErrorNotice error={error} />}
           {review && <Alert severity="warning" action={<Button color="inherit" onClick={reload}>重新加载</Button>}>片尾标记或片源已发生变化，或无法确认保存结果。草稿已保留，请重新加载并核对后再保存。</Alert>}
@@ -148,7 +148,7 @@ export function CreditsEditorDialog({ itemId, itemName, currentUserId, onClose, 
               {saved.DetectedUpdatedAt && <Typography variant="caption" color="text.secondary">上次识别：{new Date(saved.DetectedUpdatedAt).toLocaleString(adminLocale())}</Typography>}
               <Typography variant="body2" color="text.secondary">播放优先使用人工或导入标记，其次使用片源章节，最后使用有效的自动结果。自动结果参与播放需要在媒体库设置中启用片尾识别。</Typography>
               <Typography variant="caption" color="text.secondary">分析剧集最后 450 秒、电影最后 900 秒；音频匹配沿用现有 Intro Skipper 匹配设置。</Typography>
-              <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}><Button variant="outlined" disabled={!canAnalyze} onClick={() => void analysis.start(saved.DetectedRevision !== '0')} startIcon={analysis.busy ? <CircularProgress size={16} color="inherit" /> : undefined}>{saved.DetectedRevision === '0' ? '识别此影片片尾' : '重新识别此影片片尾'}</Button>{onTasks && <Button disabled={locked} onClick={onTasks}>查看识别任务</Button>}</Stack>
+              <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}><Button variant="outlined" disabled={!canAnalyze} onClick={() => void analysis.start(saved.DetectedRevision !== '0')} startIcon={analysis.busy ? <CircularProgress size={16} color="inherit" /> : undefined}>{saved.DetectedRevision === '0' ? 'Detect credits' : 'Detect credits again'}</Button>{onTasks && <Button disabled={locked} onClick={onTasks}>查看识别任务</Button>}</Stack>
             </Stack></Paper>
             <Typography variant="body2" color="text.secondary">填写片尾开始的秒数。播放器会据此显示下一集提示；电影和没有下一集的剧集仍可继续播放至结束。</Typography>
             <TextField fullWidth label="片尾开始时间（秒）" value={draft} disabled={disabled} onChange={(event) => { setDraft(event.target.value); setError(null); setNotice(''); }} error={Boolean(startError)} helperText={startError ?? '从 0 开始，必须早于影片结束时间，最多保留 7 位小数。'} slotProps={{ htmlInput: { inputMode: 'decimal' } }} />

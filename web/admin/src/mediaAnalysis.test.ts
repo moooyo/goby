@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { analysisIntroStatus, analysisDraft, analysisRevision, parseAnalysisDraft, supportsVideoAnalysis, validAnalysisConfiguration, validAnalysisDetection, validAnalysisItems, validAnalysisOverview, validAnalysisProfile } from './mediaAnalysis.ts';
 import type { AnalysisCandidate, AnalysisDetection, AnalysisItem, AnalysisMetrics, AnalysisProfile, IntroSkipperCandidate } from './mediaAnalysis.ts';
+import { design3MediaMessages } from './feature-i18n-design3-media.ts';
 
 const profile: AnalysisProfile = { AutoPublishIntros: true, PreviewIntervalSeconds: 10, PreviewQuality: 80, MaxSourceBytes: 128 * 2 ** 30, MaxItemRuntimeSeconds: 1200, FeatureCacheMaxBytes: 128 * 2 ** 20,
   IntroSkipper: { AnalysisPercent: 25, AnalysisLengthLimit: 10, MinimumIntroDuration: 15, MaximumIntroDuration: 120, MaximumFingerprintPointDifferences: 6, MaximumTimeSkip: 3.5, InvertedIndexShift: 2 } };
@@ -24,6 +25,14 @@ function candidate(): AnalysisCandidate {
 test('video analysis accepts the supported catalog types but not music or collections', () => {
   for (const type of ['movies', 'tvshows', 'mixed']) assert.equal(supportsVideoAnalysis(type), true, type);
   for (const type of ['music', 'boxsets', '']) assert.equal(supportsVideoAnalysis(type), false, type);
+});
+
+test('Chinese credits labels distinguish a library from a single title', () => {
+  assert.equal(design3MediaMessages['Credits markers'], '片尾标记');
+  assert.equal(design3MediaMessages['Detect credits in this library'], '检测此媒体库的片尾');
+  assert.equal(design3MediaMessages['Detect credits in this library again'], '重新检测此媒体库的片尾');
+  assert.equal(design3MediaMessages['Detect credits'], '识别此影片片尾');
+  assert.equal(design3MediaMessages['Detect credits again'], '重新识别此影片片尾');
 });
 
 test('processing edits keep exact values and retain automatic publication', () => {
