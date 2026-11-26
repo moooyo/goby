@@ -99,6 +99,18 @@ const test = base.extend<{ fixture: DestinationFixture; language: 'en' | 'zh' }>
 } });
 test.use({ serviceWorkers: 'block', trace: 'off', video: 'off' });
 
+test('the last successful delivery stays distinct from a later failed attempt', async ({ page, fixture }) => {
+  fixture.data.Items[0].LastOutcome = 'failed';
+  fixture.data.SupportedEvents.push({ Id: 'BackupFinished', Name: 'Backups finished', Actions: ['backup.published'] });
+  const deliveredAt = fixture.data.Items[0].LastDeliveredAt!;
+  await page.goto('/admin/system/notifications');
+  const target = page.locator('.nd-target-state');
+  await expect(target.getByText('Delivery failed', { exact: true })).toBeVisible();
+  await expect(target.locator(`time[datetime="${deliveredAt}"]`)).toHaveText(/^Last successful delivery: /);
+  await expect(page.getByRole('rowheader', { name: 'Backup published successfully', exact: true })).toBeVisible();
+  expect(fixture.writes).toHaveLength(0);
+});
+
 test('notification target editing preserves exact revisions and never returns saved secrets', async ({ page, fixture }) => {
   await page.goto('/admin/notifications');
   await page.getByRole('button', { name: 'Edit target', exact: true }).click();

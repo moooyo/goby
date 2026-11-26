@@ -8,6 +8,8 @@ export const featureI18nDesign3System: Record<string, string> = {
   'Find on this page': '在当前页中查找',
   'Activity details': '活动详情',
   'Activity details: {message}': '活动详情：{message}',
+  'Backup published successfully': '备份已成功发布',
+  'Last successful delivery: {time}': '上次成功投递：{time}',
   'Loading activity count': '正在读取活动数量',
   'Activity count unavailable': '无法读取活动数量',
   'Activity count: {count}': '活动数量：{count}',
