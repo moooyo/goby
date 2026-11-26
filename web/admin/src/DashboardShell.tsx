@@ -56,7 +56,7 @@ export function DashboardShell({ user, page, libraryId, status, onAttentionVisib
   const serverStatus = sidebarStatus(status.overview, status.system);
   // Other pages do not publish their own read times to the shell. A successful
   // global status check is not a successful load of the page's actual data.
-  const updatedAt = page === 'overview' ? latestSuccessfulRead(status.overview, status.system, status.directories, status.backup, status.tasks, status.jobs, status.libraries, status.settings) : undefined;
+  const updatedAt = page === 'overview' ? latestSuccessfulRead(status.overview, status.system, status.directories, status.backup, status.successfulBackup, status.tasks, status.jobs, status.libraries, status.settings) : undefined;
   const nav = useRef<HTMLElement>(null);
   const navTrigger = useRef<HTMLButtonElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);

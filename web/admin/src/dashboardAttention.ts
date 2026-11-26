@@ -143,8 +143,7 @@ export function dashboardAttention({ overview, system, directories, backup, task
       action: { target: { page: 'settings' }, label: 'Go to restart' } });
   }
   if (backup.data?.Available && !backup.data.Enabled) entries.push({ id: 'backup-rules', check: 'backup-rules', severity: 'warning', category: 'Configuration', stale: backup.error != null,
-    title: t('No automatic backup rules'), detail: [backup.data.LastRunAt && t('Last automatic backup run: {time}', { time: observationTime(backup.data.LastRunAt, locale) }),
-      t('The backup task has no active trigger rules. Backups must be started manually.')].filter(Boolean).join(' · '),
+    title: t('No automatic backup rules'), detail: t('The backup task has no active trigger rules. Backups must be started manually.'),
     action: { target: { page: 'tasks', taskId: backup.data.TaskId || undefined }, label: 'Set trigger rules' } });
 
   // API snapshots don't timestamp when capacity crossed a threshold, a mount

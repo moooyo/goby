@@ -71,6 +71,7 @@ class RootBindingMock {
       this.requests.push(captured);
       const handler = this.handlers.get(`${captured.method} ${captured.path}`);
       if (handler && !url.search) return handler(route, request);
+      if (captured.method === 'GET' && captured.path === '/admin/v1/backups') return route.fallback();
       if (captured.method === 'GET' && captured.path === `/admin/v1/libraries/${library.Id}/items` && url.search === '?StartIndex=0&Limit=1') {
         return json(route, { Library: library, Items: [], TotalRecordCount: 0, StartIndex: 0, Limit: 1 });
       }

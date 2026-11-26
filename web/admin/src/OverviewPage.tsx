@@ -50,6 +50,16 @@ function ResourceNote({ observations }: { observations: readonly Observation<unk
   return <p className="ov-panel-note" role="status">{t(unavailable ? stale ? 'Showing the last successful check.' : 'This information could not be loaded.' : 'Loading…')}</p>;
 }
 
+function SuccessfulBackupNote({ observation }: { observation: Observation<string | null> }) {
+  const { t, locale } = useTranslation();
+  const { data: createdAt, error } = observation;
+  if (createdAt === undefined) return t(error != null ? 'Could not check the latest successful backup.' : 'Checking the latest successful backup…');
+  const [before, after] = t('Latest successful backup: {time}').split('{time}');
+  const date = createdAt && new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(createdAt));
+  return <>{createdAt ? <>{before}<time dateTime={createdAt}>{date}</time>{after}</> : t('No successful backups are retained.')}
+    {error != null && <> · {t('Showing the last successful check.')}</>}</>;
+}
+
 function TaskProgress({ label, run }: { label: string; run: Pick<TaskRun, 'State' | 'TotalChildren' | 'TerminalChildren' | 'Scanned'> }) {
   const { t, locale } = useTranslation();
   const count = (value: number) => value.toLocaleString(locale);
@@ -64,7 +74,7 @@ function TaskProgress({ label, run }: { label: string; run: Pick<TaskRun, 'State
 
 export function OverviewPage({ status, currentUserId, onNavigate, onNavigationGuardChange }: OverviewProps) {
   const { t, locale } = useTranslation();
-  const { overview, system, directories, backup, tasks, jobs, libraries, settings, attention, refresh } = status;
+  const { overview, system, directories, backup, successfulBackup, tasks, jobs, libraries, settings, attention, refresh } = status;
   const [busy, setBusy] = useState(false);
   const [issue, setIssue] = useState<unknown>();
   const [uncertain, setUncertain] = useState(false);
@@ -110,8 +120,7 @@ export function OverviewPage({ status, currentUserId, onNavigate, onNavigationGu
   const hardwareConfigured = hardware && [hardware.Decode, hardware.Encode].some((mode) => mode === 'vaapi');
   const hardwareDevice = settings.data?.Runtime?.Hardware.Devices.find(({ DeviceId, Available }) => Available && DeviceId === hardware?.DeviceId);
   const acceleration = transcode?.Available && hardwareConfigured && settings.error == null ? t('Configured: {hardware}', { hardware: hardwareDevice?.Label || 'VA-API' }) : '';
-  const backupTime = observationTime(backup.data?.LastRunAt, locale);
-  const cells: { label: string; value: string; note?: string; tone: Tone; target: DashboardTarget; observation: Observation<unknown> }[] = [
+  const cells: { label: string; value: string; note?: ReactNode; tone: Tone; target: DashboardTarget; observation: Observation<unknown> }[] = [
     { label: 'Service', value: t(system.data ? 'Running normally' : 'Unknown'), note: uptime, tone: system.data ? 'ok' : 'unknown', target: { page: 'settings' }, observation: system },
     { label: 'Database', value: t(db?.Status ? databaseHealthy(db.Status) ? 'Normal' : 'Database needs attention' : 'Unknown'),
       note: db ? [db.Engine, t(databaseHealthy(db.Status) ? 'Connected' : db.Status)].filter(Boolean).join(' · ') : undefined,
@@ -125,7 +134,7 @@ export function OverviewPage({ status, currentUserId, onNavigate, onNavigationGu
         transcode.Active != null && (transcode.Limit != null ? t('{active} / {limit} slots', { active: count(transcode.Active), limit: count(transcode.Limit) }) : t('{count} active', { count: count(transcode.Active) }))].filter(Boolean).join(' · ') : undefined,
       tone: transcode?.Available ? 'ok' : 'unknown', target: { page: 'settings-transcode' }, observation: system },
     { label: 'Backups', value: t(backup.data?.Available ? backup.data.Enabled ? 'Automatic backup scheduled' : 'No automatic backup rules' : 'Unknown'),
-      note: backup.data ? backupTime ? t('Last automatic backup run: {time}', { time: backupTime }) : t('No automatic backup run recorded') : undefined,
+      note: <SuccessfulBackupNote observation={successfulBackup} />,
       tone: backup.data?.Available ? backup.data.Enabled ? 'ok' : 'warning' : 'unknown', target: { page: 'backups' }, observation: backup },
   ];
 

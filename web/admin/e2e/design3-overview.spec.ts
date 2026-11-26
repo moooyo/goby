@@ -1,6 +1,7 @@
 import type { Route } from '@playwright/test';
 import type { Job, Library, LibraryStorageDirectory, TaskDefinition, TaskRun } from '../src/api';
 import type { BackupPolicy } from '../src/backupPolicyApi';
+import type { BackupView } from '../src/backupsApi';
 import { expect, json, library, seriesLibrary, stamp, test } from './dashboard-fixture';
 import { evidence, noOverflow } from './dashboard-review';
 
@@ -8,6 +9,7 @@ const ago = (hours: number) => new Date(Date.now() - hours * 3_600_000).toISOStr
 const directoriesPath = '/admin/v1/storage/library-directories';
 const tasksPath = '/admin/v1/tasks';
 const policyPath = '/admin/v1/backups/policy';
+const backupsPath = '/admin/v1/backups';
 const id = (number: number) => number.toString(16).padStart(32, '0');
 const third = { ...library, Id: id(51), Name: 'Documentary shelf', Paths: ['/media/docs'] };
 const directory = (Path: string, UsedBytes = '400', Readable: boolean | null = true): LibraryStorageDirectory => ({ Path, Readable, Available: Readable === true, Writable: null,
@@ -22,6 +24,80 @@ const policy = (Enabled: boolean): BackupPolicy => ({ Revision: '1', Enabled, Sc
   KeepCount: 7, IncludeImages: true, HasPassphrase: true, NextRunAt: null, Available: true, UnavailableReason: '', TaskId: id(333), LastRunAt: stamp, LastRunState: 'completed', LastBackupId: id(334) });
 
 function items<T>(values: T[]) { return { Items: values, TotalRecordCount: values.length }; }
+
+const archive = (index: number, CreatedAt: string, patch: Partial<BackupView> = {}): BackupView => ({
+  Id: id(index), Kind: 'generated', State: 'ready', Verified: true, CreatedAt, UpdatedAt: CreatedAt,
+  SizeBytes: '1024', SHA256: 'a'.repeat(64), ErrorCode: '', Source: null, ...patch,
+});
+
+test('overview finds a retained successful backup beyond the first page without using policy timestamps', async ({ page, api }) => {
+  const latest = archive(2, '2026-11-25T18:00:00Z');
+  const failedPolicy = { ...policy(false), LastRunAt: '2026-11-26T22:00:00Z', LastRunState: 'failed' };
+  api.handlers.set(`GET ${policyPath}`, (route) => json(route, failedPolicy));
+  const ineligible = Array.from({ length: 100 }, (_, index) => archive(200 - index, '2026-11-26T19:00:00Z', {
+    ...(index === 0 ? { State: 'failed', Verified: false } : { Kind: 'imported' }),
+  }));
+  const archives = [...ineligible, latest, archive(1, stamp, { UpdatedAt: '2026-11-26T20:00:00Z' })];
+  const requests: number[] = [];
+  api.handlers.set(`GET ${backupsPath}`, (route, request) => {
+    const query = new URL(request.url()).searchParams;
+    const start = Number(query.get('StartIndex'));
+    const limit = Number(query.get('Limit'));
+    requests.push(start);
+    expect(limit).toBe(100);
+    return json(route, { Items: archives.slice(start, start + limit), StartIndex: start, Limit: limit, TotalRecordCount: archives.length });
+  });
+  await page.goto('/admin/');
+  const backup = page.getByRole('region', { name: 'Service status' }).getByRole('link', { name: /^Backups/ });
+  await expect(backup).toContainText('No automatic backup rules');
+  await expect(backup).toContainText('Latest successful backup:');
+  await expect(backup.locator('time')).toHaveAttribute('datetime', latest.CreatedAt);
+  await expect(page.getByRole('main')).not.toContainText('Last automatic backup run');
+  expect(requests).toEqual([0, 100]);
+
+  await page.getByRole('navigation', { name: 'Administration' }).getByRole('link', { name: 'Tasks', exact: true }).click();
+  await page.getByRole('button', { name: 'Needs attention', exact: true }).click();
+  const bell = page.getByRole('dialog', { name: 'Needs attention', exact: true });
+  await bell.getByRole('button', { name: 'Refresh attention checks' }).click();
+  await expect(bell.getByRole('link', { name: /^No automatic backup rules/ })).toBeVisible();
+  expect(requests).toEqual([0, 100]);
+  expect(api.writes()).toHaveLength(0);
+});
+
+test('backup lookup failure stays distinct from a confirmed empty catalog and a stale result', async ({ page, api }) => {
+  const latest = archive(2, '2026-11-25T18:00:00Z');
+  let response: 'offline' | 'empty' | 'ready' = 'offline';
+  api.handlers.set(`GET ${backupsPath}`, (route) => response === 'offline' ? json(route, { Error: { Code: 'storage_unavailable', Message: 'Cannot read archives' } }, 503)
+    : json(route, { ...items(response === 'ready' ? [latest] : []), StartIndex: 0, Limit: 100 }));
+  await page.goto('/admin/');
+  const backup = page.getByRole('region', { name: 'Service status' }).getByRole('link', { name: /^Backups/ });
+  const refresh = page.getByRole('button', { name: 'Refresh overview' });
+  await expect(backup).toContainText('Could not check the latest successful backup.');
+  await expect(backup).toContainText('Automatic backup scheduled');
+  response = 'empty';
+  await refresh.click();
+  await expect(backup).toContainText('No successful backups are retained.');
+  response = 'ready';
+  await refresh.click();
+  await expect(backup.locator('time')).toHaveAttribute('datetime', latest.CreatedAt);
+  response = 'offline';
+  await refresh.click();
+  await expect(backup).toContainText('Showing the last successful check.');
+  await expect(backup.locator('time')).toHaveAttribute('datetime', latest.CreatedAt);
+});
+
+test.describe('Chinese overview backup status on a phone', () => {
+  test.use({ preferences: { language: 'zh', theme: 'dark' }, viewport: { width: 390, height: 844 } });
+  test('shows a real archive date in the existing backup cell', async ({ page, api }, testInfo) => {
+    const latest = archive(2, '2026-11-25T18:00:00Z');
+    api.handlers.set(`GET ${backupsPath}`, (route) => json(route, { ...items([latest]), StartIndex: 0, Limit: 100 }));
+    await page.goto('/admin/');
+    const backup = page.getByRole('region', { name: '服务状态' }).getByRole('link', { name: /最近成功备份：/ });
+    await expect(backup.locator('time')).toHaveAttribute('datetime', latest.CreatedAt);
+    await noOverflow(page);
+    await evidence(page, testInfo, 'design3-latest-successful-backup-mobile');
+  });
+});
 
 test('the sidebar stays neutral until both reads and retains dated results across a failure', async ({ page, api }) => {
   const systemPath = '/admin/v1/system/status';
@@ -76,7 +152,7 @@ test('the overview timestamps successful reads rather than ticking the browser c
   const start = new Date('2026-11-26T14:00:00Z');
   await page.clock.install({ time: start });
   await page.clock.pauseAt(new Date(start.getTime() + 1_000));
-  const paths = ['/admin/v1/overview', '/admin/v1/system/status', directoriesPath, policyPath, tasksPath, '/admin/v1/jobs', '/admin/v1/libraries', '/admin/v1/settings'];
+  const paths = ['/admin/v1/overview', '/admin/v1/system/status', directoriesPath, policyPath, backupsPath, tasksPath, '/admin/v1/jobs', '/admin/v1/libraries', '/admin/v1/settings'];
   for (const path of paths) api.handlers.set(`GET ${path}`, (route) => json(route, { Error: { Code: 'offline', Message: 'No observation' } }, 503));
   await page.goto('/admin/');
   const updated = page.locator('.admin-header time');

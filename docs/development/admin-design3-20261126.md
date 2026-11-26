@@ -13,7 +13,7 @@ is changed.
 
 | Board | Implemented behavior and remaining differences |
 | --- | --- |
-| Main — Overview | Server identity and uptime; five operational status cells; shared actionable issues; up to six per-library finished scans; actual running work and the next scheduled library scan. No playback list, activity feed, CPU/memory cards, or counts footer. Timestamp, scan-history, backup and hardware limits are described below. |
+| Main — Overview | Server identity and uptime; five operational status cells, including the latest retained successful backup; shared actionable issues; up to six per-library finished scans; actual running work and the next scheduled library scan. No playback list, activity feed, CPU/memory cards, or counts footer. Timestamp, scan-history, backup and hardware limits are described below. |
 | Header | The bell and overview show the same sorted issues, counts, and independent unavailable/stale states. The bell retains refresh and notification settings. The existing account menu, language, appearance, and sign-out actions remain. |
 | Sidebar | Thirteen primary destinations in the specified groups. Sessions and Devices are removed, including their counters and controls. Old paths and saved tab values resolve to Users. Existing secondary catalog artwork, hardware, and provider routes remain under their current destinations. |
 | Palette | Removed the two retired pages. Device, session, and login searches in English and Chinese resolve to Users. Existing keyboard traversal, theme toggle and sign-out remain. |
@@ -21,8 +21,8 @@ is changed.
 | Overview Phone | The same overview uses the navigation drawer, compact status grid, and stacked sections at phone widths. |
 | Libraries | A table combines native library kind, total item count, latest observed scan, exact registered-directory accessibility, and actual last scan. Storage rows show read/write state, library names, observed bytes and capacity usage without aggregation or forecasts. Library settings, bindings, scan, refresh, delete, and processing actions use the existing requests. |
 | LibraryItems | A single content-type selector and title search become `Types` and `SearchTerm` on the server. With one selected item, Re-identify searches the configured provider and applies a specifically chosen candidate against the read revision. Locked fields and manual overrides remain unchanged. Other tabs and editor flows remain. Unsupported item/provider combinations are explained rather than offered as working operations. |
-| MediaAnalysis | Automation coverage only reports saved settings and applicability, not guessed per-library errors. Failures are actual runs and link to that run. Cache shows used bytes, ready/building entries and the configured cap; cleanup reports the actual response. Missing fields are unavailable rather than shown as estimates. |
-| Users | Fifty accounts per page, visible-page login reads first, independent inactive/disabled/administrator groups, and cancellable sequential batches with explicit conflict and uncertainty outcomes. The drawer contains Permissions, Profile, Login devices and Password, with role-specific confirmation and current-session revocation. Existing optional avatar and local credentials controls are retained as secondary actions. |
+| MediaAnalysis | Automation coverage only reports saved settings and applicability, not guessed per-library errors. Analysis results stay in separate tabs. Failures link to actual runs. Cache shows used bytes, ready/building entries and the configured cap; cleanup reports the actual response. Missing fields are unavailable rather than shown as estimates. |
+| Users | Fifty accounts per page, visible-page login reads first, independent inactive/disabled/administrator groups, and cancellable sequential batches with explicit conflict and uncertainty outcomes. The inactivity action confirms that it spans all matching pages, excluding administrators and disabled accounts. The drawer contains Permissions, Profile, Login devices and Password, with role-specific confirmation and current-session revocation. Existing optional avatar and local credentials controls are retained as secondary actions. |
 | Activity | Real server-side severity, one action and date-range filters with counts; the search is current-page only. Login/playback events appear without playback titles, media identifiers, or fingerprints in the list, detail, copy, or page export. The native diagnostic log viewer and file download retain their existing contract. |
 | SettingsGeneral | Server maintenance shows the current playing-client count snapshot and broadcasts a byte-validated message with actual queue dispositions. The restart dialog can open a prefilled reminder without scheduling or starting a restart. Restart still requires the exact `RESTART` confirmation. |
 | Notifications | The target editor explains frequent login notifications, the 256-item target queue, and how overflow is dropped and counted. Existing target management and delivery status remain. |
@@ -49,10 +49,14 @@ is changed.
   certify the reason or fabricate a degraded timestamp. The API does not date
   storage threshold crossings, unreadability, or policy changes. Only events
   with recorded times are ordered by occurrence within each severity.
-- The [backup policy](../api/backup-policy.md) contains the latest automatic
-  **run**, not the timestamp of the most recent successful manual or automatic
-  backup across all archives. The overview labels the returned time accordingly.
-  [System status](../api/admin-system-status.md) gives hardware/software slot
+- The overview shows the creation time of the newest retained, locally generated
+  backup that is ready and verified, whether triggered manually or automatically.
+  Imported archives do not count. The [backup catalog](../api/backups.md) is read
+  independently of the [automatic backup policy](../api/backup-policy.md), which
+  still supplies the schedule status and trigger-rule reminder. The catalog is
+  paged newest-first only while the overview is open. An unavailable catalog is
+  distinct from an empty result; a previously observed result is marked stale.
+- [System status](../api/admin-system-status.md) gives hardware/software slot
   counts, but not the adapter identity of each slot. A device label, when shown,
   is explicitly the configured choice, not proof of what each job used.
 - The analysis inventory has verified intro and seek-preview data, but no

@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { adminApi } from './api';
 import { backupPolicyApi } from './backupPolicyApi';
+import { backupsApi } from './backupsApi';
 import { dashboardAttention } from './dashboardAttention';
 import { useTranslation } from './i18n';
+import { readLatestSuccessfulBackup } from './latestSuccessfulBackup';
 import { systemStatusApi } from './systemStatusApi';
 
 export interface Observation<T> {
@@ -20,6 +22,9 @@ const readOverview = async (signal: AbortSignal) => {
 const readSystem = (signal: AbortSignal) => systemStatusApi.getStatus({ signal });
 const readDirectories = (signal: AbortSignal) => adminApi.getLibraryStorageDirectories({ signal });
 const readBackupPolicy = (signal: AbortSignal) => backupPolicyApi.get({ signal });
+const readSuccessfulBackup = (signal: AbortSignal) => readLatestSuccessfulBackup(
+  (StartIndex, Limit) => backupsApi.getBackups({ StartIndex, Limit }, { signal }),
+);
 const readTasks = (signal: AbortSignal) => adminApi.getTasks({ signal });
 const readJobs = async (signal: AbortSignal) => {
   const data = await adminApi.getJobs({ signal });
@@ -98,6 +103,7 @@ export function useDashboardStatus(isOverview: boolean, attentionOpen: boolean, 
   const system = useObservation(readSystem, liveInterval, revision);
   const directories = useObservation(readDirectories, 30_000, revision);
   const backup = useObservation(readBackupPolicy, 30_000, revision);
+  const successfulBackup = useObservation(readSuccessfulBackup, 60_000, revision, isOverview);
   // Detailed task and scan reads are only needed with the overview or bell
   // open. Existing status observations still supply the global bell badge.
   const needsWork = isOverview || attentionOpen;
@@ -107,7 +113,7 @@ export function useDashboardStatus(isOverview: boolean, attentionOpen: boolean, 
   const settings = useObservation(readSettings, 30_000, revision);
   const attention = useMemo(() => dashboardAttention({ overview, system, directories, backup, tasks, jobs, libraries, settings }, t, locale),
     [overview, system, directories, backup, tasks, jobs, libraries, settings, t, locale]);
-  return { overview, system, directories, backup, tasks, jobs, libraries, settings, attention, refresh };
+  return { overview, system, directories, backup, successfulBackup, tasks, jobs, libraries, settings, attention, refresh };
 }
 
 export type DashboardStatus = ReturnType<typeof useDashboardStatus>;
