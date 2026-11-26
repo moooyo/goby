@@ -215,8 +215,8 @@ function ActivityPanel({ onUsers }: { onUsers?: () => void }) {
     if (!live || loading || failed || query.page !== 0) return;
     const updateIfVisible = () => {
       if (document.visibilityState === 'hidden') return;
-      // A new local day needs a new midnight bound. Otherwise keep the window
-      // steady until a manual refresh rather than recounting every live poll.
+      // Today rolls over at local midnight. Other ranges are recalculated only
+      // on explicit refresh, so live polling does not recount each severity.
       if (query.period === 'today' && minDate !== activityMinDate('today')) {
         setQuery((current) => ({ ...current, minDate: activityMinDate('today') }));
       }
@@ -236,7 +236,12 @@ function ActivityPanel({ onUsers }: { onUsers?: () => void }) {
     const link = document.createElement('a'); link.href = url; link.download = 'goby-activity-page.jsonl'; link.click(); window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  function refresh() { setRevision((current) => current + 1); setCountRevision((current) => current + 1); }
+  function refresh() {
+    const nextMinDate = activityMinDate(query.period);
+    if (nextMinDate !== minDate) setQuery((current) => ({ ...current, minDate: nextMinDate }));
+    setRevision((current) => current + 1);
+    setCountRevision((current) => current + 1);
+  }
   function filter(patch: Partial<typeof emptyFilters>) {
     setQuery((current) => ({ ...current, page: 0, ...patch }));
     setRevision((current) => current + 1);

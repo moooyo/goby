@@ -96,6 +96,21 @@ test('severity totals, wire action and local date filters combine; search stays 
   expect(api.writes()).toHaveLength(0);
 });
 
+test('manual refresh moves the seven-day window for both rows and severity totals', async ({ page, api }) => {
+  await page.clock.setFixedTime(now);
+  const queries = installActivity(api, [entry({ Date: '2026-11-18T19:00:00Z' })]);
+  const panel = await openActivity(page);
+  const all = panel.getByRole('group', { name: 'Severity' }).getByRole('button', { name: 'All', exact: true });
+  await panel.getByRole('combobox', { name: 'Time range' }).selectOption('week');
+  await expect(all).toHaveAccessibleDescription('Activity count: 1');
+  await expect(panel.getByRole('table', { name: 'Activity records' })).toContainText('Server settings updated');
+  await page.clock.setFixedTime(new Date(now.getTime() + 60 * 60 * 1000));
+  await panel.getByRole('button', { name: 'Refresh activity', exact: true }).click();
+  await expect(all).toHaveAccessibleDescription('Activity count: 0');
+  await expect(panel.getByText('No matching activity', { exact: true })).toBeVisible();
+  await expect.poll(() => queries.filter((query) => query.get('MinDate') === '2026-11-18T19:30:00.000Z').map((query) => query.get('Limit')).sort()).toEqual(['1', '1', '1', '1', '50']);
+});
+
 test('playback start and stop mask the title and item identity in the table, details, clipboard source and page export', async ({ page, api }) => {
   const signIn = entry({ Id: '3', Action: 'session.login', Name: 'Session issued', Resource: { Kind: 'session', Id: 'fixture-session' } });
   installActivity(api, [playback('1', 'playback.started'), playback('2', 'playback.stopped'), signIn]);
