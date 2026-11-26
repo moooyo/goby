@@ -2,8 +2,9 @@ import { randomBytes } from 'node:crypto';
 import { expect, test, type Page } from '@playwright/test';
 
 async function openUsers(page: Page) {
-  await page.getByRole('navigation', { name: 'Administration' }).getByRole('link', { name: 'Access', exact: true }).click();
-  await page.getByRole('tab', { name: 'Users', exact: true }).click();
+  const nav = page.getByRole('button', { name: 'Open navigation', exact: true });
+  if (await nav.isVisible()) await nav.click();
+  await page.getByRole('navigation', { name: 'Administration' }).locator('a[href="/admin/access/users"]').click();
   await expect(page).toHaveURL(/\/admin\/access\/users$/);
   await expect(page.getByRole('heading', { name: 'Users', exact: true })).toBeVisible();
 }
@@ -25,6 +26,7 @@ test('administrator setup, users, persistent session, and mobile navigation', as
   page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });
   const capture = async (file: string) => page.screenshot({ path: testInfo.outputPath(file), fullPage: true, animations: 'disabled' });
 
+  await page.addInitScript(() => localStorage.setItem('goby.admin.language', 'en'));
   await page.goto('/admin/');
   await expect(page.getByRole('heading', { name: /Set up your server|Sign in to Goby/ })).toBeVisible();
   if (await page.getByRole('heading', { name: 'Set up your server' }).isVisible()) {
@@ -55,30 +57,26 @@ test('administrator setup, users, persistent session, and mobile navigation', as
   await page.getByLabel(/^Password/).fill(password);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Overview', exact: true })).toBeVisible();
-  await expect(page.getByText('PostgreSQL', { exact: true })).toBeVisible();
-  await expect(page.getByText('Database healthy', { exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Service status' }).getByRole('link', { name: /^Database/ })).toContainText('PostgreSQL');
+  await expect(page.getByRole('region', { name: 'Service status' }).getByRole('link', { name: /^Database/ })).toContainText('Normal');
   await capture('overview-desktop.png');
 
   const cookie = (await context.cookies()).find((item) => item.name === 'goby_session');
   expect(cookie?.httpOnly).toBe(true);
   expect(cookie?.sameSite).toBe('Strict');
-  expect(await page.evaluate(() => Object.keys(localStorage))).toEqual([]);
-  // Only navigation preferences are persisted; authentication stays in the HTTP-only cookie.
-  expect(await page.evaluate(() => Object.keys(sessionStorage))).toEqual(['goby.dashboard.tabs']);
-  expect(await page.evaluate(() => JSON.parse(sessionStorage.getItem('goby.dashboard.tabs')!))).toEqual({
-    overview: 'overview', media: 'libraries', access: 'users', system: 'tasks', settings: 'settings',
-  });
+  expect(await page.evaluate(() => Object.keys(localStorage).sort())).toEqual(['goby.admin.language', 'goby.admin.theme']);
+  expect(await page.evaluate(() => Object.keys(sessionStorage))).toEqual([]);
 
   await openUsers(page);
-  await page.getByRole('button', { name: 'Create user', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Create user' });
+  await page.getByRole('button', { name: 'Add user', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Add user' });
   await expect(dialog).toBeVisible();
   const memberName = `browser-smoke-${Date.now()}`;
-  await dialog.getByLabel(/^Username/).fill(memberName);
+  await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill(memberName);
   await dialog.getByLabel(/^Password/).fill(randomBytes(24).toString('base64url'));
-  await expect(dialog.getByRole('switch', { name: 'Administrator access' })).not.toBeChecked();
+  await expect(dialog.getByRole('radio', { name: 'Administrator' })).not.toBeChecked();
   await capture('create-user-desktop.png');
-  await dialog.getByRole('button', { name: 'Create user', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Add user', exact: true }).click();
   await expect(dialog).not.toBeVisible();
   const memberRow = page.getByRole('row').filter({ has: page.getByText(memberName, { exact: true }) });
   await expect(memberRow.getByText('Member', { exact: true })).toBeVisible();
@@ -98,16 +96,17 @@ test('administrator setup, users, persistent session, and mobile navigation', as
 
   await page.setViewportSize({ width: 390, height: 844 });
   const mobileNavigation = page.getByRole('navigation', { name: 'Administration' });
+  await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
   await expect(mobileNavigation).toBeVisible();
-  await expect(mobileNavigation.getByRole('link')).toHaveCount(5);
+  await expect(mobileNavigation.getByRole('link')).toHaveCount(13);
   await capture('navigation-mobile.png');
   await mobileNavigation.getByRole('link', { name: 'Overview', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Overview', exact: true })).toBeVisible();
-  await expect(page.getByText('PostgreSQL', { exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Service status' }).getByRole('link', { name: /^Database/ })).toContainText('PostgreSQL');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await capture('overview-mobile.png');
   await openUsers(page);
-  await expect(page.getByRole('list', { name: 'Server users' }).getByText(memberName, { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: `Manage ${memberName}`, exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await capture('users-mobile.png');
 
@@ -123,6 +122,7 @@ test('a stale tab cannot replay a mutation under another administrator', async (
 
   const pageErrors: string[] = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
+  await page.addInitScript(() => localStorage.setItem('goby.admin.language', 'en'));
   await page.goto('/admin/');
   await page.getByLabel(/^Username/).fill(name);
   await page.getByLabel(/^Password/).fill(password);
@@ -131,17 +131,17 @@ test('a stale tab cannot replay a mutation under another administrator', async (
 
   const otherName = `browser-admin-${Date.now()}`;
   const otherPassword = randomBytes(24).toString('base64url');
-  await page.getByRole('button', { name: 'Create user', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Create user' });
-  await dialog.getByLabel(/^Username/).fill(otherName);
+  await page.getByRole('button', { name: 'Add user', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Add user' });
+  await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill(otherName);
   await dialog.getByLabel(/^Password/).fill(otherPassword);
-  await dialog.getByRole('switch', { name: 'Administrator access' }).check();
-  await dialog.getByRole('button', { name: 'Create user', exact: true }).click();
+  await dialog.getByRole('radio', { name: 'Administrator' }).check();
+  await dialog.getByRole('button', { name: 'Add user', exact: true }).click();
   await expect(dialog).not.toBeVisible();
 
   const rejectedName = `browser-stale-${Date.now()}`;
-  await page.getByRole('button', { name: 'Create user', exact: true }).click();
-  await dialog.getByLabel(/^Username/).fill(rejectedName);
+  await page.getByRole('button', { name: 'Add user', exact: true }).click();
+  await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill(rejectedName);
   await dialog.getByLabel(/^Password/).fill(randomBytes(24).toString('base64url'));
 
   const otherTab = await context.newPage();
@@ -158,7 +158,7 @@ test('a stale tab cannot replay a mutation under another administrator', async (
     if (request.method() === 'POST' && new URL(request.url()).pathname === '/admin/v1/users') mutationRequests += 1;
   });
   const rejected = page.waitForResponse((response) => response.request().method() === 'POST' && new URL(response.url()).pathname === '/admin/v1/users');
-  await dialog.getByRole('button', { name: 'Create user', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Add user', exact: true }).click();
   expect((await rejected).status()).toBe(403);
   await expect(page.getByRole('heading', { name: 'Sign in to Goby' })).toBeVisible();
   await expect(page.getByText('Your session has changed or expired. Sign in again to continue.')).toBeVisible();

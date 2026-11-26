@@ -1,6 +1,6 @@
 # Goby administrator dashboard
 
-React, TypeScript, native accessible controls, and static CSS provide the administrator interface. The November 2026 design uses a compact sidebar, right-side editors, dark and light themes, and Chinese and English. It includes first-run setup, overview, users, libraries and storage bindings, metadata, sessions, devices, application keys, tasks and schedules, settings, activity/logs, and native backup/recovery. Consult the [current status](../../docs/development/current-status.md) for backend and deployment boundaries.
+React, TypeScript, native accessible controls, and static CSS provide the administrator interface. Design 3 uses a compact sidebar, right-side editors, dark and light themes, and Chinese and English. It includes first-run setup, operational overview, user permissions and active login devices, libraries and storage bindings, metadata, application keys, tasks and schedules, settings, activity/logs, and native backup/recovery. Consult the [current status](../../docs/development/current-status.md) for backend and deployment boundaries.
 
 ## Build
 
@@ -32,11 +32,11 @@ Cancellation verification requires `GOBY_SMOKE_CANCEL_MEDIA_PATH` with enough re
 
 ## Navigation and settings
 
-The 232px sidebar exposes all fifteen primary destinations, organized into Media, Access, System, and Settings. Below 1240px it becomes a 264px modal navigation drawer; phone layouts below 640px use 16px content insets. Tables use compact columns below 1000px. Ctrl/Cmd+K opens keyboard-searchable navigation. The account menu controls independently persisted language and appearance preferences (`goby.admin.language` and `goby.admin.theme`); authentication never uses browser storage.
+The 232px sidebar exposes thirteen primary destinations, organized into Overview, Media, Access, System, and Settings. Below 1240px it becomes a 264px modal navigation drawer; phone layouts below 640px use 16px content insets. Ctrl/Cmd+K opens keyboard-searchable navigation; device, session, and login queries select Users. The account menu independently persists language and appearance (`goby.admin.language` and `goby.admin.theme`); authentication never uses browser storage.
 
-Canonical routes include `/admin/media/libraries`, `/admin/media/libraries/:id/items`, `/admin/access/users`, `/admin/system/tasks`, and `/admin/settings/general`. All nineteen existing canonical routes and flat dashboard URL aliases remain supported. Library detail combines items, artwork, directories, analysis features, and scan history. Settings navigation combines hardware with Transcoding and online providers with Metadata & subtitles. Editing sections share one draft, revision, save action, and discard action. Internal navigation preserves drafts; leaving settings invokes the navigation guard. Pending mutations or diagnostics prevent navigation. Ctrl/Cmd+S submits the active editor through its existing validation and revision checks.
+Canonical routes include `/admin/media/libraries`, `/admin/media/libraries/:id/items`, `/admin/access/users`, `/admin/system/tasks`, and `/admin/settings/general`. The retired devices and sessions paths redirect to Users. Library detail combines items, artwork, directories, analysis features, and scan history. Settings navigation combines hardware with Transcoding and online providers with Metadata & subtitles. Editing sections share one draft, revision, save action, and discard action. Internal navigation preserves drafts; leaving settings invokes the navigation guard. Pending mutations or diagnostics prevent navigation. Ctrl/Cmd+S submits the active editor through its existing validation and revision checks.
 
-The overview polls real server counts, recent activity, and the [system status endpoint](../../docs/api/admin-system-status.md) every five seconds. Unsupported measurements remain unavailable, failed refreshes are marked as stale, and navigation cancels outstanding reads. Storage totals count each readable volume once.
+The overview and the top-bar bell share the same actionable issues. The overview checks service and running work every five seconds; slower or background observations run every thirty seconds. Independent checks can report loading, unavailable, or stale data without suppressing results from healthy endpoints. Registered directory capacity is shown per path and is not summed or projected into future use. See the [Design 3 walkthrough](../../docs/development/admin-design3-20261126.md) for scope and known contract differences.
 
 ## Capability workflows
 
@@ -46,15 +46,15 @@ access, then completes by logging out. Unknown writes require readback before
 retry. The authenticated setup session is not stored in browser preferences.
 
 General settings exposes real [release observations](../../docs/api/server-updates.md)
-from a deployment-selected Goby feed. Sessions displays retained playback stop
-events with current user and media names. See the
-[core API follow-up](../../docs/development/admin-core-api-20261106.md) for the
-upstream evidence and remaining core contract boundaries.
+from a deployment-selected Goby feed and broadcasts maintenance messages to
+compatible clients that are currently playing. The UI shows only counts, never
+playback titles. The activity list preserves playback event types and times
+without revealing the associated title or item identifier.
 
-Current playback and remote controls use the native administrator cookie and
-CSRF boundary. The standalone player separately receives commands through its
-authenticated Emby-compatible WebSocket. A successful command response records
-acceptance; subsequent player reports establish the observed playback change.
+The existing native playback APIs still use administrator cookies and CSRF.
+The standalone player receives commands through its authenticated
+Emby-compatible WebSocket. A successful maintenance receipt records queuing,
+not confirmation that a client displayed the message.
 
 Managed settings retain their common draft and revision. Access-policy and
 credential operations have separately confirmed saves and keep their drafts
@@ -79,7 +79,7 @@ production assets together with the administrator sources, tests, and bundle.
 
 The supplied November 4, 2026 prototype selects the sidebar-and-sheet direction. Dark surfaces use `#0C0C0D`, `#111113`, `#17171A`, and `#202024`, with amber `#E3B46A`. Light surfaces use `#F3F2EE`, `#FAF9F6`, white, and `#EBE9E3`, with amber `#D69D48`. Shared semantic tokens live in `web/shared/tokens.css`. Noto Serif SC carries page titles, Noto Sans SC interface copy, IBM Plex Mono technical values, and League Gothic display numerals. Fonts and linear SVG icons are bundled and require no external font service.
 
-The header is 56px high. Page titles use 28px serif type (24px on phones), cards use 14px corners, and standard inputs and pill buttons are 34px high. Settings form a narrow single column with labels beside their controls. Metadata and user sheets are 540px wide, series editors 600px, and new-library sheets 480px. Content scrolls independently, and editors retain sticky action bars. Security checks, destructive confirmations, API validation, revision conflicts, and uncertain-mutation recovery remain in the business workflows. Unsupported server capabilities are explained instead of being simulated.
+The header is 56px high. Page titles use 28px serif type (24px on phones), cards use 14px corners, and standard inputs and pill buttons are 34px high. Settings form a narrow single column with labels beside their controls. Metadata sheets are 540px wide, account sheets 560px, series editors 600px, and new-library sheets 480px. Content scrolls independently, and editors retain sticky action bars. Security checks, destructive confirmations, API validation, revision conflicts, and uncertain-mutation recovery remain in the business workflows. Unsupported server capabilities are explained instead of being simulated.
 
 ## Design regression checks
 

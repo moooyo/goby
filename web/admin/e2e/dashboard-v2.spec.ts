@@ -1,4 +1,3 @@
-import type { Route } from '@playwright/test';
 import type { SettingsUpdateInput } from '../src/api';
 import { administrator, csrf, expect, json, test } from './dashboard-fixture';
 import { destinations, evidence, navigate, navigation, noOverflow, ready, sidebar } from './dashboard-review';
@@ -44,7 +43,7 @@ test('legacy routes retain their destination, query, fragment and active navigat
 test('sidebar pages and browser history keep the selected destination after reload', async ({ page, api }) => {
   await page.goto('/admin/media/artwork');
   await ready(page, destinations[2]);
-  await navigate(page, '/admin/access/devices');
+  await navigate(page, '/admin/access/api-keys');
   await ready(page, destinations[6]);
   await navigate(page, '/admin/media/libraries');
   await ready(page, destinations[1]);
@@ -65,89 +64,6 @@ test('obsolete saved group state cannot select unrelated pages and unknown URLs 
   expect(api.writes()).toEqual([]);
 });
 
-test('overview management counts open their corresponding pages', async ({ page, api }) => {
-  for (const [name, destination] of [['View users', 5], ['View libraries', 1], ['View media items', 1], ['View active sessions', 7]] as const) {
-    await page.goto('/admin/');
-    await ready(page, destinations[0]);
-    await page.getByRole('button', { name, exact: true }).click();
-    await ready(page, destinations[destination]);
-  }
-  expect(api.writes()).toEqual([]);
-});
-
-test('overview retains last metrics on refresh failure, identifies stale data and recovers', async ({ page, api }) => {
-  await page.goto('/admin/');
-  await ready(page, destinations[0]);
-  const cpu = page.getByRole('region', { name: 'CPU status', exact: true });
-  await expect(cpu).toContainText('28');
-  api.handlers.set('GET /admin/v1/system/status', (route) => json(route, { Error: { Code: 'telemetry_unavailable', Message: 'System metrics are temporarily unavailable.' } }, 503));
-  await page.getByRole('button', { name: 'Refresh overview' }).click();
-  await expect(page.getByRole('alert').filter({ hasText: 'System metrics are temporarily unavailable.' })).toBeVisible();
-  await expect(page.getByText('Showing the last successful update.', { exact: true })).toBeVisible();
-  await expect(cpu).toContainText('28');
-  await expect(page.getByRole('button', { name: 'View users', exact: true })).toContainText('2');
-  api.handlers.delete('GET /admin/v1/system/status');
-  api.status.CPU.UsagePercent = 86;
-  await page.getByRole('button', { name: 'Refresh overview' }).click();
-  await expect(cpu.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '86');
-  await expect(page.getByText('Showing the last successful update.', { exact: true })).toHaveCount(0);
-  await expect(page.getByRole('alert')).toHaveCount(0);
-});
-
-test('unavailable metrics remain unknown instead of reporting a successful zero measurement', async ({ page, api }) => {
-  api.status.CPU = { UsagePercent: null, Load1: null, Load5: null, Load15: null };
-  api.status.Memory = { TotalBytes: null, UsedBytes: null, CachedBytes: null, SwapUsedBytes: null };
-  api.status.Storage = { TotalBytes: null, UsedBytes: null, Complete: false, Volumes: [{ Path: '/media/offline', TotalBytes: null, UsedBytes: null, Available: false }] };
-  api.status.Transcoding = { Available: false, Active: null, Limit: null, HardwareActive: null, SoftwareActive: null };
-  api.handlers.set('GET /admin/v1/storage/library-directories', (route) => json(route, {
-    Items: [{ Path: '/media/offline', Available: false, Readable: false, Writable: null, TotalBytes: null, UsedBytes: null, AvailableBytes: null }],
-    TotalRecordCount: 1,
-  }));
-  await page.goto('/admin/');
-  await ready(page, destinations[0]);
-  for (const name of ['CPU', 'Memory', 'Transcoding']) {
-    const region = page.getByRole('region', { name: `${name} status`, exact: true });
-    await expect(region.getByLabel('Not available', { exact: true })).toBeVisible();
-    await expect(region.getByRole('progressbar')).toHaveAttribute('aria-valuetext', 'Not available');
-  }
-  const directory = page.getByRole('region', { name: 'Directory with least available space status', exact: true });
-  await expect(directory.getByLabel('Not available', { exact: true })).toBeVisible();
-  await expect(directory.getByRole('progressbar')).toHaveCount(0);
-  await expect(directory).toContainText('Directory capacity unavailable');
-  await expect(directory).toContainText('1 unreadable');
-});
-
-test('stalled telemetry does not block counts or activity and is cancelled on timeout and navigation', async ({ page, api }) => {
-  const held: Route[] = [];
-  let cancelled = 0;
-  page.on('requestfailed', (request) => { if (new URL(request.url()).pathname === '/admin/v1/system/status') cancelled += 1; });
-  api.handlers.set('GET /admin/v1/system/status', async (route) => { held.push(route); });
-  try {
-    await page.goto('/admin/');
-    await expect(page.getByRole('button', { name: 'View users', exact: true })).toContainText('2');
-    await expect(page.getByRole('list', { name: 'Recent activity records', exact: true })).toContainText('Administrator signed in');
-    const firstOverviewReads = api.reads('/admin/v1/overview').length;
-    const firstCancelled = cancelled;
-    await expect(page.getByRole('alert').filter({ hasText: 'System metrics did not respond within 15 seconds. Refresh to try again.' })).toBeVisible({ timeout: 20_000 });
-    await expect.poll(() => cancelled).toBeGreaterThan(firstCancelled);
-    expect(api.reads('/admin/v1/overview').length, 'Other resources must keep refreshing while telemetry is stalled.').toBeGreaterThan(firstOverviewReads);
-    api.handlers.delete('GET /admin/v1/system/status');
-    await page.getByRole('button', { name: 'Refresh overview', exact: true }).click();
-    await expect(page.getByRole('region', { name: 'CPU status', exact: true }).getByRole('progressbar')).toHaveAttribute('aria-valuenow', '28');
-    api.handlers.set('GET /admin/v1/system/status', async (route) => { held.push(route); });
-    const beforeLeave = cancelled;
-    const readsBeforeLeave = api.reads('/admin/v1/system/status').length;
-    await page.getByRole('button', { name: 'Refresh overview', exact: true }).click();
-    await expect.poll(() => api.reads('/admin/v1/system/status').length).toBeGreaterThan(readsBeforeLeave);
-    await navigate(page, '/admin/media/libraries');
-    // The destination may independently read the same stalled telemetry API.
-    await ready(page, destinations[1], true, { allowPendingStorage: true });
-    await expect.poll(() => cancelled).toBeGreaterThan(beforeLeave);
-  } finally {
-    await Promise.all(held.map((route) => route.abort().catch(() => {})));
-  }
-});
-
 test('account menu restores keyboard focus and signs out with CSRF protection', async ({ page, api }) => {
   await page.goto('/admin/');
   await ready(page, destinations[0]);
@@ -165,19 +81,19 @@ test('account menu restores keyboard focus and signs out with CSRF protection', 
 
 test('settings pages retain one draft and save with the exact shared revision', async ({ page, api }) => {
   await page.goto('/admin/settings/general');
-  await ready(page, destinations[13]);
+  await ready(page, destinations[11]);
   const initialReads = api.reads('/admin/v1/settings').length;
   const names = page.getByRole('region', { name: 'Server identity', exact: true });
   await names.getByRole('button', { name: 'Custom', exact: true }).click();
   await names.getByRole('textbox', { name: 'Server name', exact: true }).fill('Shared draft server');
   await navigate(page, '/admin/settings/transcode');
-  await ready(page, destinations[14]);
+  await ready(page, destinations[12]);
   await page.getByRole('checkbox', { name: 'Use deployment default for maximum bitrate', exact: true }).uncheck();
   await page.getByRole('textbox', { name: 'Maximum bitrate', exact: true }).fill('12.5');
   await navigate(page, '/admin/settings/metadata');
-  await ready(page, destinations[16]);
+  await ready(page, destinations[14]);
   await navigate(page, '/admin/settings/general');
-  await ready(page, destinations[13]);
+  await ready(page, destinations[11]);
   await expect(names.getByRole('textbox', { name: 'Server name', exact: true })).toHaveValue('Shared draft server');
   expect(api.reads('/admin/v1/settings')).toHaveLength(initialReads);
   await page.getByRole('button', { name: 'Save changes', exact: true }).click();
@@ -189,14 +105,14 @@ test('settings pages retain one draft and save with the exact shared revision', 
 
 test('settings draft allows internal pages and guards leaving the settings editor', async ({ page, api }) => {
   await page.goto('/admin/settings/general');
-  await ready(page, destinations[13]);
+  await ready(page, destinations[11]);
   const names = page.getByRole('region', { name: 'Server identity', exact: true });
   await names.getByRole('button', { name: 'Custom', exact: true }).click();
   await names.getByRole('textbox', { name: 'Server name', exact: true }).fill('Keep this draft');
   let prompts = 0;
   page.on('dialog', async (dialog) => { prompts += 1; expect(dialog.type()).toBe('confirm'); expect(dialog.message()).toContain('unsaved'); await dialog.dismiss(); });
   await navigate(page, '/admin/settings/transcode');
-  await ready(page, destinations[14]);
+  await ready(page, destinations[12]);
   expect(prompts).toBe(0);
   await navigate(page, '/admin/media/libraries');
   expect(prompts).toBe(1);
@@ -208,11 +124,11 @@ test('settings draft allows internal pages and guards leaving the settings edito
 
 test('sorting includes uncommitted text in the shared draft and save', async ({ page, api }) => {
   await page.goto('/admin/settings/general');
-  await ready(page, destinations[13]);
+  await ready(page, destinations[11]);
   await page.getByRole('combobox', { name: 'Words removed from sort names', exact: true }).fill('of');
   await expect(page.getByRole('button', { name: 'Save changes', exact: true })).toBeEnabled();
   await navigate(page, '/admin/settings/transcode');
-  await ready(page, destinations[14]);
+  await ready(page, destinations[12]);
   await page.getByRole('button', { name: 'Save changes', exact: true }).click();
   await expect(page.getByText('Settings saved.', { exact: true })).toBeVisible();
   expect(api.writes()).toHaveLength(1);
@@ -237,7 +153,7 @@ test('in-flight settings save blocks navigation until the mutation finishes', as
     await json(route, api.settings);
   });
   await page.goto('/admin/settings/general');
-  await ready(page, destinations[13]);
+  await ready(page, destinations[11]);
   await page.getByRole('group', { name: 'Name source', exact: true }).getByRole('button', { name: 'Custom', exact: true }).click();
   await page.getByRole('textbox', { name: 'Server name', exact: true }).fill('Pending save');
   const removeWord = page.getByRole('button', { name: 'Remove the', exact: true });
@@ -253,13 +169,13 @@ test('in-flight settings save blocks navigation until the mutation finishes', as
   await expect(page.getByText('Settings saved.', { exact: true })).toBeVisible();
   await expect(removeWord).toBeEnabled();
   await navigate(page, '/admin/settings/transcode');
-  await ready(page, destinations[14]);
+  await ready(page, destinations[12]);
 });
 
 test('a compare-and-swap conflict keeps the draft, blocks another write and requires a confirmed reload', async ({ page, api }) => {
   api.handlers.set('PUT /admin/v1/settings', (route) => json(route, { Error: { Code: 'revision_conflict', Message: 'Settings changed. Reload before saving.' } }, 409));
   await page.goto('/admin/settings/general');
-  await ready(page, destinations[13]);
+  await ready(page, destinations[11]);
   await page.getByRole('group', { name: 'Name source', exact: true }).getByRole('button', { name: 'Custom', exact: true }).click();
   const name = page.getByRole('textbox', { name: 'Server name', exact: true });
   await name.fill('Conflict draft');
@@ -281,13 +197,13 @@ test('an unconfirmed user creation is never automatically replayed', async ({ pa
   api.handlers.set('POST /admin/v1/users', (route) => route.abort('failed'));
   await page.goto('/admin/access/users');
   await ready(page, destinations[5]);
-  await page.getByRole('button', { name: 'Create user', exact: true }).first().click();
-  const sheet = page.getByRole('dialog', { name: 'Create user', exact: true });
-  await sheet.getByRole('textbox', { name: 'Username', exact: true }).fill('Unconfirmed user');
+  await page.getByRole('button', { name: 'Add user', exact: true }).first().click();
+  const sheet = page.getByRole('dialog', { name: 'Add user', exact: true });
+  await sheet.getByRole('textbox', { name: 'Name', exact: true }).fill('Unconfirmed user');
   await sheet.getByLabel(/^Password/).fill('synthetic-only-password');
-  await sheet.getByRole('button', { name: 'Create user', exact: true }).click();
+  await sheet.getByRole('button', { name: 'Add user', exact: true }).click();
   await expect(sheet).toContainText('The response could not be confirmed.');
-  await expect(sheet.getByRole('button', { name: 'Create user', exact: true })).toHaveCount(0);
+  await expect(sheet.getByRole('button', { name: 'Add user', exact: true })).toHaveCount(0);
   expect(api.writes()).toHaveLength(1);
   await sheet.getByRole('button', { name: 'Check users', exact: true }).click();
   await expect(sheet).not.toBeVisible();
@@ -297,7 +213,7 @@ test('an unconfirmed user creation is never automatically replayed', async ({ pa
 for (const width of [1239, 1240]) test(`navigation changes at the specified ${width}px breakpoint`, async ({ page, api }) => {
   await page.setViewportSize({ width, height: 900 });
   await page.goto('/admin/settings/metadata');
-  await ready(page, destinations[16]);
+  await ready(page, destinations[14]);
   await noOverflow(page);
   if (width < 1240) {
     const opener = page.getByRole('button', { name: 'Open navigation', exact: true });

@@ -28,7 +28,7 @@ function FolderPicker({ selected, disabled, onSelect, onClose }: { selected: str
     return () => controller.abort();
   }, [query, revision]);
   function searchFolders(event: FormEvent<HTMLFormElement>) { event.preventDefault(); setQuery((value) => ({ ...value, SearchTerm: search.trim(), StartIndex: 0 })); }
-  return <Dialog open fullWidth maxWidth="md" onClose={onClose} aria-labelledby="deletion-folder-picker-title"><DialogTitle id="deletion-folder-picker-title">Choose deletion folders</DialogTitle><DialogContent><Stack spacing={2} sx={{ pt: 1 }}>
+  return <Dialog open fullWidth maxWidth="md" onClose={onClose} aria-label="Choose deletion folders"><DialogTitle id="deletion-folder-picker-title">Choose deletion folders</DialogTitle><DialogContent><Stack spacing={2} sx={{ pt: 1 }}>
     <Typography variant="body2" color="text.secondary">Select current libraries or indexed folders. Changes remain in the account draft until you save the user.</Typography>
     <Box component="form" onSubmit={searchFolders}><Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
       <TextField fullWidth label="Search deletion folders" value={search} onChange={(event) => setSearch(event.target.value)} disabled={disabled} slotProps={{ htmlInput: { maxLength: 256 } }} />

@@ -12,12 +12,12 @@ test('library creation, scanning, task progress, and catalog-only deletion', asy
   const pageErrors: string[] = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
 
-  await page.goto('/admin/libraries');
+  await page.addInitScript(() => localStorage.setItem('goby.admin.language', 'en'));
+  await page.goto('/admin/media/libraries');
   await page.getByLabel(/^Username/).fill(name);
   await page.getByLabel(/^Password/).fill(password);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Libraries', exact: true })).toBeVisible();
-  await expect(page.getByText('Configured media directories', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Create library', exact: true }).first().click();
   const dialog = page.getByRole('dialog', { name: 'Create library', exact: true });
   const libraryName = `Browser library ${Date.now()}`;
@@ -29,12 +29,12 @@ test('library creation, scanning, task progress, and catalog-only deletion', asy
   await dialog.getByRole('button', { name: 'Create library', exact: true }).click();
   expect((await createdResponse).status()).toBe(201);
   await expect(dialog).not.toBeVisible();
-  const libraryCard = page.getByRole('list', { name: 'Media libraries' }).getByRole('listitem').filter({ has: page.getByRole('heading', { name: libraryName, exact: true }) });
+  const libraryCard = page.getByRole('row').filter({ has: page.getByRole('button', { name: libraryName, exact: true }) });
   await expect(libraryCard).toBeVisible();
-  await expect(libraryCard.getByText('Last scan: Not scanned yet', { exact: true })).toBeVisible();
+  await expect(libraryCard.getByText('Not scanned yet', { exact: true })).toBeVisible();
 
   const scanResponse = page.waitForResponse((response) => response.request().method() === 'POST' && /\/admin\/v1\/libraries\/[^/]+\/scan$/.test(new URL(response.url()).pathname));
-  await libraryCard.getByRole('button', { name: 'Scan library', exact: true }).click();
+  await libraryCard.getByRole('button', { name: `Scan library ${libraryName}`, exact: true }).click();
   const started = await scanResponse;
   expect(started.status()).toBe(202);
   const scan = await started.json() as { Job: { Id: string; LibraryId: string } };
@@ -42,7 +42,7 @@ test('library creation, scanning, task progress, and catalog-only deletion', asy
   page.on('request', (request) => {
     if (request.method() === 'GET' && new URL(request.url()).pathname === '/admin/v1/jobs') taskRequests += 1;
   });
-  await page.getByRole('link', { name: 'Tasks', exact: true }).click();
+  await page.getByRole('button', { name: 'Scan history', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Tasks', exact: true })).toBeVisible();
   const task = page.locator(`[data-job-id="${scan.Job.Id}"]`);
   await expect(task.getByText('Completed', { exact: true })).toBeVisible({ timeout: 45_000 });
@@ -65,16 +65,17 @@ test('library creation, scanning, task progress, and catalog-only deletion', asy
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath('tasks-mobile.png'), fullPage: true, animations: 'disabled' });
   await page.getByRole('button', { name: 'Open navigation' }).click();
-  await page.getByRole('link', { name: 'Libraries', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Administration' }).locator('a[href="/admin/media/libraries"]').click();
   await expect(libraryCard).toBeVisible();
   await expect(page.locator('#main-content')).toBeFocused();
-  await expect(libraryCard.getByText('Last scan: Not scanned yet', { exact: true })).not.toBeVisible();
+  await expect(libraryCard.getByText('Not scanned yet', { exact: true })).not.toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath('libraries-mobile.png'), fullPage: true, animations: 'disabled' });
   await expect(page.locator('#main-content')).toBeFocused();
   await expect(page.getByRole('link', { name: 'Skip to content' })).not.toBeFocused();
-  await libraryCard.getByRole('button', { name: 'Delete', exact: true }).click();
-  const removeDialog = page.getByRole('dialog', { name: 'Delete library?' });
+  await libraryCard.getByRole('button', { name: `More actions for ${libraryName}`, exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Delete library', exact: true }).click();
+  const removeDialog = page.getByRole('alertdialog').filter({ has: page.getByRole('heading', { name: 'Delete library?', exact: true }) });
   await expect(removeDialog.getByText('This removes the library and its catalog records from Goby. Media files on disk will not be deleted.', { exact: true })).toBeVisible();
   const removed = page.waitForResponse((response) => response.request().method() === 'DELETE' && new URL(response.url()).pathname === `/admin/v1/libraries/${scan.Job.LibraryId}`);
   await removeDialog.getByRole('button', { name: 'Delete library', exact: true }).click();
@@ -96,7 +97,8 @@ test('an active scan can be cancelled from the task page', async ({ page, contex
   const pageErrors: string[] = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
 
-  await page.goto('/admin/libraries');
+  await page.addInitScript(() => localStorage.setItem('goby.admin.language', 'en'));
+  await page.goto('/admin/media/libraries');
   await page.getByLabel(/^Username/).fill(name);
   await page.getByLabel(/^Password/).fill(password);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
@@ -113,7 +115,7 @@ test('an active scan can be cancelled from the task page', async ({ page, contex
   const started = await created.json() as { Library: { Id: string }; Job?: { Id: string } };
   expect(started.Job?.Id).toBeTruthy();
   await expect(createDialog).not.toBeVisible();
-  await page.getByRole('link', { name: 'Tasks', exact: true }).click();
+  await page.getByRole('button', { name: 'Scan history', exact: true }).click();
   const task = page.locator(`[data-job-id="${started.Job!.Id}"]`);
   await task.getByRole('button', { name: /^Cancel scan for/ }).click();
   const cancelDialog = page.getByRole('dialog', { name: 'Cancel this scan?' });
@@ -131,11 +133,12 @@ test('an active scan can be cancelled from the task page', async ({ page, contex
   expect(cancelledJob?.Status).toBe('cancelled');
   await page.screenshot({ path: testInfo.outputPath('task-cancelled-desktop.png'), fullPage: true, animations: 'disabled' });
 
-  await page.getByRole('link', { name: 'Libraries', exact: true }).click();
-  const libraryCard = page.getByRole('list', { name: 'Media libraries' }).getByRole('listitem').filter({ has: page.getByRole('heading', { name: libraryName, exact: true }) });
-  await libraryCard.getByRole('button', { name: 'Delete', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Administration' }).locator('a[href="/admin/media/libraries"]').click();
+  const libraryCard = page.getByRole('row').filter({ has: page.getByRole('button', { name: libraryName, exact: true }) });
+  await libraryCard.getByRole('button', { name: `More actions for ${libraryName}`, exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Delete library', exact: true }).click();
   const removed = page.waitForResponse((response) => response.request().method() === 'DELETE' && new URL(response.url()).pathname === `/admin/v1/libraries/${started.Library.Id}`);
-  await page.getByRole('dialog', { name: 'Delete library?' }).getByRole('button', { name: 'Delete library', exact: true }).click();
+  await page.getByRole('alertdialog').filter({ has: page.getByRole('heading', { name: 'Delete library?', exact: true }) }).getByRole('button', { name: 'Delete library', exact: true }).click();
   expect((await removed).status()).toBe(204);
   await expect(libraryCard).not.toBeVisible();
   const readiness = await context.request.get('/readyz');

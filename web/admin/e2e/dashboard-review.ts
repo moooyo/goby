@@ -10,8 +10,6 @@ export const destinations = [
   { path: '/admin/media/collections', legacy: '/admin/collections', nav: '/admin/media/collections', label: 'Collections', text: 'Weekend favorites' },
   { path: '/admin/media/analysis', legacy: '/admin/media-analysis', nav: '/admin/media/analysis', label: 'Media analysis', text: 'Analysis cache' },
   { path: '/admin/access/users', legacy: '/admin/users', nav: '/admin/access/users', label: 'Users', text: 'Family viewer' },
-  { path: '/admin/access/devices', legacy: '/admin/devices', nav: '/admin/access/devices', label: 'Devices', text: 'Living room TV' },
-  { path: '/admin/access/sessions', legacy: '/admin/sessions', nav: '/admin/access/sessions', label: 'Sessions', text: 'Desktop browser' },
   { path: '/admin/access/api-keys', legacy: '/admin/api-keys', nav: '/admin/access/api-keys', label: 'API keys', text: 'Home automation' },
   { path: '/admin/system/tasks', legacy: '/admin/tasks', nav: '/admin/system/tasks', label: 'Tasks', text: 'Scan media libraries' },
   { path: '/admin/system/observability', legacy: '/admin/observability', nav: '/admin/system/observability', label: 'Activity & logs', text: 'Administrator signed in' },

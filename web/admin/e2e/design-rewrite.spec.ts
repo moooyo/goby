@@ -10,7 +10,7 @@ test.use({ serviceWorkers: 'block', trace: 'off', video: 'off', preferences: { l
 // counterparts and mutation safety cases live in dashboard-v2.spec.ts.
 const readiness = [
   /Goby living room/, /Feature films/, /Alex Morgan/, /Weekend favorites/,
-  /Opening episode|分析缓存|Analysis cache/, /Family viewer/, /Living room TV/, /Desktop browser/,
+  /Opening episode|分析缓存|Analysis cache/, /Family viewer/,
   /Home automation/, /Scan media libraries|扫描媒体库/, /Administrator signed in/,
   /No notification targets yet|尚无通知目标/, /Restore backup|恢复备份/,
   /Server identity|服务器标识|服务器身份/, /Maximum bitrate|最大码率/,
@@ -103,8 +103,8 @@ test.describe('English keyboard workflows', () => {
     await evidence(page, testInfo, 'command-search-devices');
     await page.keyboard.press('ArrowDown');
     await page.keyboard.press('Enter');
-    await expect(page).toHaveURL(/\/admin\/access\/devices$/);
-    await ready(page, destinations[6]);
+    await expect(page).toHaveURL(/\/admin\/access\/users$/);
+    await ready(page, destinations[5]);
     expect(api.writes()).toEqual([]);
   });
 
@@ -119,7 +119,7 @@ test.describe('English keyboard workflows', () => {
     const active = list.getByRole('option', { selected: true });
     await expect(input).toHaveValue('');
     await expect(input).toBeFocused();
-    for (let index = 1; index <= 14; index += 1) {
+    for (let index = 1; index <= 12; index += 1) {
       await input.press('ArrowDown');
       await expect(active).toHaveAttribute('id', `command-${index}`);
       await expect.poll(() => active.evaluate((element) => {
@@ -132,12 +132,12 @@ test.describe('English keyboard workflows', () => {
     expect(await list.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
     await evidence(page, testInfo, 'command-palette-scrolled-selection');
     await input.press('Enter');
-    await ready(page, destinations[16]);
+    await ready(page, destinations[14]);
     await expect(page).toHaveURL(/\/admin\/settings\/metadata$/);
     const beforeComposition = page.url();
     await page.keyboard.press('Control+k');
     await input.fill('Devices');
-    await expect(active).toContainText('Devices');
+    await expect(active).toContainText('Users');
     const composing = await input.evaluate((element) => {
       const event = new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', isComposing: true, bubbles: true, cancelable: true });
       element.dispatchEvent(event);
@@ -155,8 +155,8 @@ test.describe('English keyboard workflows', () => {
     await expect(command).toBeVisible();
     await expect(page).toHaveURL(beforeComposition);
     await input.press('Enter');
-    await ready(page, destinations[6]);
-    await expect(page).toHaveURL(/\/admin\/access\/devices$/);
+    await ready(page, destinations[5]);
+    await expect(page).toHaveURL(/\/admin\/access\/users$/);
     expect(api.writes()).toEqual([]);
   });
 
@@ -183,7 +183,7 @@ test.describe('English keyboard workflows', () => {
 
   test('library detail tabs expose existing data and read images only when requested', async ({ page, api }, testInfo) => {
     await page.goto(`/admin/media/libraries/${library.Id}/items`);
-    await ready(page, destinations[18]);
+    await ready(page, destinations[16]);
     await expect(page.locator('.header-breadcrumb')).toContainText('Feature films');
     expect(api.reads('/admin/v1/items/film-one/images')).toHaveLength(0);
     for (const name of ['Items', 'Images', 'Media directories', 'Features and analysis', 'Scan history']) await expect(page.getByRole('tab', { name, exact: true })).toBeVisible();
@@ -228,7 +228,7 @@ test.describe('English keyboard workflows', () => {
     const searchPath = '/admin/v1/items/film-one/providers/images';
     api.handlers.set(`POST ${searchPath}`, (route) => json(route, { Items: [] }));
     await page.goto(`/admin/media/libraries/${library.Id}/items`);
-    await ready(page, destinations[18]);
+    await ready(page, destinations[16]);
     await page.getByRole('button', { name: 'Edit metadata for The feature film', exact: true }).first().click();
     const sheet = page.getByRole('dialog', { name: /^Edit metadata/ });
     await expect(sheet.locator('#metadata-Name-input')).toHaveValue('The feature film');
@@ -299,7 +299,7 @@ test.describe('English keyboard workflows', () => {
       return json(route, { Provider: input.Provider, ProviderId: input.Id, ImageId: input.ImageId, ImageType: input.ImageType, ImageIndex: input.ImageIndex, Width: saved.Width, Height: saved.Height, Tag: saved.Tag, Artwork: artwork });
     });
     await page.goto(`/admin/media/libraries/${library.Id}/items`);
-    await ready(page, destinations[18]);
+    await ready(page, destinations[16]);
     await page.getByRole('button', { name: 'Edit metadata for The feature film', exact: true }).first().click();
     const editor = page.getByRole('dialog', { name: /^Edit metadata/ });
     await editor.getByRole('tab', { name: 'Images', exact: true }).click();
@@ -336,7 +336,7 @@ test.describe('English keyboard workflows', () => {
     await evidence(page, testInfo, 'online-images-inline-applied-context');
   });
 
-  test('the 540px user sheet retains a profile draft across four tabs and saves its exact revision', async ({ page, api }, testInfo) => {
+  test('the 560px user sheet retains a profile draft across four tabs and saves its exact revision', async ({ page, api }, testInfo) => {
     const fixture = installUserDesignFixture(api);
     await page.goto('/admin/access/users');
     await ready(page, destinations[5]);
@@ -345,28 +345,28 @@ test.describe('English keyboard workflows', () => {
     await expect(sheet.getByRole('region', { name: 'Library access', exact: true })).toBeVisible();
     await expect(sheet.getByRole('button', { name: /^(Close dialog|Close user editor)$/ })).toHaveCount(1);
     await expect(sheet.getByRole('button', { name: 'Close dialog', exact: true })).toBeVisible();
-    await expect.poll(async () => (await sheet.boundingBox())?.width).toBe(540);
-    for (const name of ['Permissions', 'Profile', 'Devices', 'Password']) await expect(sheet.getByRole('tab', { name, exact: true })).toBeVisible();
+    await expect.poll(async () => (await sheet.boundingBox())?.width).toBe(560);
+    for (const name of ['Permissions', 'Profile', 'Login devices', 'Password']) await expect(sheet.getByRole('tab', { name, exact: true })).toBeVisible();
     await expect(sheet.getByRole('tab', { name: 'Playback preferences', exact: true })).toHaveCount(0);
-    await evidence(page, testInfo, 'user-sheet-permissions-540');
+    await evidence(page, testInfo, 'user-sheet-permissions-560');
     await sheet.getByRole('tab', { name: 'Profile', exact: true }).click();
-    const username = sheet.getByRole('textbox', { name: 'Username', exact: true });
+    const username = sheet.getByRole('textbox', { name: 'Name', exact: true });
     await expect(username).toHaveValue('Family viewer');
     await username.fill('Family viewer revised');
-    await sheet.getByRole('tab', { name: 'Devices', exact: true }).click();
-    await expect(sheet.getByRole('list', { name: 'User devices', exact: true })).toContainText('Family tablet');
-    await evidence(page, testInfo, 'user-sheet-devices-540');
+    await sheet.getByRole('tab', { name: 'Login devices', exact: true }).click();
+    await expect(sheet.getByRole('list', { name: 'Active logins', exact: true })).toContainText('Family tablet');
+    await evidence(page, testInfo, 'user-sheet-devices-560');
     await sheet.getByRole('tab', { name: 'Password', exact: true }).click();
     await expect(sheet.getByRole('button', { name: 'Reset password', exact: true })).toBeDisabled();
     await expect(sheet.getByRole('button', { name: 'Delete user', exact: true })).toBeDisabled();
-    await evidence(page, testInfo, 'user-sheet-password-540');
+    await evidence(page, testInfo, 'user-sheet-password-560');
     await page.keyboard.press('Escape');
     const confirmation = page.getByRole('dialog', { name: 'Discard unsaved changes?', exact: true });
     await expect(confirmation).toBeVisible();
     await confirmation.getByRole('button', { name: 'Keep editing', exact: true }).click();
     await sheet.getByRole('tab', { name: 'Profile', exact: true }).click();
     await expect(username).toHaveValue('Family viewer revised');
-    await evidence(page, testInfo, 'user-sheet-profile-draft-540');
+    await evidence(page, testInfo, 'user-sheet-profile-draft-560');
     expect(api.writes()).toEqual([]);
     await sheet.getByRole('button', { name: 'Save changes', exact: true }).click();
     await expect(sheet.getByRole('button', { name: 'Save changes', exact: true })).toBeDisabled();
@@ -388,7 +388,7 @@ test.describe('English keyboard workflows', () => {
     await ready(page, destinations[5]);
     await page.getByRole('button', { name: 'Manage Family viewer', exact: true }).click();
     const sheet = page.getByRole('dialog', { name: /Family viewer/ });
-    await expect(sheet.getByRole('tab')).toHaveText(['Permissions', 'Profile', 'Devices', 'Password']);
+    await expect(sheet.getByRole('tab')).toHaveText(['Permissions', 'Profile', 'Login devices', 'Password']);
     await expect(sheet.getByRole('tab', { name: 'Playback preferences', exact: true })).toHaveCount(0);
     await expect(sheet.getByRole('tabpanel', { name: 'Playback preferences', exact: true })).toHaveCount(0);
     await expect(sheet.getByRole('textbox', { name: 'Preferred audio language', exact: true })).toHaveCount(0);
@@ -468,7 +468,7 @@ test.describe('English keyboard workflows', () => {
   });
 });
 
-test('Chinese controls preserve raw user, device and application names that match translation keys', async ({ page, api }, testInfo) => {
+test('Chinese controls preserve raw user and application names that match translation keys', async ({ page, api }, testInfo) => {
   const fixture = installUserDesignFixture(api);
   fixture.user.Name = 'Settings';
   api.settings.ServerNameMode = 'custom';
@@ -478,10 +478,6 @@ test('Chinese controls preserve raw user, device and application names that matc
   api.settings.Sources.ServerName = 'database';
   api.settings.Sorting = { SortRemoveWords: ['Default'] };
   api.handlers.set('GET /admin/v1/libraries', (route) => json(route, { Items: [{ ...library, Name: 'Settings' }], TotalRecordCount: 1 }));
-  api.handlers.set('GET /admin/v1/devices', (route, request) => {
-    const url = new URL(request.url());
-    return json(route, { Items: [{ Id: '101', Revision: '1', ReportedDeviceId: 'translation-device', Name: 'Users', ReportedName: 'Users', CustomName: 'Users', AppName: 'Synthetic client', AppVersion: '1.0', LastUserId: viewerId, LastUserName: 'Settings', CreatedAt: stamp, LastSeenAt: stamp, IpAddress: '192.0.2.4', ActiveLoginCount: 1 }], TotalRecordCount: 1, StartIndex: Number(url.searchParams.get('StartIndex') ?? 0), Limit: Number(url.searchParams.get('Limit') ?? 25) });
-  });
   api.handlers.set('GET /admin/v1/api-keys', (route, request) => {
     const url = new URL(request.url());
     return json(route, { Items: [{ Id: '201', AppName: 'General', CreatedAt: stamp, LastUsedAt: null, RevokedAt: null, CreatedBy: administrator.Id, IPAddress: '192.0.2.5', Status: 'active' }], TotalRecordCount: 1, StartIndex: Number(url.searchParams.get('StartIndex') ?? 0), Limit: Number(url.searchParams.get('Limit') ?? 25) });
@@ -492,10 +488,10 @@ test('Chinese controls preserve raw user, device and application names that matc
   await expect(page.getByRole('main').getByText('Settings', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: '管理 Settings', exact: true }).click();
   const sheet = page.getByRole('dialog', { name: /Settings/ });
-  for (const name of ['权限', '个人资料', '设备', '密码']) await expect(sheet.getByRole('tab', { name, exact: true })).toBeVisible();
+  for (const name of ['权限', '个人资料', '登录设备', '密码']) await expect(sheet.getByRole('tab', { name, exact: true })).toBeVisible();
   await expect(sheet.getByRole('tab', { name: '播放偏好', exact: true })).toHaveCount(0);
   await sheet.getByRole('tab', { name: '个人资料', exact: true }).click();
-  await expect(sheet.getByRole('textbox', { name: '用户名', exact: true })).toHaveValue('Settings');
+  await expect(sheet.getByRole('textbox', { name: '名称', exact: true })).toHaveValue('Settings');
   await evidence(page, testInfo, 'user-sheet-390-zh-raw-name');
   await page.keyboard.press('Escape');
   await expect(sheet).not.toBeVisible();
@@ -503,9 +499,6 @@ test('Chinese controls preserve raw user, device and application names that matc
   const libraryFilter = page.getByRole('combobox', { name: '筛选媒体库', exact: true });
   await expect(libraryFilter.locator(`option[value="${library.Id}"]`)).toHaveText('Settings');
   await expect(libraryFilter.locator('option[value=""]')).toHaveText('全部媒体库');
-  await page.goto('/admin/access/devices');
-  await expect(page.getByRole('main').getByRole('heading', { level: 1 })).toHaveText('设备');
-  await expect(page.getByRole('main').getByText('Users', { exact: true }).filter({ visible: true }).first()).toBeVisible();
   await page.goto('/admin/access/api-keys');
   await expect(page.getByRole('main').getByRole('heading', { level: 1 })).toHaveText('API 密钥');
   await expect(page.getByRole('main').getByText('General', { exact: true }).filter({ visible: true }).first()).toBeVisible();

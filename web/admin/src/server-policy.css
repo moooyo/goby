@@ -157,6 +157,40 @@
 .server-policy-maintenance-row { flex-wrap: wrap; }
 .server-policy-maintenance-row > div { flex-basis: 210px; }
 .server-policy-maintenance-row > .goby-button { min-height: 38px; }
+.server-maintenance-copy {
+  margin: 0;
+  color: var(--ink2);
+  font-size: 13px;
+  line-height: 1.65;
+}
+.server-maintenance-audience {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 12px;
+  min-width: 0;
+  color: var(--ink2);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.server-maintenance-restart-audience {
+  margin-bottom: 14px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--s2);
+}
+.server-maintenance-restart-audience > span { flex: 1 1 140px; }
+.server-maintenance-notice { flex-wrap: wrap; }
+.server-maintenance-notice > .goby-alert-message { flex: 1 1 210px; }
+.server-maintenance-readback { margin-top: 5px; }
+.server-maintenance-duration { max-width: 180px; }
+.server-maintenance-templates { display: grid; gap: 5px; }
+.server-maintenance-templates > p { margin: 0; color: var(--ink3); font-size: 12px; font-weight: 600; }
+.server-maintenance-templates .goby-button { justify-content: flex-start; text-align: left; white-space: normal; }
+.goby-dialog-layout > .server-maintenance-form { min-height: 0; }
+.server-maintenance-form .goby-dialog-actions > p { flex: 1 1 210px; font-size: 11.5px; }
 .server-policy-version { flex: 0 1 auto; max-width: 50%; color: var(--ink2); text-align: right; }
 .server-policy-dialog-copy { margin: 0 0 16px; color: var(--ink2); font-size: 13px; line-height: 1.8; }
 .server-policy-confirm-phrase { display: flex; flex-direction: column; gap: 8px; color: var(--ink2); font-size: 12px; line-height: 1.6; }
@@ -169,7 +203,9 @@
   .server-policy { gap: 16px; }
   .server-policy-actions > span { flex-basis: 100%; }
   .server-policy-actions > .goby-button,
-  .server-policy-maintenance-row > .goby-button { min-height: 44px; }
+  .server-policy-maintenance-row > .goby-button,
+  .server-maintenance-audience > .goby-button,
+  .server-maintenance-form .goby-button { min-height: 44px; }
   .server-policy .settings-native-field { flex-wrap: wrap; }
   .server-policy .settings-native-field select { min-height: 40px; }
   .server-policy-client > div { align-items: flex-start; }

@@ -84,9 +84,14 @@ class ManagementMock {
       const handler = this.handlers.get(`${captured.method} ${captured.path}`);
       if (handler) return handler(route, request);
       if (captured.method === 'GET') {
-        if (captured.path === '/admin/v1/bootstrap') return json(route, { Initialized: true });
+        if (captured.path === '/admin/v1/bootstrap') return json(route, { Initialized: true, UICulture: 'en-US' });
         if (captured.path === '/admin/v1/session') return json(route, { User: administrator, CSRFToken: csrfToken });
         if (captured.path === '/admin/v1/users') return json(route, { Items: [administrator], TotalRecordCount: 1 });
+        if (captured.path === '/admin/v1/users/activity') return json(route, { Items: [{ Id: administrator.Id, LastLoginDate: null, LastActivityDate: null, LastPlayedDate: null, PlayedItemCount: 0 }], ObservedAt: timestamp });
+        if (captured.path === '/admin/v1/overview') return json(route, { Server: { Name: 'Synthetic management server' }, Database: { Status: 'ok' } });
+        if (captured.path === '/admin/v1/system/status') return json(route, { Error: { Code: 'service_unavailable', Message: 'No system status in this fixture.' } }, 503);
+        if (captured.path === '/admin/v1/storage/library-directories') return json(route, { Items: [], TotalRecordCount: 0 });
+        if (captured.path === '/admin/v1/backups/policy') return json(route, { Error: { Code: 'service_unavailable', Message: 'No backup policy in this fixture.' } }, 503);
         if (captured.path === '/admin/v1/features') return json(route, { Items: [
           { Id: 'goby_playback', Name: 'Play media', FeatureType: 'User' },
           { Id: 'goby_downloads', Name: 'Download original media', FeatureType: 'User' },
@@ -413,16 +418,16 @@ for (const scenario of [
     api.handlers.set(`GET ${userPath}`, async (route) => { await json(route, { User: user }); });
     await page.goto('/admin/access/users');
     await page.getByRole('button', { name: 'Manage Synthetic administrator', exact: true }).click();
-    const dialog = page.getByRole('dialog', { name: 'Manage user', exact: true });
-    const overview = dialog.getByRole('region', { name: 'Permission overview', exact: true });
-    await expect(overview.getByText('Configured playback', { exact: true })).toBeVisible();
-    await expect(overview.getByText(scenario.allowed ? 'Allowed' : 'Blocked', { exact: true })).toBeVisible();
-    await expect(overview.getByText('Media playback is off.', { exact: true })).toHaveCount(scenario.mediaPlayback ? 0 : 1);
-    await expect(overview.getByText('Play media is restricted in Feature access.', { exact: true })).toHaveCount(scenario.featureRestricted ? 1 : 0);
-    await expect(overview.getByText('Configured playback combines Media playback and Feature access. Item access, access schedules, account state, and service availability still determine whether media can play.', { exact: true })).toBeVisible();
-    await expect(overview.getByText('Disabled', { exact: true })).toBeVisible();
-    await expect(dialog.getByRole('switch', { name: 'Media playback', exact: true })).toBeChecked({ checked: scenario.mediaPlayback });
+    const dialog = page.getByRole('dialog', { name: `Manage user ${administrator.Name}`, exact: true });
+    const playback = dialog.getByRole('region', { name: 'Playback and downloads', exact: true });
+    await expect(playback.getByText(`Configured playback is ${scenario.allowed ? 'allowed' : 'blocked'}.`, { exact: true })).toBeVisible();
+    await expect(playback.getByText('Media playback is off.', { exact: true })).toHaveCount(scenario.mediaPlayback ? 0 : 1);
+    await expect(playback.getByText('Play media is restricted in Feature access.', { exact: true })).toHaveCount(scenario.featureRestricted ? 1 : 0);
+    await expect(playback.getByRole('switch', { name: 'Media playback', exact: true })).toBeChecked({ checked: scenario.mediaPlayback });
+    await dialog.getByText('Advanced permissions and parental controls', { exact: true }).click();
     await expect(dialog.getByRole('group', { name: 'Feature access', exact: true }).getByRole('checkbox', { name: 'Play media', exact: true })).toBeChecked({ checked: !scenario.featureRestricted });
+    await dialog.getByRole('tab', { name: 'Profile', exact: true }).click();
+    await expect(dialog.getByRole('tabpanel').getByText('Disabled', { exact: true })).toBeVisible();
     await expect(dialog.getByRole('button', { name: 'Save changes', exact: true })).toBeDisabled();
     expect(api.writes()).toEqual([]);
   });
@@ -449,12 +454,13 @@ test('configured playback previews independent policy edits and preserves unrela
   });
   await page.goto('/admin/access/users');
   await page.getByRole('button', { name: 'Manage Synthetic administrator', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Manage user', exact: true });
-  const overview = dialog.getByRole('region', { name: 'Permission overview', exact: true });
+  const dialog = page.getByRole('dialog', { name: `Manage user ${administrator.Name}`, exact: true });
+  const playback = dialog.getByRole('region', { name: 'Playback and downloads', exact: true });
+  await dialog.getByText('Advanced permissions and parental controls', { exact: true }).click();
   const mediaPlayback = dialog.getByRole('switch', { name: 'Media playback', exact: true });
   const feature = dialog.getByRole('group', { name: 'Feature access', exact: true }).getByRole('checkbox', { name: 'Play media', exact: true });
   const save = dialog.getByRole('button', { name: 'Save changes', exact: true });
-  await expect(mediaPlayback).toHaveAccessibleDescription('Allow this account to play media in compatible clients. Play media must also be checked in Feature access below.');
+  await expect(mediaPlayback).toHaveAccessibleDescription('Play media must also be checked in Feature access.');
   await expect(feature).toHaveAccessibleDescription('Media playback above must also be enabled.');
 
   for (const step of [
@@ -466,16 +472,16 @@ test('configured playback previews independent policy edits and preserves unrela
     const before = structuredClone(user);
     const writesBefore = api.writes().length;
     await step.control.setChecked(step.checked);
-    await expect(overview.getByText('Preview of your unsaved changes', { exact: true })).toBeVisible();
-    await expect(overview.getByText(step.allowed ? 'Allowed' : 'Blocked', { exact: true })).toBeVisible();
-    await expect(overview.getByText('Media playback is off.', { exact: true })).toHaveCount(step.mediaPlayback ? 0 : 1);
-    await expect(overview.getByText('Play media is restricted in Feature access.', { exact: true })).toHaveCount(step.featureRestricted ? 1 : 0);
+    await expect(dialog.getByText('Unsaved changes', { exact: true })).toBeVisible();
+    await expect(playback.getByText(`Configured playback is ${step.allowed ? 'allowed' : 'blocked'}.`, { exact: true })).toBeVisible();
+    await expect(playback.getByText('Media playback is off.', { exact: true })).toHaveCount(step.mediaPlayback ? 0 : 1);
+    await expect(playback.getByText('Play media is restricted in Feature access.', { exact: true })).toHaveCount(step.featureRestricted ? 1 : 0);
     await expect(mediaPlayback).toBeChecked({ checked: step.mediaPlayback });
     await expect(feature).toBeChecked({ checked: !step.featureRestricted });
     expect(user).toEqual(before);
     expect(api.writes()).toHaveLength(writesBefore);
     await save.click();
-    await expect(overview.getByText('Preview of your unsaved changes', { exact: true })).toHaveCount(0);
+    await expect(dialog.getByText('All changes saved', { exact: true })).toBeVisible();
     await expect(save).toBeDisabled();
     expect(api.writes()).toHaveLength(writesBefore + 1);
     const expectedRestrictions = [...retainedRestrictions, ...(step.featureRestricted ? ['goby_playback'] : [])].sort();
@@ -507,16 +513,19 @@ test('legacy user policies preserve safe defaults and expanded drafts until vali
   });
   await page.goto('/admin/access/users');
   await page.getByRole('button', { name: 'Manage Synthetic administrator', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Manage user', exact: true });
+  const dialog = page.getByRole('dialog', { name: `Manage user ${administrator.Name}`, exact: true });
   const save = dialog.getByRole('button', { name: 'Save changes', exact: true });
   const rating = dialog.getByLabel('Maximum parental rating', { exact: true });
   const streamLimit = dialog.getByLabel('Simultaneous stream limit', { exact: true });
   const remoteQuality = dialog.getByLabel('Automatic remote quality (bits per second)', { exact: true });
+  const bitrate = dialog.getByRole('textbox', { name: /^Remote bitrate limit \(Mbps\)/ });
   await expect(rating).toHaveValue('');
+  await expect(bitrate).toHaveValue('0');
+  await dialog.getByText('Advanced permissions and parental controls', { exact: true }).click();
   await expect(dialog.getByRole('switch', { name: 'Control shared devices', exact: true })).not.toBeChecked();
   await expect(dialog.getByRole('switch', { name: 'Allow remote access', exact: true })).toBeChecked();
   await expect(save).toBeDisabled();
-  await expect(dialog.getByRole('region', { name: 'Permission overview', exact: true }).getByText('Allowed', { exact: true })).toBeVisible();
+  await expect(dialog.getByRole('region', { name: 'Playback and downloads', exact: true }).getByText('Configured playback is allowed.', { exact: true })).toBeVisible();
 
   await rating.fill('16');
   await dialog.getByRole('switch', { name: 'Allow all devices', exact: true }).uncheck();
@@ -525,10 +534,10 @@ test('legacy user policies preserve safe defaults and expanded drafts until vali
   await devices.fill(' living-room \n\nbedroom\nliving-room ');
   await tags.fill(' family \n\nfavorites\nfamily ');
   await remoteQuality.fill('12000000');
+  await bitrate.fill('6.123456');
   await dialog.getByRole('group', { name: 'Feature access', exact: true }).getByRole('checkbox', { name: 'Download original media', exact: true }).uncheck();
-  await dialog.getByRole('button', { name: 'Add access interval', exact: true }).click();
-  await dialog.getByRole('combobox', { name: 'Access day 1', exact: true }).click();
-  await page.getByRole('option', { name: 'Weekday', exact: true }).click();
+  await dialog.getByRole('combobox', { name: /^Allowed access times/ }).selectOption('custom');
+  await dialog.getByRole('combobox', { name: 'Access day 1', exact: true }).selectOption('Weekday');
   await dialog.getByLabel('Start hour 1', { exact: true }).fill('8.5');
   await dialog.getByLabel('End hour 1', { exact: true }).fill('18.25');
   await streamLimit.fill('');
@@ -546,7 +555,7 @@ test('legacy user policies preserve safe defaults and expanded drafts until vali
   await streamLimit.fill('2');
   await expect(save).toBeEnabled();
   await save.click();
-  await expect(dialog.getByText('User Synthetic administrator updated.', { exact: true })).toBeVisible();
+  await expect(dialog.getByText('Saved settings for Synthetic administrator.', { exact: true })).toBeVisible();
   await expect(dialog.getByText('All changes saved', { exact: true })).toBeVisible();
   await expect(save).toBeDisabled();
   await expect(devices).toHaveValue('bedroom\nliving-room');
@@ -560,7 +569,7 @@ test('legacy user policies preserve safe defaults and expanded drafts until vali
     EnableRemoteControlOfOtherUsers: false, EnableSharedDeviceControl: false, EnableRemoteAccess: true,
     AutoRemoteQuality: 12000000, EnableContentDeletion: false, RestrictedFeatures: ['goby_downloads'], EnableContentDeletionFromFolders: [],
     EnableContentDownloading: true, EnableSubtitleDownloading: true, EnableSubtitleManagement: false,
-    RemoteClientBitrateLimit: 0, ExcludedSubFolders: [], SimultaneousStreamLimit: 2,
+    RemoteClientBitrateLimit: 6123456, ExcludedSubFolders: [], SimultaneousStreamLimit: 2,
     EnabledDevices: ['bedroom', 'living-room'], EnableAllDevices: false,
   };
   expect(api.writes().map(({ method, path, body }) => ({ method, path, body }))).toEqual([{
@@ -591,7 +600,8 @@ test('an unavailable feature catalog preserves unlisted restrictions while other
   });
   await page.goto('/admin/access/users');
   await page.getByRole('button', { name: 'Manage Synthetic administrator', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Manage user', exact: true });
+  const dialog = page.getByRole('dialog', { name: `Manage user ${administrator.Name}`, exact: true });
+  await dialog.getByText('Advanced permissions and parental controls', { exact: true }).click();
   await expect(dialog.getByText('Feature choices are unavailable. Existing restrictions are retained, and other account settings can still be edited.', { exact: true })).toBeVisible();
   const features = dialog.getByRole('group', { name: 'Feature access', exact: true });
   const unlisted = features.getByRole('checkbox', { name: 'Unlisted feature (legacy_feature)', exact: true });
@@ -601,15 +611,15 @@ test('an unavailable feature catalog preserves unlisted restrictions while other
   await expect(unlisted).not.toBeChecked();
   await expect(unlistedPlayback).toBeDisabled();
   await expect(unlistedPlayback).not.toBeChecked();
-  const overview = dialog.getByRole('region', { name: 'Permission overview', exact: true });
-  await expect(overview.getByText('Blocked', { exact: true })).toBeVisible();
-  await expect(overview.getByText('Play media is restricted in Feature access.', { exact: true })).toBeVisible();
+  const playback = dialog.getByRole('region', { name: 'Playback and downloads', exact: true });
+  await expect(playback.getByText('Configured playback is blocked.', { exact: true })).toBeVisible();
+  await expect(playback.getByText('Play media is restricted in Feature access.', { exact: true })).toBeVisible();
   await expect(dialog.getByLabel('Maximum parental rating', { exact: true })).toHaveValue('');
   await dialog.getByLabel('Simultaneous stream limit', { exact: true }).fill('3');
   const save = dialog.getByRole('button', { name: 'Save changes', exact: true });
   await expect(save).toBeEnabled();
   await save.click();
-  await expect(dialog.getByText('User Synthetic administrator updated.', { exact: true })).toBeVisible();
+  await expect(dialog.getByText('Saved settings for Synthetic administrator.', { exact: true })).toBeVisible();
   await expect(dialog.getByText('All changes saved', { exact: true })).toBeVisible();
   await expect(save).toBeDisabled();
   await expect(unlisted).toBeDisabled();

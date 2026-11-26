@@ -1,9 +1,11 @@
 import { expect, test as base } from '@playwright/test';
 import type { BrowserContext, Page, Route } from '@playwright/test';
+import { DashboardAPI } from './dashboard-fixture';
 
 // These cases isolate administrator-session error handling in the shipped UI.
 // Every native API request is mocked, including unexpected writes.
 const csrf = 'phase3-synthetic-csrf';
+const dashboardReads = new Set(['/admin/v1/overview', '/admin/v1/system/status', '/admin/v1/backups/policy', '/admin/v1/settings', '/admin/v1/jobs']);
 const library = {
   Id: 'phase3-library', Name: 'Permission library', CollectionType: 'music',
   Paths: ['/media/music'], CreatedAt: '2026-09-19T00:00:00Z', LastScanAt: null,
@@ -17,7 +19,9 @@ class PermissionAPI {
   requests: Captured[] = [];
   unexpected: string[] = [];
   savedName = library.Name;
+  readonly dashboard = new DashboardAPI();
   async install(context: BrowserContext): Promise<void> {
+    await this.dashboard.install(context);
     await context.route('**/admin/v1/**', async (route, request) => {
       const url = new URL(request.url());
       const captured: Captured = { method: request.method(), path: url.pathname, csrf: request.headers()['x-csrf-token'], body: request.postData() ? request.postDataJSON() : undefined };
@@ -26,8 +30,11 @@ class PermissionAPI {
         if (captured.path === '/admin/v1/bootstrap') return json(route, { Initialized: true });
         if (captured.path === '/admin/v1/session') return json(route, { User: { Id: 'phase3-admin', Name: 'Synthetic administrator', IsAdministrator: true, IsDisabled: false, HasPassword: true, CreatedAt: library.CreatedAt }, CSRFToken: csrf });
         if (captured.path === '/admin/v1/libraries') return json(route, { Items: [library], TotalRecordCount: 1 });
-        if (captured.path === '/admin/v1/storage/roots') return json(route, { Configured: true, Items: [{ Path: '/media', Available: true }] });
+        if (captured.path === '/admin/v1/storage/roots') return json(route, { Configured: true, Items: [{ Path: '/media', Available: true, Readable: true, Writable: false }] });
+        if (captured.path === '/admin/v1/storage/library-directories') return json(route, { Items: [{ Path: library.Paths[0], Available: true, Readable: true, Writable: false, TotalBytes: null, UsedBytes: null, AvailableBytes: null }], TotalRecordCount: 1 });
         if (captured.path === `/admin/v1/libraries/${library.Id}`) return json(route, { Library: library });
+        if (captured.path === `/admin/v1/libraries/${library.Id}/items`) return json(route, { Library: library, Items: [], TotalRecordCount: 0, StartIndex: 0, Limit: Number(url.searchParams.get('Limit')) });
+        if (dashboardReads.has(captured.path)) return route.fallback();
         if (captured.path === '/admin/v1/storage/directories') {
           if (url.searchParams.get('Path')) return json(route, { Error: { Code: 'access_denied', Message: 'This directory is outside the allowed media paths.' } }, 403);
           return json(route, { Path: '', Items: [{ Name: 'media', Path: '/media' }], TotalRecordCount: 1, StartIndex: 0, Limit: 100 });
@@ -47,12 +54,13 @@ class PermissionAPI {
   writes(): Captured[] { return this.requests.filter((request) => request.method === 'PATCH'); }
   sessionReads(): number { return this.requests.filter((request) => request.path === '/admin/v1/session').length; }
 }
-const test = base.extend<{ api: PermissionAPI }>({ api: async ({ context }, use) => { const api = new PermissionAPI(); await api.install(context); await use(api); expect(api.unexpected).toEqual([]); expect(api.writes().every((request) => request.csrf === csrf)).toBe(true); } });
+const test = base.extend<{ api: PermissionAPI }>({ api: async ({ context }, use) => { const api = new PermissionAPI(); await api.install(context); await use(api); expect([...api.unexpected, ...api.dashboard.unexpected]).toEqual([]); expect(api.writes().every((request) => request.csrf === csrf)).toBe(true); } });
 test.use({ serviceWorkers: 'block' });
+test.beforeEach(async ({ page }) => { await page.addInitScript(() => localStorage.setItem('goby.admin.language', 'en')); });
 async function edit(page: Page): Promise<void> {
   await page.goto('/admin/media/libraries');
   await page.getByRole('button', { name: 'More actions for Permission library', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Edit library', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Library settings', exact: true }).click();
   // The anonymous role locator collects diagnostics only. All workflow actions
   // remain scoped to the dialog's exact accessible name below.
   const mountedDialog = page.getByRole('dialog');

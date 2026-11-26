@@ -743,20 +743,21 @@ test('isolated native scheduled tasks, durable admissions, schedule editing, and
 
     await test.step('retain native scan history and route library task links directly to it', async () => {
       const before = await readRuns(context.request, fixture);
-      await page.getByRole('tab', { name: 'Scan history', exact: true }).click();
+      await page.getByRole('button', { name: 'More task views', exact: true }).click();
+      await page.getByRole('button', { name: 'Scan history', exact: true }).click();
       await expect(page.getByRole('heading', { name: 'Scan and refresh history', exact: true })).toBeVisible();
       await expect(page.getByRole('list', { name: 'Library scan tasks', exact: true }).getByRole('listitem').first()).toBeVisible();
       await safeScreenshot(page, testInfo.outputPath('tasks-scan-history.png'), sensitive, fixture);
       await page.getByRole('button', { name: 'Manage libraries', exact: true }).click();
       const library = fixture.Libraries[0];
-      const card = page.getByRole('list', { name: 'Media libraries', exact: true }).getByRole('listitem').filter({ has: page.getByRole('heading', { name: library.Name, exact: true }) });
+      const row = page.getByRole('row').filter({ has: page.getByRole('button', { name: library.Name, exact: true }) });
       const response = responseFor(page, 'POST', `/admin/v1/libraries/${library.Id}/scan`);
-      await card.getByRole('button', { name: 'Scan library', exact: true }).click();
+      await row.getByRole('button', { name: `Scan library ${library.Name}`, exact: true }).click();
       const requested = await response;
       expect(requested.status()).toBe(202);
       const job = (await requested.json() as { Job: Job }).Job;
-      await page.getByRole('button', { name: 'View tasks', exact: true }).first().click();
-      await expect(page.getByRole('tab', { name: 'Scan history', exact: true })).toHaveAttribute('aria-selected', 'true');
+      await page.getByRole('region', { name: 'Scans and processing', exact: true }).getByRole('button', { name: 'Scan history', exact: true }).click();
+      await expect(page.getByRole('region', { name: 'Scan history', exact: true })).toBeVisible();
       const record = page.locator(`[data-job-id="${job.Id}"]`);
       await expect(record).toBeVisible();
       await expect(record.getByText('Completed', { exact: true })).toBeVisible({ timeout: 45_000 });
@@ -767,7 +768,7 @@ test('isolated native scheduled tasks, durable admissions, schedule editing, and
       expect(persisted?.Scanned).toBeGreaterThanOrEqual(1);
       expect(persisted?.ForceProbe).toBe(false);
       expect((await readRuns(context.request, fixture)).TotalRecordCount).toBe(before.TotalRecordCount);
-      await page.getByRole('tab', { name: 'Available tasks', exact: true }).click();
+      await page.getByRole('button', { name: 'Back to task overview', exact: true }).click();
       result.Checks.LegacyScanHistoryAndLibraryLink = true;
     });
 

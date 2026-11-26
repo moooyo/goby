@@ -479,7 +479,7 @@ export function SettingsPage({ currentUserId, onNavigationGuardChange, section =
       </div>
     </form>}
     {policyMounted && <div className="settings-subpage" hidden={section !== 'general'}>
-      <ServerPolicyFields disabled={loading || Boolean(busy) || diagnosticBusy || blocked} onStateChange={setServerPolicyState} />
+      <ServerPolicyFields key={currentUserId} administratorId={currentUserId} disabled={loading || Boolean(busy) || diagnosticBusy || blocked} listenerRestartRequired={settings?.Runtime?.Network.RestartRequired} onStateChange={setServerPolicyState} />
     </div>}
     {providersMounted && <div className="settings-subpage" hidden={section !== 'metadata'}>
       <ProvidersPage embedded onNavigationGuardChange={setProviderGuard} />

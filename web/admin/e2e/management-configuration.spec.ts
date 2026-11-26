@@ -3,9 +3,11 @@ import type { BrowserContext, Locator, Page, Request, Route } from '@playwright/
 import type { Library, LibraryInput, ManagedUser, UpdateUserInput, UserPolicy } from '../src/api';
 import type { DeletionFolder } from '../src/deletionFoldersApi';
 import type { EditableLibrary, LibraryUpdate } from '../src/libraryManagementApi';
+import { DashboardAPI } from './dashboard-fixture';
 
 const timestamp = '2026-09-20T00:00:00Z';
 const csrf = 'synthetic-management-configuration-csrf';
+const dashboardReads = new Set(['/admin/v1/overview', '/admin/v1/system/status', '/admin/v1/backups/policy', '/admin/v1/settings', '/admin/v1/jobs']);
 const administrator = { Id: 'configuration-admin', Name: 'Configuration administrator', IsAdministrator: true, IsDisabled: false, HasPassword: true, CreatedAt: timestamp };
 const library: Library = { Id: 'configuration-library', Name: 'Configuration movies', CollectionType: 'movies', Paths: ['/synthetic/media'], CreatedAt: timestamp, LastScanAt: null };
 const member = { Id: 'configuration-member', Name: 'Configuration member', IsAdministrator: false, IsDisabled: false, HasPassword: true, CreatedAt: timestamp };
@@ -27,17 +29,27 @@ class ConfigurationAPI {
   ];
   writes: { path: string; method: string; body: unknown; csrf?: string }[] = []; searches: URLSearchParams[] = []; unexpected: string[] = [];
   handlers = new Map<string, (route: Route, request: Request) => Promise<void>>();
+  readonly dashboard = new DashboardAPI();
   async install(context: BrowserContext): Promise<void> {
+    await this.dashboard.install(context);
     await context.route(/\/admin\/v1(?:\/|\?|$)/, async (route, request) => {
       const url = new URL(request.url()); const method = request.method(); const path = url.pathname;
       if (method !== 'GET') this.writes.push({ path, method, body: request.postData() ? request.postDataJSON() as unknown : null, csrf: request.headers()['x-csrf-token'] });
       const handler = this.handlers.get(`${method} ${path}`); if (handler) return handler(route, request);
       if (method === 'GET') {
-        if (path === '/admin/v1/bootstrap') return json(route, { Initialized: true });
+        if (path === '/admin/v1/bootstrap') return json(route, { Initialized: true, UICulture: 'en-US' });
         if (path === '/admin/v1/session') return json(route, { User: administrator, CSRFToken: csrf });
         if (path === '/admin/v1/libraries') return json(route, { Items: this.libraries, TotalRecordCount: this.libraries.length });
-        if (path === '/admin/v1/storage/roots') return json(route, { Configured: true, Items: [{ Path: '/synthetic/media', Available: true }] });
+        if (path === '/admin/v1/storage/roots') return json(route, { Configured: true, Items: [{ Path: '/synthetic/media', Available: true, Readable: true, Writable: false }] });
+        if (path === '/admin/v1/storage/library-directories') {
+          const paths = [...new Set(this.libraries.flatMap((entry) => entry.Paths))];
+          return json(route, { Items: paths.map((Path) => ({ Path, Available: true, Readable: true, Writable: false, TotalBytes: null, UsedBytes: null, AvailableBytes: null })), TotalRecordCount: paths.length });
+        }
+        const itemLibrary = this.libraries.find((entry) => path === `/admin/v1/libraries/${entry.Id}/items`);
+        if (itemLibrary) return json(route, { Library: itemLibrary, Items: [], TotalRecordCount: 0, StartIndex: 0, Limit: Number(url.searchParams.get('Limit')) });
+        if (dashboardReads.has(path)) return route.fallback();
         if (path === '/admin/v1/users') return json(route, { Items: [member], TotalRecordCount: 1 });
+        if (path === '/admin/v1/users/activity') return json(route, { Items: [{ Id: member.Id, LastLoginDate: null, LastActivityDate: null, LastPlayedDate: null, PlayedItemCount: 0 }], ObservedAt: timestamp });
         if (path === userPath) return json(route, { User: this.user });
         if (path === '/admin/v1/features') return json(route, { Items: [{ Id: 'playback', Name: 'Playback', FeatureType: 'User' }] });
         if (path === folderPath) {
@@ -60,13 +72,20 @@ class ConfigurationAPI {
 }
 const test = base.extend<{ api: ConfigurationAPI }>({ api: async ({ context, page }, use) => {
   const api = new ConfigurationAPI(); const errors: string[] = []; page.on('pageerror', (error) => errors.push(error.message));
-  await api.install(context); await use(api); expect(api.unexpected).toEqual([]); expect(errors).toEqual([]); expect(api.writes.every((request) => request.csrf === csrf)).toBe(true);
+  await api.install(context); await use(api); expect([...api.unexpected, ...api.dashboard.unexpected]).toEqual([]); expect(errors).toEqual([]); expect(api.writes.every((request) => request.csrf === csrf)).toBe(true);
 } });
 test.use({ serviceWorkers: 'block', trace: 'off', video: 'off' });
-async function openUser(page: Page): Promise<Locator> { await page.goto('/admin/users'); await page.getByRole('button', { name: `Manage ${member.Name}`, exact: true }).click(); const dialog = page.getByRole('dialog', { name: 'Manage user', exact: true }); await expect(dialog.getByRole('textbox', { name: 'Username', exact: true })).toHaveValue(member.Name); return dialog; }
+async function openUser(page: Page): Promise<Locator> {
+  await page.addInitScript(() => localStorage.setItem('goby.admin.language', 'en'));
+  await page.goto('/admin/access/users');
+  await page.getByRole('button', { name: `Manage ${member.Name}`, exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: `Manage user ${member.Name}`, exact: true });
+  await dialog.getByText('Advanced permissions and parental controls', { exact: true }).click();
+  return dialog;
+}
 async function saveUser(page: Page, dialog: Locator): Promise<void> {
   const [response] = await Promise.all([page.waitForResponse((value) => value.request().method() === 'PUT' && new URL(value.url()).pathname === userPath), dialog.getByRole('button', { name: 'Save changes', exact: true }).click()]);
-  expect(response.status()).toBe(200); await expect(dialog.getByText(`User ${member.Name} updated.`, { exact: true })).toBeVisible(); await expect(dialog.getByRole('button', { name: 'Save changes', exact: true })).toBeDisabled();
+  expect(response.status()).toBe(200); await expect(dialog.getByText(`Saved settings for ${member.Name}.`, { exact: true })).toBeVisible(); await expect(dialog.getByRole('button', { name: 'Save changes', exact: true })).toBeDisabled();
 }
 
 test('new libraries explicitly save both local import choices before any scan', async ({ page, api }) => {
@@ -75,7 +94,8 @@ test('new libraries explicitly save both local import choices before any scan', 
   await dialog.getByRole('textbox', { name: 'Library name', exact: true }).fill('Local import choices'); await dialog.getByRole('textbox', { name: 'Media directories', exact: true }).fill('/synthetic/media/choice');
   await dialog.getByRole('checkbox', { name: 'Import local metadata files', exact: true }).uncheck(); await dialog.getByRole('checkbox', { name: 'Import local artwork', exact: true }).uncheck(); await dialog.getByRole('checkbox', { name: /^Scan after creating/ }).uncheck();
   await dialog.getByRole('button', { name: 'Create library', exact: true }).click(); await expect(dialog).not.toBeVisible();
-  expect(api.writes).toHaveLength(1); expect(api.writes[0].body).toEqual({ Name: 'Local import choices', CollectionType: 'movies', Paths: ['/synthetic/media/choice'], Scan: false, LibraryOptions: { EnableLocalMetadata: false, EnableLocalImages: false, EnableEmbeddedArtwork: true, EnableIntroDetection: false, EnablePreviewGeneration: false } });
+  expect(api.writes).toHaveLength(1);
+  expect(api.writes[0].body).toMatchObject({ Name: 'Local import choices', CollectionType: 'movies', Paths: ['/synthetic/media/choice'], Scan: false, LibraryOptions: { EnableLocalMetadata: false, EnableLocalImages: false, EnableEmbeddedArtwork: true, EnableIntroDetection: false, EnablePreviewGeneration: false } });
 });
 
 test('deletion grants come from current folder choices while legacy values and inactive categories survive unrelated edits', async ({ page, api }) => {
@@ -112,18 +132,15 @@ test('TV library creation opts into background intro detection without a separat
   await page.goto('/admin/libraries');
   await page.getByRole('button', { name: 'Create library', exact: true }).first().click();
   const dialog = page.getByRole('dialog', { name: 'Create library', exact: true });
-  const toggle = dialog.getByRole('checkbox', { name: 'Automatic intro detection', exact: true });
+  const toggle = dialog.getByRole('switch', { name: 'Intro detection', exact: true });
   await expect(toggle).toHaveCount(0);
-  await dialog.getByRole('combobox', { name: 'Content type', exact: true }).click();
-  await page.getByRole('option', { name: 'TV shows', exact: true }).click();
+  await dialog.getByRole('combobox', { name: 'Content type', exact: true }).selectOption('tvshows');
   await expect(toggle).not.toBeChecked();
   await toggle.check();
-  await expect(dialog).toContainText('If no intro is found, playback stays unchanged.');
-  await dialog.getByRole('combobox', { name: 'Content type', exact: true }).click();
-  await page.getByRole('option', { name: 'Movies', exact: true }).click();
+  await expect(dialog).toContainText('Matched episode intros');
+  await dialog.getByRole('combobox', { name: 'Content type', exact: true }).selectOption('movies');
   await expect(toggle).toHaveCount(0);
-  await dialog.getByRole('combobox', { name: 'Content type', exact: true }).click();
-  await page.getByRole('option', { name: 'TV shows', exact: true }).click();
+  await dialog.getByRole('combobox', { name: 'Content type', exact: true }).selectOption('tvshows');
   await expect(toggle).not.toBeChecked();
   await toggle.check();
   await dialog.getByRole('textbox', { name: 'Library name', exact: true }).fill('Automatic series');
@@ -132,8 +149,8 @@ test('TV library creation opts into background intro detection without a separat
   expect(api.writes).toHaveLength(0);
   await dialog.getByRole('button', { name: 'Create library', exact: true }).click();
   await expect(dialog).not.toBeVisible();
-  await expect(page.getByRole('alert').filter({ hasText: 'Automatic intro detection is enabled.' })).toBeVisible();
-  await expect(page.getByRole('alert').filter({ hasText: 'Automatic intro detection is enabled.' }).getByRole('button', { name: 'View tasks', exact: true })).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: 'Automatic intro detection is enabled.' })).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: 'Automatic intro detection is enabled.' }).getByRole('button', { name: 'View tasks', exact: true })).toBeVisible();
   expect(api.writes).toHaveLength(1);
   expect(api.writes[0]).toMatchObject({ method: 'POST', path: '/admin/v1/libraries', body: {
     Name: 'Automatic series', CollectionType: 'tvshows', Paths: ['/synthetic/media/series'], Scan: false,
@@ -158,21 +175,21 @@ test('TV library settings preserve and disable intro automation through the libr
   });
   await page.goto('/admin/libraries');
   await page.getByRole('button', { name: 'More actions for Series settings', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Edit library', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Library settings', exact: true }).click();
   let dialog = page.getByRole('dialog', { name: 'Edit library', exact: true });
-  await expect(dialog.getByRole('checkbox', { name: 'Automatic intro detection', exact: true })).not.toBeChecked();
-  await dialog.getByRole('checkbox', { name: 'Automatic intro detection', exact: true }).check();
+  await expect(dialog.getByRole('switch', { name: 'Intro detection', exact: true })).not.toBeChecked();
+  await dialog.getByRole('switch', { name: 'Intro detection', exact: true }).check();
   await dialog.getByRole('button', { name: 'Save library', exact: true }).click();
   await expect(dialog).not.toBeVisible();
-  await expect(page.getByRole('alert').filter({ hasText: 'Automatic intro detection is enabled.' })).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: 'Automatic intro detection is enabled.' })).toBeVisible();
   expect(api.writes[0].body).toMatchObject({ Revision: '9007199254740993', Scan: false,
     LibraryOptions: { EnableLocalMetadata: false, EnableLocalImages: true, EnableEmbeddedArtwork: false, EnableIntroDetection: true, EnablePreviewGeneration: false },
   });
   await page.getByRole('button', { name: 'More actions for Series settings', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Edit library', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Library settings', exact: true }).click();
   dialog = page.getByRole('dialog', { name: 'Edit library', exact: true });
-  await expect(dialog.getByRole('checkbox', { name: 'Automatic intro detection', exact: true })).toBeChecked();
-  await dialog.getByRole('checkbox', { name: 'Automatic intro detection', exact: true }).uncheck();
+  await expect(dialog.getByRole('switch', { name: 'Intro detection', exact: true })).toBeChecked();
+  await dialog.getByRole('switch', { name: 'Intro detection', exact: true }).uncheck();
   await dialog.getByRole('button', { name: 'Save library', exact: true }).click();
   await expect(dialog).not.toBeVisible();
   expect(api.writes).toHaveLength(2);
@@ -184,20 +201,17 @@ for (const [collectionType, label] of [['movies', 'Movies'], ['tvshows', 'TV sho
     await page.goto('/admin/libraries');
     await page.getByRole('button', { name: 'Create library', exact: true }).first().click();
     const dialog = page.getByRole('dialog', { name: 'Create library', exact: true });
-    if (collectionType !== 'movies') {
-      await dialog.getByRole('combobox', { name: 'Content type', exact: true }).click();
-      await page.getByRole('option', { name: label, exact: true }).click();
-    }
-    const previews = dialog.getByRole('checkbox', { name: 'Automatic seek previews', exact: true });
+    if (collectionType !== 'movies') await dialog.getByRole('combobox', { name: 'Content type', exact: true }).selectOption(collectionType);
+    const previews = dialog.getByRole('switch', { name: 'Seek previews', exact: true });
     await expect(previews).not.toBeChecked();
     await previews.check();
-    await expect(dialog).toContainText('Progress and errors are available in Tasks.');
+    await expect(dialog).toContainText('Preview images while seeking');
     await dialog.getByRole('textbox', { name: 'Library name', exact: true }).fill(`${label} with previews`);
     await dialog.getByRole('textbox', { name: 'Media directories', exact: true }).fill(`/synthetic/media/${collectionType}`);
     await dialog.getByRole('checkbox', { name: /^Scan after creating/ }).uncheck();
     await dialog.getByRole('button', { name: 'Create library', exact: true }).click();
     await expect(dialog).not.toBeVisible();
-    const notice = page.getByRole('alert').filter({ hasText: 'Automatic seek previews are enabled.' });
+    const notice = page.getByRole('status').filter({ hasText: 'Automatic seek previews are enabled.' });
     await expect(notice.getByRole('button', { name: 'View tasks', exact: true })).toBeVisible();
     expect(api.writes).toHaveLength(1);
     expect(api.writes[0]).toMatchObject({ method: 'POST', path: '/admin/v1/libraries', body: {
@@ -210,10 +224,9 @@ test('changing a new video library to Music clears the hidden preview option', a
   await page.goto('/admin/libraries');
   await page.getByRole('button', { name: 'Create library', exact: true }).first().click();
   const dialog = page.getByRole('dialog', { name: 'Create library', exact: true });
-  await dialog.getByRole('checkbox', { name: 'Automatic seek previews', exact: true }).check();
-  await dialog.getByRole('combobox', { name: 'Content type', exact: true }).click();
-  await page.getByRole('option', { name: 'Music', exact: true }).click();
-  await expect(dialog.getByRole('checkbox', { name: 'Automatic seek previews', exact: true })).toHaveCount(0);
+  await dialog.getByRole('switch', { name: 'Seek previews', exact: true }).check();
+  await dialog.getByRole('combobox', { name: 'Content type', exact: true }).selectOption('music');
+  await expect(dialog.getByRole('switch', { name: 'Seek previews', exact: true })).toHaveCount(0);
   await dialog.getByRole('textbox', { name: 'Library name', exact: true }).fill('Music only');
   await dialog.getByRole('textbox', { name: 'Media directories', exact: true }).fill('/synthetic/media/music');
   await dialog.getByRole('checkbox', { name: /^Scan after creating/ }).uncheck();
@@ -240,26 +253,26 @@ test('editing seek preview automation preserves intro and import settings and ex
   });
   await page.goto('/admin/libraries');
   await page.getByRole('button', { name: 'More actions for Series previews', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Edit library', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Library settings', exact: true }).click();
   let dialog = page.getByRole('dialog', { name: 'Edit library', exact: true });
-  await expect(dialog.getByRole('checkbox', { name: 'Automatic seek previews', exact: true })).not.toBeChecked();
-  await expect(dialog).toContainText('Turning this off keeps existing valid previews.');
-  await dialog.getByRole('checkbox', { name: 'Automatic seek previews', exact: true }).check();
+  await expect(dialog.getByRole('switch', { name: 'Seek previews', exact: true })).not.toBeChecked();
+  await expect(dialog).toContainText('Turning generation off keeps existing results.');
+  await dialog.getByRole('switch', { name: 'Seek previews', exact: true }).check();
   await dialog.getByRole('button', { name: 'Save library', exact: true }).click();
   await expect(dialog).not.toBeVisible();
   expect(api.writes[0].body).toMatchObject({ Revision: '9007199254740993', Scan: false, LibraryOptions: {
     EnableLocalMetadata: false, EnableLocalImages: false, EnableEmbeddedArtwork: false, EnableIntroDetection: true, EnablePreviewGeneration: true,
   } });
   api.handlers.set('GET /admin/v1/tasks', async (route) => json(route, { Items: [], TotalRecordCount: 0 }));
-  await page.getByRole('alert').filter({ hasText: 'Automatic seek previews are enabled.' }).getByRole('button', { name: 'View tasks', exact: true }).click();
+  await page.getByRole('status').filter({ hasText: 'Automatic seek previews are enabled.' }).getByRole('button', { name: 'View tasks', exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/system\/tasks$/);
-  await expect(page.getByRole('tab', { name: 'Available tasks', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('region', { name: 'Available tasks', exact: true })).toBeVisible();
   await page.goto('/admin/media/libraries');
   await page.getByRole('button', { name: 'More actions for Series previews', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Edit library', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Library settings', exact: true }).click();
   dialog = page.getByRole('dialog', { name: 'Edit library', exact: true });
-  await expect(dialog.getByRole('checkbox', { name: 'Automatic seek previews', exact: true })).toBeChecked();
-  await dialog.getByRole('checkbox', { name: 'Automatic seek previews', exact: true }).uncheck();
+  await expect(dialog.getByRole('switch', { name: 'Seek previews', exact: true })).toBeChecked();
+  await dialog.getByRole('switch', { name: 'Seek previews', exact: true }).uncheck();
   await dialog.getByRole('button', { name: 'Save library', exact: true }).click();
   await expect(dialog).not.toBeVisible();
   expect(api.writes).toHaveLength(2);

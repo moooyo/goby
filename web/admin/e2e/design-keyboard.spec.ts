@@ -17,7 +17,7 @@ test('a keyboard-selected time zone commits the complete suggested IANA name', a
   };
   api.handlers.set('GET /admin/v1/tasks/scan-library', (route) => json(route, { Task: task }));
   await page.goto('/admin/system/tasks');
-  await ready(page, destinations[9]);
+  await ready(page, destinations[7]);
   const taskRow = page.getByRole('list', { name: 'Available server tasks', exact: true }).getByRole('listitem')
     .filter({ has: page.getByRole('heading', { name: task.Name, exact: true }) });
   await taskRow.getByRole('button', { name: 'Edit schedule', exact: true }).click();

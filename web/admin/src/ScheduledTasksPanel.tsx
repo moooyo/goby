@@ -22,40 +22,10 @@ import { useTaskInitiators } from './useTaskInitiators';
 import { TaskInitiatorNotice, TaskRunOrigin } from './TaskRunOrigin';
 import { useUserDraftNavigation } from './userDraftNavigation';
 import type { UserNavigationGuardChange } from './userDraftNavigation';
+import { forgetTaskAdmission, keepTaskAdmission, readTaskAdmission, taskAdmissionId } from './taskAdmissionReceipt';
 
 const alwaysPoll = () => true;
-const memoryReceipts = new Map<string, string>();
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
-
-function receiptKey(userId: string, taskId: string) { return `goby.task-start.${encodeURIComponent(userId)}.${encodeURIComponent(taskId)}`; }
-
-function readReceipt(userId: string, taskId: string): string | undefined {
-  const key = receiptKey(userId, taskId);
-  const memory = memoryReceipts.get(key);
-  if (memory) return memory;
-  try { const value = sessionStorage.getItem(key); return value && uuidPattern.test(value) ? value : undefined; } catch { return undefined; }
-}
-
-function keepReceipt(userId: string, taskId: string, requestId: string) {
-  const key = receiptKey(userId, taskId);
-  memoryReceipts.set(key, requestId);
-  try { sessionStorage.setItem(key, requestId); } catch { /* The in-memory receipt still survives in-app navigation. */ }
-}
-
-function forgetReceipt(userId: string, taskId: string) {
-  const key = receiptKey(userId, taskId);
-  memoryReceipts.delete(key);
-  try { sessionStorage.removeItem(key); } catch { /* A blocked store must not hide a confirmed run. */ }
-}
-
-function requestUUID(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(16));
-  bytes[6] = (bytes[6] & 15) | 64;
-  bytes[8] = (bytes[8] & 63) | 128;
-  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-}
-
+const neverPoll = () => false;
 function CurrentProgress({ run, scan = false }: { run: TaskRun; scan?: boolean }) {
   const { t, locale, countLabel } = useTranslation();
   const progress = !scan && run.TotalChildren > 0 ? Math.min(100, run.TerminalChildren / run.TotalChildren * 100) : undefined;
@@ -126,8 +96,11 @@ export function ScheduledTasksPanel({ currentUserId, onNavigationGuardChange, on
   const [stopError, setStopError] = useState<unknown>();
   const [startErrors, setStartErrors] = useState<Record<string, unknown>>({});
   const [pending, setPending] = useState<Map<string, string>>(new Map());
-  const [editing, setEditing] = useState<string | undefined>(() => new URLSearchParams(window.location.search).get('task') || undefined);
+  const [linkedRunId, setLinkedRunId] = useState(() => new URLSearchParams(window.location.search).get('run') || undefined);
+  const [editing, setEditing] = useState<string | undefined>(() => linkedRunId ? undefined : new URLSearchParams(window.location.search).get('task') || undefined);
   const [viewing, setViewing] = useState<{ task: TaskDefinition; run?: TaskRun; notice?: string; confirmedRequestId?: string }>();
+  const loadLinkedRun = useCallback((signal: AbortSignal) => adminApi.getTaskRun(linkedRunId!, { Limit: 1 }, { signal: AbortSignal.any([signal, AbortSignal.timeout(15_000)]) }), [linkedRunId]);
+  const linkedRun = useTaskResource({ key: linkedRunId ?? '', load: loadLinkedRun, poll: neverPoll, enabled: Boolean(linkedRunId) });
   const mutation = useRef<AbortController | undefined>(undefined);
   const load = useCallback((signal: AbortSignal) => adminApi.getTasks({ signal }), []);
   const busy = Boolean(starting || stopping);
@@ -140,21 +113,21 @@ export function ScheduledTasksPanel({ currentUserId, onNavigationGuardChange, on
   useEffect(() => {
     if (!resource.data) return;
     const receipts = new Map<string, string>();
-    for (const task of resource.data.Items) { const value = readReceipt(currentUserId, task.Id); if (value) receipts.set(task.Id, value); }
+    for (const task of resource.data.Items) { const value = readTaskAdmission(currentUserId, task.Id); if (value) receipts.set(task.Id, value); }
     setPending(receipts);
   }, [resource.data, currentUserId]);
   useEffect(() => {
-    if (!viewing?.run || !viewing.confirmedRequestId || readReceipt(currentUserId, viewing.task.Id) !== viewing.confirmedRequestId) return;
+    if (!viewing?.run || !viewing.confirmedRequestId || readTaskAdmission(currentUserId, viewing.task.Id) !== viewing.confirmedRequestId) return;
     // Clear the idempotency receipt only after the acknowledged run is rendered.
-    forgetReceipt(currentUserId, viewing.task.Id);
+    forgetTaskAdmission(currentUserId, viewing.task.Id);
     setPending((current) => { const next = new Map(current); next.delete(viewing.task.Id); return next; });
   }, [viewing, currentUserId]);
 
   const start = useCallback(async (task: TaskDefinition) => {
     if (mutation.current) return;
-    const previousRequestId = readReceipt(currentUserId, task.Id);
-    const requestId = previousRequestId ?? requestUUID();
-    keepReceipt(currentUserId, task.Id, requestId);
+    const previousRequestId = readTaskAdmission(currentUserId, task.Id);
+    const requestId = previousRequestId ?? taskAdmissionId();
+    keepTaskAdmission(currentUserId, task.Id, requestId);
     setPending((current) => new Map(current).set(task.Id, requestId));
     setStarting(task.Id);
     setStartErrors((current) => { const next = { ...current }; delete next[task.Id]; return next; });
@@ -196,6 +169,16 @@ export function ScheduledTasksPanel({ currentUserId, onNavigationGuardChange, on
   }
 
   const tasks = resource.data?.Items ?? [];
+  const linkedSummary = linkedRun.data?.Run;
+  const linkedTask = linkedSummary && tasks.find(({ Id }) => Id === linkedSummary.TaskId);
+  function clearLinkedRun() {
+    setLinkedRunId(undefined);
+    const url = new URL(window.location.href);
+    url.searchParams.delete('run');
+    url.searchParams.delete('task');
+    window.history.replaceState(window.history.state, '', url);
+    onTaskQueryCleared?.();
+  }
   const history = useTaskHistory(currentUserId, resource.data?.Items);
   const initiators = useTaskInitiators(currentUserId, history.items.map(({ run }) => run), Boolean(resource.data) && !history.loading);
   const refreshTasks = useCallback(() => { resource.reload(); history.reload(); initiators.reload(); setVisibleRunLimit(100); }, [resource.reload, history.reload, initiators.reload]);
@@ -224,12 +207,14 @@ export function ScheduledTasksPanel({ currentUserId, onNavigationGuardChange, on
     if (taskId) url.searchParams.set('task', taskId);
     else url.searchParams.delete('task');
     window.history.replaceState(window.history.state, '', url);
-    if (!taskId) onTaskQueryCleared?.();
+    onTaskQueryCleared?.();
   }
 
   return <Stack spacing={2.25}>
     {!onStatusChange && <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}><Typography variant="caption" color="text.secondary">{statusMessage}</Typography><Button size="small" startIcon={<RefreshRounded />} onClick={refreshTasks} disabled={resource.loading || history.loading || initiators.loading || busy}>Refresh tasks</Button></Stack>}
     {resource.error != null && <ErrorNotice error={resource.error} retry={refreshTasks} />}
+    {linkedRunId && (linkedRun.error != null || linkedSummary && resource.data && !linkedTask) && <Alert severity="warning" action={<Button onClick={clearLinkedRun}>Dismiss</Button>}>{t('The linked task run could not be opened.')}{linkedRun.error != null && <Button onClick={linkedRun.reload}>Retry</Button>}</Alert>}
+    {linkedRunId && !linkedSummary && linkedRun.loading && <Typography role="status" variant="caption">Opening task run…</Typography>}
     {!resource.data && resource.loading && <Paper variant="outlined" role="status" aria-label="Loading available tasks" sx={{ px: 2 }}>{[0, 1, 2, 3].map((row) => <Skeleton key={row} height={68} />)}</Paper>}
     {resource.data?.Items.length === 0 && <Paper variant="outlined" className="system-empty"><SyncRounded /><Typography component="h2">No available tasks</Typography><Typography variant="body2" color="text.secondary">No task definitions are available on this server. Scan history is available from More task views.</Typography></Paper>}
     {tasks.length > 0 && <div className="system-task-layout">
@@ -281,5 +266,6 @@ export function ScheduledTasksPanel({ currentUserId, onNavigationGuardChange, on
     {stopCandidate && stopRun && <Dialog open onClose={busy ? undefined : () => setStopCandidate(undefined)} fullWidth maxWidth="sm" aria-labelledby="stop-task-title"><DialogTitle id="stop-task-title">Stop this run?</DialogTitle><DialogContent><Stack spacing={2}><Typography variant="body2" color="text.secondary">Stops the remaining work for {stopCandidate.task.Name}. Changes from completed work remain in the catalog.</Typography>{!isActiveTaskRun(stopRun) && <Alert severity="info">This run has already ended.</Alert>}{stopError != null && <><ErrorNotice error={stopError} /><Typography variant="body2" color="text.secondary">The stop request could not be confirmed. Retry for this same run, or close and refresh its status.</Typography></>}</Stack></DialogContent><DialogActions><Button disabled={busy} onClick={() => setStopCandidate(undefined)}>{isActiveTaskRun(stopRun) ? 'Keep run' : 'Close'}</Button><Button variant="contained" color="error" disabled={busy || !isActiveTaskRun(stopRun) || stopRun.State === 'stopping'} startIcon={busy ? <CircularProgress size={16} color="inherit" /> : <StopRounded />} onClick={() => void stop()}>{busy ? 'Requesting stop...' : 'Stop run'}</Button></DialogActions></Dialog>}
     {editing && <ScheduleEditor key={editing} taskId={editing} onClose={() => editSchedule(undefined)} onSaved={resource.reload} onNavigationGuardChange={onNavigationGuardChange} />}
     {viewing && <TaskRunDialog key={`${viewing.task.Id}:${viewing.run?.Id ?? 'history'}`} task={viewing.task} initialRun={viewing.run} notice={viewing.notice} onClose={() => { setViewing(undefined); resource.reload(); }} onChanged={resource.reload} onNavigationGuardChange={onNavigationGuardChange} />}
+    {!viewing && linkedTask && linkedSummary && <TaskRunDialog key={linkedSummary.Id} task={linkedTask} initialRun={linkedSummary} onClose={clearLinkedRun} onChanged={resource.reload} onNavigationGuardChange={onNavigationGuardChange} />}
   </Stack>;
 }

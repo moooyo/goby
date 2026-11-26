@@ -35,9 +35,11 @@ DeliveryCount and ExecutionConfirmed=false. These fields do not establish that
 the player displayed a message or changed playback state.
 
 The player changes its actual media element and submits authenticated playback
-reports. The administrator refreshes those reports to observe pause, position,
-resume, and stop. Unconfirmed HTTP results require explicit snapshot readback
-before another write, without automatically replaying the old instruction.
+reports. The native API keeps its per-client controls; the dashboard no longer
+lists or controls individual playback sessions. **Settings > General > Server
+maintenance** shows only a bounded count and can broadcast maintenance messages.
+An unconfirmed response is not replayed automatically, and a refreshed count
+cannot confirm whether the message was delivered.
 
 ## Playback observations
 
@@ -61,10 +63,11 @@ Missing or deleted resources retain their public identifiers without inventing
 names. Application-key observations retain their actual key identity and have
 no user name.
 
-The session page displays six recent stop observations with their event times.
-They use the activity retention policy, which defaults to 30 days. This bounded
-log is not a permanent per-play reporting system and does not infer a device,
-watch duration, or completed viewing from a stop report.
+These observations use the activity retention policy, which defaults to 30
+days. The dashboard's activity list and exports keep the action and time but do
+not display the associated media title or identifier. This bounded log is not a
+permanent per-play reporting system and does not infer a device, watch duration,
+or completed viewing from a stop report.
 
 The Emby-compatible activity projection exposes AudioPlayback and
 AudioPlaybackStopped for a currently available audio item, or VideoPlayback and

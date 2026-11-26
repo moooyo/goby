@@ -2,11 +2,13 @@ import { expect, test as base } from '@playwright/test';
 import type { BrowserContext, Page, Request, Route } from '@playwright/test';
 import type { TaskChild, TaskDefinition, TaskRun } from '../src/api';
 import type { AnalysisItem, AnalysisOverview, AnalysisProfile, AnalysisRunInput } from '../src/mediaAnalysis';
+import { DashboardAPI } from './dashboard-fixture';
 
 // These browser checks use an explicit synthetic API. They cover the native
 // workflow and request boundaries, not detector accuracy or media execution.
 const stamp = '2026-09-21T00:00:00Z';
 const csrf = 'synthetic-analysis-csrf';
+const dashboardReads = new Set(['/admin/v1/overview', '/admin/v1/system/status', '/admin/v1/storage/library-directories', '/admin/v1/backups/policy', '/admin/v1/settings']);
 const profile: AnalysisProfile = { AutoPublishIntros: true, PreviewIntervalSeconds: 10, PreviewQuality: 80, MaxSourceBytes: 128 * 2 ** 30, MaxItemRuntimeSeconds: 1200, FeatureCacheMaxBytes: 128 * 2 ** 20,
   IntroSkipper: { AnalysisPercent: 25, AnalysisLengthLimit: 10, MinimumIntroDuration: 15, MaximumIntroDuration: 120, MaximumFingerprintPointDifferences: 6, MaximumTimeSkip: 3.5, InvertedIndexShift: 2 } };
 const administrator = { Id: 'analysis-admin', Name: 'Analysis administrator', IsAdministrator: true, IsDisabled: false, HasPassword: true, CreatedAt: stamp };
@@ -40,6 +42,7 @@ async function json(route: Route, value: unknown, status = 200): Promise<void> {
 interface Captured { method: string; path: string; body: unknown; csrf?: string }
 class AnalysisAPI {
   overview = overview(); item = item(); run = run(); children: TaskChild[] = []; showTask = false; taskKind: 'intro' | 'previews' = 'intro'; requests: Captured[] = []; unexpected: string[] = [];
+  readonly dashboard = new DashboardAPI();
   handlers = new Map<string, (route: Route, request: Request) => Promise<void>>();
   writes(path?: string): Captured[] { return this.requests.filter((value) => value.method !== 'GET' && (!path || value.path === path)); }
   task(): TaskDefinition {
@@ -50,6 +53,7 @@ class AnalysisAPI {
     };
   }
   async install(context: BrowserContext): Promise<void> {
+    await this.dashboard.install(context);
     await context.route(/\/admin\/v1(?:\/|\?|$)/, async (route, request) => {
       const url = new URL(request.url()); const path = url.pathname; const method = request.method();
       const captured = { method, path, body: request.postData() ? request.postDataJSON() as unknown : null, csrf: request.headers()['x-csrf-token'] };
@@ -70,6 +74,8 @@ class AnalysisAPI {
         }
         if (path === '/admin/v1/tasks') return json(route, { Items: this.showTask ? [this.task()] : [], TotalRecordCount: this.showTask ? 1 : 0 });
         if (path === '/admin/v1/tasks/analysis-task-1') return json(route, { Task: this.task() });
+        if (path === '/admin/v1/libraries/library-series/items') return json(route, { Library: { Id: 'library-series', Name: 'Series library', CollectionType: 'tvshows' }, Items: [], TotalRecordCount: 0, StartIndex: 0, Limit: Number(url.searchParams.get('Limit')) });
+        if (dashboardReads.has(path) || path === '/admin/v1/jobs' || path === '/admin/v1/activity' || path === '/admin/v1/tasks/analysis-task-1/runs' || path === '/admin/v1/background-previews/configuration') return route.fallback();
       }
       if (method === 'PUT' && path === '/admin/v1/media-analysis/configuration') {
         const input = captured.body as { Revision: string; Profile: AnalysisProfile };
@@ -92,14 +98,15 @@ class AnalysisAPI {
 }
 const test = base.extend<{ api: AnalysisAPI }>({ api: async ({ context, page }, use) => {
   const api = new AnalysisAPI(); const errors: string[] = []; page.on('pageerror', (error) => errors.push(error.message)); await api.install(context); await use(api);
-  expect(api.unexpected).toEqual([]); expect(errors).toEqual([]); expect(api.writes().every((value) => value.csrf === csrf)).toBe(true);
+  expect([...api.unexpected, ...api.dashboard.unexpected]).toEqual([]); expect(errors).toEqual([]); expect(api.writes().every((value) => value.csrf === csrf)).toBe(true);
 } });
 test.use({ serviceWorkers: 'block', trace: 'off', video: 'off' });
+test.beforeEach(async ({ page }) => { await page.addInitScript(() => localStorage.setItem('goby.admin.language', 'en')); });
 async function open(page: Page): Promise<void> { await page.goto('/admin/media/analysis'); await expect(page.getByRole('heading', { name: 'Media analysis', exact: true })).toBeVisible(); await expect(page.getByRole('button', { name: 'View analysis for Opening episode' })).toBeEnabled(); }
 
 test('configuration conflicts preserve preview and Intro Skipper edits', async ({ page, api }, testInfo) => {
   api.overview.Configuration.Profile.AutoPublishIntros = false;
-  await open(page); await page.getByRole('button', { name: 'Configure', exact: true }).click();
+  await open(page); await page.getByRole('button', { name: 'Analysis settings', exact: true }).click();
   const configuration = page.getByRole('dialog', { name: 'Analysis configuration', exact: true });
   await configuration.getByRole('textbox', { name: 'Preview interval (seconds)', exact: true }).fill('1');
   await expect(configuration.getByRole('button', { name: 'Save analysis configuration' })).toBeDisabled(); expect(api.writes()).toHaveLength(0);
@@ -126,7 +133,7 @@ test('configuration conflicts preserve preview and Intro Skipper edits', async (
 });
 
 test('Intro Skipper controls validate ranges and expose server errors beside the field', async ({ page, api }) => {
-  await open(page); await page.getByRole('button', { name: 'Configure', exact: true }).click();
+  await open(page); await page.getByRole('button', { name: 'Analysis settings', exact: true }).click();
   const configuration = page.getByRole('dialog', { name: 'Analysis configuration', exact: true });
   const minimum = configuration.getByRole('textbox', { name: 'Minimum intro duration (seconds)', exact: true });
   const maximum = configuration.getByRole('textbox', { name: 'Maximum intro duration (seconds)', exact: true });
@@ -158,7 +165,7 @@ test('Intro Skipper controls validate ranges and expose server errors beside the
 test('Intro Skipper drafts, defaults, and keyboard disclosure work on a narrow screen', async ({ page, api }, testInfo) => {
   await page.setViewportSize({ width: 375, height: 812 });
   api.overview.Configuration.Profile.IntroSkipper = { ...profile.IntroSkipper, AnalysisPercent: 30, MaximumTimeSkip: 4.25 };
-  await open(page); await page.getByRole('button', { name: 'Configure', exact: true }).click();
+  await open(page); await page.getByRole('button', { name: 'Analysis settings', exact: true }).click();
   const configuration = page.getByRole('dialog', { name: 'Analysis configuration', exact: true });
   const percent = configuration.getByRole('textbox', { name: 'Episode audio to analyze (%)', exact: true });
   const advanced = configuration.getByRole('button', { name: 'Advanced audio matching', exact: true });
@@ -170,7 +177,7 @@ test('Intro Skipper drafts, defaults, and keyboard disclosure work on a narrow s
   await gap.scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath('intro-skipper-configuration-mobile-advanced.png'), animations: 'disabled' });
   await gap.fill('5.5'); await configuration.getByRole('button', { name: 'Close', exact: true }).click();
-  await page.getByRole('button', { name: 'Configure •', exact: true }).click();
+  await page.getByRole('button', { name: 'Analysis settings •', exact: true }).click();
   await advanced.click();
   await expect(gap).toHaveValue('5.5');
   await configuration.getByRole('button', { name: 'Discard draft', exact: true }).click();
@@ -198,14 +205,13 @@ test('published Intro Skipper candidates display the playback interval without v
 
 test('seek previews have a library automation entry instead of manual generation controls', async ({ page, api }) => {
   await open(page);
-  const automation = page.getByRole('region', { name: 'Automatic media processing', exact: true });
-  const previews = page.getByRole('region', { name: 'Automatic seek previews', exact: true });
-  await expect(previews).toContainText('Movies, TV shows, or Mixed media library');
-  await expect(previews).toContainText('Turning the option off keeps existing valid previews.');
+  const automation = page.getByRole('region', { name: 'Library automation', exact: true });
+  await expect(automation).toContainText('Seek previews');
+  await expect(automation).toContainText('Turning off generation does not delete existing results.');
   await expect(page.getByRole('button', { name: /Build library previews|Build selected previews/ })).toHaveCount(0);
   await expect(page.getByRole('checkbox', { name: /Rebuild existing previews|Select Opening episode|Series library/ })).toHaveCount(0);
   await expect(page.getByRole('region', { name: 'Previous run request', exact: true })).toHaveCount(0);
-  await automation.getByRole('button', { name: 'Open library settings', exact: true }).click();
+  await automation.getByRole('button', { name: 'Library settings', exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/media\/libraries$/);
   expect(api.writes()).toHaveLength(0);
 });
@@ -234,26 +240,34 @@ test('unreliable and stale results leave playback alone while failures stay visi
   api.item.Detection.Status = 'failed'; api.item.Detection.Reasons = ['source_unavailable'];
   await detail.getByRole('button', { name: 'Refresh result', exact: true }).click();
   await expect(detail).toContainText('Analysis failed');
-  await expect(detail.getByRole('alert')).toContainText('source unavailable');
+  await expect(detail.getByRole('status')).toContainText('source unavailable');
   await expect(detail.getByRole('button', { name: /Accept|Reject|Reset/ })).toHaveCount(0);
   expect(api.writes()).toHaveLength(0);
 });
 test('cache cleanup reports retained busy entries and uses the saved configuration CAS', async ({ page, api }) => {
   await open(page); const cache = page.getByRole('region', { name: 'Analysis cache', exact: true });
-  await expect(cache).toContainText('Ready 3'); await expect(cache).toContainText('Building 1'); await expect(cache).toContainText('Pending 1');
+  await expect(cache).toContainText('3 ready cache entries');
+  await expect(cache).toContainText('Building 1');
+  await expect(cache).toContainText('Limit');
+  await expect(cache).not.toContainText('Pending 1');
   await cache.getByRole('button', { name: 'Manage cache' }).click();
-  const cleanup = page.getByRole('dialog', { name: 'Prune the analysis cache?' });
-  await expect(cleanup).toContainText('Active readers: 2');
+  const cleanup = page.getByRole('alertdialog', { name: 'Prune the analysis cache?' });
+  await expect(cleanup).toContainText('Actual removed entries and freed space will be reported after cleanup.');
+  await expect(cleanup).not.toContainText('Active readers');
   await cleanup.getByRole('button', { name: 'Prune eligible entries' }).click();
-  await expect(page.getByRole('alert').filter({ hasText: '2 busy entries were retained' })).toBeVisible(); expect(api.writes('/admin/v1/media-analysis/cache/prune')[0].body).toEqual({ Revision: '9007199254740993' });
+  const result = page.getByRole('status').filter({ hasText: '2 busy entries were retained' });
+  await expect(result).toBeVisible();
+  await expect(result).toContainText('Removed 1 cache entry and freed');
+  expect(api.writes('/admin/v1/media-analysis/cache/prune')[0].body).toEqual({ Revision: '9007199254740993' });
 });
 
 test('missing tools disable work without hiding configuration or source results', async ({ page, api }) => {
   api.overview.Runtime = { Configured: false, IntroAvailable: false, PreviewAvailable: false, Reasons: ['missing_ffmpeg', 'fingerprint_tool_unavailable'], Cache: null };
-  await open(page); await expect(page.getByText('missing ffmpeg', { exact: true })).toBeVisible();
+  await open(page);
+  await expect(page.getByRole('region', { name: 'Runtime status', exact: true })).toContainText('missing ffmpeg');
   await expect(page.getByRole('button', { name: 'Build library previews' })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Open library settings', exact: true })).toBeEnabled();
-  await page.getByRole('button', { name: 'Configure', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Library automation' }).getByRole('button', { name: 'Library settings', exact: true })).toBeEnabled();
+  await page.getByRole('button', { name: 'Analysis settings', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Analysis configuration', exact: true }).getByRole('textbox', { name: 'Preview image quality', exact: true })).toBeEnabled(); expect(api.writes()).toHaveLength(0);
 });
 
@@ -284,9 +298,9 @@ test('intro analysis directs users to TV library settings without manual admissi
   await expect(page.getByRole('button', { name: 'Analyze selected episodes' })).toHaveCount(0);
   await expect(page.getByRole('combobox', { name: 'Analysis type' })).toHaveCount(0);
   await expect(page.getByRole('switch', { name: 'Automatically publish qualified detected intros' })).toHaveCount(0);
-  const automatic = page.getByRole('region', { name: 'Automatic media processing', exact: true });
-  await expect(automatic).toContainText('If no intro is found, playback stays unchanged.');
-  await automatic.getByRole('button', { name: 'Open library settings', exact: true }).click();
+  const automatic = page.getByRole('region', { name: 'Library automation', exact: true });
+  await expect(automatic).toContainText('Intro detection');
+  await automatic.getByRole('button', { name: 'Library settings', exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/media\/libraries$/);
   await expect(page.getByRole('heading', { name: 'Libraries', exact: true })).toBeVisible();
   expect(api.writes()).toHaveLength(0);
@@ -299,10 +313,9 @@ test('automatic intro tasks expose the new event, progress, failures and stop co
   for (const ordinal of [1, 2]) api.children.push({ Id: `intro-child-${ordinal + 1}`, RunId: api.run.Id, LibraryId: 'library-series', LibraryName: 'Series library',
     Ordinal: ordinal, State: ordinal === 1 ? 'running' : 'queued', ScanJobId: null, Scanned: 0, Added: 0, Updated: 0, ErrorCode: '', ErrorMessage: '',
     CreatedAt: stamp, StartedAt: ordinal === 1 ? stamp : null, FinishedAt: null });
-  await open(page); await page.getByRole('button', { name: 'View background tasks', exact: true }).click();
-  await expect(page).toHaveURL(/\/admin\/system\/tasks$/);
-  await expect(page.getByText('When intro detection requested', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'View current run', exact: true }).click();
+  await open(page);
+  await page.getByRole('region', { name: 'Queue', exact: true }).getByRole('button', { name: 'View task', exact: true }).click();
+  await expect(page).toHaveURL(/\/admin\/system\/tasks\?run=analysis-run-1$/);
   const detail = page.getByRole('dialog', { name: 'Run details · Automatic intro detection', exact: true });
   await expect(detail).toContainText('1 of 3 work items finished');
   await expect(detail).toContainText('An episode could not be read.');
@@ -324,22 +337,21 @@ test('automatic preview tasks expose the new event and generated outputs without
   api.item.Previews = [];
   api.children = [{ Id: 'preview-child-1', RunId: api.run.Id, LibraryId: 'library-series', LibraryName: 'Series library', Ordinal: 0, State: 'running', ScanJobId: null,
     Scanned: 0, Added: 0, Updated: 0, ErrorCode: '', ErrorMessage: '', CreatedAt: stamp, StartedAt: stamp, FinishedAt: null }];
-  await open(page); await page.getByRole('button', { name: 'View background tasks', exact: true }).click();
-  await expect(page.getByText('When seek preview generation requested', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'View current run', exact: true }).click();
+  await open(page);
+  await page.getByRole('region', { name: 'Queue', exact: true }).getByRole('button', { name: 'View task', exact: true }).click();
   const detail = page.getByRole('dialog', { name: 'Run details · Automatic seek previews', exact: true });
-  await expect(detail).toContainText('0 of 1 work items finished');
+  await expect(detail).toContainText('0 of 1 work item finished');
   api.run.State = 'completed'; api.run.TerminalChildren = 1; api.run.CompletedChildren = 1; api.run.FinishedAt = stamp;
   api.children[0] = { ...api.children[0], State: 'completed', FinishedAt: stamp };
   api.item.Previews = [{ Width: 320, Height: 180, Size: 32768, FrameCount: 12, Status: 'ready', FailureCode: '', UpdatedAt: stamp },
     { Width: 400, Height: 225, Size: 0, FrameCount: 0, Status: 'failed', FailureCode: 'source_unavailable', UpdatedAt: stamp }];
   await detail.getByRole('button', { name: 'Refresh run', exact: true }).click();
-  await expect(detail).toContainText('1 of 1 work items finished');
+  await expect(detail).toContainText('1 of 1 work item finished');
   await expect(detail.getByRole('button', { name: 'Stop run', exact: true })).toHaveCount(0);
   await page.goto('/admin/media/analysis');
   await page.getByRole('button', { name: 'View analysis for Opening episode' }).click();
   const output = page.getByRole('dialog', { name: 'Opening episode', exact: true }).getByRole('table', { name: 'Preview outputs', exact: true });
-  await expect(output).toContainText('320 × 180'); await expect(output).toContainText('ready');
+  await expect(output).toContainText('320 × 180'); await expect(output).toContainText('Ready');
   await expect(output).toContainText('source unavailable');
   expect(api.writes('/admin/v1/media-analysis/runs')).toHaveLength(0);
 });

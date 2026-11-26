@@ -1,16 +1,23 @@
 export type SettingsSection = 'general' | 'transcode' | 'hardware' | 'metadata';
-export type Page = 'overview' | 'users' | 'libraries' | 'tasks' | 'metadata' | 'sessions' | 'devices' | 'api-keys' | 'settings' | 'settings-transcode' | 'settings-hardware' | 'settings-metadata' | 'observability' | 'backups' | 'providers' | 'collections' | 'artwork' | 'notifications' | 'media-analysis';
+export type Page = 'overview' | 'users' | 'libraries' | 'tasks' | 'metadata' | 'api-keys' | 'settings' | 'settings-transcode' | 'settings-hardware' | 'settings-metadata' | 'observability' | 'backups' | 'providers' | 'collections' | 'artwork' | 'notifications' | 'media-analysis';
+export interface DashboardTarget {
+  page: Page;
+  libraryId?: string;
+  taskId?: string;
+  runId?: string;
+  tasksTab?: 'history' | 'available';
+}
 export type Group = 'overview' | 'media' | 'access' | 'system' | 'settings';
 export const groups: { id: Group; title: string; label: string; tabs: { page: Page; label: string }[] }[] = [
   { id: 'overview', title: 'Overview', label: 'Overview', tabs: [] },
   { id: 'media', title: 'Media', label: 'Media', tabs: [{ page: 'libraries', label: 'Libraries' }, { page: 'artwork', label: 'Catalog artwork' }, { page: 'collections', label: 'Collections' }, { page: 'media-analysis', label: 'Media analysis' }] },
-  { id: 'access', title: 'Access control', label: 'Access', tabs: [{ page: 'users', label: 'Users' }, { page: 'devices', label: 'Devices' }, { page: 'sessions', label: 'Sessions' }, { page: 'api-keys', label: 'API keys' }] },
+  { id: 'access', title: 'Access control', label: 'Access', tabs: [{ page: 'users', label: 'Users' }, { page: 'api-keys', label: 'API keys' }] },
   { id: 'system', title: 'System', label: 'System', tabs: [{ page: 'tasks', label: 'Tasks' }, { page: 'observability', label: 'Activity & logs' }, { page: 'notifications', label: 'Notifications' }, { page: 'backups', label: 'Backups & recovery' }] },
   { id: 'settings', title: 'Settings', label: 'Settings', tabs: [{ page: 'settings', label: 'General' }, { page: 'settings-transcode', label: 'Transcode limits' }, { page: 'settings-hardware', label: 'Hardware acceleration' }, { page: 'settings-metadata', label: 'Metadata & subtitles' }, { page: 'providers', label: 'Online providers' }] },
 ];
 const paths: Record<Exclude<Page, 'metadata'>, string> = {
   overview: '/admin/', libraries: '/admin/media/libraries', artwork: '/admin/media/artwork', collections: '/admin/media/collections', 'media-analysis': '/admin/media/analysis',
-  users: '/admin/access/users', devices: '/admin/access/devices', sessions: '/admin/access/sessions', 'api-keys': '/admin/access/api-keys',
+  users: '/admin/access/users', 'api-keys': '/admin/access/api-keys',
   tasks: '/admin/system/tasks', observability: '/admin/system/observability', notifications: '/admin/system/notifications', backups: '/admin/system/backups',
   settings: '/admin/settings/general', 'settings-transcode': '/admin/settings/transcode', 'settings-hardware': '/admin/settings/hardware', 'settings-metadata': '/admin/settings/metadata', providers: '/admin/settings/providers',
 };
@@ -37,12 +44,25 @@ export function pageFromLocation(pathname = window.location.pathname): Page {
   if (exact) return exact[0] as Page;
   const legacy = path.replace(/^\/admin\//, '');
   if (legacy === 'playlists' || legacy === 'media/playlists') return 'collections';
+  if (['access/sessions', 'access/devices', 'sessions', 'devices'].includes(legacy)) return 'users';
   if (Object.prototype.hasOwnProperty.call(paths, legacy)) return legacy as Exclude<Page, 'metadata'>;
   return 'overview';
 }
 export function pageURL(page: Page, libraryId?: string): string {
   return page === 'metadata' ? libraryId ? `/admin/media/libraries/${encodeURIComponent(libraryId)}/items` : paths.libraries : paths[page];
 }
+export function dashboardTargetURL({ page, libraryId, taskId, runId }: DashboardTarget): string {
+  const path = pageURL(page, libraryId);
+  return page !== 'tasks' ? path : runId ? `${path}?run=${encodeURIComponent(runId)}` : taskId ? `${path}?task=${encodeURIComponent(taskId)}` : path;
+}
+
+export function taskQuery(search = window.location.search): string {
+  const values = new URLSearchParams(search);
+  const run = values.get('run');
+  const task = values.get('task');
+  return run ? `?run=${encodeURIComponent(run)}` : task ? `?task=${encodeURIComponent(task)}` : '';
+}
+
 export type LastTabs = Record<Group, Page>;
 export function readLastTabs(): LastTabs {
   const result: LastTabs = { overview: 'overview', media: 'libraries', access: 'users', system: 'tasks', settings: 'settings' };

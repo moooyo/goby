@@ -11,7 +11,7 @@ export interface UserActivity {
 
 interface UserActivityPage { Items: UserActivity[]; ObservedAt: string }
 const fields = ['Id', 'LastLoginDate', 'LastActivityDate', 'LastPlayedDate', 'PlayedItemCount'];
-const maximumBatch = 200;
+export const maxUserActivityBatch = 200;
 const timestamp = (value: unknown): value is string => typeof value === 'string'
   && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value)
   && value.slice(0, 4) !== '0000'
@@ -22,7 +22,7 @@ function invalid(): never {
   throw new ApiError('The user activity response is incomplete. Refresh to try again.', { code: 'invalid_response' });
 }
 
-function decode(value: UserActivityPage, ids: string[]): UserActivity[] {
+function decode(value: UserActivityPage, ids: readonly string[]): UserActivity[] {
   if (!value || typeof value !== 'object' || Array.isArray(value)
     || Object.keys(value).length !== 2 || !timestamp(value.ObservedAt)
     || !Array.isArray(value.Items) || value.Items.length > ids.length) invalid();
@@ -41,18 +41,9 @@ function decode(value: UserActivityPage, ids: string[]): UserActivity[] {
 }
 
 export const userActivityApi = {
-  async getMany(userIds: readonly string[], options: RequestOptions = {}): Promise<UserActivity[]> {
-    const ids = [...new Set(userIds)];
-    const result: UserActivity[] = [];
-    // One bounded request at a time avoids unbounded connection fan-out for
-    // a large user directory. The caller cancels all remaining batches.
-    for (let offset = 0; offset < ids.length; offset += maximumBatch) {
-      if (options.signal?.aborted) throw options.signal.reason;
-      const batch = ids.slice(offset, offset + maximumBatch);
-      const query = new URLSearchParams({ UserIds: batch.join(',') });
-      const page = await authenticatedRequest<UserActivityPage>(`/users/activity?${query}`, options);
-      result.push(...decode(page, batch));
-    }
-    return result;
+  async getBatch(ids: readonly string[], options: RequestOptions = {}): Promise<UserActivityPage> {
+    const query = new URLSearchParams({ UserIds: ids.join(',') });
+    const page = await authenticatedRequest<UserActivityPage>(`/users/activity?${query}`, options);
+    return { Items: decode(page, ids), ObservedAt: page.ObservedAt };
   },
 };

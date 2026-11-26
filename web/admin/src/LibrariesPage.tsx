@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FocusEvent, FormEvent } from 'react';
 import { Alert, Box, Button, Checkbox, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControlLabel, IconButton, ListItemIcon, Menu, MenuItem, Paper, Skeleton, Snackbar, Stack, Switch, TextField, Tooltip, Typography } from './ui';
 import { AddRounded } from './icons';
@@ -15,9 +15,9 @@ import { MovieOutlined } from './icons';
 import { LiveTvOutlined } from './icons';
 import { LibraryMusicOutlined } from './icons';
 import { PermMediaOutlined } from './icons';
-import { StorageOutlined } from './icons';
+import { MonitorHeartOutlined, StorageOutlined } from './icons';
 import { adminApi, ApiError, isAbortError } from './api';
-import type { Library, LibraryInput, LibraryResponse, LibrariesResponse, StorageRootsResponse } from './api';
+import type { Job, Library, LibraryInput, LibraryResponse, LibrariesResponse, LibraryStorageDirectory, StorageRootsResponse } from './api';
 import { ErrorNotice, PageHeading } from './components';
 import { fieldError } from './formFields';
 import { RootBindingDialog } from './RootBindingDialog';
@@ -28,7 +28,10 @@ import { DirectoryPickerDialog } from './DirectoryPickerDialog';
 import { useUserDraftNavigation } from './userDraftNavigation';
 import type { UserNavigationGuardChange } from './userDraftNavigation';
 import { MediaIconTile, mediaFeatures } from './MediaPagePrimitives';
-import { LibraryDirectoriesPanel } from './LibraryDirectoriesPanel';
+import { LibraryDirectoriesPanelContent, useLibraryDirectories } from './LibraryDirectoriesPanel';
+import { directoryReadAccess, uniqueDirectoryPaths } from './directoryCapacity';
+import { latestLibraryScans, scanFailed } from './latestLibraryScans';
+import { useTaskResource } from './useTaskResource';
 import { confirmAction, useTranslation } from './i18n';
 import './media-pages.css';
 
@@ -43,10 +46,61 @@ function collectionName(value: string) {
   return collectionTypes.find((type) => type.value === value)?.label ?? value;
 }
 
-function scanDate(value: string | null, locale: string) {
-  if (!value) return 'Not scanned yet';
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? 'Unknown' : date.toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' });
+const activeScan = (job: Job) => ['pending', 'queued', 'running'].includes(job.Status.toLowerCase());
+const pollLibraryScans = ({ byLibrary }: Awaited<ReturnType<typeof latestLibraryScans>>) => Object.values(byLibrary).some(activeScan);
+
+function ScanResult({ library, job, loading, failed, atLimit }: { library: Library; job?: Job; loading: boolean; failed: boolean; atLimit?: boolean }) {
+  const { t, locale } = useTranslation();
+  if (!job) return <span className="media-muted">{t(failed ? 'Scan result unavailable' : loading ? 'Checking scan result…' : library.LastScanAt || atLimit !== false ? 'No recent scan result' : 'Not scanned yet')}</span>;
+  const status = job.Status.toLowerCase();
+  const unsuccessful = scanFailed(job);
+  const result = status === 'completed' && Number.isSafeInteger(job.Added) && Number.isSafeInteger(job.Updated)
+    ? t('Added {added} · updated {updated}', { added: job.Added.toLocaleString(locale), updated: job.Updated.toLocaleString(locale) })
+    : t(status === 'pending' || status === 'queued' ? 'Scan queued' : status === 'running' ? 'Scan running'
+      : status === 'interrupted' ? 'Scan interrupted' : status === 'cancelled' ? 'Scan cancelled'
+        : unsuccessful ? 'Failed' : 'Scan result unavailable');
+  return <>
+    <span className={unsuccessful ? 'media-error' : activeScan(job) ? 'media-scan-active' : undefined}>{result}</span>
+    {job.Error && <span className={`media-secondary-line${unsuccessful ? ' media-error' : ' media-warning'}`} title={job.Error}>{t(job.Error)}</span>}
+  </>;
+}
+
+function LastScan({ library, job, loading }: { library: Library; job?: Job; loading: boolean }) {
+  const { t, locale } = useTranslation();
+  const status = job?.Status.toLowerCase();
+  const unsuccessful = job != null && scanFailed(job);
+  // LastScanAt advances only on successful completion. A terminal job can
+  // report a later unsuccessful attempt; an in-flight job is not the last scan.
+  const value = job && !activeScan(job) ? job.FinishedAt ?? library.LastScanAt ?? job.StartedAt ?? job.CreatedAt : library.LastScanAt;
+  const date = value && Number.isFinite(Date.parse(value)) ? new Date(value).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' }) : undefined;
+  return <>
+    <span className={`media-scan-status${unsuccessful ? ' media-error' : ''}`}>
+      {job && <i aria-hidden="true" className={`media-status-dot${activeScan(job) ? ' media-status-active' : unsuccessful ? ' media-status-error' : status === 'completed' ? ' media-status-success' : ''}`} />}
+      {date && value ? <time dateTime={value} title={value}>{unsuccessful ? t(status === 'interrupted' ? 'Scan interrupted · {time}' : 'Scan failed · {time}', { time: date }) : date}</time>
+        : <span className="media-muted">{loading ? '—' : t('Not recorded')}</span>}
+    </span>
+  </>;
+}
+
+function DirectoryStatus({ paths, directories, loading, stale }: { paths: readonly string[]; directories: ReadonlyMap<string, LibraryStorageDirectory>; loading: boolean; stale: boolean }) {
+  const { t, countLabel, formatCount, locale } = useTranslation();
+  const uniquePaths = uniqueDirectoryPaths(paths);
+  const unreadable: string[] = [];
+  let unknown = 0;
+  for (const path of uniquePaths) {
+    const readable = directoryReadAccess(directories.get(path));
+    if (readable === false) unreadable.push(path);
+    else if (readable === null) unknown++;
+  }
+  if (!uniquePaths.length) return <span className="media-muted">{t('No registered media directories')}</span>;
+  const status = unreadable.length === uniquePaths.length ? t('Cannot read')
+    : unreadable.length ? t(countLabel(unreadable.length, '{count} directory unreadable', '{count} directories unreadable'), { count: unreadable.length.toLocaleString(locale) })
+      : unknown ? t(loading ? 'Checking access…' : 'Read access unknown') : t('Readable');
+  return <div title={uniquePaths.join('\n')}>
+    <span className={unreadable.length ? 'media-error' : unknown || stale ? 'media-muted' : undefined}>{formatCount(uniquePaths.length, 'directory', 'directories')} · {status}</span>
+    {unreadable.length > 0 && unknown > 0 && <span className="media-secondary-line">{t('Some directory access is unknown')}</span>}
+    {stale && uniquePaths.some((path) => directories.has(path)) && <span className="media-secondary-line media-warning">{t('Last successful sample')}</span>}
+  </div>;
 }
 
 function StorageRoots({ roots }: { roots: StorageRootsResponse }) {
@@ -231,8 +285,14 @@ function RefreshMediaDialog({ library, outcomeUnknown, onUnknown, onClose, onSta
   );
 }
 
-export function LibrariesPage({ onTasks, onBackgroundTasks = onTasks, onManageItems, onNavigationGuardChange }: { onTasks: () => void; onBackgroundTasks?: () => void; onManageItems: (library: Library) => void; onNavigationGuardChange: UserNavigationGuardChange }) {
-  const { t, locale, countLabel, formatCount } = useTranslation();
+export function LibrariesPage({ onTasks, onBackgroundTasks = onTasks, onAnalysis, onManageItems, onNavigationGuardChange }: {
+  onTasks: () => void;
+  onBackgroundTasks?: () => void;
+  onAnalysis?: () => void;
+  onManageItems: (library: Library) => void;
+  onNavigationGuardChange: UserNavigationGuardChange;
+}) {
+  const { t, locale, formatCount } = useTranslation();
   const [libraries, setLibraries] = useState<LibrariesResponse>();
   const [roots, setRoots] = useState<StorageRootsResponse>();
   const [error, setError] = useState<unknown>(null);
@@ -250,6 +310,28 @@ export function LibrariesPage({ onTasks, onBackgroundTasks = onTasks, onManageIt
   const [notice, setNotice] = useState<{ message: string; taskLink: boolean; background?: boolean }>();
   const [menu, setMenu] = useState<{ anchor: HTMLElement; library: Library }>();
   const [counts, setCounts] = useState<Record<string, number | undefined>>({});
+  const [countRevision, setCountRevision] = useState(0);
+  const directoryResource = useLibraryDirectories(revision);
+  const librariesByPath = useMemo(() => {
+    const result = new Map<string, string[]>();
+    for (const library of libraries?.Items ?? []) {
+      for (const path of uniqueDirectoryPaths(library.Paths)) {
+        const names = result.get(path);
+        if (names) names.push(library.Name); else result.set(path, [library.Name]);
+      }
+    }
+    return result;
+  }, [libraries]);
+  const registeredPaths = useMemo(() => [...new Set([...librariesByPath.keys(), ...directoryResource.directories.keys()])], [librariesByPath, directoryResource.directories]);
+  const loadScans = useCallback((signal: AbortSignal) => latestLibraryScans(libraries?.Items ?? [], signal), [libraries]);
+  const scans = useTaskResource({ key: 'library-scan-results', load: loadScans, poll: pollLibraryScans, enabled: Boolean(libraries?.Items.length) });
+  const previouslyActiveScans = useRef(new Set<string>());
+  useEffect(() => {
+    if (!scans.data) return;
+    const observed = Object.values(scans.data.byLibrary);
+    if (observed.some((job) => previouslyActiveScans.current.has(job.Id) && !activeScan(job))) setCountRevision((current) => current + 1);
+    previouslyActiveScans.current = new Set(observed.filter(activeScan).map((job) => job.Id));
+  }, [scans.data]);
 
   useEffect(() => {
     if (!libraries) return;
@@ -268,7 +350,7 @@ export function LibrariesPage({ onTasks, onBackgroundTasks = onTasks, onManageIt
     }
     void Promise.all(Array.from({ length: Math.min(4, queue.length) }, readCounts));
     return () => controller.abort();
-  }, [libraries]);
+  }, [libraries, countRevision]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -276,14 +358,24 @@ export function LibrariesPage({ onTasks, onBackgroundTasks = onTasks, onManageIt
     setError(null);
     setRootsError(null);
     void Promise.allSettled([
-      adminApi.getLibraries({ signal: controller.signal }).then(setLibraries).catch((cause: unknown) => { if (!isAbortError(cause)) setError(cause); }),
-      adminApi.getStorageRoots({ signal: controller.signal }).then(setRoots).catch((cause: unknown) => { if (!isAbortError(cause)) setRootsError(cause); }),
+      adminApi.getLibraries({ signal: controller.signal }).then((result) => { if (!controller.signal.aborted) setLibraries(result); }).catch((cause: unknown) => { if (!controller.signal.aborted && !isAbortError(cause)) setError(cause); }),
+      adminApi.getStorageRoots({ signal: controller.signal }).then((result) => { if (!controller.signal.aborted) setRoots(result); }).catch((cause: unknown) => { if (!controller.signal.aborted && !isAbortError(cause)) setRootsError(cause); }),
     ]).then(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [revision]);
 
   const refresh = () => setRevision((value) => value + 1);
   const canCreate = !loading && rootsError == null && roots?.Configured && roots.Items.some((root) => root.Available);
+  const totalItems = libraries?.Items.every((library) => counts[library.Id] !== undefined)
+    ? libraries.Items.reduce((sum, library) => sum + counts[library.Id]!, 0) : undefined;
+  const description = libraries
+    ? `${formatCount(libraries.TotalRecordCount, 'library', 'libraries')} · ${totalItems !== undefined ? formatCount(totalItems, 'item', 'items') : t('Media directories and automatic processing')}`
+    : t('Media directories and automatic processing');
+
+  function refreshScanResults() {
+    scans.reload();
+    setCountRevision((current) => current + 1);
+  }
 
   async function scanLibrary(library: Library) {
     if (scanning.has(library.Id) || unconfirmedRefreshes.has(library.Id)) return;
@@ -296,6 +388,7 @@ export function LibrariesPage({ onTasks, onBackgroundTasks = onTasks, onManageIt
       if (!isAbortError(cause)) setActionError(cause);
     } finally {
       setScanning((ids) => { const next = new Set(ids); next.delete(library.Id); return next; });
+      refreshScanResults();
     }
   }
 
@@ -305,6 +398,7 @@ export function LibrariesPage({ onTasks, onBackgroundTasks = onTasks, onManageIt
     setActionError(null);
     const results = await Promise.allSettled(libraries.Items.map((library) => adminApi.scanLibrary(library.Id)));
     setScanning(new Set());
+    refreshScanResults();
     const failures = results.flatMap((result, index) => result.status === 'rejected' ? [`${libraries.Items[index].Name}: ${result.reason instanceof Error ? result.reason.message : t('The request could not be completed.')}`] : []);
     if (failures.length > 0) setActionError(new Error(failures.join('\n')));
     const started = results.filter((result) => result.status === 'fulfilled').length;
@@ -354,7 +448,7 @@ export function LibrariesPage({ onTasks, onBackgroundTasks = onTasks, onManageIt
 
   return (
     <Box aria-busy={loading} className="media-page media-libraries-page">
-      <PageHeading title="Libraries" description={`${libraries ? formatCount(libraries.TotalRecordCount, 'library', 'libraries') : '— ' + t('libraries')} · ${t('Media directories and automatic processing')}`} action={<Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}><Button variant="outlined" startIcon={<RefreshRounded />} onClick={() => void scanAll()} disabled={!libraries?.Items.length || scanning.size > 0 || unconfirmedRefreshes.size > 0}>Scan all libraries</Button><Button variant="contained" startIcon={<AddRounded />} onClick={() => setCreating(true)} disabled={!canCreate}>Create library</Button></Stack>} />
+      <PageHeading title="Libraries" description={description} action={<Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}><Button variant="outlined" startIcon={<RefreshRounded />} onClick={() => void scanAll()} disabled={!libraries?.Items.length || scanning.size > 0 || unconfirmedRefreshes.size > 0}>Scan all libraries</Button><Button variant="contained" startIcon={<AddRounded />} onClick={() => setCreating(true)} disabled={!canCreate}>Create library</Button></Stack>} />
       <Stack spacing={2.25}>
         {error != null && <ErrorNotice error={error} retry={refresh} />}
         {rootsError != null && <ErrorNotice error={rootsError} retry={refresh} />}
@@ -367,30 +461,33 @@ export function LibrariesPage({ onTasks, onBackgroundTasks = onTasks, onManageIt
           <Button onClick={() => setCreating(true)} variant="outlined" startIcon={<AddRounded />} disabled={!canCreate}>Create library</Button>
         </Paper>}
         {libraries && libraries.Items.length > 0 && <section className="media-panel media-library-table-panel" aria-label={t('Media libraries')}>
-          <table className="media-library-table">
-            <thead><tr><th scope="col">{t('Name')}</th><th scope="col" className="media-library-count">{t('Content')}</th><th scope="col" className="media-library-paths">{t('Media directories')}</th><th scope="col" className="media-library-features">{t('Features')}</th><th scope="col" className="media-library-last">{t('Last scan')}</th><th scope="col"><span className="visually-hidden">{t('Actions')}</span></th></tr></thead>
-            <tbody>{libraries.Items.map((library) => {
-              const enabled = mediaFeatures.filter((feature) => library.LibraryOptions?.[feature.key]);
-              const imagesEnabled = ['movies', 'tvshows', 'mixed'].includes(library.CollectionType) && library.LibraryOptions?.EnableOnlineImages === true;
-              const count = counts[library.Id];
-              return <tr key={library.Id}>
-                <td><div className="media-library-identity"><MediaIconTile size={36}>{library.CollectionType === 'movies' ? <MovieOutlined /> : library.CollectionType === 'tvshows' ? <LiveTvOutlined /> : library.CollectionType === 'music' ? <LibraryMusicOutlined /> : <PermMediaOutlined />}</MediaIconTile><div className="media-truncate"><button type="button" className="media-name-button" translate="no" onClick={() => onManageItems(library)}>{library.Name}</button><span className="media-secondary-line">{t(collectionName(library.CollectionType))}</span></div></div></td>
-                <td className="media-library-count"><span className="media-mono" title={count === undefined ? t('Count unavailable') : undefined}>{count === undefined ? '—' : new Intl.NumberFormat(locale).format(count)}</span><span className="media-secondary-line">{count === undefined ? t('items') : countLabel(count, 'item', 'items')}</span></td>
-                <td className="media-library-paths"><div className="media-path-list">{library.Paths.map((path) => <span key={path} title={path} translate="no">{path}</span>)}</div></td>
-                <td className="media-library-features"><span className="media-ellipsis" title={enabled.map((feature) => t(feature.label)).join(' · ')}>{enabled.length > 0 ? enabled.map((feature) => t(feature.label)).join(' · ') : t('No analysis enabled')}</span><span className="media-secondary-line media-mono">{enabled.length} / 6 {t('enabled')}</span>{imagesEnabled && <span className="media-secondary-line"><Tooltip title={t('Automatic image downloads are enabled.')}><span><Chip size="small" variant="outlined" label={t('Automatic images')} /></span></Tooltip></span>}</td>
-                <td className="media-library-last"><span className="media-scan-status"><i className={`media-status-dot ${scanning.has(library.Id) ? 'media-status-active' : ''}`} />{scanning.has(library.Id) ? t('Starting…') : t(scanDate(library.LastScanAt, locale))}</span>{unconfirmedRefreshes.has(library.Id) && <span className="media-secondary-line media-warning">{t('Check the last request in Tasks')}</span>}</td>
-                <td className="media-row-actions"><Tooltip title="Scan library"><IconButton size="small" onClick={() => void scanLibrary(library)} aria-label={`Scan library ${library.Name}`} disabled={scanning.has(library.Id) || unconfirmedRefreshes.has(library.Id)}>{scanning.has(library.Id) ? <CircularProgress size={15} color="inherit" /> : <RefreshRounded sx={{ fontSize: 15 }} />}</IconButton></Tooltip><Tooltip title="Manage items"><IconButton size="small" onClick={() => onManageItems(library)} aria-label={`Manage items in ${library.Name}`}><ListAltRounded sx={{ fontSize: 15 }} /></IconButton></Tooltip><IconButton size="small" aria-label={`More actions for ${library.Name}`} aria-haspopup="menu" aria-controls={menu?.library.Id === library.Id ? 'library-actions-menu' : undefined} aria-expanded={menu?.library.Id === library.Id ? true : undefined} onClick={(event) => setMenu({ anchor: event.currentTarget, library })}><MoreVertRounded sx={{ fontSize: 15 }} /></IconButton></td>
-              </tr>;
-            })}</tbody>
-          </table>
+          {scans.error != null && <div className="media-panel-body"><ErrorNotice error={scans.error} retry={refreshScanResults} /></div>}
+          <div className="media-library-table-scroll" tabIndex={0} role="group" aria-label={t('Media library table')}>
+            <table className="media-library-table">
+              <thead><tr><th scope="col">{t('Name')}</th><th scope="col" className="media-library-count">{t('Items')}</th><th scope="col" className="media-library-result">{t('Recent scan result')}</th><th scope="col" className="media-library-paths">{t('Media directories')}</th><th scope="col" className="media-library-last">{t('Last scan')}</th><th scope="col"><span className="visually-hidden">{t('Actions')}</span></th></tr></thead>
+              <tbody>{libraries.Items.map((library) => {
+                const count = counts[library.Id];
+                const job = scans.data?.byLibrary[library.Id];
+                return <tr key={library.Id}>
+                  <td><div className="media-library-identity"><MediaIconTile size={36}>{library.CollectionType === 'movies' ? <MovieOutlined /> : library.CollectionType === 'tvshows' ? <LiveTvOutlined /> : library.CollectionType === 'music' ? <LibraryMusicOutlined /> : <PermMediaOutlined />}</MediaIconTile><div className="media-truncate"><button type="button" className="media-name-button" title={library.Name} translate="no" onClick={() => onManageItems(library)}>{library.Name}</button><span className="media-secondary-line">{t(collectionName(library.CollectionType))}</span></div></div></td>
+                  <td className="media-library-count"><span className="media-mono" title={count === undefined ? t('Count unavailable') : undefined}>{count === undefined ? '—' : count.toLocaleString(locale)}</span></td>
+                  <td className="media-library-result"><ScanResult library={library} job={job} loading={scans.loading} failed={scans.error != null} atLimit={scans.data?.atLimit} /></td>
+                  <td className="media-library-paths"><DirectoryStatus paths={library.Paths} directories={directoryResource.directories} loading={directoryResource.loading} stale={directoryResource.error != null} /></td>
+                  <td className="media-library-last"><LastScan library={library} job={job} loading={scans.loading} />{unconfirmedRefreshes.has(library.Id) && <span className="media-secondary-line media-warning">{t('Check the last request in Tasks')}</span>}</td>
+                  <td className="media-row-actions"><Tooltip title="Scan library"><IconButton size="small" onClick={() => void scanLibrary(library)} aria-label={`Scan library ${library.Name}`} disabled={scanning.has(library.Id) || unconfirmedRefreshes.has(library.Id)}>{scanning.has(library.Id) ? <CircularProgress size={15} color="inherit" /> : <RefreshRounded sx={{ fontSize: 15 }} />}</IconButton></Tooltip><Tooltip title="Manage items"><IconButton size="small" onClick={() => onManageItems(library)} aria-label={`Manage items in ${library.Name}`}><ListAltRounded sx={{ fontSize: 15 }} /></IconButton></Tooltip><IconButton size="small" aria-label={`More actions for ${library.Name}`} aria-haspopup="menu" aria-controls={menu?.library.Id === library.Id ? 'library-actions-menu' : undefined} aria-expanded={menu?.library.Id === library.Id ? true : undefined} onClick={(event) => setMenu({ anchor: event.currentTarget, library })}><MoreVertRounded sx={{ fontSize: 15 }} /></IconButton></td>
+                </tr>;
+              })}</tbody>
+            </table>
+          </div>
+          <div className="media-panel-note media-library-table-note"><span>{t('Recent results show the latest available scan job for each library. Added and updated counts are files accepted during the scan. Use Download missing images or Refresh online metadata in Tasks to fill in artwork or metadata.')}{scans.data?.atLimit && <> {t('Older scans may be outside the job history returned by the server.')}</>}</span><Button size="small" startIcon={<RefreshRounded />} onClick={refreshScanResults} disabled={scans.loading}>Refresh scan results</Button></div>
         </section>}
         <div className="media-libraries-bottom">
-          <LibraryDirectoriesPanel paths={libraries?.Items.flatMap((library) => library.Paths)} revision={revision} />
-          <section className="media-panel" aria-labelledby="media-background-title"><div className="media-panel-heading"><h2 id="media-background-title">{t('Scans and processing')}</h2><Button size="small" onClick={onBackgroundTasks}>View tasks</Button></div><div className="media-panel-body"><p>{t('Scans discover files and update the catalog. Background analysis uses the features enabled for each library.')}</p><p className="media-muted">{t('Progress and errors are recorded in Tasks. Stopping a scan keeps catalog entries already processed.')}</p><Button variant="outlined" onClick={onTasks} startIcon={<PlaylistAddCheckRounded />}>Scan history</Button></div></section>
+          <LibraryDirectoriesPanelContent paths={libraries ? registeredPaths : undefined} resource={directoryResource} librariesByPath={librariesByPath} />
+          <section className="media-panel" aria-labelledby="media-background-title"><div className="media-panel-heading"><h2 id="media-background-title">{t('Scans and processing')}</h2><Button size="small" onClick={onBackgroundTasks}>View tasks</Button></div><div className="media-panel-body"><p>{t('Scans discover files and update the catalog. Background analysis uses the features enabled for each library.')}</p><p className="media-muted">{t('Progress and errors are recorded in Tasks. Stopping a scan keeps catalog entries already processed.')}</p><Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>{onAnalysis && <Button variant="outlined" onClick={onAnalysis} startIcon={<MonitorHeartOutlined />}>Media analysis</Button>}<Button onClick={onTasks} startIcon={<PlaylistAddCheckRounded />}>Scan history</Button></Stack></div></section>
         </div>
       </Stack>
       <Menu id="library-actions-menu" anchorEl={menu?.anchor} open={Boolean(menu)} onClose={() => setMenu(undefined)} slotProps={{ paper: { sx: { minWidth: 228, borderRadius: '12px', bgcolor: 'var(--s2)', '& .MuiMenuItem-root': { minHeight: 44 } } } }}>
-        <MenuItem onClick={() => { setEditingLibrary(menu?.library); setMenu(undefined); }}><ListItemIcon><EditOutlined fontSize="small" /></ListItemIcon>Edit library</MenuItem>
+        <MenuItem onClick={() => { setEditingLibrary(menu?.library); setMenu(undefined); }}><ListItemIcon><EditOutlined fontSize="small" /></ListItemIcon>Library settings</MenuItem>
         <MenuItem onClick={() => { setBindingLibrary(menu?.library); setMenu(undefined); }}><ListItemIcon><FolderOpenOutlined fontSize="small" /></ListItemIcon>Storage bindings</MenuItem>
         <MenuItem disabled={Boolean(menu && scanning.has(menu.library.Id))} onClick={() => { setRefreshingMedia(menu?.library); setMenu(undefined); }}><ListItemIcon><RestartAltRounded fontSize="small" /></ListItemIcon>Refresh media details</MenuItem>
         <Divider />
@@ -398,8 +495,8 @@ export function LibrariesPage({ onTasks, onBackgroundTasks = onTasks, onManageIt
       </Menu>
       {creating && roots && <CreateLibraryDialog roots={roots} onClose={(needsRefresh) => { setCreating(false); if (needsRefresh) refresh(); }} onCreated={libraryCreated} onNavigationGuardChange={onNavigationGuardChange} />}
       {deleting && <DeleteLibraryDialog library={deleting} onClose={() => setDeleting(undefined)} onDeleted={() => { setNotice({ message: `Library ${deleting.Name} deleted. Media files were kept.`, taskLink: false }); setDeleting(undefined); refresh(); }} />}
-      {refreshingMedia && <RefreshMediaDialog library={refreshingMedia} outcomeUnknown={unconfirmedRefreshes.has(refreshingMedia.Id)} onUnknown={() => setUnconfirmedRefreshes((ids) => new Set(ids).add(refreshingMedia.Id))} onClose={() => setRefreshingMedia(undefined)} onStarted={() => { setNotice({ message: `Media details refresh requested for ${refreshingMedia.Name}.`, taskLink: true }); setRefreshingMedia(undefined); }} onTasks={onTasks} />}
-      {bindingLibrary && <RootBindingDialog key={bindingLibrary.Id} library={bindingLibrary} onClose={() => setBindingLibrary(undefined)} onNavigationGuardChange={onNavigationGuardChange} />}
+      {refreshingMedia && <RefreshMediaDialog library={refreshingMedia} outcomeUnknown={unconfirmedRefreshes.has(refreshingMedia.Id)} onUnknown={() => { setUnconfirmedRefreshes((ids) => new Set(ids).add(refreshingMedia.Id)); refreshScanResults(); }} onClose={() => setRefreshingMedia(undefined)} onStarted={() => { setNotice({ message: `Media details refresh requested for ${refreshingMedia.Name}.`, taskLink: true }); setRefreshingMedia(undefined); refreshScanResults(); }} onTasks={onTasks} />}
+      {bindingLibrary && <RootBindingDialog key={bindingLibrary.Id} library={bindingLibrary} onClose={() => { setBindingLibrary(undefined); directoryResource.reload(); }} onNavigationGuardChange={onNavigationGuardChange} />}
       {editingLibrary && <LibraryEditorDialog key={editingLibrary.Id} libraryId={editingLibrary.Id} onClose={() => setEditingLibrary(undefined)} onSaved={librarySaved} onNavigationGuardChange={onNavigationGuardChange} />}
       <Snackbar open={Boolean(notice)} autoHideDuration={notice?.taskLink ? 10000 : 6000} onClose={() => setNotice(undefined)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}><Alert severity="success" variant="filled" action={notice?.taskLink ? <Button color="inherit" size="small" onClick={notice.background ? onBackgroundTasks : onTasks}>View tasks</Button> : undefined} onClose={() => setNotice(undefined)}>{notice?.message}</Alert></Snackbar>
     </Box>

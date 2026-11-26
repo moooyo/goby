@@ -169,8 +169,7 @@ test('pending image work blocks internal scope changes, browser back, settings, 
     await page.getByRole('tab', { name: 'Images', exact: true }).press('ArrowRight');
     await page.getByRole('textbox', { name: 'Search title', exact: true }).fill('Blocked query');
     await page.getByRole('textbox', { name: 'Search title', exact: true }).press('Enter');
-    await page.locator('.media-types-filter summary').click();
-    await page.getByRole('checkbox', { name: 'Movie', exact: true }).click();
+    await page.getByRole('combobox', { name: 'Item type', exact: true }).selectOption('Movie');
     await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
     await page.getByRole('button', { name: 'Go to previous page', exact: true }).click();
     await page.getByRole('combobox', { name: 'Items per page:', exact: true }).selectOption('50');
@@ -215,8 +214,7 @@ test('unknown image results survive parent refreshes and independent modal guard
   await confirmAction(page, () => page.getByRole('tab', { name: 'Images', exact: true }).press('ArrowRight'), unknownPrompt);
   await page.getByRole('textbox', { name: 'Search title', exact: true }).fill('Uncommitted review query');
   await confirmAction(page, () => page.getByRole('textbox', { name: 'Search title', exact: true }).press('Enter'), unknownPrompt);
-  await page.locator('.media-types-filter summary').click();
-  await confirmAction(page, () => page.getByRole('checkbox', { name: 'Movie', exact: true }).click(), unknownPrompt);
+  await confirmAction(page, () => page.getByRole('combobox', { name: 'Item type', exact: true }).selectOption('Movie'), unknownPrompt);
   await confirmAction(page, () => page.getByRole('button', { name: 'Clear filters', exact: true }).click(), unknownPrompt);
   await confirmAction(page, () => page.getByRole('button', { name: 'Go to previous page', exact: true }).click(), unknownPrompt);
   await confirmAction(page, () => page.getByRole('combobox', { name: 'Items per page:', exact: true }).selectOption('50'), unknownPrompt);

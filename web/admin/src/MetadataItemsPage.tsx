@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { FormEvent, KeyboardEvent } from 'react';
+import type { FormEvent } from 'react';
 import { Alert, Box, Button, Chip, CircularProgress, IconButton, LinearProgress, Skeleton, Stack, TablePagination, Tooltip } from './ui';
 import { ArrowBackRounded } from './icons';
 import { EditOutlined } from './icons';
 import { FilterAltOffOutlined } from './icons';
 import { LockOutlined } from './icons';
 import { RefreshRounded } from './icons';
-import { MoreVertRounded } from './icons';
+import { MoreVertRounded, SearchRounded } from './icons';
 import { VideoLibraryOutlined } from './icons';
 import { adminApi, isAbortError } from './api';
 import type { Job, JobsResponse, Library, MetadataItemSummary } from './api';
@@ -17,6 +17,7 @@ import { ErrorNotice } from './components';
 import { MetadataEditorDialog } from './MetadataEditorDialog';
 import { EpisodeRosterDialog } from './EpisodeRosterDialog';
 import { OnlineSourcesDialog } from './OnlineSourcesDialog';
+import { IdentifyMetadataDialog } from './IdentifyMetadataDialog';
 import { CreditsEditorDialog } from './CreditsEditorDialog';
 import { BackgroundPreviewEditorDialog } from './BackgroundPreviewEditorDialog';
 import { AudioWaveformDialog } from './AudioWaveformDialog';
@@ -42,22 +43,12 @@ const itemTypes = [
 ] as const;
 type ItemType = (typeof itemTypes)[number]['value'];
 type LibraryTab = 'items' | 'images' | 'directories' | 'features' | 'history';
-function navigateTypeFilter(event: KeyboardEvent<HTMLDetailsElement>) {
-  const filter = event.currentTarget;
-  if (event.key === 'Escape' && filter.open) {
-    event.preventDefault(); event.stopPropagation(); filter.open = false;
-    filter.querySelector('summary')?.focus(); return;
-  }
-  if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
-  const choices = Array.from(filter.querySelectorAll<HTMLInputElement>('input[type="checkbox"]:not(:disabled)'));
-  if (choices.length === 0) return;
-  event.preventDefault(); filter.open = true;
-  const current = choices.indexOf(document.activeElement as HTMLInputElement);
-  const next = event.key === 'Home' ? 0 : event.key === 'End' ? choices.length - 1
-    : event.key === 'ArrowDown' ? (current + 1) % choices.length
-    : current < 0 ? choices.length - 1 : (current + choices.length - 1) % choices.length;
-  choices[next]?.focus();
-}
+const typesByCollection: Readonly<Record<string, readonly ItemType[]>> = {
+  movies: ['Movie', 'Video', 'Folder'],
+  tvshows: ['Series', 'Season', 'Episode'],
+  music: ['MusicArtist', 'MusicAlbum', 'Audio'],
+  mixed: ['Movie', 'Video', 'Series', 'Season', 'Episode', 'MusicArtist', 'MusicAlbum', 'Audio', 'Folder'],
+};
 
 const libraryTabs: { id: LibraryTab; label: string }[] = [
   { id: 'items', label: 'Items' }, { id: 'images', label: 'Images' },
@@ -100,20 +91,24 @@ interface MetadataItemsPageProps { libraryId: string; currentUserId: string; onL
 function LibraryItemsView({ libraryId, currentUserId, onLibraries, onTasks, onNavigationGuardChange }: MetadataItemsPageProps) {
   const { t, locale, formatCount } = useTranslation();
   const [searchTitle, setSearchTitle] = useState('');
-  const [query, setQuery] = useState({ searchTerm: '', types: [] as ItemType[], page: 0, pageSize: 50 });
+  const [query, setQuery] = useState({ searchTerm: '', type: '' as ItemType | '', page: 0, pageSize: 50 });
   const [loaded, setLoaded] = useState<{ queryKey: string; result: MediaMetadataItemsResponse }>();
+  const [libraryItemCount, setLibraryItemCount] = useState<number>();
   const [failure, setFailure] = useState<{ queryKey: string; cause: unknown }>();
   const [pending, setPending] = useState(true); const [revision, setRevision] = useState(0);
   const [library, setLibrary] = useState<Library>(); const [libraryError, setLibraryError] = useState<unknown>();
   const [tab, setTab] = useState<LibraryTab>('items'); const [selected, setSelected] = useState<string[]>([]);
   const [editingItemId, setEditingItemId] = useState<string>(); const [sourcesItemId, setSourcesItemId] = useState<string>();
+  const [identifyingItem, setIdentifyingItem] = useState<MetadataItemSummary>();
   const [editorTab, setEditorTab] = useState(0);
   const [editorImageType, setEditorImageType] = useState<ImageType>('Primary');
   const [rosterItem, setRosterItem] = useState<MetadataItemSummary>(); const [creditsItem, setCreditsItem] = useState<MetadataItemSummary>();
   const [backgroundPreviewItem, setBackgroundPreviewItem] = useState<MetadataItemSummary>(); const [audioWaveformItem, setAudioWaveformItem] = useState<MetadataItemSummary>();
   const [subtitleTimelineItem, setSubtitleTimelineItem] = useState<MetadataItemSummary>();
   const [editingLibrary, setEditingLibrary] = useState(false); const [bindingLibrary, setBindingLibrary] = useState(false);
-  const [actionError, setActionError] = useState<unknown>(); const [notice, setNotice] = useState(''); const [busy, setBusy] = useState(false);
+  const [actionError, setActionError] = useState<unknown>();
+  const [notice, setNotice] = useState<{ message: string; tasks?: boolean }>();
+  const [busy, setBusy] = useState(false);
   const inFlight = useRef(false);
   const pageGuard = useRef<UserNavigationGuard | undefined>(undefined);
   const artworkGuard = useRef<UserNavigationGuard | undefined>(undefined);
@@ -135,26 +130,37 @@ function LibraryItemsView({ libraryId, currentUserId, onLibraries, onTasks, onNa
   }, [onNavigationGuardChange]);
   useEffect(() => {
     const closeMenus = (event: PointerEvent) => {
-      document.querySelectorAll<HTMLDetailsElement>('.media-item-menu[open], .media-types-filter[open]').forEach((menu) => { if (!menu.contains(event.target as Node)) menu.open = false; });
+      document.querySelectorAll<HTMLDetailsElement>('.media-item-menu[open]').forEach((menu) => { if (!menu.contains(event.target as Node)) menu.open = false; });
     };
     document.addEventListener('pointerdown', closeMenus);
     return () => document.removeEventListener('pointerdown', closeMenus);
   }, []);
   const mutation = useRef<AbortController | undefined>(undefined);
   useEffect(() => () => mutation.current?.abort(), []);
-  const queryKey = JSON.stringify([libraryId, query.searchTerm, query.types, query.page, query.pageSize]);
+  const queryKey = JSON.stringify([libraryId, query.searchTerm, query.type, query.page, query.pageSize]);
   const data = loaded?.queryKey === queryKey ? loaded.result : undefined; const failed = failure?.queryKey === queryKey;
-  const loading = pending || (!data && !failed); const filtered = Boolean(query.searchTerm || query.types.length > 0);
+  const loading = pending || (!data && !failed); const filtered = Boolean(query.searchTerm || query.type);
   const libraryName = loaded?.result.Library.Name || library?.Name || t('Library items');
+  const typeOptions = typesByCollection[loaded?.result.Library.CollectionType ?? library?.CollectionType ?? ''] ?? [];
   useEffect(() => {
     const controller = new AbortController(); setLibraryError(undefined);
     void adminApi.getLibraries({ signal: controller.signal }).then((result) => { if (!controller.signal.aborted) setLibrary(result.Items.find((entry) => entry.Id === libraryId)); }).catch((error: unknown) => { if (!controller.signal.aborted && !isAbortError(error)) setLibraryError(error); });
     return () => controller.abort();
   }, [libraryId, revision]);
   useEffect(() => {
-    const controller = new AbortController(); setPending(true); setFailure(undefined); setSelected([]);
-    mediaSummaryApi.items(libraryId, { SearchTerm: query.searchTerm || undefined, Types: query.types.length > 0 ? query.types : undefined, StartIndex: query.page * query.pageSize, Limit: query.pageSize }, { signal: controller.signal })
-      .then((result) => { if (controller.signal.aborted) return; if (query.page > 0 && query.page * query.pageSize >= result.TotalRecordCount && !pageGuard.current && !artworkGuard.current && !modalGuard.current) { setQuery((current) => ({ ...current, page: Math.max(0, Math.ceil(result.TotalRecordCount / query.pageSize) - 1) })); return; } setLoaded({ queryKey, result }); })
+    const controller = new AbortController(); setPending(true); setFailure(undefined);
+    mediaSummaryApi.items(libraryId, { SearchTerm: query.searchTerm || undefined, Types: query.type ? [query.type] : undefined, StartIndex: query.page * query.pageSize, Limit: query.pageSize }, { signal: controller.signal })
+      .then((result) => {
+        if (controller.signal.aborted) return;
+        if (!query.searchTerm && !query.type) setLibraryItemCount(result.TotalRecordCount);
+        if (query.page > 0 && query.page * query.pageSize >= result.TotalRecordCount && !pageGuard.current && !artworkGuard.current && !modalGuard.current) {
+          setSelected([]);
+          setQuery((current) => ({ ...current, page: Math.max(0, Math.ceil(result.TotalRecordCount / query.pageSize) - 1) }));
+          return;
+        }
+        setLoaded({ queryKey, result });
+        setSelected((selection) => selection.length ? selection.filter((id) => result.Items.some((item) => item.Id === id)) : selection);
+      })
       .catch((cause: unknown) => { if (!controller.signal.aborted && !isAbortError(cause)) setFailure({ queryKey, cause }); })
       .finally(() => { if (!controller.signal.aborted) setPending(false); });
     return () => controller.abort();
@@ -171,6 +177,7 @@ function LibraryItemsView({ libraryId, currentUserId, onLibraries, onTasks, onNa
   function changeQuery(update: (current: typeof query) => typeof query): boolean {
     if (!canChangeScope()) return false;
     artworkSummaryDirty.current = false;
+    setSelected([]);
     setQuery(update);
     return true;
   }
@@ -189,17 +196,15 @@ function LibraryItemsView({ libraryId, currentUserId, onLibraries, onTasks, onNa
     if (changeQuery((current) => ({ ...current, searchTerm: next, page: 0 }))) setSearchTitle(next);
   }
   function clearFilters() {
-    if (!canChangeScope()) return;
-    artworkSummaryDirty.current = false;
-    setSearchTitle(''); setQuery((current) => ({ ...current, searchTerm: '', types: [], page: 0 }));
+    if (changeQuery((current) => ({ ...current, searchTerm: '', type: '', page: 0 }))) setSearchTitle('');
   }
   async function scan() {
-    if (!canChangeScope()) return; inFlight.current = true; setBusy(true); setActionError(undefined); setNotice('');
+    if (!canChangeScope()) return; inFlight.current = true; setBusy(true); setActionError(undefined); setNotice(undefined);
     const controller = new AbortController(); mutation.current = controller;
-    try { await adminApi.scanLibrary(libraryId, { signal: controller.signal }); if (!controller.signal.aborted) setNotice(t('Scan requested. View progress in Tasks.')); } catch (error) { if (!controller.signal.aborted && !isAbortError(error)) setActionError(error); } finally { inFlight.current = false; if (mutation.current === controller) mutation.current = undefined; if (!controller.signal.aborted) setBusy(false); }
+    try { await adminApi.scanLibrary(libraryId, { signal: controller.signal }); if (!controller.signal.aborted) setNotice({ message: t('Scan requested. View progress in Tasks.'), tasks: true }); } catch (error) { if (!controller.signal.aborted && !isAbortError(error)) setActionError(error); } finally { inFlight.current = false; if (mutation.current === controller) mutation.current = undefined; if (!controller.signal.aborted) setBusy(false); }
   }
   async function lockSelected(lock: boolean) {
-    if (selected.length === 0 || !canChangeScope()) return; inFlight.current = true; setBusy(true); setActionError(undefined); setNotice('');
+    if (selected.length === 0 || !canChangeScope()) return; inFlight.current = true; setBusy(true); setActionError(undefined); setNotice(undefined);
     const controller = new AbortController(); mutation.current = controller;
     const errors: string[] = []; let completed = 0;
     for (const id of selected) {
@@ -214,19 +219,34 @@ function LibraryItemsView({ libraryId, currentUserId, onLibraries, onTasks, onNa
     inFlight.current = false; if (mutation.current === controller) mutation.current = undefined;
     if (controller.signal.aborted) return;
     setBusy(false); setSelected([]); refresh();
-    if (completed) setNotice(`${t(lock ? 'Fields locked' : 'Fields unlocked')}: ${new Intl.NumberFormat(locale).format(completed)}`);
+    if (completed) setNotice({ message: `${t(lock ? 'Fields locked' : 'Fields unlocked')}: ${completed.toLocaleString(locale)}` });
     if (errors.length) setActionError(new Error(errors.join('\n')));
   }
   const allSelected = Boolean(data?.Items.length && data.Items.every((item) => selected.includes(item.Id)));
   const toggleItem = (id: string) => setSelected((value) => value.includes(id) ? value.filter((entry) => entry !== id) : [...value, id]);
   const pageItems = data?.Items ?? [];
+  const selectedItem = selected.length === 1 ? pageItems.find((item) => item.Id === selected[0]) : undefined;
   return <Box aria-busy={loading || busy} className="media-page media-library-items-page">
-    <div className="media-library-page-heading"><div className="media-library-heading-title"><IconButton aria-label="Back to libraries" onClick={onLibraries} disabled={busy}><ArrowBackRounded sx={{ fontSize: 17 }} /></IconButton><div><h1 translate="no">{libraryName}</h1><div className="media-library-summary"><span className="media-mono media-ellipsis" translate="no" title={library?.Paths.join(' · ')}>{library?.Paths.join(' · ') || t('Library items')}</span><span>{data ? formatCount(data.TotalRecordCount, 'item', 'items') : '— ' + t('items')}</span>{library?.LastScanAt && <span>{t('Last scan')} {new Date(library.LastScanAt).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' })}</span>}</div></div></div><div className="media-heading-actions"><Button variant="outlined" onClick={() => openDialog(() => setEditingLibrary(true))} disabled={busy}>Library settings</Button><Button variant="contained" startIcon={busy ? <CircularProgress size={15} color="inherit" /> : <RefreshRounded />} onClick={() => void scan()} disabled={busy}>Scan library</Button></div></div>
+    <div className="media-library-page-heading"><div className="media-library-heading-title"><IconButton aria-label="Back to libraries" onClick={onLibraries} disabled={busy}><ArrowBackRounded sx={{ fontSize: 17 }} /></IconButton><div><h1 translate="no">{libraryName}</h1><div className="media-library-summary"><span className="media-mono media-ellipsis" translate="no" title={library?.Paths.join(' · ')}>{library?.Paths.join(' · ') || t('Library items')}</span><span>{libraryItemCount !== undefined ? formatCount(libraryItemCount, 'item', 'items') : '— ' + t('items')}</span>{library?.LastScanAt && <span>{t('Last scan')} {new Date(library.LastScanAt).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' })}</span>}</div></div></div><div className="media-heading-actions"><Button variant="outlined" onClick={() => openDialog(() => setEditingLibrary(true))} disabled={busy}>Library settings</Button><Button variant="contained" startIcon={busy ? <CircularProgress size={15} color="inherit" /> : <RefreshRounded />} onClick={() => void scan()} disabled={busy}>Scan library</Button></div></div>
     <div className="media-library-tabs" role="tablist" aria-label={t('Library pages')}>{libraryTabs.map((entry, index) => <button id={`library-tab-${entry.id}`} key={entry.id} type="button" role="tab" aria-selected={tab === entry.id} aria-controls={`library-panel-${entry.id}`} tabIndex={tab === entry.id ? 0 : -1} disabled={busy} onClick={() => changeTab(entry.id)} onKeyDown={(event) => { const next = event.key === 'ArrowRight' ? (index + 1) % libraryTabs.length : event.key === 'ArrowLeft' ? (index + libraryTabs.length - 1) % libraryTabs.length : event.key === 'Home' ? 0 : event.key === 'End' ? libraryTabs.length - 1 : -1; if (next >= 0) { event.preventDefault(); if (changeTab(libraryTabs[next].id)) document.getElementById(`library-tab-${libraryTabs[next].id}`)?.focus(); } }}>{t(entry.label)}</button>)}</div>
-    {failed && <ErrorNotice error={failure?.cause} retry={refreshItems} />}{actionError != null && <ErrorNotice error={actionError} />}{notice && <Alert severity="success">{notice}{onTasks && <Button size="small" color="inherit" onClick={onTasks}>View tasks</Button>}</Alert>}
+    {failed && <ErrorNotice error={failure?.cause} retry={refreshItems} />}{actionError != null && <ErrorNotice error={actionError} />}{notice && <Alert severity="success">{notice.message}{notice.tasks && onTasks && <Button size="small" color="inherit" onClick={onTasks}>View tasks</Button>}</Alert>}
     <div role="tabpanel" id={`library-panel-${tab}`} aria-labelledby={`library-tab-${tab}`}>
       {(tab === 'items' || tab === 'images') && <>
-        <form className="media-items-toolbar" onSubmit={search}><div className="media-items-search"><MediaSearchField label="Search title" value={searchTitle} onChange={setSearchTitle} disabled={loading || busy} /></div><details className="media-types-filter" onKeyDown={navigateTypeFilter}><summary>{t('Types')} <span>{query.types.length ? query.types.map((value) => t(itemTypeName(value))).join(', ') : t('All types')}</span></summary><div className="media-types-options">{itemTypes.map((option) => <label key={option.value}><input type="checkbox" checked={query.types.includes(option.value)} disabled={loading || busy} onChange={(event) => { const checked = event.target.checked; changeQuery((current) => ({ ...current, searchTerm: searchTitle.trim(), types: checked ? [...current.types, option.value] : current.types.filter((value) => value !== option.value), page: 0 })); }} />{t(option.label)}</label>)}</div></details>{(searchTitle || filtered) && <Button size="small" startIcon={<FilterAltOffOutlined />} onClick={clearFilters} disabled={busy}>Clear filters</Button>}<span className="media-mono media-muted media-toolbar-total">{data ? formatCount(data.TotalRecordCount, 'item', 'items') : '— ' + t('items')}</span><Tooltip title="Refresh library items"><IconButton onClick={refreshItems} disabled={loading || busy} aria-label="Refresh library items"><RefreshRounded sx={{ fontSize: 16 }} /></IconButton></Tooltip></form>
+        <form className="media-items-toolbar" onSubmit={search}>
+          <div className="media-items-search"><MediaSearchField label="Search title" value={searchTitle} onChange={setSearchTitle} disabled={loading || busy} /></div>
+          <div className="media-filter-label media-types-filter">
+            <select aria-label={t('Item type')} value={query.type} disabled={loading || busy || typeOptions.length === 0} onChange={(event) => {
+              const type = event.target.value as ItemType | '';
+              if (!type || typeOptions.includes(type)) changeQuery((current) => ({ ...current, searchTerm: searchTitle.trim(), type, page: 0 }));
+            }}>
+              <option value="">{t('All types')}</option>
+              {typeOptions.map((type) => <option key={type} value={type}>{t(type === 'Video' ? 'Other video' : itemTypeName(type))}</option>)}
+            </select>
+          </div>
+          {(searchTitle || filtered) && <Button size="small" startIcon={<FilterAltOffOutlined />} onClick={clearFilters} disabled={busy}>Clear filters</Button>}
+          <span className="media-mono media-muted media-toolbar-total">{data ? formatCount(data.TotalRecordCount, 'item', 'items') : '— ' + t('items')}</span>
+          <Tooltip title="Refresh library items"><IconButton onClick={refreshItems} disabled={loading || busy} aria-label="Refresh library items"><RefreshRounded sx={{ fontSize: 16 }} /></IconButton></Tooltip>
+        </form>
         {data && loading && <LinearProgress aria-label="Refreshing library items" />}
         {!data && loading && <Stack spacing={1} role="status" aria-label="Loading library items"><Skeleton height={52} /><Skeleton height={52} /><Skeleton height={52} /></Stack>}
         {data && pageItems.length === 0 && <section className="media-panel media-empty-state"><VideoLibraryOutlined sx={{ fontSize: 30 }} /><h2>{t(filtered ? 'No matching items' : 'No items in this library')}</h2><p>{t(filtered ? 'Try another title or clear the filters to see more items.' : 'Scan this library to add media to the catalog.')}</p><Button onClick={filtered ? clearFilters : () => void scan()} disabled={busy}>{filtered ? 'Clear filters' : 'Scan library'}</Button></section>}
@@ -234,8 +254,13 @@ function LibraryItemsView({ libraryId, currentUserId, onLibraries, onTasks, onNa
           <LibraryArtwork key={queryKey} libraryId={libraryId} items={pageItems} revision={revision} onManage={(target, type) => openEditor(target.id, 1, type)} onChanged={markArtworkChanged} onNavigationGuardChange={registerArtworkGuard} />
         </fieldset>}
         {data && pageItems.length > 0 && tab === 'items' && <section className="media-panel media-item-table-panel">
-          {selected.length > 0 && <div className="media-selection-toolbar"><span>{new Intl.NumberFormat(locale).format(selected.length)} {t('selected')}</span><Button size="small" disabled={busy || selected.length !== 1} onClick={() => openEditor(selected[0])}>Edit metadata</Button><Button size="small" disabled={busy} startIcon={<LockOutlined />} onClick={() => void lockSelected(true)}>Lock fields</Button><Button size="small" disabled={busy} onClick={() => void lockSelected(false)}>Unlock fields</Button><Button size="small" disabled={busy} onClick={() => setSelected([])}>Clear selection</Button></div>}
-          <table className="media-items-table"><thead><tr><th scope="col" className="media-checkbox-cell"><input type="checkbox" aria-label={t('Select all items on this page')} checked={allSelected} ref={(input) => { if (input) input.indeterminate = selected.length > 0 && !allSelected; }} disabled={busy} onChange={() => setSelected(allSelected ? [] : pageItems.map((item) => item.Id))} /></th><th scope="col">{t('Title')}</th><th scope="col" className="media-item-technical">{t('Technical details')}</th><th scope="col" className="media-item-duration">{t('Duration')}</th><th scope="col" className="media-item-images">{t('Images')}</th><th scope="col" className="media-item-analysis">{t('Analysis')}</th><th scope="col" className="media-item-metadata">{t('Metadata')}</th><th scope="col"><span className="visually-hidden">{t('Actions')}</span></th></tr></thead><tbody>{pageItems.map((item) => <tr key={item.Id} data-selected={selected.includes(item.Id) || undefined}><td className="media-checkbox-cell"><input type="checkbox" aria-label={`${t('Select')}: ${item.Name}`} checked={selected.includes(item.Id)} disabled={busy} onChange={() => toggleItem(item.Id)} /></td><td><button type="button" className="media-item-name-button" onClick={() => openEditor(item.Id)} disabled={busy} aria-label={`Edit metadata for ${item.Name}`}><ItemIdentity item={item} /></button></td><td className="media-item-technical"><MediaCatalogTechnical summary={item.Media} disabled={busy} onOpen={() => openEditor(item.Id, 4)} /></td><td className="media-item-duration media-mono" translate="no">{mediaDuration(item.Media?.DurationTicks) ?? '—'}</td><td className="media-item-images"><MediaCatalogImages summary={item.Media} disabled={busy} onOpen={() => openEditor(item.Id, 1)} /></td><td className="media-item-analysis"><MediaCatalogAnalysis summary={item.Media} disabled={busy} onOpen={() => openEditor(item.Id, 3)} /></td><td className="media-item-metadata"><MetadataStatus item={item} /></td><td className="media-row-actions"><Tooltip title="Edit metadata"><IconButton disabled={busy} onClick={() => openEditor(item.Id)} aria-label={`Edit metadata for ${item.Name}`}><EditOutlined sx={{ fontSize: 15 }} /></IconButton></Tooltip><details className="media-item-menu" onClick={(event) => { if (busy) { event.preventDefault(); return; } if ((event.target as HTMLElement).closest('button')) event.currentTarget.open = false; }} onKeyDown={(event) => { if (event.key === 'Escape') { event.currentTarget.open = false; event.currentTarget.querySelector('summary')?.focus(); } else if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) { event.preventDefault(); event.currentTarget.open = true; const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button')); const current = buttons.indexOf(document.activeElement as HTMLButtonElement); const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : event.key === 'ArrowDown' ? (current + 1) % buttons.length : current < 0 ? buttons.length - 1 : (current + buttons.length - 1) % buttons.length; buttons[next]?.focus(); } }}><summary aria-label={`${t('More actions')}: ${item.Name}`}><MoreVertRounded sx={{ fontSize: 16 }} /></summary><div role="group" aria-label={`${t('Actions')}: ${item.Name}`}><button type="button" onClick={() => openEditor(item.Id, 4)}>{t('View media details')}</button><button type="button" onClick={() => openEditor(item.Id, 1)}>{t('Manage images')}</button><button type="button" onClick={() => openDialog(() => setSourcesItemId(item.Id))}>{t('Online sources')}</button>{item.Type === 'Series' && <button type="button" onClick={() => openDialog(() => setRosterItem(item))}>{t('Episode roster')}</button>}{!item.IsFolder && ['Movie', 'Episode'].includes(item.Type) && <><button type="button" onClick={() => openDialog(() => setCreditsItem(item))}>{t('Credits markers')}</button><button type="button" onClick={() => openDialog(() => setBackgroundPreviewItem(item))}>{t('Background clips')}</button><button type="button" onClick={() => openDialog(() => setAudioWaveformItem(item))}>{t('Audio waveforms')}</button><button type="button" onClick={() => openDialog(() => setSubtitleTimelineItem(item))}>{t('Subtitle timelines')}</button></>}</div></details></td></tr>)}</tbody></table>
+          {selected.length > 0 && <div className="media-selection-toolbar">
+            <span>{t('{count} selected', { count: selected.length.toLocaleString(locale) })}</span>
+            <Button size="small" disabled={busy || !selectedItem} onClick={() => openEditor(selected[0])}>Edit metadata</Button>
+            {selectedItem && <Button size="small" disabled={busy || loading} startIcon={<SearchRounded />} onClick={() => openDialog(() => setIdentifyingItem(selectedItem))}>Re-identify</Button>}
+            <Button size="small" disabled={busy} startIcon={<LockOutlined />} onClick={() => void lockSelected(true)}>Lock fields</Button><Button size="small" disabled={busy} onClick={() => void lockSelected(false)}>Unlock fields</Button><Button size="small" disabled={busy} onClick={() => setSelected([])}>Clear selection</Button>
+          </div>}
+          <table className="media-items-table" aria-label={t('Library items')}><thead><tr><th scope="col" className="media-checkbox-cell"><input type="checkbox" aria-label={t('Select all items on this page')} checked={allSelected} ref={(input) => { if (input) input.indeterminate = selected.length > 0 && !allSelected; }} disabled={busy} onChange={() => setSelected(allSelected ? [] : pageItems.map((item) => item.Id))} /></th><th scope="col">{t('Title')}</th><th scope="col" className="media-item-technical">{t('Technical details')}</th><th scope="col" className="media-item-duration">{t('Duration')}</th><th scope="col" className="media-item-images">{t('Images')}</th><th scope="col" className="media-item-analysis">{t('Analysis')}</th><th scope="col" className="media-item-metadata">{t('Metadata')}</th><th scope="col"><span className="visually-hidden">{t('Actions')}</span></th></tr></thead><tbody>{pageItems.map((item) => <tr key={item.Id} data-selected={selected.includes(item.Id) || undefined}><td className="media-checkbox-cell"><input type="checkbox" aria-label={`${t('Select')}: ${item.Name}`} checked={selected.includes(item.Id)} disabled={busy} onChange={() => toggleItem(item.Id)} /></td><td><button type="button" className="media-item-name-button" onClick={() => openEditor(item.Id)} disabled={busy} aria-label={`Edit metadata for ${item.Name}`}><ItemIdentity item={item} /></button></td><td className="media-item-technical"><MediaCatalogTechnical summary={item.Media} disabled={busy} onOpen={() => openEditor(item.Id, 4)} /></td><td className="media-item-duration media-mono" translate="no">{mediaDuration(item.Media?.DurationTicks) ?? '—'}</td><td className="media-item-images"><MediaCatalogImages summary={item.Media} disabled={busy} onOpen={() => openEditor(item.Id, 1)} /></td><td className="media-item-analysis"><MediaCatalogAnalysis summary={item.Media} disabled={busy} onOpen={() => openEditor(item.Id, 3)} /></td><td className="media-item-metadata"><MetadataStatus item={item} /></td><td className="media-row-actions"><Tooltip title="Edit metadata"><IconButton disabled={busy} onClick={() => openEditor(item.Id)} aria-label={`Edit metadata for ${item.Name}`}><EditOutlined sx={{ fontSize: 15 }} /></IconButton></Tooltip><details className="media-item-menu" onClick={(event) => { if (busy) { event.preventDefault(); return; } if ((event.target as HTMLElement).closest('button')) event.currentTarget.open = false; }} onKeyDown={(event) => { if (event.key === 'Escape') { event.currentTarget.open = false; event.currentTarget.querySelector('summary')?.focus(); } else if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) { event.preventDefault(); event.currentTarget.open = true; const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button')); const current = buttons.indexOf(document.activeElement as HTMLButtonElement); const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : event.key === 'ArrowDown' ? (current + 1) % buttons.length : current < 0 ? buttons.length - 1 : (current + buttons.length - 1) % buttons.length; buttons[next]?.focus(); } }}><summary aria-label={`${t('More actions')}: ${item.Name}`}><MoreVertRounded sx={{ fontSize: 16 }} /></summary><div role="group" aria-label={`${t('Actions')}: ${item.Name}`}><button type="button" onClick={() => openEditor(item.Id, 4)}>{t('View media details')}</button><button type="button" onClick={() => openEditor(item.Id, 1)}>{t('Manage images')}</button><button type="button" onClick={() => openDialog(() => setSourcesItemId(item.Id))}>{t('Online sources')}</button>{item.Type === 'Series' && <button type="button" onClick={() => openDialog(() => setRosterItem(item))}>{t('Episode roster')}</button>}{!item.IsFolder && ['Movie', 'Episode'].includes(item.Type) && <><button type="button" onClick={() => openDialog(() => setCreditsItem(item))}>{t('Credits markers')}</button><button type="button" onClick={() => openDialog(() => setBackgroundPreviewItem(item))}>{t('Background clips')}</button><button type="button" onClick={() => openDialog(() => setAudioWaveformItem(item))}>{t('Audio waveforms')}</button><button type="button" onClick={() => openDialog(() => setSubtitleTimelineItem(item))}>{t('Subtitle timelines')}</button></>}</div></details></td></tr>)}</tbody></table>
         </section>}
         {data && <TablePagination component="div" count={data.TotalRecordCount} page={query.page} rowsPerPage={query.pageSize} rowsPerPageOptions={[25, 50, 100]} disabled={loading || busy} labelRowsPerPage="Items per page:" onPageChange={(_event, page) => changeQuery((current) => ({ ...current, page }))} onRowsPerPageChange={(event) => { const pageSize = Number(event.target.value); if ([25, 50, 100].includes(pageSize)) changeQuery((current) => ({ ...current, pageSize, page: 0 })); }} />}
       </>}
@@ -251,6 +276,9 @@ function LibraryItemsView({ libraryId, currentUserId, onLibraries, onTasks, onNa
     {tab === 'items' && <p className="media-muted media-library-footnote">{t('Manual overrides stay in effect during library scans. Locked fields keep their saved values.')}</p>}
     {editingItemId && <MetadataEditorDialog key={editingItemId} itemId={editingItemId} currentUserId={currentUserId} initialTab={editorTab} initialImageType={editorImageType} onClose={() => { setEditingItemId(undefined); refresh(); }} onSaved={refresh} onNavigationGuardChange={registerModalGuard} />}
     {sourcesItemId && <OnlineSourcesDialog key={sourcesItemId} itemId={sourcesItemId} onClose={() => { setSourcesItemId(undefined); refresh(); }} onSaved={refresh} onNavigationGuardChange={registerModalGuard} />}
+    {identifyingItem && <IdentifyMetadataDialog key={identifyingItem.Id} item={identifyingItem} onClose={(needsRefresh) => { setIdentifyingItem(undefined); if (needsRefresh) refresh(); }} onApplied={(name) => {
+      setIdentifyingItem(undefined); setActionError(undefined); setNotice({ message: t('Identification applied: {name}.', { name }) }); refresh();
+    }} onNavigationGuardChange={registerModalGuard} />}
     {rosterItem && <EpisodeRosterDialog key={rosterItem.Id} seriesId={rosterItem.Id} seriesName={rosterItem.Name} onClose={() => setRosterItem(undefined)} onNavigationGuardChange={registerModalGuard} />}
     {creditsItem && <CreditsEditorDialog key={creditsItem.Id} itemId={creditsItem.Id} itemName={creditsItem.Name} currentUserId={currentUserId} onTasks={onTasks} onClose={() => setCreditsItem(undefined)} onNavigationGuardChange={registerModalGuard} />}
     {backgroundPreviewItem && <BackgroundPreviewEditorDialog key={backgroundPreviewItem.Id} itemId={backgroundPreviewItem.Id} itemName={backgroundPreviewItem.Name} currentUserId={currentUserId} onClose={() => setBackgroundPreviewItem(undefined)} onTasks={onTasks} onNavigationGuardChange={registerModalGuard} />}

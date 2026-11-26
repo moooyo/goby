@@ -32,13 +32,15 @@ interface FixtureLibrary {
   Name: string;
 }
 
-const manageDialog = (page: Page): Locator => page.getByRole('dialog', { name: 'Manage user', exact: true });
+const manageDialog = (page: Page): Locator => page.getByRole('dialog', { name: /^Manage user / });
 const userPath = (id: string): string => `/admin/v1/users/${encodeURIComponent(id)}`;
 
 function userResponse(page: Page, method: string, id: string, suffix = '') {
   return page.waitForResponse((response) => response.request().method() === method
     && new URL(response.url()).pathname === `${userPath(id)}${suffix}`);
 }
+
+const savedNotice = (dialog: Locator, name: string) => dialog.getByText(`Saved settings for ${name}.`, { exact: true });
 
 function expectNextRevision(previous: ManagedUser, next: ManagedUser): void {
   expect(next.Id).toBe(previous.Id);
@@ -47,7 +49,8 @@ function expectNextRevision(previous: ManagedUser, next: ManagedUser): void {
 }
 
 async function signIn(page: Page, name: string, password: string): Promise<void> {
-  await page.goto('/admin/users');
+  await page.addInitScript(() => localStorage.setItem('goby.admin.language', 'en'));
+  await page.goto('/admin/access/users');
   await expect(page.getByRole('heading', { name: 'Sign in to Goby', exact: true })).toBeVisible();
   await page.getByLabel(/^Username/).fill(name);
   await page.getByLabel(/^Password/).fill(password);
@@ -59,20 +62,20 @@ async function navigateToUsersThroughOverview(page: Page): Promise<void> {
   await page.getByRole('link', { name: 'Overview', exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/$/);
   await expect(page.getByRole('heading', { name: 'Overview', exact: true })).toBeVisible();
-  await page.getByRole('link', { name: 'Users', exact: true }).click();
-  await expect(page).toHaveURL(/\/admin\/users$/);
+  await page.getByRole('navigation', { name: 'Administration' }).locator('a[href="/admin/access/users"]').click();
+  await expect(page).toHaveURL(/\/admin\/access\/users$/);
   await expect(page.getByRole('heading', { name: 'Users', exact: true })).toBeVisible();
 }
 
 async function createUser(page: Page, name: string, password: string, administrator: boolean): Promise<FixtureUser> {
-  await page.getByRole('button', { name: 'Create user', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Create user', exact: true });
-  await dialog.getByLabel(/^Username/).fill(name);
+  await page.getByRole('button', { name: 'Add user', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Add user', exact: true });
+  await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill(name);
   await dialog.getByLabel(/^Password/).fill(password);
-  await dialog.getByRole('switch', { name: 'Administrator access', exact: true }).setChecked(administrator);
+  await dialog.getByRole('radio', { name: administrator ? 'Administrator' : 'Member', exact: true }).check();
   const response = page.waitForResponse((result) => result.request().method() === 'POST'
     && new URL(result.url()).pathname === '/admin/v1/users');
-  await dialog.getByRole('button', { name: 'Create user', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Add user', exact: true }).click();
   const created = await response;
   expect(created.status()).toBe(201);
   const { User: user } = await created.json() as { User: FixtureUser };
@@ -119,7 +122,8 @@ async function openUser(page: Page, user: FixtureUser): Promise<ManagedUser> {
   expect(current.Id).toBe(user.Id);
   expect(current.Revision).toMatch(/^[1-9][0-9]*$/);
   await expect(manageDialog(page)).toBeVisible();
-  await expect(manageDialog(page).getByRole('textbox', { name: /^Username/ })).toHaveValue(current.Name);
+  await manageDialog(page).getByRole('tab', { name: 'Profile' }).click();
+  await expect(manageDialog(page).getByRole('textbox', { name: 'Name', exact: true })).toHaveValue(current.Name);
   return current;
 }
 
@@ -133,8 +137,7 @@ async function saveUser(page: Page, previous: ManagedUser): Promise<ManagedUser>
   expectNextRevision(previous, result.User);
   expect(result.CurrentSessionRevoked).toBe(false);
   await expect(manageDialog(page)).toBeVisible();
-  await expect(manageDialog(page).getByRole('textbox', { name: /^Username/ })).toHaveValue(result.User.Name);
-  await expect(manageDialog(page).getByRole('alert').filter({ hasText: `User ${result.User.Name} updated.` })).toBeVisible();
+  await expect(savedNotice(manageDialog(page), result.User.Name)).toBeVisible();
   return result.User;
 }
 
@@ -170,10 +173,10 @@ async function saveWhileBlockingNavigation(page: Page, previous: ManagedUser): P
     const savingButton = manageDialog(page).getByRole('button', { name: 'Saving changes...', exact: true });
     await expect(savingButton).toBeVisible();
     await page.goBack({ waitUntil: 'commit', timeout: 10_000 });
-    await expect(page).toHaveURL(/\/admin\/users$/);
+    await expect(page).toHaveURL(/\/admin\/access\/users$/);
     await expect(manageDialog(page)).toBeVisible();
     await expect(savingButton).toBeDisabled();
-    await expect(manageDialog(page).getByRole('textbox', { name: /^Username/ })).toBeDisabled();
+    await expect(manageDialog(page).locator('#managed-user-name')).toBeDisabled();
     expect(prompts).toEqual([]);
     releaseSave();
     const result = await saving;
@@ -189,11 +192,13 @@ async function saveWhileBlockingNavigation(page: Page, previous: ManagedUser): P
 }
 
 async function resetPassword(page: Page, previous: ManagedUser, password: string, self = false): Promise<ManagedUser> {
-  await manageDialog(page).getByRole('button', { name: 'Reset password', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Reset password', exact: true });
+  const sheet = manageDialog(page);
+  await sheet.getByRole('tab', { name: 'Password', exact: true }).click();
+  await sheet.getByLabel(/^New password/).fill(password);
+  await sheet.getByLabel(/^Confirm new password/).fill(password);
+  await sheet.getByRole('button', { name: 'Reset password', exact: true }).click();
+  const dialog = page.getByRole('alertdialog', { name: 'Reset password?', exact: true });
   await expect(dialog).toBeVisible();
-  await dialog.getByLabel(/^New password/).fill(password);
-  await dialog.getByLabel(/^Confirm new password/).fill(password);
   const response = userResponse(page, 'POST', previous.Id, '/password');
   await dialog.getByRole('button', { name: 'Reset password', exact: true }).click();
   const reset = await response;
@@ -204,7 +209,7 @@ async function resetPassword(page: Page, previous: ManagedUser, password: string
   await expect(dialog).not.toBeVisible();
   if (!self) {
     await expect(manageDialog(page)).toBeVisible();
-    await expect(manageDialog(page).getByRole('alert').filter({ hasText: /password.*reset/i })).toBeVisible();
+    await expect(manageDialog(page).getByText(/Password reset for .* Existing sign-ins have ended\./)).toBeVisible();
   }
   return result.User;
 }
@@ -283,9 +288,8 @@ test('isolated user management, library access, conflict recovery, and temporary
   let current = await openUser(page, member);
   const dialog = manageDialog(page);
   await test.step('save a name and a restricted library and playback policy', async () => {
-    await expect(dialog.getByRole('switch', { name: 'Administrator access', exact: true })).not.toBeChecked();
     await expect(dialog.getByRole('switch', { name: 'Disable account', exact: true })).not.toBeChecked();
-    await dialog.getByRole('textbox', { name: /^Username/ }).fill(`managed-renamed-${suffix}`);
+    await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill(`managed-renamed-${suffix}`);
     await test.step('keep the unsaved user draft when browser Back is rejected', async () => {
       const confirmation = page.waitForEvent('dialog', { timeout: 10_000 }).then(async (prompt) => {
         const details = { type: prompt.type(), message: prompt.message() };
@@ -297,19 +301,21 @@ test('isolated user management, library access, conflict recovery, and temporary
         confirmation,
       ]);
       expect(dismissed).toEqual({ type: 'confirm', message: 'Discard unsaved user changes and leave this page?' });
-      await expect(page).toHaveURL(/\/admin\/users$/);
+      await expect(page).toHaveURL(/\/admin\/access\/users$/);
       await expect(dialog).toBeVisible();
-      await expect(dialog.getByRole('textbox', { name: /^Username/ })).toHaveValue(`managed-renamed-${suffix}`);
+      await expect(dialog.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue(`managed-renamed-${suffix}`);
     });
+    await dialog.getByRole('tab', { name: 'Permissions' }).click();
+    await expect(dialog.getByRole('radio', { name: 'Member', exact: true })).toBeChecked();
     await dialog.getByRole('switch', { name: 'All libraries', exact: true }).uncheck();
-    await dialog.getByRole('checkbox', { name: allowedLibrary.Name, exact: true }).check();
-    await dialog.getByRole('checkbox', { name: deniedLibrary.Name, exact: true }).uncheck();
+    await dialog.getByRole('switch', { name: allowedLibrary.Name, exact: true }).check();
+    await dialog.getByRole('switch', { name: deniedLibrary.Name, exact: true }).uncheck();
     for (const setting of ['Remuxing', 'Audio transcoding', 'Video transcoding', 'Media playback']) {
       await dialog.getByRole('switch', { name: setting, exact: true }).uncheck();
     }
     current = await test.step('keep browser Back on Users while a save is pending', () => saveWhileBlockingNavigation(page, current));
     expect(current.Name).toBe(`managed-renamed-${suffix}`);
-    expect(current.Policy).toEqual({
+    expect(current.Policy).toMatchObject({
       EnableAllFolders: false,
       EnabledFolders: [allowedLibrary.Id],
       EnableMediaPlayback: false,
@@ -320,15 +326,27 @@ test('isolated user management, library access, conflict recovery, and temporary
     await dialog.getByRole('switch', { name: 'Media playback', exact: true }).check();
     current = await saveUser(page, current);
     expect(current.Policy.EnableMediaPlayback).toBe(true);
-    await expect(dialog.getByRole('checkbox', { name: allowedLibrary.Name, exact: true })).toBeChecked();
+    await expect(dialog.getByRole('switch', { name: allowedLibrary.Name, exact: true })).toBeChecked();
     const token = await memberToken(context.request, current.Name, memberPassword, `acl-${suffix}`);
     const views = await memberViews(context.request, member.Id, token);
     expect(views.status()).toBe(200);
     const visible = await views.json() as { Items: FixtureLibrary[] };
     expect(visible.Items.map((library) => library.Id)).toEqual([allowedLibrary.Id]);
 
+    await dialog.getByRole('tab', { name: 'Profile' }).click();
     await dialog.getByRole('switch', { name: 'Disable account', exact: true }).check();
-    current = await saveUser(page, current);
+    const [disabled] = await Promise.all([
+      userResponse(page, 'PUT', current.Id),
+      (async () => {
+        await dialog.getByRole('button', { name: 'Save changes', exact: true }).click();
+        await page.getByRole('alertdialog', { name: `Disable ${current.Name}?` }).getByRole('button', { name: 'Disable account', exact: true }).click();
+      })(),
+    ]);
+    expect(disabled.status()).toBe(200);
+    const result = await disabled.json() as UserMutation;
+    expectNextRevision(current, result.User);
+    current = result.User;
+    await expect(savedNotice(dialog, current.Name)).toBeVisible();
     expect(current.IsDisabled).toBe(true);
     expect((await memberViews(context.request, member.Id, token)).status()).toBe(401);
     expect((await authenticateMember(context.request, current.Name, memberPassword, `disabled-${suffix}`)).status()).toBe(401);
@@ -358,23 +376,23 @@ test('isolated user management, library access, conflict recovery, and temporary
   });
 
   const otherTab = await context.newPage();
-  await otherTab.goto('/admin/users');
+  await otherTab.goto('/admin/access/users');
   await test.step('preserve a stale draft and explicitly reload the winning revision', async () => {
     current = await openUser(page, current);
     const concurrent = await openUser(otherTab, current);
     expect(concurrent.Revision).toBe(current.Revision);
     const draftName = `managed-draft-${suffix}`;
     const winningName = `managed-concurrent-${suffix}`;
-    await dialog.getByRole('textbox', { name: /^Username/ }).fill(draftName);
-    await manageDialog(otherTab).getByRole('textbox', { name: /^Username/ }).fill(winningName);
+    await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill(draftName);
+    await manageDialog(otherTab).getByRole('textbox', { name: 'Name', exact: true }).fill(winningName);
     const winner = await saveUser(otherTab, concurrent);
     const response = userResponse(page, 'PUT', member.Id);
     await dialog.getByRole('button', { name: 'Save changes', exact: true }).click();
     const rejected = await response;
     expect(rejected.status()).toBe(409);
     expect((await rejected.json() as { Error: { Code: string } }).Error.Code).toBe('revision_conflict');
-    await expect(dialog.getByRole('alert').filter({ hasText: /changed|conflict/i })).toBeVisible();
-    await expect(dialog.getByRole('textbox', { name: /^Username/ })).toHaveValue(draftName);
+    await expect(dialog.getByText('This user changed after you opened it.', { exact: false })).toBeVisible();
+    await expect(dialog.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue(draftName);
     expect((await readUser(context.request, member.Id)).Name).toBe(winningName);
 
     await dialog.getByRole('button', { name: 'Reload latest user', exact: true }).click();
@@ -386,8 +404,8 @@ test('isolated user management, library access, conflict recovery, and temporary
     expect(latestResponse.status()).toBe(200);
     current = (await latestResponse.json() as { User: ManagedUser }).User;
     expect(current.Revision).toBe(winner.Revision);
-    await expect(dialog.getByRole('textbox', { name: /^Username/ })).toHaveValue(winningName);
-    await dialog.getByRole('textbox', { name: /^Username/ }).fill(`managed-final-${suffix}`);
+    await expect(dialog.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue(winningName);
+    await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill(`managed-final-${suffix}`);
     current = await saveUser(page, current);
     await page.screenshot({ path: testInfo.outputPath('users-management-desktop.png'), fullPage: true, animations: 'disabled' });
     await otherTab.keyboard.press('Escape');
@@ -396,6 +414,7 @@ test('isolated user management, library access, conflict recovery, and temporary
 
   await test.step('edit the temporary member on a mobile viewport', async () => {
     await page.setViewportSize({ width: 390, height: 844 });
+    await dialog.getByRole('tab', { name: 'Permissions' }).click();
     for (const setting of ['Remuxing', 'Audio transcoding', 'Video transcoding']) {
       await dialog.getByRole('switch', { name: setting, exact: true }).check();
     }
@@ -411,12 +430,12 @@ test('isolated user management, library access, conflict recovery, and temporary
     await page.screenshot({ path: testInfo.outputPath('users-management-mobile.png'), fullPage: true, animations: 'disabled' });
     await page.keyboard.press('Escape');
     await expect(dialog).not.toBeVisible();
-    await expect(page.getByRole('list', { name: 'Server users', exact: true }).getByText(current.Name, { exact: true })).toBeVisible();
+    await expect(page.getByRole('table', { name: 'Server users', exact: true }).getByText(current.Name, { exact: true })).toBeVisible();
     current = await openUser(page, current);
   });
 
   await test.step('reject a stale management form after another tab changes administrators', async () => {
-    await dialog.getByRole('textbox', { name: /^Username/ }).fill(`managed-rejected-${suffix}`);
+    await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill(`managed-rejected-${suffix}`);
     await otherTab.getByRole('button', { name: 'Sign out', exact: true }).click();
     await signIn(otherTab, administrator.Name, adminPassword);
     let mutations = 0;
@@ -436,7 +455,7 @@ test('isolated user management, library access, conflict recovery, and temporary
 
   await test.step('reset the temporary administrator itself and require a new login', async () => {
     let self = await openUser(otherTab, administrator);
-    await manageDialog(otherTab).getByRole('textbox', { name: /^Username/ }).fill(`managed-self-${suffix}`);
+    await manageDialog(otherTab).getByRole('textbox', { name: 'Name', exact: true }).fill(`managed-self-${suffix}`);
     self = await saveUser(otherTab, self);
     await expect(otherTab.getByRole('banner', { includeHidden: true }).getByText(self.Name, { exact: true })).toHaveText(self.Name);
     await resetPassword(otherTab, self, nextAdminPassword, true);

@@ -66,9 +66,9 @@ test('global directory warnings use exact registered paths rather than allowed s
   const popup = await openAttention(page);
   const warnings = popup.locator('[data-check="directory"]');
   await expect(warnings).toHaveCount(2);
-  await expect(warnings.locator('code')).toHaveText(['/media/archive', '/media/archive/']);
-  await expect(warnings.locator('code').getByText('/media', { exact: true })).toHaveCount(0);
-  await expect(popup.getByText('Media directory read access is unknown.', { exact: true })).toBeVisible();
+  await expect(warnings.locator('small').filter({ hasText: /^\/media/ })).toHaveText(['/media/archive', '/media/archive/']);
+  await expect(warnings.locator('small').filter({ hasText: /^\/media/ }).getByText('/media', { exact: true })).toHaveCount(0);
+  await expect(popup.getByText('Media directory access or capacity is unknown.', { exact: true })).toBeVisible();
   await expect(popup.getByText('No issues reported by the available server status checks.', { exact: true })).toHaveCount(0);
   expect(api.reads(directoryPath)).toHaveLength(1);
   expect(api.reads('/admin/v1/storage/roots')).toHaveLength(0);
@@ -85,7 +85,7 @@ test('missing backup rules require a successful available policy readback', asyn
     const popup = await openAttention(page);
     await expect(popup.getByText('Checking automatic backup rules…', { exact: true })).toBeVisible();
     await expect(popup.locator('[data-check="backup-rules"]')).toHaveCount(0);
-    await expect(page.getByRole('main').getByRole('region', { name: 'CPU status', exact: true })).toContainText('28');
+    await expect(page.getByRole('main').getByRole('region', { name: 'Service status', exact: true })).toContainText('Running normally');
     release!();
     const warning = popup.locator('[data-check="backup-rules"]');
     await expect(warning).toContainText('No automatic backup rules');
@@ -105,7 +105,7 @@ test('missing backup rules require a successful available policy readback', asyn
     const unknownPopup = await openAttention(page);
     await expect(unknownPopup.getByText('Automatic backup trigger rules are unknown.', { exact: true })).toBeVisible();
     await expect(unknownPopup.locator('[data-check="backup-rules"]')).toHaveCount(0);
-    await expect(page.getByRole('main').getByRole('region', { name: 'CPU status', exact: true })).toContainText('28');
+    await expect(page.getByRole('main').getByRole('region', { name: 'Service status', exact: true })).toContainText('Running normally');
     expect(api.writes()).toEqual([]);
   } finally {
     release?.();
@@ -149,7 +149,7 @@ test('optional refresh failures retain stale warnings without invalidating serve
   api.handlers.set('GET ' + policyPath, (route) => json(route, policy()));
   await page.goto('/admin/');
   const popup = await openAttention(page);
-  await expect(popup.locator('[data-check="directory"] code')).toHaveText('/media/archive');
+  await expect(popup.locator('[data-check="directory"] small:first-of-type')).toHaveText('/media/archive');
   await expect(popup.locator('[data-check="backup-rules"]')).toBeVisible();
   api.handlers.set('GET ' + directoryPath, (route) => json(route, { Error: { Code: 'storage_unavailable', Message: 'Directory checks failed.' } }, 503));
   api.handlers.set('GET ' + policyPath, (route) => json(route, { Error: { Code: 'database_unavailable', Message: 'Policy checks failed.' } }, 503));
@@ -157,13 +157,13 @@ test('optional refresh failures retain stale warnings without invalidating serve
   await refresh.click();
   await expect(popup.locator('[data-check="directory"]')).toHaveAttribute('data-stale', 'true');
   await expect(popup.locator('[data-check="backup-rules"]')).toHaveAttribute('data-stale', 'true');
-  await expect(popup.getByText('Showing the last successful directory checks.', { exact: true })).toBeVisible();
-  await expect(popup.getByText('Showing the last successful backup rules check.', { exact: true })).toBeVisible();
-  await expect(popup.locator('[data-check="directory"] code')).toHaveText('/media/archive');
+  await expect(popup.locator('[data-check="directory-status"]')).toContainText('Showing the last successful check.');
+  await expect(popup.locator('[data-check="backup-status"]')).toContainText('Showing the last successful check.');
+  await expect(popup.locator('[data-check="directory"] small:first-of-type')).toHaveText('/media/archive');
   await expect(page.locator('.sidebar-server .is-stale')).toHaveCount(0);
-  await expect(page.getByRole('main').getByRole('region', { name: 'CPU status', exact: true })).toContainText('28');
+  await expect(page.getByRole('main').getByRole('region', { name: 'Service status', exact: true })).toContainText('Running normally');
 
-  installDirectories(api, [directory('/media/archive')]);
+  installDirectories(api, [directory('/media/archive'), directory(library.Paths[0]), directory(seriesLibrary.Paths[0])]);
   api.handlers.set('GET ' + policyPath, (route) => json(route, policy({ Enabled: true })));
   await refresh.click();
   await expect(popup.locator('[data-check="directory"], [data-check="backup-rules"], [data-check="directory-status"], [data-check="backup-status"]')).toHaveCount(0);

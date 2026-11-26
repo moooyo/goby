@@ -9,9 +9,9 @@ test.use({ serviceWorkers: 'block', trace: 'off', video: 'off', preferences: { l
 test('English count summaries distinguish zero, one and many while record names stay unchanged', async ({ page, api }) => {
   let count = 0;
   const expected = [
-    { users: '0 Users', administrators: '0 Administrators', entries: '0 entries', collections: '0 collections', items: '0 items', directories: '0 directories' },
-    { users: '1 User', administrators: '1 Administrator', entries: '1 entry', collections: '1 collection', items: '1 item', directories: '1 directory' },
-    { users: '2 Users', administrators: '2 Administrators', entries: '2 entries', collections: '2 collections', items: '2 items', directories: '2 directories' },
+    { entries: '0 entries', collections: '0 collections', items: '0 items' },
+    { entries: '1 entry', collections: '1 collection', items: '1 item' },
+    { entries: '2 entries', collections: '2 collections', items: '2 items' },
   ];
   const pageOf = (request: Request, items: unknown[]) => {
     const url = new URL(request.url());
@@ -35,9 +35,6 @@ test('English count summaries distinguish zero, one and many while record names 
 
     await page.goto('/admin/access/users');
     const main = page.getByRole('main');
-    const users = main.locator('.access-page-summary');
-    await expect(users.getByText(words.users, { exact: true })).toBeVisible();
-    await expect(users.getByText(words.administrators, { exact: true })).toBeVisible();
     if (count) await expect(main.getByRole('button', { name: 'Manage 1 Administrators', exact: true })).toContainText('1 Administrators');
 
     await page.goto('/admin/media/artwork');
@@ -54,8 +51,6 @@ test('English count summaries distinguish zero, one and many while record names 
     await expect(main.getByRole('tabpanel', { name: 'Items', exact: true }).getByText(words.items, { exact: true })).toBeVisible();
     if (count) await expect(main.getByRole('button', { name: 'Edit metadata for 1 items', exact: true }).first()).toContainText('1 items');
 
-    await page.goto('/admin/');
-    await expect(main.getByRole('region', { name: 'Directory with least available space status', exact: true }).getByText(words.directories, { exact: true })).toBeVisible();
     expect(api.writes()).toEqual([]);
   });
 });

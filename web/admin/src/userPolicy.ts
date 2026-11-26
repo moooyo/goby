@@ -48,7 +48,7 @@ export function draftFromUserPolicy(policy: UserPolicy): UserPolicyDraft {
   const normalized = normalizeUserPolicy(policy);
   return {
     ...normalized, MaxParentalRating: normalized.MaxParentalRating === null ? '' : String(normalized.MaxParentalRating),
-    AutoRemoteQuality: String(normalized.AutoRemoteQuality), RemoteClientBitrateLimit: String(normalized.RemoteClientBitrateLimit),
+    AutoRemoteQuality: String(normalized.AutoRemoteQuality), RemoteClientBitrateLimit: String(normalized.RemoteClientBitrateLimit / 1_000_000),
     SimultaneousStreamLimit: String(normalized.SimultaneousStreamLimit),
     AccessSchedules: normalized.AccessSchedules.map((schedule) => ({ ...schedule, StartHour: String(schedule.StartHour), EndHour: String(schedule.EndHour) })),
   };
@@ -58,6 +58,14 @@ function policyInteger(raw: string): number | undefined {
   const text = raw.trim();
   const value = Number(text);
   return text.length <= 64 && /^\d+$/.test(text) && Number.isSafeInteger(value) && value <= 2147483647 ? value : undefined;
+}
+
+// Convert the UI's decimal Mbps to the API's int32 bits per second without rounding.
+function policyBitrate(raw: string): number | undefined {
+  const match = /^(\d+)(?:\.(\d{0,6}))?$/.exec(raw.trim());
+  if (!match) return undefined;
+  const value = Number(match[1]) * 1_000_000 + Number((match[2] ?? '').padEnd(6, '0'));
+  return Number.isSafeInteger(value) && value <= 2147483647 ? value : undefined;
 }
 
 function policyHour(raw: string): number | undefined {
@@ -79,8 +87,10 @@ export function parseUserPolicyDraft(draft: UserPolicyDraft): { policy?: UserPol
   const errors: Record<string, string> = {};
   const numbers = { AutoRemoteQuality: 0, RemoteClientBitrateLimit: 0, SimultaneousStreamLimit: 0 };
   for (const field of policyNumberFields) {
-    const value = policyInteger(draft[field]);
-    if (value === undefined) errors[`Policy.${field}`] = 'Enter a whole number from 0 to 2147483647.';
+    const value = field === 'RemoteClientBitrateLimit' ? policyBitrate(draft[field]) : policyInteger(draft[field]);
+    if (value === undefined) errors[`Policy.${field}`] = field === 'RemoteClientBitrateLimit'
+      ? 'Enter a bitrate from 0 to 2147.483647 Mbps with up to six decimal places.'
+      : 'Enter a whole number from 0 to 2147483647.';
     else numbers[field] = value;
   }
   const parentalRating = draft.MaxParentalRating.trim() === '' ? null : policyInteger(draft.MaxParentalRating);

@@ -47,6 +47,7 @@ export function TasksPage({ onLibraries, currentUserId, onNavigationGuardChange,
   function clearTaskQuery(nextTab: TasksTab = tab) {
     const url = new URL(window.location.href);
     url.searchParams.delete('task');
+    url.searchParams.delete('run');
     window.history.replaceState({ ...window.history.state, tasksTab: nextTab }, '', url);
     onTaskQueryCleared?.();
   }

@@ -1,4 +1,4 @@
-import { adminLocale } from './i18n';
+import { adminLocale, useTranslation } from './i18n';
 import { useEffect, useRef, useState } from 'react';
 import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Button, Checkbox, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, MenuItem, Paper, Skeleton, Stack, TextField, Typography } from './ui';
 import { ExpandMoreRounded } from './icons';
@@ -108,15 +108,6 @@ function TopologyComparison({ binding }: { binding: RootBinding }) {
   );
 }
 
-function SelectedRootValue({ root }: { root: RegisteredRoot }) {
-  return (
-    <Box id="root-binding-selected-value" sx={{ minWidth: 0, maxWidth: '100%', overflow: 'hidden' }}>
-      <Typography component="span" variant="body2" title={root.Path} sx={{ ...mono, display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden', whiteSpace: 'normal' }}>{root.Path}</Typography>
-      <Typography component="span" variant="caption" color="text.secondary" title={root.Id} sx={{ ...mono, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Root ID: {root.Id}</Typography>
-    </Box>
-  );
-}
-
 function BindingFacts({ root, binding }: { root: RegisteredRoot; binding?: RootBinding }) {
   return (
     <Box component="dl" sx={{ m: 0, display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', sm: 'max-content minmax(0, 1fr)' }, columnGap: 2, rowGap: 0.75 }}>
@@ -144,6 +135,7 @@ function mutationRecovery(error: unknown): string {
 }
 
 export function RootBindingDialog({ library, onClose, onNavigationGuardChange }: { library: Library; onClose: () => void; onNavigationGuardChange: UserNavigationGuardChange }) {
+  const { t } = useTranslation();
   const [roots, setRoots] = useState<RegisteredRoot[]>();
   const [rootId, setRootId] = useState('');
   const [rootsVersion, setRootsVersion] = useState(0);
@@ -248,9 +240,12 @@ export function RootBindingDialog({ library, onClose, onNavigationGuardChange }:
           {rootsError != null && <ErrorNotice error={rootsError} retry={() => setRootsVersion((value) => value + 1)} />}
           {!roots && rootsError == null && <Skeleton variant="rounded" height={60} aria-label="Loading registered roots" />}
           {roots?.length === 0 && <Alert severity="info">This library has no registered roots.</Alert>}
-          {roots && roots.length > 0 && <TextField id="root-binding-root" select fullWidth label="Registered root" value={rootId} onChange={(event) => selectRoot(event.target.value)} disabled={saving} helperText="Each registration is identified by its root ID." slotProps={{ select: { 'aria-describedby': `root-binding-root-helper-text${selectedRoot ? ' root-binding-selected-value' : ''}`, renderValue: () => selectedRoot ? <SelectedRootValue root={selectedRoot} /> : null, MenuProps: { slotProps: { paper: { sx: { maxWidth: 'calc(100vw - 32px)' } } } } } }} sx={{ '& .MuiSelect-select': { minWidth: 0, overflow: 'hidden', whiteSpace: 'normal' } }}>
-            {roots.map((root) => <MenuItem key={root.Id} value={root.Id} sx={{ whiteSpace: 'normal', overflowWrap: 'anywhere', minWidth: 0 }}><Box sx={{ minWidth: 0 }}><Typography variant="body2" sx={mono}>{root.Path}</Typography><Typography variant="caption" color="text.secondary" sx={mono}>Root ID: {root.Id}</Typography></Box></MenuItem>)}
-          </TextField>}
+          {roots && roots.length > 0 && <>
+            <TextField id="root-binding-root" select fullWidth label="Registered root" value={rootId} onChange={(event) => selectRoot(event.target.value)} disabled={saving} helperText="Each registration is identified by its root ID." slotProps={{ htmlInput: { 'aria-describedby': selectedRoot ? 'root-binding-selected-value' : undefined } }}>
+              {roots.map((root) => <MenuItem key={root.Id} value={root.Id} translate="no">{root.Id} · {root.Path}</MenuItem>)}
+            </TextField>
+            {selectedRoot && <span id="root-binding-selected-value" hidden><span translate="no">{selectedRoot.Path}</span> <span>{t('Root ID')}: <span translate="no">{selectedRoot.Id}</span></span></span>}
+          </>}
           {currentBinding && <>
             {saved && <Alert severity="success" role="status">Storage binding saved.</Alert>}
             <Alert severity={currentBinding.Status === 'verified' ? 'success' : currentBinding.Status === 'unbound' ? 'info' : 'warning'}>

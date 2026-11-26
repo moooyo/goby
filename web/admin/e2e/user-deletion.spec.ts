@@ -30,7 +30,7 @@ interface UserRequest {
   Origin: string | undefined;
 }
 
-const manageDialog = (page: Page): Locator => page.getByRole('dialog', { name: 'Manage user', exact: true });
+const manageDialog = (page: Page): Locator => page.getByRole('dialog', { name: /^Manage user / });
 const deleteDialog = (page: Page): Locator => page.getByRole('dialog', { name: 'Delete user', exact: true });
 const userPath = (id: string): string => `/admin/v1/users/${encodeURIComponent(id)}`;
 
@@ -72,7 +72,8 @@ async function protectExistingUsers(context: BrowserContext, owned: Set<string>,
 }
 
 async function signIn(page: Page, name: string, password: string): Promise<void> {
-  await page.goto('/admin/users');
+  await page.addInitScript(() => localStorage.setItem('goby.admin.language', 'en'));
+  await page.goto('/admin/access/users');
   await expect(page.getByRole('heading', { name: 'Sign in to Goby', exact: true })).toBeVisible();
   await page.getByLabel(/^Username/).fill(name);
   await page.getByLabel(/^Password/).fill(password);
@@ -84,20 +85,20 @@ async function navigateToUsersThroughOverview(page: Page): Promise<void> {
   await page.getByRole('link', { name: 'Overview', exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/$/);
   await expect(page.getByRole('heading', { name: 'Overview', exact: true })).toBeVisible();
-  await page.getByRole('link', { name: 'Users', exact: true }).click();
-  await expect(page).toHaveURL(/\/admin\/users$/);
+  await page.getByRole('navigation', { name: 'Administration' }).locator('a[href="/admin/access/users"]').click();
+  await expect(page).toHaveURL(/\/admin\/access\/users$/);
   await expect(page.getByRole('heading', { name: 'Users', exact: true })).toBeVisible();
 }
 
 async function createUser(page: Page, owned: Set<string>, name: string, password: string, administrator = false): Promise<FixtureUser> {
-  await page.getByRole('button', { name: 'Create user', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Create user', exact: true });
-  await dialog.getByLabel(/^Username/).fill(name);
+  await page.getByRole('button', { name: 'Add user', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Add user', exact: true });
+  await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill(name);
   await dialog.getByLabel(/^Password/).fill(password);
-  await dialog.getByRole('switch', { name: 'Administrator access', exact: true }).setChecked(administrator);
+  await dialog.getByRole('radio', { name: administrator ? 'Administrator' : 'Member', exact: true }).check();
   const response = page.waitForResponse((result) => result.request().method() === 'POST'
     && new URL(result.url()).pathname === '/admin/v1/users');
-  await dialog.getByRole('button', { name: 'Create user', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Add user', exact: true }).click();
   const created = await response;
   expect(created.status()).toBe(201);
   const { User: user } = await created.json() as { User: FixtureUser };
@@ -130,12 +131,15 @@ async function openUser(page: Page, owned: Set<string>, user: FixtureUser): Prom
   expect(current.Id).toBe(user.Id);
   expect(current.Revision).toMatch(/^[1-9][0-9]*$/);
   await expect(manageDialog(page)).toBeVisible();
-  await expect(manageDialog(page).getByRole('textbox', { name: /^Username/ })).toHaveValue(current.Name);
+  await manageDialog(page).getByRole('tab', { name: 'Profile' }).click();
+  await expect(manageDialog(page).getByRole('textbox', { name: 'Name', exact: true })).toHaveValue(current.Name);
   return current;
 }
 
 async function openDelete(page: Page): Promise<Locator> {
-  await manageDialog(page).getByRole('button', { name: 'Delete user', exact: true }).click();
+  const sheet = manageDialog(page);
+  await sheet.getByRole('tab', { name: 'Password', exact: true }).click();
+  await sheet.getByRole('button', { name: 'Delete user', exact: true }).click();
   const dialog = deleteDialog(page);
   await expect(dialog).toBeVisible();
   await expect(dialog).toContainText(/account/i);
@@ -164,16 +168,18 @@ async function confirmDelete(page: Page, user: ManagedUser, self = false): Promi
   await expect(manageDialog(page)).not.toBeVisible();
   if (!self) {
     await expect(page.getByRole('button', { name: `Manage ${user.Name}`, exact: true })).toHaveCount(0);
-    await expect(page.getByRole('alert').filter({ hasText: `User ${user.Name} deleted.` })).toBeVisible();
+    await expect(page.getByText(`User ${user.Name} deleted.`, { exact: true })).toBeVisible();
   }
 }
 
 async function expectFrozenManagement(page: Page): Promise<void> {
-  await expect(manageDialog(page)).toBeVisible();
-  await expect(manageDialog(page).getByRole('button', { name: 'Delete user', exact: true })).toBeDisabled();
-  await expect(manageDialog(page).getByRole('button', { name: 'Reset password', exact: true })).toBeDisabled();
-  await expect(manageDialog(page).getByRole('button', { name: 'Save changes', exact: true })).toBeDisabled();
-  await expect(manageDialog(page).getByRole('button', { name: 'Reload latest user', exact: true })).toBeVisible();
+  const sheet = manageDialog(page);
+  await expect(sheet).toBeVisible();
+  await sheet.getByRole('tab', { name: 'Password', exact: true }).click();
+  await expect(sheet.getByRole('button', { name: 'Delete user', exact: true })).toBeDisabled();
+  await expect(sheet.getByLabel('New password', { exact: true })).toBeDisabled();
+  await expect(sheet.getByRole('button', { name: 'Save changes', exact: true })).toBeDisabled();
+  await expect(sheet.getByRole('button', { name: 'Reload latest user', exact: true })).toBeVisible();
 }
 
 async function reloadLatest(page: Page, user: ManagedUser): Promise<ManagedUser> {
@@ -185,9 +191,12 @@ async function reloadLatest(page: Page, user: ManagedUser): Promise<ManagedUser>
   const { User: current } = await loaded.json() as { User: ManagedUser };
   expect(current.Id).toBe(user.Id);
   await expect(deleteDialog(page)).not.toBeVisible();
-  await expect(manageDialog(page).getByRole('textbox', { name: /^Username/ })).toHaveValue(current.Name);
-  await expect(manageDialog(page).getByRole('button', { name: 'Delete user', exact: true })).toBeEnabled();
-  await expect(manageDialog(page).getByRole('button', { name: 'Reset password', exact: true })).toBeEnabled();
+  const sheet = manageDialog(page);
+  await sheet.getByRole('tab', { name: 'Profile' }).click();
+  await expect(sheet.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue(current.Name);
+  await sheet.getByRole('tab', { name: 'Password', exact: true }).click();
+  await expect(sheet.getByRole('button', { name: 'Delete user', exact: true })).toBeEnabled();
+  await expect(sheet.getByLabel('New password', { exact: true })).toBeEnabled();
   return current;
 }
 
@@ -300,21 +309,24 @@ test('isolated user deletion, explicit recovery, and temporary administrator sel
     const dialog = manageDialog(page);
     const checkpoint = targetRequests(requests, user.Id).length;
     const draftName = `delete-draft-${suffix}`;
-    await dialog.getByRole('textbox', { name: /^Username/ }).fill(draftName);
+    await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill(draftName);
+    await dialog.getByRole('tab', { name: 'Password', exact: true }).click();
     await expect(dialog.getByRole('button', { name: 'Delete user', exact: true })).toBeDisabled();
     await expect(deleteDialog(page)).not.toBeVisible();
     await dialog.getByRole('button', { name: 'Close', exact: true }).click();
     const discardDialog = page.getByRole('dialog', { name: 'Discard unsaved changes?', exact: true });
     await expect(discardDialog).toBeVisible();
     await discardDialog.getByRole('button', { name: 'Keep editing', exact: true }).click();
-    await expect(dialog.getByRole('textbox', { name: /^Username/ })).toHaveValue(draftName);
+    await dialog.getByRole('tab', { name: 'Profile' }).click();
+    await expect(dialog.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue(draftName);
     expect(targetRequests(requests, user.Id).slice(checkpoint)).toEqual([]);
-    await dialog.getByRole('textbox', { name: /^Username/ }).fill(user.Name);
+    await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill(user.Name);
     const confirmation = await openDelete(page);
     await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
     await expect(confirmation).not.toBeVisible();
-    await expect(dialog.getByRole('textbox', { name: /^Username/ })).toHaveValue(user.Name);
     await expect(dialog.getByRole('button', { name: 'Delete user', exact: true })).toBeEnabled();
+    await dialog.getByRole('tab', { name: 'Profile' }).click();
+    await expect(dialog.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue(user.Name);
     expect(targetRequests(requests, user.Id).slice(checkpoint)).toEqual([]);
   });
 
@@ -365,7 +377,7 @@ test('isolated user deletion, explicit recovery, and temporary administrator sel
       await page.keyboard.press('Escape');
       await expect(confirmation).toBeVisible();
       await page.goBack({ waitUntil: 'commit', timeout: 10_000 });
-      await expect(page).toHaveURL(/\/admin\/users$/);
+      await expect(page).toHaveURL(/\/admin\/access\/users$/);
       await expect(confirmation).toBeVisible();
       await expect(busy).toBeDisabled();
       expect(prompts).toEqual([]);
@@ -377,7 +389,7 @@ test('isolated user deletion, explicit recovery, and temporary administrator sel
       await expect(confirmation).not.toBeVisible();
       await expect(manageDialog(page)).not.toBeVisible();
       await expect(page.getByRole('button', { name: `Manage ${user.Name}`, exact: true })).toHaveCount(0);
-      await expect(page.getByRole('alert').filter({ hasText: `User ${user.Name} deleted.` })).toBeVisible();
+      await expect(page.getByText(`User ${user.Name} deleted.`, { exact: true })).toBeVisible();
       const deletions = targetRequests(requests, user.Id).slice(checkpoint);
       expect(deletions).toHaveLength(1);
       expectDeleteRequest(deletions[0], user, origin);
@@ -406,18 +418,18 @@ test('isolated user deletion, explicit recovery, and temporary administrator sel
     const stale = await openUser(page, owned, conflicting);
     const otherTab = await context.newPage();
     try {
-      await otherTab.goto('/admin/users');
+      await otherTab.goto('/admin/access/users');
       const concurrent = await openUser(otherTab, owned, conflicting);
       expect(concurrent.Revision).toBe(stale.Revision);
       const winningName = `delete-renamed-${suffix}`;
-      await manageDialog(otherTab).getByRole('textbox', { name: /^Username/ }).fill(winningName);
+      await manageDialog(otherTab).getByRole('textbox', { name: 'Name', exact: true }).fill(winningName);
       const saved = userResponse(otherTab, 'PUT', concurrent.Id);
       await manageDialog(otherTab).getByRole('button', { name: 'Save changes', exact: true }).click();
       const result = await saved;
       expect(result.status()).toBe(200);
       const winner = (await result.json() as { User: ManagedUser }).User;
       expect(winner.Revision).toBe((BigInt(stale.Revision) + 1n).toString());
-      await expect(manageDialog(otherTab).getByRole('textbox', { name: /^Username/ })).toHaveValue(winningName);
+      await expect(manageDialog(otherTab).getByRole('textbox', { name: 'Name', exact: true })).toHaveValue(winningName);
       await otherTab.close();
 
       const checkpoint = targetRequests(requests, stale.Id).length;
@@ -427,7 +439,7 @@ test('isolated user deletion, explicit recovery, and temporary administrator sel
       const rejected = await response;
       expect(rejected.status()).toBe(409);
       expect((await rejected.json() as { Error: { Code: string } }).Error.Code).toBe('revision_conflict');
-      await expect(confirmation.getByRole('alert').filter({ hasText: /changed|conflict/i })).toBeVisible();
+      await expect(confirmation.getByText('This user changed after you opened it.', { exact: false })).toBeVisible();
       await expect(confirmation.getByRole('button', { name: 'Delete user', exact: true })).toBeDisabled();
       await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
       await expectFrozenManagement(page);
@@ -457,7 +469,7 @@ test('isolated user deletion, explicit recovery, and temporary administrator sel
     try {
       const confirmation = await openDelete(page);
       await confirmation.getByRole('button', { name: 'Delete user', exact: true }).click();
-      await expect(confirmation.getByRole('alert').filter({ hasText: /could not be confirmed|may already/i })).toBeVisible();
+      await expect(confirmation.getByText(/could not be confirmed|may already/i)).toBeVisible();
       interception.assertCommitted();
       await expect(confirmation.getByRole('button', { name: 'Delete user', exact: true })).toBeDisabled();
       await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
@@ -470,7 +482,7 @@ test('isolated user deletion, explicit recovery, and temporary administrator sel
       expect((await missing.json() as { Error: { Code: string } }).Error.Code).toBe('not_found');
       await expect(manageDialog(page)).not.toBeVisible();
       await expect(page.getByRole('button', { name: `Manage ${user.Name}`, exact: true })).toHaveCount(0);
-      await expect(page.getByRole('alert').filter({ hasText: 'This user is no longer available.' })).toBeVisible();
+      await expect(page.getByText('This user is no longer available.', { exact: true })).toBeVisible();
       const recovery = targetRequests(requests, user.Id).slice(checkpoint);
       expect(recovery.map((request) => request.Method)).toEqual(['DELETE', 'GET']);
       expectDeleteRequest(recovery[0], user, origin);
@@ -505,16 +517,18 @@ test('isolated user deletion, explicit recovery, and temporary administrator sel
       const response = userResponse(page, 'DELETE', user.Id);
       await confirmation.getByRole('button', { name: 'Delete user', exact: true }).click();
       expect((await response).status()).toBe(409);
-      await expect(confirmation.getByRole('alert').filter({ hasText: /at least one enabled administrator/i })).toBeVisible();
+      await expect(confirmation.getByText(/at least one enabled administrator/i)).toBeVisible();
       await expect(confirmation.getByRole('button', { name: 'Delete user', exact: true })).toBeDisabled();
       await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
       await expectFrozenManagement(page);
       const blockedDraft = `delete-blocked-admin-${suffix}`;
-      await manageDialog(page).getByRole('textbox', { name: /^Username/ }).fill(blockedDraft);
+      await manageDialog(page).getByRole('tab', { name: 'Profile' }).click();
+      await manageDialog(page).getByRole('textbox', { name: 'Name', exact: true }).fill(blockedDraft);
       await expectFrozenManagement(page);
-      await manageDialog(page).getByRole('textbox', { name: /^Username/ }).press('Enter');
-      await expect(manageDialog(page).getByRole('textbox', { name: /^Username/ })).toHaveValue(blockedDraft);
-      await manageDialog(page).getByRole('textbox', { name: /^Username/ }).fill(user.Name);
+      await manageDialog(page).getByRole('tab', { name: 'Profile' }).click();
+      await manageDialog(page).getByRole('textbox', { name: 'Name', exact: true }).press('Enter');
+      await expect(manageDialog(page).getByRole('textbox', { name: 'Name', exact: true })).toHaveValue(blockedDraft);
+      await manageDialog(page).getByRole('textbox', { name: 'Name', exact: true }).fill(user.Name);
       expect(rejectedDeletes).toBe(1);
       expect(targetRequests(requests, user.Id).slice(checkpoint).map((request) => request.Method)).toEqual(['DELETE']);
       const reloaded = await reloadLatest(page, user);
@@ -582,7 +596,7 @@ test('isolated user deletion, explicit recovery, and temporary administrator sel
       try {
         const confirmation = await openDelete(selfPage);
         await confirmation.getByRole('button', { name: 'Delete user', exact: true }).click();
-        await expect(confirmation.getByRole('alert').filter({ hasText: /could not be confirmed|may already/i })).toBeVisible();
+        await expect(confirmation.getByText(/could not be confirmed|may already/i)).toBeVisible();
         interception.assertCommitted();
         await expect(confirmation.getByRole('button', { name: 'Delete user', exact: true })).toBeDisabled();
         expect(targetRequests(selfRequests, user.Id).slice(checkpoint).map((request) => request.Method)).toEqual(['DELETE']);

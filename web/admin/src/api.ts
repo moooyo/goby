@@ -359,6 +359,7 @@ export interface OverviewResponse {
   };
   Database: {
     Status: string;
+    Engine?: string;
   };
   Counts: {
     Users: number;

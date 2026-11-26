@@ -1,5 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from './dashboard-fixture';
+import { expect, json, library, seriesLibrary, stamp, test } from './dashboard-fixture';
 import { evidence, noOverflow } from './dashboard-review';
 
 test.use({ serviceWorkers: 'block', trace: 'off', video: 'off', preferences: { language: 'en', theme: 'light' } });
@@ -68,8 +68,12 @@ test.describe('Chinese overview dates', () => {
   test.use({ viewport: { width: 375, height: 844 }, preferences: { language: 'zh', theme: 'dark' } });
   test('past month and day labels remain on one line on a phone', async ({ page, api }, testInfo) => {
     await page.clock.setFixedTime(new Date('2026-11-06T12:00:00Z'));
+    api.handlers.set('GET /admin/v1/jobs', (route) => json(route, { Items: [library, seriesLibrary].map((item) => ({
+      Id: `scan-${item.Id}`, LibraryId: item.Id, Status: 'completed', Error: '', ForceProbe: false,
+      CreatedAt: stamp, StartedAt: stamp, FinishedAt: stamp, Scanned: 2, Added: 1, Updated: 1,
+    })), TotalRecordCount: 2 }));
     await page.goto('/admin/');
-    const dates = page.locator('.ov-activity-row time');
+    const dates = page.locator('.ov-scan-row time');
     await expect(dates).toHaveCount(2);
     await expect(dates.first()).toHaveText(/\d+月\d+日/);
     const lineMetrics = await dates.evaluateAll((elements) => elements.map((element) => ({

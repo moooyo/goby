@@ -74,9 +74,10 @@ export function lowestAvailableDirectory(directories: readonly LibraryStorageDir
 }
 
 export function directoryReadAccess(directory?: LibraryStorageDirectory): boolean | null {
-  if (!directory) return null;
-  if (!directory.Available || directory.Readable === false) return false;
-  return directory.Readable;
+  // The storage endpoint also sets Available to false when it could not
+  // observe Readable at all. Only a known observation establishes access.
+  if (directory?.Readable == null) return null;
+  return directory.Available && directory.Readable;
 }
 
 export function uniqueDirectoryPaths(paths: readonly string[]): string[] {

@@ -2,9 +2,11 @@ import { expect, test as base } from '@playwright/test';
 import type { BrowserContext, Page, Request, Route } from '@playwright/test';
 import type { Library } from '../src/api';
 import type { RegisteredRoot, RootBinding, StorageIdentity, StorageTopology } from '../src/rootBindingsApi';
+import { DashboardAPI } from './dashboard-fixture';
 
 const timestamp = '2026-09-12T08:00:00Z';
 const csrfToken = 'root-binding-mock-csrf-token';
+const dashboardReads = new Set(['/admin/v1/backups/policy', '/admin/v1/settings', '/admin/v1/jobs', '/admin/v1/tasks']);
 const fingerprint = 'a'.repeat(64);
 const root: RegisteredRoot = { Id: 'registered-root-one', LibraryId: 'library-one', Path: '/media/movies', AllowedPath: '/media', RelativePath: 'movies', Revision: '9007199254740993' };
 const secondRoot: RegisteredRoot = { ...root, Id: 'registered-root-two', Path: '/media/series', RelativePath: 'series', Revision: '7' };
@@ -55,23 +57,26 @@ class RootBindingMock {
   requests: CapturedRequest[] = [];
   unexpected: string[] = [];
   handlers = new Map<string, (route: Route, request: Request) => Promise<void>>();
+  readonly dashboard = new DashboardAPI();
 
   puts(): CapturedRequest[] { return this.requests.filter((request) => request.method === 'PUT'); }
 
   async install(context: BrowserContext): Promise<void> {
     // Every native API request is mocked, including unexpected mutations.
     // This suite exercises the shipped UI, not live storage binding or deletion.
+    await this.dashboard.install(context);
     await context.route('**/admin/v1/**', async (route, request) => {
       const url = new URL(request.url());
       const captured = { method: request.method(), path: url.pathname, headers: request.headers(), body: request.postData() };
       this.requests.push(captured);
       const handler = this.handlers.get(`${captured.method} ${captured.path}`);
       if (handler && !url.search) return handler(route, request);
-      if (captured.method === 'GET' && captured.path === '/admin/v1/activity' && url.search === '?StartIndex=0&Limit=6') {
-        return json(route, { Items: [], TotalRecordCount: 0 });
+      if (captured.method === 'GET' && captured.path === `/admin/v1/libraries/${library.Id}/items` && url.search === '?StartIndex=0&Limit=1') {
+        return json(route, { Library: library, Items: [], TotalRecordCount: 0, StartIndex: 0, Limit: 1 });
       }
       if (captured.method === 'GET' && !url.search) {
-        if (captured.path === '/admin/v1/bootstrap') return json(route, { Initialized: true });
+        if (captured.path === '/admin/v1/bootstrap') return json(route, { Initialized: true, UICulture: 'en-US' });
+        if (dashboardReads.has(captured.path)) return route.fallback();
         if (captured.path === '/admin/v1/session') return json(route, {
           User: { Id: 'current-administrator', Name: 'Browser administrator', IsAdministrator: true, IsDisabled: false, HasPassword: true, CreatedAt: timestamp }, CSRFToken: csrfToken,
         });
@@ -90,7 +95,11 @@ class RootBindingMock {
           Transcoding: { Available: false, Active: null, Limit: null, HardwareActive: null, SoftwareActive: null },
         });
         if (captured.path === '/admin/v1/libraries') return json(route, { Items: [{ ...library, Paths: this.roots.map((item) => item.Path) }], TotalRecordCount: 1 });
-        if (captured.path === '/admin/v1/storage/roots') return json(route, { Configured: true, Items: [{ Path: '/media', Available: true }] });
+        if (captured.path === '/admin/v1/storage/roots') return json(route, { Configured: true, Items: [{ Path: '/media', Available: true, Readable: true, Writable: false }] });
+        if (captured.path === '/admin/v1/storage/library-directories') {
+          const paths = [...new Set(this.roots.map((item) => item.Path))];
+          return json(route, { Items: paths.map((Path) => ({ Path, Available: true, Readable: true, Writable: false, TotalBytes: null, UsedBytes: null, AvailableBytes: null })), TotalRecordCount: paths.length });
+        }
         if (captured.path === `/admin/v1/libraries/${library.Id}/roots`) return json(route, { Items: this.roots, TotalRecordCount: this.roots.length });
         const selected = this.roots.find((item) => bindingPath(item.Id) === captured.path);
         if (selected) return json(route, { Binding: this.bindings.get(selected.Id) });
@@ -106,7 +115,7 @@ const test = base.extend<{ api: RootBindingMock }>({
     const api = new RootBindingMock();
     await api.install(context);
     await use(api);
-    expect(api.unexpected, 'Every native API request must be explicitly mocked.').toEqual([]);
+    expect([...api.unexpected, ...api.dashboard.unexpected], 'Every native API request must be explicitly mocked.').toEqual([]);
   },
 });
 
@@ -183,7 +192,7 @@ test('a pending root approval blocks browser history and unloading until its out
   try {
     await page.goto('/admin/');
     await expect(page.getByRole('heading', { name: 'Overview', exact: true })).toBeVisible();
-    await page.getByRole('navigation', { name: 'Administration' }).getByRole('link', { name: 'Media', exact: true }).click();
+    await page.getByRole('navigation', { name: 'Administration' }).getByRole('link', { name: /^Libraries(?:\s|$)/ }).click();
     await openBindingsMenu(page);
     await expect(dialog(page)).toBeVisible();
     await expect(submit(page)).toBeDisabled();
@@ -250,7 +259,7 @@ test('replacement review shows all boundary changes and fits a narrow viewport w
   const refresh = dialog(page).getByRole('button', { name: 'Refresh observation', exact: true });
   await expect(selection).toBeInViewport({ ratio: 1 });
   await expect(storageStatus).toBeInViewport({ ratio: 1 });
-  await expect(dialog(page).getByRole('alert').filter({ hasText: 'The current storage differs from the approved binding.' })).toBeInViewport({ ratio: 1 });
+  await expect(dialog(page).getByRole('status').filter({ hasText: 'The current storage differs from the approved binding.' })).toBeInViewport({ ratio: 1 });
   await expect(refresh).toBeInViewport({ ratio: 1 });
   expect(await selection.evaluate((element) => element.getBoundingClientRect().height)).toBeLessThanOrEqual(112);
   await expect(selection).toHaveAccessibleName('Registered root');
@@ -349,8 +358,7 @@ test('switching registrations at the same path resets consent and uses the selec
   api.handlers.set(`PUT ${bindingPath(secondRoot.Id)}`, async (route) => json(route, { Binding: accepted(unbound(api.roots[1])) }));
   await openBindings(page);
   await consent(page).check();
-  await dialog(page).getByRole('combobox', { name: /^Registered root/ }).click();
-  await page.getByRole('option').filter({ hasText: secondRoot.Id }).click();
+  await dialog(page).getByRole('combobox', { name: /^Registered root/ }).selectOption(secondRoot.Id);
   await expect(dialog(page).getByText(secondRoot.Revision, { exact: true })).toBeVisible();
   await expect(dialog(page).getByRole('combobox', { name: 'Registered root', exact: true })).toHaveAccessibleDescription(new RegExp(secondRoot.Id));
   await expect(consent(page)).not.toBeChecked();
@@ -375,8 +383,7 @@ test('a late observation cannot replace the selected registration', async ({ pag
   });
   await openBindings(page);
   await expect.poll(() => api.requests.filter((request) => request.path === bindingPath()).length).toBe(1);
-  await dialog(page).getByRole('combobox', { name: /^Registered root/ }).click();
-  await page.getByRole('option').filter({ hasText: secondRoot.Id }).click();
+  await dialog(page).getByRole('combobox', { name: /^Registered root/ }).selectOption(secondRoot.Id);
   try {
     await expect(dialog(page).getByText(secondRoot.Revision, { exact: true })).toBeVisible();
     await expect(consent(page)).toBeVisible();

@@ -121,7 +121,8 @@ async function readActivity(response: APIResponse | Response, secrets: string[])
     expect(['native', 'emby', 'system']).toContain(item.Source);
     expect(['Info', 'Debug', 'Warn', 'Error', 'Fatal']).toContain(item.Severity);
     expect(Object.keys(item.Actor).sort()).toEqual(['Id', 'Kind', 'Name']);
-    expect(Object.keys(item.Resource).sort()).toEqual(['Id', 'Kind']);
+    if (item.Resource.Name !== undefined) expect(['playback.started', 'playback.stopped']).toContain(item.Action);
+    expect(Object.keys(item.Resource).sort()).toEqual(item.Resource.Name === undefined ? ['Id', 'Kind'] : ['Id', 'Kind', 'Name']);
     expect(item.ChangedFields.every((field) => typeof field === 'string')).toBe(true);
   }
   return value;
@@ -130,37 +131,23 @@ async function readActivity(response: APIResponse | Response, secrets: string[])
 async function visibleActivity(page: Page, value: ActivityResponse) {
   await expect(page.getByRole('status', { name: 'Loading activity', exact: true })).toHaveCount(0);
   if (value.Items.length === 0) return;
-  if ((page.viewportSize()?.width ?? 1440) >= 1200) {
-    const table = page.getByRole('table', { name: 'Activity records', exact: true });
-    const controls = table.getByRole('button', { name: /^Details for activity / });
-    await expect(controls).toHaveCount(value.Items.length);
-    expect(await controls.evaluateAll((elements) => elements.map((element) => element.getAttribute('aria-label')?.replace('Details for activity ', ''))))
-      .toEqual(value.Items.map((item) => item.Id));
-  } else {
-    await expect(page.getByRole('list', { name: 'Activity records', exact: true }).getByRole('listitem')).toHaveCount(value.Items.length);
-  }
+  const rows = page.getByRole('table', { name: 'Activity records', exact: true }).locator('tbody tr');
+  await expect(rows).toHaveCount(value.Items.length);
+  expect(await rows.evaluateAll((elements) => elements.map((element) => element.getAttribute('data-activity-id'))))
+    .toEqual(value.Items.map((item) => item.Id));
 }
 
 async function choose(page: Page, label: string, option: string) {
-  await page.getByRole('combobox', { name: label, exact: true }).click();
-  await page.getByRole('option', { name: option, exact: true }).click();
+  await page.getByRole('combobox', { name: label, exact: true }).selectOption({ label: option });
 }
 
-async function applyFilters(page: Page, secrets: string[], parameters: Record<string, string> = {}) {
-  const pending = responseFor(page, '/admin/v1/activity', { StartIndex: '0', ...parameters });
-  await page.getByRole('button', { name: 'Apply filters', exact: true }).click();
+async function changeActivity(page: Page, secrets: string[], action: () => Promise<void>, parameters: Record<string, string> = {}) {
+  const pending = responseFor(page, '/admin/v1/activity', { StartIndex: '0', Limit: '50', ...parameters });
+  await action();
   const response = await pending;
   const value = await readActivity(response, secrets);
   await visibleActivity(page, value);
   return { value, response };
-}
-
-async function clearFilters(page: Page, secrets: string[]) {
-  const pending = responseFor(page, '/admin/v1/activity', { StartIndex: '0' });
-  await page.getByRole('button', { name: 'Clear filters', exact: true }).first().click();
-  const value = await readActivity(await pending, secrets);
-  await visibleActivity(page, value);
-  return value;
 }
 
 function assertJSONLines(lines: string[], secrets: string[]) {
@@ -220,7 +207,11 @@ async function readLines(response: APIResponse | Response, secrets: string[]): P
 
 async function visibleLines(page: Page, value: ServerLogLinesResponse) {
   await expect(page.getByRole('status', { name: 'Loading log lines', exact: true })).toHaveCount(0);
-  if (value.Items.length) await expect(page.getByLabel('Log text', { exact: true })).toHaveText(value.Items.join('\n'));
+  if (value.Items.length) {
+    const records = page.getByRole('list', { name: 'Log text', exact: true }).locator('pre');
+    await expect(records).toHaveCount(value.Items.length);
+    expect(await records.allTextContents()).toEqual(value.Items.map((line) => JSON.stringify(parseJSON<unknown>(line), null, 2)));
+  }
 }
 
 async function checkSecretsAndLayout(page: Page, secrets: string[]) {
@@ -282,6 +273,7 @@ test('isolated activity, safe diagnostic files, native downloads, and read-only 
   };
 
   try {
+    await context.addInitScript(() => { localStorage.setItem('goby.admin.language', 'en'); });
     await page.goto('/admin/observability');
     await expect(page.getByRole('heading', { name: 'Sign in to Goby', exact: true })).toBeVisible();
     await page.getByLabel(/^Username/).fill(name);
@@ -312,92 +304,77 @@ test('isolated activity, safe diagnostic files, native downloads, and read-only 
     let activity = await readActivity(await initialResponse, secrets);
     await visibleActivity(page, activity);
     await expect(page.getByRole('heading', { name: 'Activity & logs', exact: true })).toBeVisible();
-    await expect(page.getByRole('tab', { name: 'Activity & logs', exact: true })).toHaveAttribute('href', '/admin/system/observability');
-    await expect(page.getByRole('tab', { name: 'Activity & logs', exact: true })).toHaveAttribute('aria-selected', 'true');
+    const activityLink = page.getByRole('navigation', { name: 'Administration' }).getByRole('link', { name: 'Activity & logs', exact: true });
+    await expect(activityLink).toHaveAttribute('href', '/admin/system/observability');
+    await expect(activityLink).toHaveAttribute('aria-current', 'page');
     await expect(page.getByRole('tab', { name: 'Activity', exact: true })).toHaveAttribute('aria-selected', 'true');
 
+    const panel = page.getByRole('tabpanel', { name: 'Activity', exact: true });
+    const severity = panel.getByRole('group', { name: 'Severity', exact: true });
+    const refresh = panel.getByRole('button', { name: 'Refresh activity', exact: true });
     await test.step('read real settings activity through filters, stable paging, and manual refresh', async () => {
-      await page.getByRole('button', { name: 'Filter activity', exact: true }).click();
-      await choose(page, 'Action', 'Settings updated');
-      activity = (await applyFilters(page, secrets, { Action: fixture.Activity.Action })).value;
+      activity = (await changeActivity(page, secrets, () => choose(page, 'Action', 'Settings updated'), { Action: fixture.Activity.Action })).value;
       expect(activity.TotalRecordCount).toBeGreaterThanOrEqual(fixture.Activity.MinimumCount);
       expect(activity.Items.every((item) => item.Action === fixture.Activity.Action)).toBe(true);
-      const actorResponse = responseFor(page, '/admin/v1/activity', { ActorId: fixture.Activity.ActorId, Action: fixture.Activity.Action, StartIndex: '0' });
-      await page.getByRole('table', { name: 'Activity records', exact: true }).getByRole('button', { name: `Filter by actor ${fixture.Activity.ActorId}`, exact: true }).first().click();
-      activity = await readActivity(await actorResponse, secrets);
-      await visibleActivity(page, activity);
-      expect(activity.Items.every((item) => item.Actor.Id === fixture.Activity.ActorId)).toBe(true);
-      await choose(page, 'Severity', 'Info');
-      await choose(page, 'Date range', 'Last 24 hours');
-      const filtered = await applyFilters(page, secrets, { Action: fixture.Activity.Action, ActorId: fixture.Activity.ActorId, Severity: 'Info' });
+      await changeActivity(page, secrets, () => severity.getByRole('button', { name: 'Info', exact: true }).click(), { Action: fixture.Activity.Action, Severity: 'Info' });
+      const filtered = await changeActivity(page, secrets, () => choose(page, 'Time range', 'Last 7 days'), { Action: fixture.Activity.Action, Severity: 'Info' });
       activity = filtered.value;
       expect(activity.TotalRecordCount).toBeGreaterThanOrEqual(fixture.Activity.MinimumCount);
       const since = new URL(filtered.response.url()).searchParams.get('MinDate');
       expect(Boolean(since) && Number.isFinite(Date.parse(since!))).toBe(true);
-      expect(activity.Items.every((item) => item.Action === fixture.Activity.Action && item.Actor.Id === fixture.Activity.ActorId && item.Severity === 'Info' && Date.parse(item.Date) >= Date.parse(since!))).toBe(true);
+      expect(activity.Items.every((item) => item.Action === fixture.Activity.Action && item.Severity === 'Info' && Date.parse(item.Date) >= Date.parse(since!))).toBe(true);
       const independent = await readActivity(await context.request.get(filtered.response.url()), secrets);
       expect(independent.Items.map((item) => item.Id)).toEqual(activity.Items.map((item) => item.Id));
+      // ActorId is still an API filter, not an action offered in the admin UI.
+      const actorURL = new URL(filtered.response.url());
+      actorURL.searchParams.set('ActorId', fixture.Activity.ActorId);
+      const byActor = await readActivity(await context.request.get(actorURL.toString()), secrets);
+      expect(byActor.TotalRecordCount).toBeGreaterThanOrEqual(fixture.Activity.MinimumCount);
+      expect(byActor.Items.every((item) => item.Actor.Id === fixture.Activity.ActorId)).toBe(true);
       const firstIds = activity.Items.map((item) => item.Id);
-      const nextResponse = responseFor(page, '/admin/v1/activity', { StartIndex: '50', Limit: '50', ActorId: fixture.Activity.ActorId });
-      await page.getByRole('button', { name: 'Go to next page', exact: true }).click();
-      const second = await readActivity(await nextResponse, secrets);
-      await visibleActivity(page, second);
+      const second = (await changeActivity(page, secrets, () => panel.getByRole('button', { name: 'Go to next page', exact: true }).click(), { StartIndex: '50', MinDate: since! })).value;
       expect(second.TotalRecordCount).toBe(activity.TotalRecordCount);
       expect(second.Items.some((item) => firstIds.includes(item.Id))).toBe(false);
-      const previousResponse = responseFor(page, '/admin/v1/activity', { StartIndex: '0', Limit: '50' });
-      await page.getByRole('button', { name: 'Go to previous page', exact: true }).click();
-      const previous = await readActivity(await previousResponse, secrets);
-      await visibleActivity(page, previous);
+      const previous = (await changeActivity(page, secrets, () => panel.getByRole('button', { name: 'Go to previous page', exact: true }).click())).value;
       expect(previous.Items.map((item) => item.Id)).toEqual(firstIds);
-      const resizedResponse = responseFor(page, '/admin/v1/activity', { StartIndex: '0', Limit: '25' });
-      await choose(page, 'Activities per page:', '25');
-      activity = await readActivity(await resizedResponse, secrets);
-      await visibleActivity(page, activity);
+      activity = (await changeActivity(page, secrets, () => choose(page, 'Activities per page:', '25'), { Limit: '25' })).value;
       expect(activity.Items.map((item) => item.Id)).toEqual(firstIds.slice(0, 25));
-      const refreshResponse = responseFor(page, '/admin/v1/activity', { StartIndex: '0', Limit: '25', MinDate: since! });
-      await page.getByRole('button', { name: 'Refresh activity', exact: true }).click();
-      const refreshed = await readActivity(await refreshResponse, secrets);
-      await visibleActivity(page, refreshed);
+      const refreshed = (await changeActivity(page, secrets, () => refresh.click(), { Limit: '25', MinDate: since! })).value;
       expect(refreshed.Items.map((item) => item.Id)).toEqual(activity.Items.map((item) => item.Id));
-      await expect(page.getByText(/Retention is managed by the server/)).toBeVisible();
+      await expect(panel.getByText(/Activity is retained for \d+ days and includes sign-ins and playback records/)).toBeVisible();
       await capture('observability-activity-desktop.png');
-      const details = page.getByRole('button', { name: `Details for activity ${activity.Items[0].Id}`, exact: true });
+      const details = panel.locator(`[data-activity-id="${activity.Items[0].Id}"]`).getByRole('button', { name: /^Activity details: / });
       await details.click();
-      await expect(details).toHaveAttribute('aria-expanded', 'true');
-      const detailsPanel = page.locator(`#activity-table-${activity.Items[0].Id}`);
+      const detailsPanel = page.getByRole('dialog', { name: 'Activity details', exact: true });
       await expect(detailsPanel.getByText('Activity ID', { exact: true })).toBeVisible();
       await expect(detailsPanel.getByText(activity.Items[0].Id, { exact: true }).first()).toBeVisible();
       await expect(detailsPanel.getByText('Affected count', { exact: true })).toBeVisible();
       if (activity.Items[0].ChangedFields.length) await expect(detailsPanel.getByText('Changed fields', { exact: true })).toBeVisible();
       await capture('observability-details-desktop.png');
-      await details.click();
+      await detailsPanel.getByRole('button', { name: 'Close dialog', exact: true }).click();
+      await expect(details).toBeFocused();
       result.Checks.RealActivityFiltersPagingRefreshAndDetails = true;
     });
 
-    await test.step('show a real empty date range and recover from a temporary activity read failure', async () => {
-      await choose(page, 'Date range', 'Since a date and time');
-      await page.getByLabel('Activity since', { exact: true }).fill('2099-01-01T00:00');
-      const empty = await applyFilters(page, secrets, { Action: fixture.Activity.Action });
+    await test.step('show an actually empty severity filter and recover from a temporary activity read failure', async () => {
+      const empty = await changeActivity(page, secrets, () => severity.getByRole('button', { name: 'Warning', exact: true }).click(), { Action: fixture.Activity.Action, Severity: 'Warn', Limit: '25' });
       expect(empty.value.TotalRecordCount).toBe(0);
-      await expect(page.getByRole('heading', { name: 'No matching activity', exact: true })).toBeVisible();
-      activity = await clearFilters(page, secrets);
+      await expect(panel.getByRole('heading', { name: 'No matching activity', exact: true })).toBeVisible();
+      activity = (await changeActivity(page, secrets, () => panel.getByRole('button', { name: 'Clear filters', exact: true }).click(), { Limit: '25' })).value;
       expect(activity.TotalRecordCount).toBeGreaterThanOrEqual(fixture.Activity.MinimumCount);
       const message = 'Activity storage is temporarily unavailable.';
       const intercept = async (route: Route) => route.fulfill({ status: 503, contentType: 'application/json', headers: { 'cache-control': 'no-store' }, body: JSON.stringify({ Error: { Code: 'activity_unavailable', Message: message } }) });
       await page.route(activityURL, intercept);
       activePageRoutes += 1;
       try {
-        const failed = responseFor(page, '/admin/v1/activity');
-        await page.getByRole('button', { name: 'Refresh activity', exact: true }).click();
+        const failed = responseFor(page, '/admin/v1/activity', { Limit: '25' });
+        await refresh.click();
         expect((await failed).status()).toBe(503);
-        await expect(page.getByRole('alert').filter({ hasText: message })).toBeVisible();
-        await expect(page.getByRole('table', { name: 'Activity records', exact: true })).toHaveCount(0);
-        await expect(page.getByRole('heading', { name: 'No recorded activity', exact: true })).toHaveCount(0);
+        await expect(panel.getByRole('alert').filter({ hasText: message })).toBeVisible();
+        await expect(panel.getByRole('table', { name: 'Activity records', exact: true })).toHaveCount(0);
+        await expect(panel.getByRole('heading', { name: 'No recorded activity', exact: true })).toHaveCount(0);
       } finally { await page.unroute(activityURL, intercept); activePageRoutes -= 1; }
-      const recovered = responseFor(page, '/admin/v1/activity');
-      await page.getByRole('button', { name: 'Retry', exact: true }).click();
-      activity = await readActivity(await recovered, secrets);
-      await visibleActivity(page, activity);
+      activity = (await changeActivity(page, secrets, () => panel.getByRole('button', { name: 'Retry', exact: true }).click(), { Limit: '25' })).value;
       result.Checks.RealEmptyActivityAndInjectedErrorRecovery = true;
     });
 
@@ -414,7 +391,8 @@ test('isolated activity, safe diagnostic files, native downloads, and read-only 
       const cancelledRequest = (request: Request) => { if (request === heldRequest && request.failure()?.errorText === 'net::ERR_ABORTED') cancelled = true; };
       page.on('requestfailed', cancelledRequest);
       const intercept = async (route: Route) => {
-        if (heldRequest || new URL(route.request().url()).searchParams.get('Severity') !== 'Debug') { await route.continue(); return; }
+        const query = new URL(route.request().url()).searchParams;
+        if (heldRequest || query.get('Severity') !== 'Warn' || query.get('Limit') !== '25') { await route.continue(); return; }
         heldRequest = route.request();
         let response: APIResponse | undefined;
         try {
@@ -433,13 +411,11 @@ test('isolated activity, safe diagnostic files, native downloads, and read-only 
       await page.route(activityURL, intercept);
       activePageRoutes += 1;
       try {
-        await choose(page, 'Severity', 'Debug');
-        await page.getByRole('button', { name: 'Apply filters', exact: true }).click();
+        await severity.getByRole('button', { name: 'Warning', exact: true }).click();
         await expect.poll(() => ready, { timeout: 20_000 }).toBe(true);
         expect(handlerFailure).toBe(false);
         await expect(page.getByRole('status', { name: 'Loading activity', exact: true })).toBeVisible();
-        await choose(page, 'Severity', 'Info');
-        const current = await applyFilters(page, secrets, { Severity: 'Info' });
+        const current = await changeActivity(page, secrets, () => severity.getByRole('button', { name: 'Info', exact: true }).click(), { Severity: 'Info', Limit: '25' });
         expect(current.value.Items.length).toBeGreaterThan(0);
         expect(current.value.Items.every((item) => item.Severity === 'Info')).toBe(true);
         release();

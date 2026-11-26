@@ -177,7 +177,7 @@ class BackupMock {
           Items: [], TotalRecordCount: 0, StartIndex: Number(url.searchParams.get('StartIndex') ?? 0), Limit: Number(url.searchParams.get('Limit') ?? 25), RetentionDays: 30,
         });
         if (captured.path === '/admin/v1/playback/sessions') return json(route, { Items: [], ObservedAt: timestamp, Limit: 256, AtCapacity: false });
-        if (captured.path === '/admin/v1/jobs') return json(route, { Items: [], TotalRecordCount: 0 });
+        if (captured.path === '/admin/v1/jobs' || captured.path === '/admin/v1/libraries') return json(route, { Items: [], TotalRecordCount: 0 });
         if (captured.path === '/admin/v1/backups/status') return json(route, this.status);
         if (captured.path === '/admin/v1/backups/policy') return json(route, this.policy);
         if (captured.path === '/admin/v1/tasks') return json(route, { Items: [this.task], TotalRecordCount: 1 });

@@ -1,7 +1,8 @@
 import { expect, test as base } from '@playwright/test';
 import type { BrowserContext, Locator, Page, Route } from '@playwright/test';
 import type { MetadataDetail, MetadataValues } from '../src/api';
-import type { UserConfiguration, UserPreferences } from '../src/userPreferencesApi';
+import { providerConfigurationFixture } from './provider-configuration-fixture';
+import { settings } from './dashboard-fixture';
 
 // Every administrator API request is synthetic. Unexpected reads and writes
 // are rejected instead of reaching the server that serves the browser assets.
@@ -12,7 +13,6 @@ const member = { Id: 'selected-member', Name: 'Selected playback member', IsAdmi
 const library = { Id: 'selected-library', Name: 'Selected playback library', CollectionType: 'movies', Paths: ['/synthetic/selected'], CreatedAt: timestamp, LastScanAt: timestamp };
 const userPath = `/admin/v1/users/${member.Id}`;
 const credentialsPath = `${userPath}/local-credentials`;
-const preferencesPath = `${userPath}/preferences`;
 const itemPath = '/admin/v1/items/selected-movie';
 const introPath = `${itemPath}/intro`;
 
@@ -47,18 +47,6 @@ function metadata(): MetadataDetail {
   };
 }
 
-function preferences(): UserPreferences {
-  return {
-    UserId: member.Id, Revision: '1', Configuration: {
-      AudioLanguagePreference: 'en', SubtitleLanguagePreference: 'en', PlayDefaultAudioTrack: true,
-      RememberAudioSelections: true, RememberSubtitleSelections: true, EnableNextEpisodeAutoPlay: true,
-      HidePlayedInLatest: false, HidePlayedInMoreLikeThis: false, HidePlayedInSuggestions: false, DisplayMissingEpisodes: false,
-      SubtitleMode: 'Default', ResumeRewindSeconds: 5, OrderedViews: [], LatestItemsExcludes: [], MyMediaExcludes: [],
-      IntroSkipMode: 'None', EnableLocalPassword: true, ProfilePin: '',
-    },
-  };
-}
-
 async function json(route: Route, value: unknown, status = 200): Promise<void> {
   await route.fulfill({ status, contentType: 'application/json', headers: { 'Cache-Control': 'no-store' }, body: JSON.stringify(value) });
 }
@@ -66,7 +54,6 @@ async function json(route: Route, value: unknown, status = 200): Promise<void> {
 class SelectedPlaybackAPI {
   user = { ...member };
   credentials: CredentialsStatus = { UserId: member.Id, Revision: '1', HasLocalPassword: true, HasProfilePin: true, EnableLocalPassword: true };
-  preferences = preferences();
   item = metadata();
   intro: IntroStatus = {
     ItemId: 'selected-movie', MediaSourceId: 'selected-source', SourceRevision: 'source-revision-one', Revision: '0', DurationTicks: 1_200_000_000,
@@ -88,15 +75,21 @@ class SelectedPlaybackAPI {
       };
       this.requests.push(captured);
       if (captured.method === 'GET') {
-        if (captured.path === '/admin/v1/bootstrap') return json(route, { Initialized: true });
+        if (captured.path === '/admin/v1/bootstrap') return json(route, { Initialized: true, UICulture: 'en-US' });
         if (captured.path === '/admin/v1/session') return json(route, { User: administrator, CSRFToken: csrfToken });
+        if (captured.path === '/admin/v1/overview') return json(route, { Server: { Id: 'selected-server', Name: 'Synthetic server', Version: '0.1.0' }, Database: { Status: 'connected' }, Counts: { Users: 1, Libraries: 1 } });
+        if (captured.path === '/admin/v1/system/status') return json(route, { Timestamp: timestamp, UptimeSeconds: 100, Host: { OS: 'linux', Architecture: 'amd64', CPUCount: 1 }, CPU: { UsagePercent: null, Load1: null, Load5: null, Load15: null }, Memory: { TotalBytes: null, UsedBytes: null, CachedBytes: null, SwapUsedBytes: null }, Storage: { TotalBytes: null, UsedBytes: null, Complete: true, Volumes: [] }, Transcoding: { Available: false, Active: null, Limit: null, HardwareActive: null, SoftwareActive: null } });
+        if (captured.path === '/admin/v1/storage/library-directories') return json(route, { Items: [], TotalRecordCount: 0 });
+        if (captured.path === '/admin/v1/backups/policy') return json(route, { Revision: '1', Enabled: false, Schedule: { Kind: 'daily', DayOfWeek: null, TimeOfDay: '03:00', Timezone: 'UTC' }, KeepCount: 7, IncludeImages: true, HasPassphrase: false, NextRunAt: null, Available: true, UnavailableReason: '', TaskId: '', LastRunAt: null, LastRunState: '', LastBackupId: '' });
+        if (captured.path === '/admin/v1/settings') return json(route, settings());
+        if (captured.path === '/admin/v1/users/activity') return json(route, { Items: (url.searchParams.get('UserIds') ?? '').split(',').filter(Boolean).map((Id) => ({ Id, LastLoginDate: null, LastActivityDate: null, LastPlayedDate: null, PlayedItemCount: 0 })), ObservedAt: timestamp });
+        if (captured.path === '/admin/v1/providers/configuration') return json(route, providerConfigurationFixture());
         if (captured.path === '/admin/v1/users') return json(route, { Items: [this.user], TotalRecordCount: 1 });
         if (captured.path === userPath) return json(route, { User: { ...this.user, Revision: '1', Policy: {
           EnableAllFolders: true, EnabledFolders: [], EnableMediaPlayback: true,
           EnablePlaybackRemuxing: true, EnableAudioPlaybackTranscoding: true, EnableVideoPlaybackTranscoding: true,
         } } });
         if (captured.path === credentialsPath) return json(route, this.credentials);
-        if (captured.path === preferencesPath) return json(route, this.preferences);
         if (captured.path === '/admin/v1/features') return json(route, { Items: [
           { Id: 'playback', Name: 'Playback', FeatureType: 'User' }, { Id: 'preferences', Name: 'Preferences', FeatureType: 'User' },
         ] });
@@ -117,12 +110,6 @@ class SelectedPlaybackAPI {
           ...(Object.hasOwn(input, 'ProfilePin') ? { HasProfilePin: Boolean(input.ProfilePin) } : {}),
         };
         return json(route, { Credentials: this.credentials, CurrentSessionRevoked: false });
-      }
-      if (captured.method === 'PUT' && captured.path === preferencesPath) {
-        const input = captured.body as { Revision: string; Configuration: Partial<UserConfiguration> };
-        if (input.Revision !== this.preferences.Revision) return json(route, { Error: { Code: 'revision_conflict', Message: 'Preferences changed. Reload before saving.' } }, 409);
-        this.preferences = { ...this.preferences, Revision: (BigInt(this.preferences.Revision) + 1n).toString(), Configuration: { ...this.preferences.Configuration, ...input.Configuration } };
-        return json(route, this.preferences);
       }
       if (['PUT', 'DELETE'].includes(captured.method) && captured.path === introPath) {
         const input = captured.body as IntroInput;
@@ -155,13 +142,14 @@ test.use({ serviceWorkers: 'block', trace: 'off', video: 'off' });
 async function openUser(page: Page): Promise<Locator> {
   await page.goto('/admin/users');
   await page.getByRole('button', { name: `Manage ${member.Name}`, exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Manage user', exact: true });
-  await expect(dialog.getByRole('textbox', { name: /^Username/ })).toHaveValue(member.Name);
+  const dialog = page.getByRole('dialog', { name: `Manage user ${member.Name}`, exact: true });
+  await expect(dialog).toBeVisible();
   return dialog;
 }
 
 async function openCredentials(page: Page, visit = true): Promise<Locator> {
-  const user = visit ? await openUser(page) : page.getByRole('dialog', { name: 'Manage user', exact: true });
+  const user = visit ? await openUser(page) : page.getByRole('dialog', { name: `Manage user ${member.Name}`, exact: true });
+  await user.getByRole('tab', { name: 'Password', exact: true }).click();
   await user.getByRole('button', { name: 'Manage local credentials', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Local credentials', exact: true });
   await expect(dialog).toBeVisible();
@@ -198,8 +186,8 @@ async function saveCredentials(page: Page, dialog: Locator, options: { status?: 
     await expect(dialog.getByRole('button', { name: 'Reload', exact: true }).last()).toBeEnabled();
   }
   if (options.profilePinOnly && status === 200) {
-    await expect(dialog.getByRole('alert').filter({ hasText: /^Profile PIN saved\b/ })).toBeVisible();
-    await expect(dialog.getByRole('alert').filter({ hasText: sessionRevocationClaim })).toHaveCount(0);
+    await expect(dialog.getByText('Profile PIN saved for compatible client profile locks.', { exact: true })).toBeVisible();
+    await expect(dialog.getByRole('status').filter({ hasText: sessionRevocationClaim })).toHaveCount(0);
   }
 }
 
@@ -306,95 +294,12 @@ test('a user without a normal account password cannot enter a new profile PIN', 
   expect(api.writes()).toEqual([]);
 });
 
-test('playback preferences save every intro mode and next episode choice without credential fields', async ({ page, api }) => {
-  const user = await openUser(page);
-  await user.getByRole('button', { name: 'Playback and display preferences', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Playback and display preferences', exact: true });
-  const intro = dialog.getByRole('combobox', { name: 'Intro skipping', exact: true });
-  const nextEpisode = dialog.getByRole('checkbox', { name: 'Automatically play the next episode', exact: true });
-  await expect(intro).toHaveText('Off');
-  await expect(nextEpisode).toBeChecked();
-  const cases = [
-    { label: 'Show skip button', mode: 'ShowButton', next: false },
-    { label: 'Skip automatically', mode: 'AutoSkip', next: true },
-    { label: 'Off', mode: 'None', next: false },
-  ] as const;
-  for (const [index, choice] of cases.entries()) {
-    await intro.click();
-    await page.getByRole('option', { name: choice.label, exact: true }).click();
-    await nextEpisode.setChecked(choice.next);
-    const save = dialog.getByRole('button', { name: 'Save preferences', exact: true });
-    const [response] = await Promise.all([
-      page.waitForResponse((result) => result.request().method() === 'PUT' && new URL(result.url()).pathname === preferencesPath),
-      save.click(),
-    ]);
-    expect(response.status()).toBe(200);
-    await expect(intro).toBeEnabled();
-    await expect(save).toBeDisabled();
-    expect(api.writes(preferencesPath).at(-1)?.body).toEqual({
-      Revision: String(index + 1), Configuration: {
-        AudioLanguagePreference: 'en', SubtitleLanguagePreference: 'en', PlayDefaultAudioTrack: true,
-        RememberAudioSelections: true, RememberSubtitleSelections: true, SubtitleMode: 'Default', ResumeRewindSeconds: 5,
-        HidePlayedInLatest: false, HidePlayedInMoreLikeThis: false, OrderedViews: [], LatestItemsExcludes: [], MyMediaExcludes: [],
-        HidePlayedInSuggestions: false, DisplayMissingEpisodes: false,
-        IntroSkipMode: choice.mode, EnableNextEpisodeAutoPlay: choice.next,
-      },
-    });
-  }
-  expect(api.writes(preferencesPath)).toHaveLength(cases.length);
-});
-
-test('discovery preferences save and reload missing episode and played suggestion choices', async ({ page, api }) => {
-  const user = await openUser(page);
-  await user.getByRole('button', { name: 'Playback and display preferences', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Playback and display preferences', exact: true });
-  await dialog.getByRole('checkbox', { name: 'Display missing episodes', exact: true }).check();
-  await dialog.getByRole('checkbox', { name: 'Hide played items from Suggestions', exact: true }).check();
-  const [response] = await Promise.all([
-    page.waitForResponse((result) => result.request().method() === 'PUT' && new URL(result.url()).pathname === preferencesPath),
-    dialog.getByRole('button', { name: 'Save preferences', exact: true }).click(),
-  ]);
-  expect(response.status()).toBe(200);
-  await expect(dialog.getByRole('button', { name: 'Save preferences', exact: true })).toBeDisabled();
-  expect(api.writes(preferencesPath)).toHaveLength(1);
-  const input = api.writes(preferencesPath)[0].body as { Configuration: Record<string, unknown> };
-  expect(input.Configuration).toMatchObject({ DisplayMissingEpisodes: true, HidePlayedInSuggestions: true, HidePlayedInLatest: false, HidePlayedInMoreLikeThis: false });
-  expect(input.Configuration).not.toHaveProperty('ProfilePin');
-  expect(input.Configuration).not.toHaveProperty('EnableLocalPassword');
-  await dialog.getByRole('button', { name: 'Close', exact: true }).click();
-  await user.getByRole('button', { name: 'Playback and display preferences', exact: true }).click();
-  await expect(dialog.getByRole('checkbox', { name: 'Display missing episodes', exact: true })).toBeChecked();
-  await expect(dialog.getByRole('checkbox', { name: 'Hide played items from Suggestions', exact: true })).toBeChecked();
-});
-
-test('conflicted discovery preferences keep the draft and require reload before another write', async ({ page, api }) => {
-  const user = await openUser(page);
-  await user.getByRole('button', { name: 'Playback and display preferences', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Playback and display preferences', exact: true });
-  const missing = dialog.getByRole('checkbox', { name: 'Display missing episodes', exact: true });
-  await missing.check();
-  api.preferences = { ...api.preferences, Revision: '9007199254740993' };
-  const [response] = await Promise.all([
-    page.waitForResponse((result) => result.request().method() === 'PUT' && new URL(result.url()).pathname === preferencesPath),
-    dialog.getByRole('button', { name: 'Save preferences', exact: true }).click(),
-  ]);
-  expect(response.status()).toBe(409);
-  await expect(missing).toBeChecked();
-  await expect(missing).toBeDisabled();
-  await expect(dialog.getByRole('button', { name: 'Save preferences', exact: true })).toBeDisabled();
-  page.once('dialog', (prompt) => { void prompt.accept(); });
-  await dialog.getByRole('button', { name: 'Reload', exact: true }).last().click();
-  await expect(missing).not.toBeChecked();
-  await expect(missing).toBeEnabled();
-  expect(api.writes(preferencesPath)).toHaveLength(1);
-});
-
 test('metadata editing has no manual intro correction flow and leaves stored intervals unchanged', async ({ page, api }) => {
   const retained = structuredClone(api.intro);
   await page.goto(`/admin/libraries/${library.Id}/items`);
-  await page.getByRole('button', { name: 'Edit metadata for Selected playback movie', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit metadata for Selected playback movie', exact: true }).first().click();
   const dialog = page.getByRole('dialog', { name: /^Edit metadata/ });
-  await expect(dialog.getByRole('button', { name: 'Manage artwork', exact: true })).toBeVisible();
+  await expect(dialog.getByRole('tab', { name: 'Images', exact: true })).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Manage intro', exact: true })).toHaveCount(0);
   await expect(page.getByRole('dialog', { name: 'Intro interval', exact: true })).toHaveCount(0);
   expect(api.writes(introPath)).toHaveLength(0);

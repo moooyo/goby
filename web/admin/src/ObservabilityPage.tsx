@@ -1,49 +1,25 @@
-import { Fragment, useEffect, useRef, useState } from 'react';
-import type { FormEvent } from 'react';
-import { Alert, Box, Button, Chip, Collapse, IconButton, MenuItem, Paper, Skeleton, Stack, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, Tabs, TextField, Tooltip, Typography } from './ui';
-import { CloseRounded } from './icons';
-import { ContentCopyRounded } from './icons';
-import { DownloadRounded } from './icons';
-import { ExpandLessRounded } from './icons';
-import { ExpandMoreRounded } from './icons';
-import { FilterAltOffOutlined } from './icons';
-import { FilterListRounded } from './icons';
-import { HistoryRounded } from './icons';
-import { RefreshRounded } from './icons';
-import { SearchRounded } from './icons';
-import { SubjectRounded } from './icons';
-import { activityActions, activitySeverities, adminApi, ApiError, isAbortError } from './api';
-import type { ActivityAction, ActivityEntry, ActivityQuery, ActivityResourceKind, ActivityResponse, ActivitySeverity, ServerLogFile, ServerLogLinesResponse, ServerLogsResponse } from './api';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Box, Button, Chip, Dialog, DialogContent, DialogTitle, FormControlLabel, IconButton, MenuItem, Paper, Skeleton, Stack, Switch, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, Tabs, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from './ui';
+import { CloseRounded, ContentCopyRounded, DownloadRounded, HistoryRounded, RefreshRounded, SubjectRounded } from './icons';
+import { adminApi, ApiError, isAbortError } from './api';
+import type { ActivityAction, ActivityEntry, ActivityResourceKind, ActivityResponse, ActivitySeverity, ServerLogFile, ServerLogLinesResponse, ServerLogsResponse } from './api';
 import { ErrorNotice, PageHeading } from './components';
+import { pageURL } from './dashboardNavigation';
 import { colors } from './theme';
 import { adminLocale, useTranslation } from './i18n';
 import './system-pages.css';
 
-const actionLabels: Record<ActivityAction, string> = {
-  'user.created': 'User created', 'user.updated': 'User updated', 'user.password_reset': 'User password reset',
-  'session.login': 'Signed in', 'session.revoked': 'Session revoked',
-  'playback.started': 'Playback started', 'playback.stopped': 'Playback stopped',
-  'application_key.created': 'API key created', 'application_key.revealed': 'API key revealed', 'application_key.revoked': 'API key revoked',
-  'device.updated': 'Device updated', 'device.removed': 'Device removed',
-  'library.created': 'Library created', 'library.removed': 'Library removed', 'library.root_binding.updated': 'Library root binding updated',
-  'scan.requested': 'Scan requested', 'scan.cancel_requested': 'Scan cancellation requested', 'scan.finished': 'Scan finished',
-  'metadata.updated': 'Metadata updated', 'settings.updated': 'Settings updated',
-  'task.admitted': 'Task admitted', 'task.cancel_requested': 'Task cancellation requested', 'task.finished': 'Task finished', 'task.schedule_updated': 'Task schedule updated',
-  'backup.requested': 'Backup requested', 'backup.cancel_requested': 'Backup cancellation requested', 'backup.finished': 'Backup finished',
-  'backup.published': 'Backup available',
-  'user.deleted': 'User deleted',
-  'library.updated': 'Library updated',
-  'item.deleted': 'Media item deleted',
-  'subtitle.deleted': 'Subtitle deleted',
-  'backup.imported': 'Backup imported', 'backup.delete_requested': 'Backup deletion requested', 'backup.deleted': 'Backup deleted', 'backup.downloaded': 'Backup download prepared',
-  'restore.requested': 'Restore requested', 'restore.planned': 'Restore planned', 'restore.apply_requested': 'Restore application requested',
-  'restore.applied': 'Restore applied', 'restore.rollback_requested': 'Restore rollback requested', 'restore.cancel_requested': 'Restore cancellation requested', 'restore.failed': 'Restore failed',
-};
+const actionFilters = [
+  ['', 'All actions'], ['settings.updated', 'Settings updated'], ['user.updated', 'Account updated'], ['user.created', 'Account created'],
+  ['scan.finished', 'Scan finished'], ['task.finished', 'Task finished'], ['session.login', 'Sign-in'], ['playback.started', 'Playback started'],
+] as const satisfies readonly (readonly [ActivityAction | '', string])[];
+const severityFilters = [['', 'All'], ['Error', 'Error'], ['Warn', 'Warning'], ['Info', 'Info']] as const satisfies readonly (readonly [ActivitySeverity | '', string])[];
+const periodFilters = [['all', 'All retained activity'], ['today', 'Today'], ['week', 'Last 7 days']] as const;
 const resourceLabels: Record<ActivityResourceKind, string> = {
   user: 'User', session: 'Session', application_key: 'API key', device: 'Device', library: 'Library', library_root: 'Library root', scan: 'Scan',
   item: 'Item', settings: 'Settings', task: 'Task', task_run: 'Task run', backup: 'Backup', restore: 'Restore',
 };
-const sourceLabels = { native: 'Console', emby: 'Emby API', system: 'System' };
+const stateLabels: Record<NonNullable<ActivityEntry['State']>, string> = { completed: 'Completed', failed: 'Failed', cancelled: 'Cancelled', interrupted: 'Interrupted' };
 const pageSizes = [25, 50, 100, 200];
 const panelSx = { overflow: 'hidden', borderRadius: '14px', bgcolor: 'var(--s2)', borderColor: 'var(--line)' };
 const sectionHeaderSx = { alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, px: 2, py: 1.25 };
@@ -88,158 +64,234 @@ function actorName(actor: ActivityEntry['Actor']): string {
   return actor.Kind === 'system' ? 'System' : actor.Kind === 'application_key' ? 'API key' : actor.Name || 'User';
 }
 
-function Actor({ actor, onFilter }: { actor: ActivityEntry['Actor']; onFilter: (id: string) => void }) {
-  const label = actorName(actor);
-  return actor.Id ? <Tooltip title={`Filter activity by ${label}`}><Button size="small" color="inherit" onClick={() => onFilter(actor.Id!)} aria-label={`Filter by actor ${actor.Id}`} aria-description={label} sx={{ minWidth: 0, maxWidth: '100%', justifyContent: 'flex-start', px: 0.75, ml: -0.75, fontWeight: 400, color: 'text.secondary' }}><Box component="span" translate={actor.Kind === 'user' && actor.Name ? 'no' : undefined} sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</Box></Button></Tooltip> : <Typography variant="body2" color="text.secondary" translate={actor.Kind === 'user' && actor.Name ? 'no' : undefined}>{label}</Typography>;
+const playbackSummary = {
+  'playback.started': { Name: 'Playback started', Overview: 'An authorized player reported playback starting.' },
+  'playback.stopped': { Name: 'Playback stopped', Overview: "An authorized player's playback stop was committed." },
+};
+
+type ActivityRecord = Omit<ActivityEntry, 'Resource'> & { Resource: { Kind: ActivityResourceKind; Id?: string } };
+
+function activityRecord(entry: ActivityEntry): ActivityRecord {
+  const { Action } = entry;
+  if (Action !== 'playback.started' && Action !== 'playback.stopped') return entry;
+  // Use the same projection for search, presentation, clipboard and export.
+  // A media ID or playback fingerprint also makes the viewed item traceable.
+  const { Id, Date, Severity, Source, Actor, Revision, Count, State, ChangedFields } = entry;
+  return { Id, Date, Action, Severity, Source, Actor, Resource: { Kind: 'item' }, Revision, Count, State, ChangedFields, ...playbackSummary[Action] };
 }
 
-function ActivityDetails({ entry, id, expanded }: { entry: ActivityEntry; id: string; expanded: boolean }) {
+function activitySource(entry: ActivityRecord): string {
+  if (entry.Action === 'session.login' || entry.Action === 'playback.started' || entry.Action === 'playback.stopped') return 'User';
+  if (entry.Source === 'system' || entry.Action === 'scan.finished' || entry.Action === 'task.finished') return 'System';
+  return 'Console';
+}
+
+function ActivityDetails({ entry, onClose }: { entry: ActivityRecord; onClose: () => void }) {
   const { t } = useTranslation();
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const json = JSON.stringify(entry, null, 2);
   async function copyRecord() {
-    try { await navigator.clipboard.writeText(JSON.stringify(entry, null, 2)); setCopyState('copied'); }
+    try { await navigator.clipboard.writeText(json); setCopyState('copied'); }
     catch { setCopyState('failed'); }
   }
-  return <Collapse in={expanded} unmountOnExit id={id}>
-    <Box sx={{ p: 2.5, bgcolor: colors.surface, borderTop: 1, borderColor: 'divider' }}>
-      {entry.Overview && <Typography variant="body2" sx={{ mb: 2, overflowWrap: 'anywhere' }}>{entry.Overview}</Typography>}
-      <Stack direction="row" sx={{ flexWrap: 'wrap', columnGap: 4, rowGap: 1.5 }}>
-        <Box sx={{ minWidth: 0 }}><Typography variant="caption" color="text.secondary">Activity</Typography><Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{entry.Name}</Typography></Box>
-        <Box><Typography variant="caption" color="text.secondary">Activity ID</Typography><Typography variant="body2" className="mono">{entry.Id}</Typography></Box>
-        <Box><Typography variant="caption" color="text.secondary">Action</Typography><Typography variant="body2" className="mono">{entry.Action}</Typography></Box>
-        <Box sx={{ minWidth: 0 }}><Typography variant="caption" color="text.secondary">Actor</Typography><Typography variant="body2" translate={entry.Actor.Kind === 'user' && entry.Actor.Name ? 'no' : undefined} sx={{ overflowWrap: 'anywhere' }}>{actorName(entry.Actor)}</Typography></Box>
-        {entry.Actor.Id && <Box sx={{ minWidth: 0 }}><Typography variant="caption" color="text.secondary">Actor ID</Typography><Typography variant="body2" className="mono" sx={{ overflowWrap: 'anywhere' }}>{entry.Actor.Id}</Typography></Box>}
-        <Box sx={{ minWidth: 0 }}><Typography variant="caption" color="text.secondary">Resource</Typography><Typography variant="body2">{resourceLabels[entry.Resource.Kind]}</Typography>{entry.Resource.Name && <Typography variant="body2" translate="no" sx={{ overflowWrap: 'anywhere' }}>{entry.Resource.Name}</Typography>}<Typography variant="body2" className="mono" sx={{ overflowWrap: 'anywhere' }}>{entry.Resource.Id}</Typography></Box>
-        <Box><Typography variant="caption" color="text.secondary">Affected count</Typography><Typography variant="body2" className="mono">{entry.Count}</Typography></Box>
-        {entry.PreviousRevision !== undefined && <Box><Typography variant="caption" color="text.secondary">Previous revision</Typography><Typography variant="body2" className="mono">{entry.PreviousRevision}</Typography></Box>}
-        {entry.Revision !== null && <Box><Typography variant="caption" color="text.secondary">Revision</Typography><Typography variant="body2" className="mono">{entry.Revision}</Typography></Box>}
-        {entry.ObservationFingerprint !== undefined && <Box sx={{ minWidth: 0, maxWidth: '100%' }}><Typography variant="caption" color="text.secondary">Observation fingerprint</Typography><Typography variant="body2" className="mono" sx={{ overflowWrap: 'anywhere' }}>{entry.ObservationFingerprint}</Typography></Box>}
-        {entry.State !== null && <Box><Typography variant="caption" color="text.secondary">Outcome</Typography><Typography variant="body2" sx={{ textTransform: 'capitalize' }}>{entry.State}</Typography></Box>}
-      </Stack>
-      {entry.ChangedFields.length > 0 && <Box sx={{ mt: 2 }}><Typography variant="caption" color="text.secondary" component="div" sx={{ mb: 0.8 }}>Changed fields</Typography><Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.8 }}>{entry.ChangedFields.map((field) => <Chip key={field} label={field} size="small" variant="outlined" />)}</Stack></Box>}
-      <pre className="system-json" aria-label={t('Activity JSON')}>{JSON.stringify(entry, null, 2)}</pre>
+  return <Dialog open maxWidth="sm" onClose={onClose} aria-labelledby="activity-detail-title" aria-describedby="activity-detail-message">
+    <DialogTitle id="activity-detail-title">Activity details</DialogTitle>
+    <DialogContent>
+      <Typography id="activity-detail-message" variant="body1" sx={{ overflowWrap: 'anywhere' }}>{entry.Name}</Typography>
+      <Stack direction="row" sx={{ mt: 1, mb: 2, alignItems: 'center', flexWrap: 'wrap', gap: 1 }}><Severity severity={entry.Severity} /><time className="system-mono" dateTime={entry.Date}>{localTime(entry.Date)}</time></Stack>
+      {entry.Overview && <Typography variant="body2" color="text.secondary" sx={{ mb: 2, overflowWrap: 'anywhere' }}>{entry.Overview}</Typography>}
+      <dl className="system-activity-facts">
+        <div><dt>{t('Activity ID')}</dt><dd className="mono">{entry.Id}</dd></div>
+        <div><dt>{t('Action')}</dt><dd className="mono">{entry.Action}</dd></div>
+        <div><dt>{t('Actor')}</dt><dd translate={entry.Actor.Kind === 'user' && entry.Actor.Name ? 'no' : undefined}>{entry.Actor.Name || t(actorName(entry.Actor))}</dd></div>
+        {entry.Actor.Id && <div><dt>{t('Actor ID')}</dt><dd className="mono">{entry.Actor.Id}</dd></div>}
+        <div><dt>{t('Resource')}</dt><dd>{t(resourceLabels[entry.Resource.Kind])}{entry.Resource.Id && <> · <code>{entry.Resource.Id}</code></>}</dd></div>
+        <div><dt>{t('Affected count')}</dt><dd className="mono">{entry.Count}</dd></div>
+        {entry.Revision !== null && <div><dt>{t('Revision')}</dt><dd className="mono">{entry.PreviousRevision !== undefined && `${entry.PreviousRevision} → `}{entry.Revision}</dd></div>}
+        {entry.ObservationFingerprint !== undefined && <div><dt>{t('Observation fingerprint')}</dt><dd className="mono">{entry.ObservationFingerprint}</dd></div>}
+        {entry.State !== null && <div><dt>{t('Outcome')}</dt><dd>{t(stateLabels[entry.State])}</dd></div>}
+      </dl>
+      {entry.ChangedFields.length > 0 && <Box sx={{ mt: 2 }}><Typography variant="caption" color="text.secondary" component="div" sx={{ mb: 0.8 }}>Changed fields</Typography><Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.8 }}>{entry.ChangedFields.map((field) => <Chip key={field} translate="no" label={field} size="small" variant="outlined" />)}</Stack></Box>}
+      <pre className="system-json" aria-label={t('Activity JSON')}>{json}</pre>
       <div className="system-json-action"><Button size="small" startIcon={<ContentCopyRounded />} onClick={() => void copyRecord()}>{copyState === 'copied' ? 'Copied' : 'Copy JSON'}</Button></div>
       {copyState === 'failed' && <Alert severity="error">Copy failed. Select and copy the JSON text above.</Alert>}
-    </Box>
-  </Collapse>;
+    </DialogContent>
+  </Dialog>;
 }
 
-function ActivityList({ items, onActor }: { items: ActivityEntry[]; onActor: (id: string) => void }) {
+function ActivityList({ items }: { items: ActivityRecord[] }) {
   const { t, locale } = useTranslation();
-  const [expanded, setExpanded] = useState<string>();
-  function toggle(id: string) { setExpanded((current) => current === id ? undefined : id); }
-  return <div className="system-activity-scroll"><table className="system-activity-table" aria-label={t('Activity records')}>
-    <thead><tr><th>{t('Time')}</th><th>{t('Severity')}</th><th>{t('Source')}</th><th>{t('Message')}</th></tr></thead>
-    <tbody>{items.map((entry) => <Fragment key={entry.Id}>
-      <tr data-expanded={expanded === entry.Id}>
-        <td><time className="system-mono" dateTime={entry.Date} title={localTime(entry.Date)}>{new Date(entry.Date).toLocaleString(locale, { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</time></td>
-        <td><Severity severity={entry.Severity} /></td>
-        <td className="system-source-cell">{t(sourceLabels[entry.Source])}</td>
-        <td><button type="button" className="system-activity-open" aria-label={`${t('Details for activity')} ${entry.Id}`} aria-expanded={expanded === entry.Id} aria-controls={`activity-table-${entry.Id}`} onClick={() => toggle(entry.Id)}><span>{entry.Name}</span>{expanded === entry.Id ? <ExpandLessRounded /> : <ExpandMoreRounded />}</button><div className="system-activity-sub" style={{ flexWrap: 'wrap' }}><Actor actor={entry.Actor} onFilter={onActor} />{entry.Resource.Name && <span translate="no" style={{ minWidth: 0, overflowWrap: 'anywhere' }}>{entry.Resource.Name}</span>}<code>{entry.Action}</code></div></td>
-      </tr>
-      {expanded === entry.Id && <tr className="system-activity-details"><td colSpan={4}><ActivityDetails entry={entry} expanded id={`activity-table-${entry.Id}`} /></td></tr>}
-    </Fragment>)}</tbody>
-  </table></div>;
+  const [detail, setDetail] = useState<ActivityRecord>();
+  return <>
+    <div className="system-activity-scroll" role="region" aria-label={t('Activity records')} tabIndex={0}>
+      <table className="system-activity-table" aria-label={t('Activity records')}>
+        <thead><tr><th scope="col">{t('Time')}</th><th scope="col">{t('Severity')}</th><th scope="col">{t('Source')}</th><th scope="col">{t('Message')}</th><th scope="col">{t('Actor')}</th></tr></thead>
+        <tbody>{items.map((entry) => {
+          const actor = actorName(entry.Actor);
+          const userName = entry.Actor.Kind === 'user' && entry.Actor.Name;
+          const message = t(entry.Name);
+          return <tr key={entry.Id} data-activity-id={entry.Id}>
+            <td><time className="system-mono" dateTime={entry.Date} title={localTime(entry.Date)}>{new Date(entry.Date).toLocaleString(locale, { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</time></td>
+            <td><Severity severity={entry.Severity} /></td>
+            <td>{t(activitySource(entry))}</td>
+            <td><button type="button" className="system-activity-open" aria-label={t('Activity details: {message}', { message })} aria-haspopup="dialog" onClick={() => setDetail(entry)}>{message}</button></td>
+            <td className="system-activity-actor" translate={userName ? 'no' : undefined}>{userName || t(actor)}</td>
+          </tr>;
+        })}</tbody>
+      </table>
+    </div>
+    {detail && <ActivityDetails entry={detail} onClose={() => setDetail(undefined)} />}
+  </>;
 }
 
-type ActivityPeriod = 'all' | 'day' | 'week' | 'month' | 'custom';
-const emptyFilters = { severity: '' as ActivitySeverity | '', action: '' as ActivityAction | '', period: 'all' as ActivityPeriod, since: '' };
+type ActivityPeriod = typeof periodFilters[number][0];
+type SeverityFilter = typeof severityFilters[number][0];
+type ActionFilter = typeof actionFilters[number][0];
+const emptyFilters: { severity: SeverityFilter; action: ActionFilter; period: ActivityPeriod; minDate?: string } = { severity: '', action: '', period: 'all', minDate: undefined };
 
-function ActivityPanel() {
-  const { t, locale, countLabel } = useTranslation();
-  const [showFilters, setShowFilters] = useState(false);
+function activityMinDate(period: ActivityPeriod): string | undefined {
+  if (period === 'all') return undefined;
+  const date = new Date();
+  if (period === 'today') date.setHours(0, 0, 0, 0);
+  else date.setTime(date.getTime() - 7 * 86400000);
+  return date.toISOString();
+}
+
+type ActivityCounts = Partial<Record<SeverityFilter, number | null>>;
+
+function useActivityCounts(action: ActionFilter, minDate: string | undefined, revision: number): ActivityCounts {
+  const key = JSON.stringify([action, minDate, revision]);
+  const [counts, setCounts] = useState<{ key: string; totals: ActivityCounts }>();
+  useEffect(() => {
+    const controller = new AbortController();
+    const signal = controller.signal;
+    function store(severity: SeverityFilter, total: number | null) {
+      if (!signal.aborted) setCounts((current) => ({ key, totals: { ...(current?.key === key ? current.totals : {}), [severity]: total } }));
+    }
+    for (const [severity] of severityFilters) {
+      void adminApi.getActivity({ Action: action || undefined, MinDate: minDate, Severity: severity || undefined, Limit: 1 }, { signal })
+        .then((result) => store(severity, result.TotalRecordCount))
+        .catch((cause: unknown) => { if (!isAbortError(cause)) store(severity, null); });
+    }
+    return () => controller.abort();
+  }, [action, minDate, key]);
+  return counts?.key === key ? counts.totals : {};
+}
+
+function ActivityPanel({ onUsers }: { onUsers?: () => void }) {
+  const { t, locale } = useTranslation();
   const [search, setSearch] = useState('');
-  const [source, setSource] = useState<ActivityEntry['Source'] | ''>('');
   const [live, setLive] = useState(false);
-  const [filters, setFilters] = useState(emptyFilters);
-  const [query, setQuery] = useState<{ filters: ActivityQuery; page: number; pageSize: number }>({ filters: {}, page: 0, pageSize: 50 });
+  const [query, setQuery] = useState({ ...emptyFilters, page: 0, pageSize: 50 });
   const [revision, setRevision] = useState(0);
-  const [loaded, setLoaded] = useState<{ key: string; queryKey: string; result: ActivityResponse }>();
+  const [countRevision, setCountRevision] = useState(0);
+  const [loaded, setLoaded] = useState<{ key: string; queryKey: string; result: Omit<ActivityResponse, 'Items'> & { Items: ActivityRecord[] } }>();
   const [failure, setFailure] = useState<{ key: string; cause: unknown }>();
+  const minDate = query.minDate;
   const queryKey = JSON.stringify(query);
   const requestKey = JSON.stringify([query, revision]);
   const data = loaded?.key === requestKey || (live && loaded?.queryKey === queryKey) ? loaded?.result : undefined;
   const failed = failure?.key === requestKey;
   const loading = loaded?.key !== requestKey && !failed;
-  const dateIssue = filters.period === 'custom' && (!filters.since || !Number.isFinite(Date.parse(filters.since))) ? 'Choose a valid date and time.' : undefined;
-  const filtered = Object.values(query.filters).some(Boolean) || Boolean(source || search.trim());
+  const filtered = Boolean(query.severity || query.action || minDate || search.trim());
 
   useEffect(() => {
     const controller = new AbortController();
     setFailure(undefined);
-    void adminApi.getActivity({ ...query.filters, StartIndex: query.page * query.pageSize, Limit: query.pageSize }, { signal: controller.signal })
+    void adminApi.getActivity({ Severity: query.severity || undefined, Action: query.action || undefined, MinDate: minDate, StartIndex: query.page * query.pageSize, Limit: query.pageSize }, { signal: controller.signal })
       .then((result) => {
         if (controller.signal.aborted) return;
         if (query.page > 0 && query.page * query.pageSize >= result.TotalRecordCount) {
           setQuery((current) => ({ ...current, page: Math.max(0, Math.ceil(result.TotalRecordCount / query.pageSize) - 1) }));
-          return;
-        }
-        setLoaded({ key: requestKey, queryKey, result });
+        } else setLoaded({ key: requestKey, queryKey, result: { ...result, Items: result.Items.map(activityRecord) } });
       })
       .catch((cause: unknown) => { if (!controller.signal.aborted && !isAbortError(cause)) setFailure({ key: requestKey, cause }); });
     return () => controller.abort();
-  }, [query, queryKey, requestKey]);
+  }, [query, queryKey, requestKey, minDate]);
 
-  useEffect(() => {
-    if (query.page !== 0 && live) setLive(false);
-  }, [query.page, live]);
+  // Start loading the page before asking for the supplementary counts.
+  const counts = useActivityCounts(query.action, minDate, countRevision);
   useEffect(() => {
     if (!live || loading || failed || query.page !== 0) return;
-    const timer = window.setTimeout(() => { if (document.visibilityState !== 'hidden') setRevision((value) => value + 1); }, 5000);
-    const resume = () => { if (document.visibilityState !== 'hidden') setRevision((value) => value + 1); };
-    document.addEventListener('visibilitychange', resume);
-    return () => { window.clearTimeout(timer); document.removeEventListener('visibilitychange', resume); };
-  }, [live, loading, failed, query.page, revision]);
+    const updateIfVisible = () => {
+      if (document.visibilityState === 'hidden') return;
+      // A new local day needs a new midnight bound. Otherwise keep the window
+      // steady until a manual refresh rather than recounting every live poll.
+      if (query.period === 'today' && minDate !== activityMinDate('today')) {
+        setQuery((current) => ({ ...current, minDate: activityMinDate('today') }));
+      }
+      setRevision((value) => value + 1);
+    };
+    const timer = window.setTimeout(updateIfVisible, 5000);
+    document.addEventListener('visibilitychange', updateIfVisible);
+    return () => { window.clearTimeout(timer); document.removeEventListener('visibilitychange', updateIfVisible); };
+  }, [live, loading, failed, query.page, query.period, minDate, revision]);
 
-  const visibleItems = (data?.Items ?? []).filter((entry) => (!source || entry.Source === source) && (!search.trim() || `${entry.Name} ${entry.Overview} ${entry.Action} ${actorName(entry.Actor)} ${entry.Resource.Id} ${entry.Resource.Name ?? ''}`.toLocaleLowerCase(locale).includes(search.trim().toLocaleLowerCase(locale))));
+  const searchTerm = search.trim().toLocaleLowerCase(locale);
+  const visibleItems = useMemo(() => (data?.Items ?? []).filter((entry) => !searchTerm || [
+    entry.Name, t(entry.Name), entry.Overview, t(entry.Overview), entry.Action, actorName(entry.Actor), t(activitySource(entry)), entry.Resource.Id,
+  ].join(' ').toLocaleLowerCase(locale).includes(searchTerm)), [data, locale, searchTerm, t]);
   function exportPage() {
     const url = URL.createObjectURL(new Blob([visibleItems.map((entry) => JSON.stringify(entry)).join('\n')], { type: 'application/x-ndjson' }));
     const link = document.createElement('a'); link.href = url; link.download = 'goby-activity-page.jsonl'; link.click(); window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  function refresh() { setRevision((current) => current + 1); }
-  function applyFilters(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (dateIssue) return;
-    const days = filters.period === 'day' ? 1 : filters.period === 'week' ? 7 : 30;
-    const minDate = filters.period === 'all' ? undefined : filters.period === 'custom' ? new Date(filters.since).toISOString() : new Date(Date.now() - days * 86400000).toISOString();
-    setQuery((current) => ({ ...current, page: 0, filters: { Severity: filters.severity || undefined, Action: filters.action || undefined, MinDate: minDate, ActorId: current.filters.ActorId } }));
-    refresh();
+  function refresh() { setRevision((current) => current + 1); setCountRevision((current) => current + 1); }
+  function filter(patch: Partial<typeof emptyFilters>) {
+    setQuery((current) => ({ ...current, page: 0, ...patch }));
+    setRevision((current) => current + 1);
   }
-  function clearFilters() { setFilters(emptyFilters); setSearch(''); setSource(''); setQuery((current) => ({ ...current, filters: {}, page: 0 })); refresh(); }
+  function changePage(page: number, pageSize = query.pageSize) {
+    if (page !== 0) setLive(false);
+    setQuery((current) => ({ ...current, page, pageSize }));
+    setRevision((current) => current + 1);
+  }
 
+  const [beforeUsers, afterUsers] = t("To review an account's sign-ins, open its Login devices tab in {users}.").split('{users}');
   return <Box aria-busy={loading}>
-    {failed && <Box sx={{ mb: 3 }}><ErrorNotice error={failure?.cause} retry={refresh} /></Box>}
-    <Paper variant="outlined" sx={panelSx}>
-      <Stack direction="row" sx={sectionHeaderSx}><Stack direction="row" sx={{ alignItems: 'center', gap: 1.2 }}><Typography variant="h4" component="h2">Server activity</Typography>{data && <Chip size="small" label={data.TotalRecordCount.toLocaleString(adminLocale())} sx={{ bgcolor: colors.surface }} />}</Stack><Stack direction="row" sx={{ gap: 0.5 }}><Button size="small" startIcon={<DownloadRounded />} disabled={!data || visibleItems.length === 0} onClick={exportPage}>Export current page</Button><Tooltip title={showFilters ? 'Hide filters' : 'Filter activity'}><IconButton aria-label={showFilters ? 'Hide activity filters' : 'Filter activity'} aria-expanded={showFilters} aria-controls="activity-filters" onClick={() => setShowFilters((current) => !current)} sx={{ color: filtered || showFilters ? 'primary.main' : 'text.secondary', bgcolor: filtered ? 'info.light' : undefined }}><FilterListRounded fontSize="small" /></IconButton></Tooltip><Tooltip title="Refresh activity"><span><IconButton aria-label="Refresh activity" onClick={refresh} disabled={loading}><RefreshRounded fontSize="small" /></IconButton></span></Tooltip></Stack></Stack>
-      <div className="system-activity-tools">
-        <TextField className="system-log-search" size="small" label="Search this page" placeholder="Search messages, actors or resources" value={search} onChange={(event) => setSearch(event.target.value)} />
-        <TextField className="system-log-source" select size="small" label="Source on this page" value={source} onChange={(event) => setSource(event.target.value as ActivityEntry['Source'] | '')}><MenuItem value="">All sources</MenuItem>{Object.entries(sourceLabels).map(([key, label]) => <MenuItem key={key} value={key}>{label}</MenuItem>)}</TextField>
-        <Button className="system-live-button" variant="outlined" aria-pressed={live} disabled={query.page !== 0} onClick={() => setLive((value) => !value)}><span className={`system-status-dot${live && !failed ? ' is-active' : ''}`} aria-hidden="true" />{live ? failed ? 'Live updates paused' : 'Live updates on' : 'Live updates off'}</Button>
+    {failed && <Box sx={{ mb: 2 }}><ErrorNotice error={failure?.cause} retry={refresh} /></Box>}
+    <Paper component="section" aria-label="Server activity" variant="outlined" sx={panelSx}>
+      <div className="system-activity-toolbar">
+        <ToggleButtonGroup className="system-activity-severity" exclusive value={query.severity} aria-label="Severity" onChange={(_, severity: SeverityFilter | null) => { if (severity !== null) filter({ severity }); }}>
+          {severityFilters.map(([severity, label]) => {
+            // Live updates already return the selected segment's exact total.
+            const total = severity === query.severity && data ? data.TotalRecordCount : counts[severity];
+            return <ToggleButton key={severity} value={severity} aria-label={label} aria-description={total === null ? t('Activity count unavailable') : total === undefined ? t('Loading activity count') : t('Activity count: {count}', { count: total.toLocaleString(locale) })}>
+              {t(label)} <span className="system-mono" aria-hidden="true">{total?.toLocaleString(locale) ?? '—'}</span>
+            </ToggleButton>;
+          })}
+        </ToggleButtonGroup>
+        <TextField className="system-activity-select" select size="small" value={query.action} slotProps={{ htmlInput: { 'aria-label': 'Action' } }} onChange={(event) => filter({ action: event.target.value as ActionFilter })}>
+          {actionFilters.map(([action, label]) => <MenuItem key={action} value={action}>{label}</MenuItem>)}
+        </TextField>
+        <TextField className="system-activity-select" select size="small" value={query.period} slotProps={{ htmlInput: { 'aria-label': 'Time range' } }} onChange={(event) => { const period = event.target.value as ActivityPeriod; filter({ period, minDate: activityMinDate(period) }); }}>
+          {periodFilters.map(([period, label]) => <MenuItem key={period} value={period}>{label}</MenuItem>)}
+        </TextField>
+        <TextField className="system-activity-search" type="search" size="small" placeholder="Find on this page" slotProps={{ htmlInput: { 'aria-label': 'Find on this page' } }} value={search} onChange={(event) => setSearch(event.target.value)} />
+        <div className="system-activity-actions">
+          <FormControlLabel className="system-activity-live" label={live ? failed ? 'Live updates paused' : 'Live updates on' : 'Live updates off'} control={<Switch checked={live} disabled={query.page !== 0} slotProps={{ input: { 'aria-label': 'Live updates', 'aria-description': t('Live updates refresh the first page every 5 seconds and pause after an error.') } }} onChange={(_, checked) => setLive(checked)} />} />
+          <Button size="small" startIcon={<DownloadRounded />} disabled={!visibleItems.length} onClick={exportPage}>Export current page</Button>
+          <Tooltip title="Refresh activity"><span><IconButton aria-label="Refresh activity" onClick={refresh} disabled={loading}><RefreshRounded fontSize="small" /></IconButton></span></Tooltip>
+        </div>
       </div>
-      <Collapse in={showFilters} id="activity-filters">
-      <Box component="form" onSubmit={applyFilters} sx={{ px: { xs: 2.5, sm: 3 }, pb: 2.5, '& .MuiInputBase-root': { minHeight: 40, borderRadius: '8px' } }}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', xl: '1fr 1.4fr 1fr' }, gap: 2 }}>
-          <TextField select size="small" id="activity-severity" label="Severity" value={filters.severity} onChange={(event) => setFilters((current) => ({ ...current, severity: event.target.value as ActivitySeverity | '' }))}><MenuItem value="">All severities</MenuItem>{activitySeverities.map((severity) => <MenuItem key={severity} value={severity}>{severity}</MenuItem>)}</TextField>
-          <TextField select size="small" id="activity-action" label="Action" value={filters.action} onChange={(event) => setFilters((current) => ({ ...current, action: event.target.value as ActivityAction | '' }))}><MenuItem value="">All actions</MenuItem>{activityActions.map((action) => <MenuItem key={action} value={action}>{actionLabels[action]}</MenuItem>)}</TextField>
-          <TextField select size="small" id="activity-period" label="Date range" value={filters.period} onChange={(event) => setFilters((current) => ({ ...current, period: event.target.value as ActivityPeriod }))}><MenuItem value="all">All retained activity</MenuItem><MenuItem value="day">Last 24 hours</MenuItem><MenuItem value="week">Last 7 days</MenuItem><MenuItem value="month">Last 30 days</MenuItem><MenuItem value="custom">Since a date and time</MenuItem></TextField>
-          {filters.period === 'custom' && <TextField size="small" id="activity-since" label="Activity since" type="datetime-local" value={filters.since} onChange={(event) => setFilters((current) => ({ ...current, since: event.target.value }))} error={Boolean(dateIssue)} helperText={dateIssue ?? 'Uses your local time zone.'} slotProps={{ inputLabel: { shrink: true } }} />}
-        </Box>
-        {query.filters.ActorId && <Chip label={`Actor: ${query.filters.ActorId}`} onDelete={() => setQuery((current) => ({ ...current, page: 0, filters: { ...current.filters, ActorId: undefined } }))} sx={{ mt: 2, maxWidth: '100%', '& .MuiChip-label': { overflowWrap: 'anywhere' } }} />}
-        <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1, mt: 2 }}><Button type="submit" variant="outlined" startIcon={<SearchRounded />} disabled={Boolean(dateIssue)}>Apply filters</Button><Button color="secondary" startIcon={<FilterAltOffOutlined />} onClick={clearFilters} disabled={!filtered && !filters.severity && !filters.action && filters.period === 'all'}>Clear filters</Button></Stack>
-        {query.filters.MinDate && <Typography variant="caption" color="text.secondary" component="p" sx={{ mt: 1.5, mb: 0 }}>Showing activity since {localTime(query.filters.MinDate)}.</Typography>}
-      </Box>
-      </Collapse>
-      {filtered && !showFilters && <Stack direction="row" sx={{ px: 3, pb: 1.5, alignItems: 'center', flexWrap: 'wrap', gap: 1 }}><Chip size="small" color="info" label="Filters applied" onClick={() => setShowFilters(true)} /><Button size="small" onClick={clearFilters}>Clear filters</Button></Stack>}
       {loading && !data && <LoadingRows label="Loading activity" />}
-      {data && data.Items.length === 0 && <Stack spacing={1.5} sx={{ alignItems: 'center', p: { xs: 3, sm: 5 }, borderTop: 1, borderColor: 'divider', textAlign: 'center' }}><HistoryRounded sx={{ fontSize: 40, color: 'primary.main' }} /><Typography variant="h3" component="h3">{filtered ? 'No matching activity' : 'No recorded activity'}</Typography><Typography color="text.secondary" sx={{ maxWidth: 480 }}>{filtered ? 'Try another severity, action, or date range, or clear your filters.' : 'Committed administrative changes and task outcomes will appear here.'}</Typography>{filtered && <Button startIcon={<FilterAltOffOutlined />} onClick={clearFilters}>Clear filters</Button>}</Stack>}
-      {data && data.Items.length > 0 && visibleItems.length === 0 && <div className="system-table-empty">{t('No matching activity on this page.')}</div>}
-      {data && visibleItems.length > 0 && <ActivityList key={queryKey} items={visibleItems} onActor={(id) => { setShowFilters(true); setQuery((current) => ({ ...current, page: 0, filters: { ...current.filters, ActorId: id } })); }} />}
-      {failed && <Typography variant="body2" color="text.secondary" sx={{ px: 3, py: 3 }}>Activity could not be loaded. Refresh to read the current records.</Typography>}
-      {data && <TablePagination component="div" count={data.TotalRecordCount} page={query.page} rowsPerPage={query.pageSize} rowsPerPageOptions={pageSizes} labelRowsPerPage="Activities per page:" onPageChange={(_event, page) => setQuery((current) => ({ ...current, page }))} onRowsPerPageChange={(event) => { const pageSize = Number(event.target.value); if (pageSizes.includes(pageSize)) setQuery((current) => ({ ...current, pageSize, page: 0 })); }} sx={paginationSx} />}
+      {data && visibleItems.length === 0 && <Stack spacing={1} sx={{ alignItems: 'center', p: { xs: 3, sm: 5 }, borderTop: 1, borderColor: 'divider', textAlign: 'center' }}>
+        <HistoryRounded sx={{ fontSize: 32, color: 'primary.main' }} />
+        <Typography variant="h4" component="h3">{data.Items.length ? 'No matching activity on this page.' : filtered ? 'No matching activity' : 'No recorded activity'}</Typography>
+        <Typography variant="body2" color="text.secondary">{filtered ? 'Try another severity, action, or date range, or clear your filters.' : 'Administrative changes, sign-ins, playback reports, and task outcomes appear here.'}</Typography>
+        {filtered && <Button onClick={() => { filter(emptyFilters); setSearch(''); }}>Clear filters</Button>}
+      </Stack>}
+      {data && visibleItems.length > 0 && <ActivityList key={queryKey} items={visibleItems} />}
+      <p className="system-panel-footnote">
+        {data ? t(data.RetentionDays === 1 ? 'Activity is retained for {days} day and includes sign-ins and playback records.' : 'Activity is retained for {days} days and includes sign-ins and playback records.', { days: data.RetentionDays.toLocaleString(locale) }) : t('Activity includes sign-ins and playback records.')}{' '}
+        {t('On servers with many users, sign-ins and playback can make up most records. Filter by severity or action to find administrative changes. Search only checks the current page.')}{' '}
+        {beforeUsers}<a href={pageURL('users')} onClick={(event) => {
+          if (!onUsers || event.button !== 0 || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+          event.preventDefault(); onUsers();
+        }}>{t('Users')}</a>{afterUsers}
+      </p>
+      {data && <TablePagination component="div" count={data.TotalRecordCount} page={query.page} rowsPerPage={query.pageSize} rowsPerPageOptions={pageSizes} labelRowsPerPage="Activities per page:" disabled={loading} onPageChange={(_event, page) => changePage(page)} onRowsPerPageChange={(event) => { const size = Number(event.target.value); if (pageSizes.includes(size)) changePage(0, size); }} labelDisplayedRows={({ from, to, count }) => `${from.toLocaleString(locale)}–${to.toLocaleString(locale)} / ${count.toLocaleString(locale)}`} sx={paginationSx} />}
     </Paper>
-    <Typography variant="caption" color="text.secondary" sx={{ mt: 1.5, px: 0.5, display: 'block' }}>Search, source and export apply to the current page. Live updates refresh the first page every 5 seconds and stop after an error.</Typography>
-    <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5, px: 0.5 }}>{data ? `${countLabel(data.RetentionDays, `Activity is retained for ${data.RetentionDays} day.`, `Activity is retained for ${data.RetentionDays} days.`)} ` : ''}Retention is managed by the server. User names show the current account name when available. Times use your local time zone.</Typography>
   </Box>;
 }
 
@@ -382,11 +434,11 @@ function LogsPanel() {
   </Box>;
 }
 
-export function ObservabilityPage() {
+export function ObservabilityPage({ onUsers }: { onUsers?: () => void } = {}) {
   const [tab, setTab] = useState<'activity' | 'logs'>('activity');
   return <Box className="system-page system-observability">
-    <PageHeading title="Activity & logs" description="Review server events and retained diagnostic records." />
+    <PageHeading title="Activity & logs" description="Review administrative changes, sign-ins, playback, scan and task results, and diagnostic logs. On servers with many users, start by filtering by severity or action." />
     <Tabs value={tab} onChange={(_event, value: 'activity' | 'logs') => setTab(value)} aria-label="Activity and server logs" className="system-log-tabs" sx={{ mb: 2.25 }}><Tab value="activity" label="Activity" id="observability-activity-tab" aria-controls="observability-activity-panel" /><Tab value="logs" label="Server logs" id="observability-logs-tab" aria-controls="observability-logs-panel" /></Tabs>
-    {tab === 'activity' ? <Box role="tabpanel" id="observability-activity-panel" aria-labelledby="observability-activity-tab"><ActivityPanel /></Box> : <Box role="tabpanel" id="observability-logs-panel" aria-labelledby="observability-logs-tab"><LogsPanel /></Box>}
+    {tab === 'activity' ? <Box role="tabpanel" id="observability-activity-panel" aria-labelledby="observability-activity-tab"><ActivityPanel onUsers={onUsers} /></Box> : <Box role="tabpanel" id="observability-logs-panel" aria-labelledby="observability-logs-tab"><LogsPanel /></Box>}
   </Box>;
 }

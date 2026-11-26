@@ -44,7 +44,7 @@ test('registered directories are deduplicated exactly and shared disk capacity i
   installDirectories(api, [directory('/media/movies'), directory('/media/series')]);
   await page.goto('/admin/media/libraries');
   const main = page.getByRole('main');
-  const panel = main.getByRole('region', { name: 'Media directories', exact: true });
+  const panel = main.getByRole('region', { name: 'Storage directories', exact: true });
   await expect(panel.getByRole('listitem')).toHaveCount(2);
   await expect(panel.getByRole('listitem', { name: '/media/movies', exact: true })).toContainText('40 / 100 GiB');
   await expect(panel.getByRole('listitem', { name: '/media/series', exact: true })).toContainText('40 / 100 GiB');
@@ -69,7 +69,7 @@ test('unknown capacity and access remain unknown while capacity is independent o
     directory('/media/series', { Readable: null, Writable: null, TotalBytes: null, UsedBytes: null, AvailableBytes: null }),
   ]);
   await page.goto('/admin/media/libraries');
-  const panel = page.getByRole('main').getByRole('region', { name: 'Media directories', exact: true });
+  const panel = page.getByRole('main').getByRole('region', { name: 'Storage directories', exact: true });
   const movies = panel.getByRole('listitem', { name: '/media/movies', exact: true });
   const series = panel.getByRole('listitem', { name: '/media/series', exact: true });
   await expect(movies).toContainText('Not readable');
@@ -78,7 +78,8 @@ test('unknown capacity and access remain unknown while capacity is independent o
   await expect(series).toHaveAttribute('data-access', 'unknown');
   await expect(panel.getByRole('progressbar')).toHaveCount(0);
   await expect(panel).toContainText('Capacity unavailable');
-  await expect(panel).not.toContainText('0%');
+  await expect(movies).not.toContainText('0%');
+  await expect(series).not.toContainText('0%');
 
   replace([
     directory('/media/movies', { Available: false, Readable: false, UsedBytes: bytes(90n * GiB), AvailableBytes: bytes(5n * GiB) }),
@@ -99,32 +100,11 @@ test('unknown capacity and access remain unknown while capacity is independent o
   expect(api.writes()).toEqual([]);
 });
 
-test('overview selects real available bytes including reserved space and preserves other live resources', async ({ page, api }) => {
-  installDirectories(api, [
-    directory('/media/movies', { UsedBytes: bytes(10n * GiB), AvailableBytes: bytes(2n * GiB) }),
-    directory('/media/series', { UsedBytes: bytes(90n * GiB), AvailableBytes: bytes(8n * GiB) }),
-  ]);
-  await page.goto('/admin/');
-  const main = page.getByRole('main');
-  const metric = main.getByRole('region', { name: 'Directory with least available space status', exact: true });
-  await expect(metric.locator('.ov-metric-value')).toHaveText('2GiB');
-  await expect(metric).toContainText('/media/movies');
-  await expect(metric.getByRole('progressbar', { name: 'Directory usage for /media/movies', exact: true })).toHaveAttribute('aria-valuenow', '10');
-  await expect(metric).not.toContainText('/media/series');
-  await expect(main.getByRole('region', { name: 'CPU status', exact: true })).toContainText('28');
-  await expect(main.getByRole('region', { name: 'Memory status', exact: true })).toContainText('6');
-  await expect(main.getByRole('region', { name: 'Transcoding status', exact: true })).toContainText('2');
-  await expect(main.getByRole('region', { name: 'Recent activity', exact: true })).toContainText('Administrator signed in');
-  await expect(main.getByRole('region', { name: 'Needs attention', exact: true })).toContainText('Media directory is nearly full');
-  await evidence(page, test.info(), 'design2-storage-overview-real-minimum-available');
-  expect(api.writes()).toEqual([]);
-});
-
 test('failed directory refresh retains visibly stale data and leaves library access usable', async ({ page, api }) => {
   installDirectories(api, [directory('/media/movies'), directory('/media/series')]);
   await page.goto('/admin/media/libraries');
   const main = page.getByRole('main');
-  const panel = main.getByRole('region', { name: 'Media directories', exact: true });
+  const panel = main.getByRole('region', { name: 'Storage directories', exact: true });
   const movies = panel.getByRole('listitem', { name: '/media/movies', exact: true });
   await expect(movies).toContainText('40 / 100 GiB');
   const libraryReads = api.reads('/admin/v1/libraries').length;
@@ -147,36 +127,7 @@ test('failed directory refresh retains visibly stale data and leaves library acc
   expect(api.writes()).toEqual([]);
 });
 
-test('overview retains a stale minimum and removes the capacity bar for a later unknown observation', async ({ page, api }) => {
-  installDirectories(api, [directory('/media/movies', { AvailableBytes: bytes(2n * GiB) }), directory('/media/series')]);
-  await page.goto('/admin/');
-  const main = page.getByRole('main');
-  const metric = main.getByRole('region', { name: 'Directory with least available space status', exact: true });
-  await expect(metric.locator('.ov-metric-value')).toHaveText('2GiB');
-  api.handlers.set('GET ' + directoryPath, (route) => json(route, { Error: { Code: 'capacity_unavailable', Message: 'Directory capacity is temporarily unavailable.' } }, 503));
-  await main.getByRole('button', { name: 'Refresh overview', exact: true }).click();
-  await expect(metric).toHaveAttribute('data-stale', 'true');
-  await expect(metric).toContainText('Stale');
-  await expect(metric.locator('.ov-metric-value')).toHaveText('2GiB');
-  await expect(metric).toContainText('/media/movies');
-  await evidence(page, test.info(), 'design2-storage-overview-stale-minimum');
-
-  installDirectories(api, [directory('/media/movies', { TotalBytes: null, UsedBytes: null, AvailableBytes: null }), directory('/media/series', { TotalBytes: null, UsedBytes: null, AvailableBytes: null })]);
-  await main.getByRole('button', { name: 'Refresh overview', exact: true }).click();
-  await expect(metric).toHaveAttribute('data-stale', 'false');
-  await expect(metric.locator('.ov-metric-value')).toHaveText('—');
-  await expect(metric.getByRole('progressbar')).toHaveCount(0);
-  await expect(metric).toContainText('2 available-space observations unknown');
-  await expect(main.getByRole('region', { name: 'Needs attention', exact: true })).toContainText('Checks incomplete');
-
-  installDirectories(api, [directory('/media/movies', { TotalBytes: null, UsedBytes: null, AvailableBytes: bytes(2n * GiB) })]);
-  await main.getByRole('button', { name: 'Refresh overview', exact: true }).click();
-  await expect(metric.locator('.ov-metric-value')).toHaveText('2GiB');
-  await expect(metric.getByRole('progressbar')).toHaveCount(0);
-  await expect(metric).toContainText('Used space unknown');
-});
-
-for (const path of ['/admin/media/libraries', '/admin/']) test(`pending directory requests abort when leaving ${path}`, async ({ page, api }) => {
+for (const path of ['/admin/media/libraries']) test(`pending directory requests abort when leaving ${path}`, async ({ page, api }) => {
   const held: Route[] = [];
   await page.addInitScript(() => {
     const fetch = window.fetch.bind(window);
@@ -194,15 +145,13 @@ for (const path of ['/admin/media/libraries', '/admin/']) test(`pending director
     await page.goto(path);
     const main = page.getByRole('main');
     await expect.poll(() => held.length).toBeGreaterThan(0);
-    if (path.includes('/libraries')) {
-      await expect(main.getByText('Feature films', { exact: true })).toBeVisible();
-      await expect(main.getByRole('button', { name: 'Create library', exact: true }).first()).toBeEnabled();
-    } else await expect(main.getByRole('region', { name: 'CPU status', exact: true })).toContainText('28');
+    await expect(main.getByRole('button', { name: 'Feature films', exact: true }).first()).toBeVisible();
+    await expect(main.getByRole('button', { name: 'Create library', exact: true }).first()).toBeEnabled();
     await page.getByRole('navigation', { name: 'Administration', exact: true }).getByRole('link', { name: /^Users(?:\s|$)/ }).click();
     await expect(main.getByRole('heading', { name: 'Users', exact: true })).toBeVisible();
     await expect.poll(() => page.evaluate(() => (window as unknown as { directoryAborts: number }).directoryAborts)).toBeGreaterThan(0);
     await Promise.all(held.map((route) => json(route, { Items: [directory('/media/movies')], TotalRecordCount: 1 }).catch(() => {})));
-    await expect(main.getByRole('region', { name: 'Media directories', exact: true })).toHaveCount(0);
+    await expect(main.getByRole('region', { name: 'Storage directories', exact: true })).toHaveCount(0);
     expect(api.writes()).toEqual([]);
   } finally {
     await Promise.all(held.map((route) => route.abort().catch(() => {})));

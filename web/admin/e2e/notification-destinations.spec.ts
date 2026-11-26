@@ -20,6 +20,7 @@ class DestinationFixture {
   data: NotificationDestinations = { Items: [initialTarget()], SupportedEvents: [
     { Id: 'UserChanges', Name: 'User changes', Actions: ['user.created', 'user.updated'] },
     { Id: 'TaskFinished', Name: 'Tasks finished', Actions: ['task.finished'] },
+    { Id: 'SignIn', Name: 'Sign-ins', Actions: ['session.login'] },
   ], Limit: 16 };
   writes: { method: string; path: string; body: Record<string, unknown>; csrf?: string }[] = [];
   unexpected: string[] = [];
@@ -62,7 +63,9 @@ class DestinationFixture {
       });
       if (method === 'GET' && path === '/admin/v1/system/status') return json(route, this.shell.status);
       if (method === 'GET' && path === '/admin/v1/settings') return json(route, this.shell.settings);
-      if (method === 'GET' && path === '/admin/v1/storage/library-directories') return json(route, { Items: [], TotalRecordCount: 0 });
+      if (method === 'GET' && ['/admin/v1/storage/library-directories', '/admin/v1/libraries', '/admin/v1/jobs', '/admin/v1/tasks'].includes(path)) {
+        return json(route, { Items: [], TotalRecordCount: 0 });
+      }
       if (method === 'GET' && path === '/admin/v1/backups/policy') return json(route, {
         Revision: '1', Enabled: true, Schedule: { Kind: 'daily', DayOfWeek: null, TimeOfDay: '03:00', Timezone: 'UTC' },
         KeepCount: 7, IncludeImages: true, HasPassphrase: true, NextRunAt: '2026-11-08T03:00:00Z', Available: true, UnavailableReason: '',
@@ -102,6 +105,9 @@ test('notification target editing preserves exact revisions and never returns sa
   const sheet = page.getByRole('dialog', { name: 'Edit notification target', exact: true });
   await expect(sheet.getByRole('heading', { level: 2, name: 'Server notices', exact: true })).toBeVisible();
   await expect(sheet.getByRole('textbox', { name: 'Target name', exact: true })).toBeFocused();
+  const subscriptions = sheet.getByRole('group', { name: 'Event subscriptions', exact: true });
+  await expect(subscriptions.getByRole('checkbox', { name: 'Sign-ins', exact: true })).toBeVisible();
+  await expect(subscriptions).toHaveAccessibleDescription(/Each target can queue up to 256 notifications, including those being sent\. New notifications are dropped and counted when the queue is full\./);
   await sheet.getByRole('textbox', { name: 'Target name', exact: true }).fill('Updated server notices');
   await expect(sheet.getByRole('heading', { level: 2, name: 'Updated server notices', exact: true })).toBeVisible();
   await expect(sheet).toHaveAccessibleName('Edit notification target');
@@ -157,6 +163,7 @@ test.describe('notification target names in Chinese', () => {
     await expect(heading.locator('strong')).toHaveAttribute('translate', 'no');
     await expect(name).toBeFocused();
     await expect(sheet.locator('#notification-destination-title')).toHaveText(operation);
+    await expect(sheet.getByRole('group', { name: '事件订阅', exact: true })).toHaveAccessibleDescription(/用户较多时「用户登录」会非常频繁。每个目标最多排队 256 条通知/);
     await name.fill('Notifications');
     await expect(sheet.getByRole('heading', { level: 2, name: 'Notifications', exact: true })).toBeVisible();
     await expect(sheet).toHaveAccessibleName(operation);

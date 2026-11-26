@@ -9,7 +9,37 @@ test.use({ serviceWorkers: 'block', trace: 'off', video: 'off', preferences: { l
 const policyPath = '/admin/v1/server-policy';
 const previewPath = `${policyPath}/preview`;
 const restartPath = '/admin/v1/server/restart';
+const playbackPath = '/admin/v1/playback/sessions';
+const messagePath = '/admin/v1/playback/message';
 const initialRevision = '9007199254740993';
+const privatePlayingTitle = 'Maintenance fixture hidden media title';
+const reminder = 'The server will restart in 5 minutes. Playback will be briefly interrupted.';
+
+function installPlayback(api: DashboardAPI, playing: number, atCapacity = false) {
+  const count = atCapacity ? 256 : playing + 1;
+  const items = Array.from({ length: count }, (_, index) => ({
+    Id: `client-${index}`, DeviceName: `Hidden device ${index}`, UserName: `Hidden viewer ${index}`,
+    ...(index < playing ? { NowPlayingItem: { Id: 'hidden-item', Name: privatePlayingTitle, Type: 'Movie' } } : {}),
+  }));
+  api.handlers.set(`GET ${playbackPath}`, (route, request) => {
+    expect(new URL(request.url()).search).toBe('');
+    return json(route, { Items: items, TotalRecordCount: count, ObservedAt: stamp, Limit: 256, AtCapacity: atCapacity });
+  });
+}
+
+function messageReceipt(dispositions: { status: 'queued' | 'offline' | 'unsupported' | 'unavailable'; deliveryCount: number }[]) {
+  return { AcceptedAt: stamp, Results: dispositions.map(({ status, deliveryCount }, index) => ({
+    SessionId: `unlisted-receipt-${index}`, Command: 'DisplayMessage', Status: status, DeliveryCount: deliveryCount, ExecutionConfirmed: false,
+    AcceptedAt: status === 'queued' ? stamp : '0001-01-01T00:00:00Z',
+  })) };
+}
+
+async function openMessage(page: Page) {
+  await page.getByRole('region', { name: 'Server maintenance', exact: true }).getByRole('button', { name: 'Send message', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Send a message to playing clients', exact: true });
+  await expect(dialog).toBeVisible();
+  return dialog;
+}
 
 function fixturePolicy(): ServerPolicy {
   return {
@@ -163,11 +193,13 @@ test('an unconfirmed policy write keeps the draft and blocks another write until
   expect(changes(api, 'PUT', '/admin/v1/settings')).toEqual([]);
 });
 
-test('restart needs the exact confirmation word and reports acceptance without claiming completion', async ({ page, api }, testInfo) => {
+test('restart needs the exact confirmation word even when the playback count is unavailable', async ({ page, api }, testInfo) => {
   installPolicy(api);
+  api.handlers.set(`GET ${playbackPath}`, (route) => json(route, { Error: { Code: 'remote_command_unavailable', Message: 'Fixture snapshot unavailable.' } }, 503));
   await openPolicy(page);
   await page.getByRole('button', { name: 'Restart server', exact: true }).click();
   const confirmation = page.getByRole('dialog', { name: 'Restart server?', exact: true });
+  await expect(confirmation.getByText('The number of playing clients could not be checked.')).toBeVisible();
   const restart = confirmation.getByRole('button', { name: 'Request restart', exact: true });
   const phrase = confirmation.getByRole('textbox', { name: 'Type the confirmation word RESTART', exact: true });
   await expect(restart).toBeDisabled();
@@ -185,6 +217,191 @@ test('restart needs the exact confirmation word and reports acceptance without c
   await expect(page.getByRole('main')).not.toContainText(/restart completed|server restarted|restart successful/i);
   expect(changes(api, 'PUT', policyPath)).toEqual([]);
   expect(changes(api, 'PUT', '/admin/v1/settings')).toEqual([]);
+});
+
+test('maintenance sends a byte-validated message and summarizes client receipts, not the snapshot or queue count', async ({ page, api }) => {
+  installPolicy(api);
+  installPlayback(api, 4, true);
+  api.handlers.set(`POST ${messagePath}`, (route) => json(route, messageReceipt([
+    { status: 'queued', deliveryCount: 2 }, { status: 'queued', deliveryCount: 1 }, { status: 'unsupported', deliveryCount: 0 },
+    { status: 'offline', deliveryCount: 0 }, { status: 'unavailable', deliveryCount: 0 },
+  ]), 202));
+  await openPolicy(page);
+  const dialog = await openMessage(page);
+  await expect(dialog.getByText('Playback snapshot: 4+ clients are playing.')).toBeVisible();
+  await expect(dialog).not.toContainText(privatePlayingTitle);
+  await expect(dialog).not.toContainText('Hidden viewer');
+  await expect(dialog).not.toContainText('Hidden device');
+  const header = dialog.getByRole('textbox', { name: 'Title (optional)', exact: true });
+  const message = dialog.getByRole('textbox', { name: 'Message', exact: true });
+  const duration = dialog.getByRole('combobox', { name: 'Display duration', exact: true });
+  const send = dialog.getByRole('button', { name: 'Send message', exact: true });
+  await expect(header).toBeFocused();
+  await expect(duration).toHaveValue('10000');
+  await expect(duration.getByRole('option')).toHaveText(['5 seconds', '10 seconds', '30 seconds', '60 seconds']);
+  const maxHeader = '界'.repeat(42) + 'ab';
+  const maxText = '界'.repeat(682) + 'ab';
+  await header.fill(maxHeader + 'c');
+  await message.fill('Ready for maintenance');
+  await expect(dialog.getByText('The title must be at most 128 UTF-8 bytes.')).toBeVisible();
+  await expect(send).toBeDisabled();
+  await header.fill(maxHeader);
+  await message.fill(maxText + 'c');
+  await expect(dialog.getByText('The message must be at most 2,048 UTF-8 bytes.')).toBeVisible();
+  await expect(send).toBeDisabled();
+  await message.fill('Line one\nLine two');
+  await expect(dialog.getByText('Use valid single-line text without control characters.')).toBeVisible();
+  await expect(send).toBeDisabled();
+  await dialog.getByRole('button', { name: 'Maintenance begins at 23:00 tonight and is expected to last 10 minutes.' }).click();
+  await expect(message).toHaveValue('Maintenance begins at 23:00 tonight and is expected to last 10 minutes.');
+  await message.fill(maxText);
+  await duration.selectOption('60000');
+  await expect(send).toBeEnabled();
+  expect(api.writes()).toHaveLength(0);
+  await send.click();
+  await expect(dialog).not.toBeVisible();
+  const maintenance = page.getByRole('region', { name: 'Server maintenance', exact: true });
+  await expect(maintenance.getByRole('status')).toContainText('Queued for 2 clients. 1 client did not support or allow messages. 1 client was disconnected. 1 client was unavailable. Queuing does not confirm display on the client.');
+  await expect(maintenance.getByRole('button', { name: 'Send message', exact: true })).toBeFocused();
+  await expect(maintenance).not.toContainText('unlisted-receipt');
+  expect(api.writes()).toEqual([{ method: 'POST', path: messagePath, body: { Text: maxText, Header: maxHeader, TimeoutMs: 60000 }, csrf }]);
+});
+
+test('send reminder first switches to a prefilled message and never submits or schedules a restart', async ({ page, api }) => {
+  installPolicy(api);
+  installPlayback(api, 1);
+  api.handlers.set(`POST ${messagePath}`, (route) => json(route, messageReceipt([{ status: 'queued', deliveryCount: 1 }]), 202));
+  await openPolicy(page);
+  const trigger = page.getByRole('button', { name: 'Restart server', exact: true });
+  await trigger.click();
+  const confirmRestart = page.getByRole('dialog', { name: 'Restart server?', exact: true });
+  await expect(confirmRestart.getByText('1 client is currently playing.')).toBeVisible();
+  const phrase = confirmRestart.getByRole('textbox', { name: 'Type the confirmation word RESTART', exact: true });
+  await phrase.fill('RESTART');
+  await confirmRestart.getByRole('button', { name: 'Send reminder first', exact: true }).click();
+  await expect(confirmRestart).not.toBeVisible();
+  const dialog = page.getByRole('dialog', { name: 'Send a message to playing clients', exact: true });
+  const header = dialog.getByRole('textbox', { name: 'Title (optional)', exact: true });
+  await expect(header).toBeFocused();
+  await expect(header).toHaveValue('Server maintenance');
+  await expect(dialog.getByRole('textbox', { name: 'Message', exact: true })).toHaveValue(reminder);
+  await expect(dialog.getByRole('combobox', { name: 'Display duration', exact: true })).toHaveValue('30000');
+  await expect(dialog.getByText(/does not schedule a restart/)).toBeVisible();
+  await dialog.getByRole('button', { name: 'Send message', exact: true }).click();
+  await expect(trigger).toBeFocused();
+  expect(api.writes()).toEqual([{ method: 'POST', path: messagePath, body: { Text: reminder, Header: 'Server maintenance', TimeoutMs: 30000 }, csrf }]);
+  await trigger.click();
+  await expect(phrase).toHaveValue('');
+  await expect(confirmRestart.getByRole('button', { name: 'Request restart', exact: true })).toBeDisabled();
+  expect(changes(api, 'POST', restartPath)).toHaveLength(0);
+});
+
+test('definite rejection preserves the draft without an unknown-outcome gate', async ({ page, api }) => {
+  installPolicy(api);
+  installPlayback(api, 2);
+  api.handlers.set(`POST ${messagePath}`, (route) => json(route, { Error: { Code: 'invalid_remote_command', Message: 'Fixture message rejected.' } }, 400));
+  await openPolicy(page);
+  const dialog = await openMessage(page);
+  const message = dialog.getByRole('textbox', { name: 'Message', exact: true });
+  const send = dialog.getByRole('button', { name: 'Send message', exact: true });
+  await message.fill('Maintenance starts soon.');
+  await send.click();
+  await expect(dialog.getByRole('alert')).toContainText('The server rejected the message. Nothing was queued.');
+  await expect(dialog.getByText(/message result is unknown/)).toHaveCount(0);
+  await expect(message).toHaveValue('Maintenance starts soon.');
+  await expect(send).toBeEnabled();
+  expect(changes(api, 'POST', messagePath)).toHaveLength(1);
+  page.once('dialog', (confirmation) => { expect(confirmation.message()).toBe('Discard this maintenance message draft?'); void confirmation.dismiss(); });
+  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(message).toHaveValue('Maintenance starts soon.');
+  page.once('dialog', (confirmation) => { void confirmation.accept(); });
+  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+});
+
+test('an unconfirmed send requires a successful explicit refresh and never automatically replays', async ({ page, api }) => {
+  installPolicy(api);
+  installPlayback(api, 3);
+  api.handlers.set(`POST ${messagePath}`, (route) => json(route, { AcceptedAt: stamp, Results: [
+    { SessionId: 'mismatched-receipt', Command: 'DisplayMessage', Status: 'queued', DeliveryCount: 0, ExecutionConfirmed: false, AcceptedAt: stamp },
+  ] }, 202));
+  await openPolicy(page);
+  const dialog = await openMessage(page);
+  const message = dialog.getByRole('textbox', { name: 'Message', exact: true });
+  const send = dialog.getByRole('button', { name: 'Send message', exact: true });
+  const review = dialog.getByRole('button', { name: 'Refresh playback count', exact: true });
+  await message.fill('Maintenance starts soon.');
+  await send.click();
+  await expect(dialog.getByText(/message result is unknown/)).toBeVisible();
+  await expect(dialog.getByRole('textbox', { name: 'Message', exact: true })).toBeDisabled();
+  await expect(send).toBeDisabled();
+  expect(changes(api, 'POST', messagePath)).toHaveLength(1);
+
+  api.handlers.set(`GET ${playbackPath}`, (route) => json(route, { Error: { Code: 'remote_command_unavailable', Message: 'Fixture snapshot unavailable.' } }, 503));
+  await review.click();
+  await expect(dialog.getByText('The number of playing clients could not be checked.')).toBeVisible();
+  await expect(send).toBeDisabled();
+  expect(changes(api, 'POST', messagePath)).toHaveLength(1);
+
+  installPlayback(api, 2);
+  await review.click();
+  await expect(dialog.getByText('Playback snapshot: 2 clients are playing.')).toBeVisible();
+  await expect(dialog.getByText(/A refreshed count cannot confirm delivery/)).toBeVisible();
+  await expect(message).toHaveValue('Maintenance starts soon.');
+  await expect(send).toBeEnabled();
+  expect(changes(api, 'POST', messagePath)).toHaveLength(1);
+  expect(changes(api, 'POST', restartPath)).toHaveLength(0);
+});
+
+test('a pending broadcast protects navigation and a timeout cannot be bypassed by reopening Settings', async ({ page, api }) => {
+  installPolicy(api);
+  installPlayback(api, 1);
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => { release = resolve; });
+  api.handlers.set(`POST ${messagePath}`, async (route) => {
+    await held;
+    await json(route, messageReceipt([{ status: 'queued', deliveryCount: 1 }]), 202).catch(() => undefined);
+  });
+  try {
+    await openPolicy(page);
+    const dialog = await openMessage(page);
+    await page.clock.install();
+    const post = page.waitForRequest((request) => request.method() === 'POST' && new URL(request.url()).pathname === messagePath);
+    await dialog.getByRole('textbox', { name: 'Message', exact: true }).fill('Maintenance is about to start.');
+    await dialog.getByRole('button', { name: 'Send message', exact: true }).click();
+    await post;
+    await expect(dialog.getByRole('button', { name: 'Sending message…', exact: true })).toBeDisabled();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeVisible();
+    await page.evaluate(() => {
+      history.pushState(null, '', '/admin/system/notifications');
+      dispatchEvent(new PopStateEvent('popstate'));
+    });
+    await expect(page).toHaveURL(/\/admin\/settings\/general$/);
+    await expect(dialog).toBeVisible();
+    await page.clock.fastForward(15_001);
+    await expect(dialog.getByText(/message result is unknown/)).toBeVisible();
+    expect(changes(api, 'POST', messagePath)).toHaveLength(1);
+    page.once('dialog', (confirmation) => { void confirmation.accept(); });
+    await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await expect(dialog).not.toBeVisible();
+    await page.evaluate(() => {
+      history.pushState(null, '', '/admin/system/notifications');
+      dispatchEvent(new PopStateEvent('popstate'));
+    });
+    await expect(page.getByRole('heading', { name: 'Notifications', exact: true }).first()).toBeVisible();
+    await page.evaluate(() => {
+      history.pushState(null, '', '/admin/settings/general');
+      dispatchEvent(new PopStateEvent('popstate'));
+    });
+    const maintenance = page.getByRole('region', { name: 'Server maintenance', exact: true });
+    await expect(maintenance.getByRole('button', { name: 'Send message', exact: true })).toBeDisabled();
+    await maintenance.getByRole('button', { name: 'Refresh playback count', exact: true }).click();
+    await expect(maintenance.getByText('Playback snapshot: 1 client is playing.')).toBeVisible();
+    await expect(maintenance.getByRole('button', { name: 'Send message', exact: true })).toBeEnabled();
+    expect(changes(api, 'POST', messagePath)).toHaveLength(1);
+    expect(changes(api, 'POST', restartPath)).toHaveLength(0);
+  } finally { release(); }
 });
 
 test.describe('Chinese light mobile server policy', () => {
@@ -218,8 +435,17 @@ test.describe('Chinese light mobile server policy', () => {
     await dialogFitsViewport(restart);
     await noOverflow(page);
     await evidence(page, testInfo, 'server-policy-restart-390-zh-light');
+    await restart.getByRole('button', { name: '先发送提醒', exact: true }).click();
+    const reminderDialog = page.getByRole('dialog', { name: '向正在播放的客户端发送消息', exact: true });
+    await expect(reminderDialog).toBeVisible();
+    await expect(reminderDialog.getByRole('textbox', { name: '标题（可选）', exact: true })).toHaveValue('服务器维护');
+    await expect(reminderDialog.getByRole('textbox', { name: '消息', exact: true })).toHaveValue('服务器将在 5 分钟后重启，播放会短暂中断。');
+    await dialogFitsViewport(reminderDialog);
+    await noOverflow(page);
+    page.once('dialog', (confirmation) => { void confirmation.accept(); });
     await page.keyboard.press('Escape');
-    await expect(restart).not.toBeVisible();
+    await expect(reminderDialog).not.toBeVisible();
+    expect(changes(api, 'POST', messagePath)).toHaveLength(0);
     expect(changes(api, 'POST', previewPath)).toHaveLength(1);
     expect(changes(api, 'PUT', policyPath)).toEqual([]);
     expect(changes(api, 'POST', restartPath)).toEqual([]);

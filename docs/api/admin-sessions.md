@@ -127,8 +127,11 @@ errors use 400 / `invalid_input` with safe field messages. Unsupported request
 media types use 415 / `unsupported_media_type`. Missing sessions use
 404 / `not_found`; stale actor credentials use the existing native 401 error.
 
-The Sessions page supports filtering, literal search, pagination, refresh and
-confirmation before a single-session revocation. It identifies the current
-login and the account/application/device involved. It distinguishes login
-validity from online presence. Device grouping, bulk revocation, IP history,
-application-key management and persistent device settings remain separate work.
+In the dashboard, open **Users** and select an account's **Login devices** tab.
+It reads active sessions scoped to that user, identifies the current login, and
+separates recorded activity and expiry from online presence. It can revoke one
+login or process the listed active logins sequentially with confirmation and a
+stop control. A newly issued login outside the selected snapshot is not revoked
+by that batch. The dashboard does not display associated playback or show a
+server-wide device or session list. The API authorization and routes above are
+unchanged.

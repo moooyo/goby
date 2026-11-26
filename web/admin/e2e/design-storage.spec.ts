@@ -37,7 +37,7 @@ test('registered directory measurements match exact paths and preserve unknown o
   api.handlers.set('GET ' + directoryPath, (route) => json(route, response));
   await page.goto('/admin/media/libraries');
   const main = page.getByRole('main');
-  const directories = main.getByRole('region', { name: 'Media directories', exact: true });
+  const directories = main.getByRole('region', { name: 'Storage directories', exact: true });
   const parent = directories.getByRole('listitem', { name: moviePath, exact: true });
   const child = directories.getByRole('listitem', { name: childPath, exact: true });
   const series = directories.getByRole('listitem', { name: seriesPath, exact: true });
@@ -97,17 +97,14 @@ test('registered directory measurements match exact paths and preserve unknown o
   await expect(main.getByRole('button', { name: 'Create library', exact: true }).first()).toBeEnabled();
   await evidence(page, testInfo, 'storage-partial-values-and-access-remain-independent');
 
-  // Missing available bytes cannot be reconstructed from total minus used.
-  response = observations([
-    measurement(moviePath, { UsedBytes: (90n * GiB).toString(), AvailableBytes: null }),
-    measurement(childPath), measurement(seriesPath, { AvailableBytes: (35n * GiB).toString() }),
-  ]);
+  // The overview shows the highest known utilization, even when the remaining capacity is unknown.
+  response = observations([measurement(moviePath, { UsedBytes: (90n * GiB).toString(), AvailableBytes: null }), measurement(childPath), measurement(seriesPath)]);
   await page.goto('/admin/');
-  const minimum = main.getByRole('region', { name: 'Directory with least available space status', exact: true });
-  await expect(minimum.locator('.ov-metric-value')).toHaveText('35GiB');
-  await expect(minimum).toContainText(seriesPath);
-  await expect(minimum).toContainText('Among directories with known available space');
-  await expect(minimum.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '40');
+  const storage = main.getByRole('region', { name: 'Service status' }).getByRole('link', { name: /^Storage/ });
+  await expect(storage).toContainText(`${moviePath} · Used 90%`);
+  const warning = main.getByRole('region', { name: 'To do' }).locator('[data-check="capacity"]');
+  await expect(warning).toContainText('90 / 100 GiB');
+  await expect(warning).not.toContainText('10 GiB available');
   expect(api.writes()).toEqual([]);
 });
 
@@ -123,11 +120,11 @@ test('slow or failed directory observations never block library creation and ret
   try {
     await page.goto('/admin/media/libraries');
     const main = page.getByRole('main');
-    const directories = main.getByRole('region', { name: 'Media directories', exact: true });
+    const directories = main.getByRole('region', { name: 'Storage directories', exact: true });
     const parent = directories.getByRole('listitem', { name: moviePath, exact: true });
     const create = main.getByRole('button', { name: 'Create library', exact: true }).first();
     await expect.poll(() => held.length).toBeGreaterThan(0);
-    await expect(main.getByText('Feature films', { exact: true })).toBeVisible();
+    await expect(main.getByRole('button', { name: 'Feature films', exact: true })).toBeVisible();
     await expect(parent).toContainText('Checking capacity…');
     await expect(parent.getByRole('progressbar')).toHaveCount(0);
     await expect(create).toBeEnabled({ timeout: 5000 });
@@ -163,7 +160,7 @@ test('slow or failed directory observations never block library creation and ret
     await evidence(page, testInfo, 'storage-directory-stale-last-measurement');
 
     await page.reload();
-    await expect(main.getByText('Feature films', { exact: true })).toBeVisible();
+    await expect(main.getByRole('button', { name: 'Feature films', exact: true })).toBeVisible();
     await expect(directories.getByRole('alert')).toContainText('Directory capacity is temporarily unavailable.');
     await expect(directories.getByRole('alert')).toContainText('Directory observations unavailable.');
     await expect(directories).toHaveAttribute('data-stale', 'false');

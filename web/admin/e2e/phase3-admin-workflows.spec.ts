@@ -137,7 +137,8 @@ async function login(page: Page, fixture: Fixture): Promise<void> {
 }
 async function libraryEditor(page: Page, fixture: Fixture, name: string): Promise<Locator> {
   await page.goto(`${fixture.BaseURL}/admin/libraries`);
-  await page.getByRole('button', { name: `Edit library ${name}`, exact: true }).click();
+  await page.getByRole('button', { name: `More actions for ${name}`, exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Library settings', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Edit library', exact: true });
   await expect(dialog.getByRole('textbox', { name: 'Library name', exact: true })).toHaveValue(name);
   return dialog;
@@ -153,7 +154,7 @@ async function preferencesEditor(page: Page, fixture: Fixture): Promise<Locator>
 async function closePreferences(page: Page, dialog: Locator): Promise<void> { await dialog.getByRole('button', { name: 'Close', exact: true }).click(); await page.getByRole('dialog', { name: 'Manage user', exact: true }).getByRole('button', { name: 'Close', exact: true }).click(); }
 async function metadataEditor(page: Page, fixture: Fixture): Promise<Locator> {
   await page.goto(`${fixture.BaseURL}/admin/libraries/${fixture.LibraryId}/items`);
-  await page.getByRole('button', { name: `Edit metadata for ${fixture.AudioItemName}`, exact: true }).click();
+  await page.getByRole('button', { name: `Edit metadata for ${fixture.AudioItemName}`, exact: true }).first().click();
   const dialog = page.getByRole('dialog', { name: /^Edit metadata/ });
   await expect(dialog.getByRole('textbox', { name: 'Album tag', exact: true })).toBeVisible();
   return dialog;

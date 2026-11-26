@@ -52,6 +52,7 @@
 .nd-subscriptions input:focus-visible { outline: 2px solid var(--acc); outline-offset: 3px; }
 .nd-subscriptions:disabled label { opacity: .6; cursor: default; }
 .nd-subscriptions .nd-field-error { margin: 7px 0 0; color: var(--err); }
+.nd-subscriptions .nd-subscription-hint { margin: 8px 0 0; }
 .nd-receiver-details { min-width: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--s2); }
 .nd-receiver-details > summary { padding: 16px; color: var(--ink2); cursor: pointer; font-size: 13px; font-weight: 650; line-height: 1.7; }
 .nd-receiver-details > summary span { display: block; padding-left: 15px; color: var(--ink3); font-size: 12px; font-weight: 400; }

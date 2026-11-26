@@ -70,7 +70,7 @@ test.describe('Chinese mobile directory access', () => {
     }));
     api.handlers.set('GET /admin/v1/storage/library-directories', async (route) => json(route, { Items: items, TotalRecordCount: items.length }));
     await page.goto('/admin/media/libraries');
-    const directories = page.getByRole('region', { name: '媒体目录', exact: true });
+    const directories = page.getByRole('region', { name: '存储目录', exact: true });
     await expect(directories.getByRole('listitem', { name: '/media/read-only', exact: true })).toContainText('只读');
     await expect(directories.getByRole('listitem', { name: '/media/writable', exact: true })).toContainText('可读写');
     await expect(directories.getByRole('listitem', { name: '/media/unknown', exact: true })).toContainText('写权限未知');

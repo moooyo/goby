@@ -23,7 +23,7 @@ function installCoverage(api: DashboardAPI, libraries = coverageLibraries): void
   api.handlers.set(`GET ${librariesPath}`, (route) => json(route, { Items: libraries, TotalRecordCount: libraries.length }));
 }
 
-async function openCoverage(page: Page, label = 'Coverage'): Promise<Locator> {
+async function openCoverage(page: Page, label = 'Library automation'): Promise<Locator> {
   await page.goto('/admin/media/analysis');
   await expect(page.locator('.analysis-page')).toHaveAttribute('aria-busy', 'false');
   const coverage = page.getByRole('region', { name: label, exact: true });
@@ -59,7 +59,7 @@ for (const preferences of [{ language: 'en', theme: 'light' }, { language: 'zh',
     test('all libraries retain complete names and six readable states without horizontal discovery', async ({ page, api }, testInfo) => {
       installCoverage(api);
       const chinese = preferences.language === 'zh';
-      const coverage = await openCoverage(page, chinese ? '覆盖率' : 'Coverage');
+      const coverage = await openCoverage(page, chinese ? '媒体库自动处理' : 'Library automation');
       const cards = coverage.getByRole('article');
       await expect(cards).toHaveCount(3);
       await expect(coverage.getByRole('table')).toHaveCount(0);
@@ -68,14 +68,14 @@ for (const preferences of [{ language: 'en', theme: 'light' }, { language: 'zh',
       await expect(heading).toHaveAttribute('translate', 'no');
       await expectReadableText(heading);
       await expect(film.locator('dt strong')).toHaveText(chinese
-        ? ['进度预览', '片头检测', '片尾检测', '背景短片', '音轨波形', '字幕时间轴']
+        ? ['BIF 预览', '片头检测', '片尾检测', '背景短片', '音轨波形', '字幕时间轴']
         : ['Seek previews', 'Intro detection', 'Credits detection', 'Background previews', 'Audio waveforms', 'Subtitle timelines']);
       await expect(film.locator('dd')).toHaveText(chinese
-        ? ['已启用', '不适用', '未启用', '已启用', '未启用', '未提供']
+        ? ['已启用', '不适用', '已停用', '已启用', '已停用', '未报告']
         : ['Enabled', 'Not applicable', 'Disabled', 'Enabled', 'Disabled', 'Not reported']);
       const series = coverage.getByRole('article', { name: 'Settings', exact: true });
       await expect(series.getByRole('heading')).toHaveText('Settings');
-      await expect(series.locator('dd')).toHaveText(Array(6).fill(chinese ? '未提供' : 'Not reported'));
+      await expect(series.locator('dd')).toHaveText(Array(6).fill(chinese ? '未报告' : 'Not reported'));
       const music = coverage.getByRole('article', { name: coverageLibraries[2].Name, exact: true });
       await expect(music.locator('dd')).toHaveText(Array(6).fill(chinese ? '不适用' : 'Not applicable'));
       for (const card of await cards.all()) {
@@ -133,7 +133,7 @@ test.describe('desktop coverage and existing controls', () => {
     await expect(page.getByText('Showing the last successful update.', { exact: true })).toBeVisible();
     await expect(film.locator('dd')).toHaveText(previousStates);
     await expectReadableText(film.getByRole('heading'));
-    await page.getByRole('button', { name: 'Configure', exact: true }).click();
+    await page.getByRole('button', { name: 'Analysis settings', exact: true }).click();
     const configuration = page.getByRole('dialog', { name: 'Analysis configuration', exact: true });
     await expect(configuration.getByRole('textbox', { name: 'Preview interval (seconds)', exact: true })).toBeDisabled();
     await expect(configuration.getByRole('button', { name: 'Save analysis configuration', exact: true })).toBeDisabled();
@@ -154,7 +154,7 @@ test.describe('desktop coverage and existing controls', () => {
     await expect(coverage.getByText('Library settings unavailable', { exact: true })).toBeVisible();
     await expect(coverage.getByRole('article')).toHaveCount(0);
     await expect(coverage.getByRole('table')).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Configure', exact: true })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Analysis settings', exact: true })).toBeDisabled();
     expect(api.writes()).toEqual([]);
   });
 
@@ -172,9 +172,10 @@ test.describe('desktop coverage and existing controls', () => {
       return json(route, overview.Configuration);
     });
     await page.getByRole('button', { name: 'Refresh analysis status', exact: true }).click();
-    await expect(page.getByText('Configuration revision 9007199254740993', { exact: true })).toBeVisible();
-    await page.getByRole('button', { name: 'Configure', exact: true }).click();
+    await expect(page.locator('.analysis-page')).toHaveAttribute('aria-busy', 'false');
+    await page.getByRole('button', { name: 'Analysis settings', exact: true }).click();
     const configuration = page.getByRole('dialog', { name: 'Analysis configuration', exact: true });
+    await expect(configuration).toContainText('Revision 9007199254740993.');
     await configuration.getByRole('textbox', { name: 'Preview interval (seconds)', exact: true }).fill('20');
     await configuration.getByRole('button', { name: 'Save analysis configuration', exact: true }).click();
     await expect(configuration.getByText('Analysis configuration saved. New runs use this profile.', { exact: true })).toBeVisible();

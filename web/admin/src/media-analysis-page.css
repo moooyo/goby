@@ -3,13 +3,12 @@
 .analysis-page-heading h1 { margin: 0; font: 900 28px/1.2 var(--serif); color: var(--ink); }
 .analysis-page-summary { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 8px; color: var(--ink2); font-size: 13px; }
 .analysis-page-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-.analysis-tone-error { color: var(--err); }
 .analysis-panel { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: var(--s2); }
 .analysis-panel-header { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 5px 16px; box-sizing: border-box; }
 .analysis-panel-header h2 { margin: 0; font: 700 14px/1.5 var(--sans); }
-.analysis-panel-caption { font: 11.5px/1.5 var(--mono); color: var(--ink3); }
+.analysis-panel-caption { font: 11.5px/1.5 'IBM Plex Mono', var(--sans); color: var(--ink3); }
 .analysis-panel-header > button:last-child, .analysis-panel-header > .MuiButton-root:last-child, .analysis-panel-header > .MuiTooltip-root:last-child { margin-left: auto; }
-.analysis-panel-note { display: flex; align-items: flex-start; gap: 8px; border-top: 1px solid var(--line); padding: 11px 16px; color: var(--ink3); font-size: 12.5px; line-height: 1.65; }
+.analysis-panel-note { display: flex; align-items: flex-start; gap: 8px; border-top: 1px solid var(--line); padding: 11px 16px; margin: 0; color: var(--ink3); font-size: 12.5px; line-height: 1.65; }
 .analysis-panel-inset { padding: 14px 16px 16px; border-top: 1px solid var(--line); }
 .analysis-loading { padding: 0 16px 10px; }
 .analysis-matrix-scroll { overflow: auto; }
@@ -35,21 +34,28 @@
 .analysis-task-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
 .analysis-task-top > strong { flex: 1; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
 .analysis-live-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--acc); }
-.analysis-task-row > button { margin-top: 8px; }
+.analysis-task-actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; margin-top: 8px; }
 .analysis-failure-row { display: flex; gap: 14px; align-items: center; padding: 12px 16px; border-top: 1px solid var(--line); }
 .analysis-failure-row > div { flex: 1; min-width: 0; }
-.analysis-failure-row strong { display: block; font-weight: 600; }
-.analysis-failure-description { display: block; margin-top: 3px; color: var(--err); font-size: 12px; overflow-wrap: anywhere; }
-.analysis-failure-row time { display: block; margin-top: 4px; color: var(--ink3); font: 11px/1.5 var(--mono); }
+.analysis-failure-icon { flex: none; }
+.analysis-failure-icon.is-warning { color: var(--warn); }
+.analysis-failure-icon.is-error { color: var(--err); }
+.analysis-failure-row strong { display: block; font-weight: 600; overflow-wrap: anywhere; }
+.analysis-failure-description { display: block; margin-top: 3px; color: var(--ink2); font-size: 12px; overflow-wrap: anywhere; }
+.analysis-failure-row time { display: block; margin-top: 4px; color: var(--ink3); font: 11px/1.5 'IBM Plex Mono', var(--sans); }
 .analysis-results { min-width: 0; }
 .analysis-status-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 16px; }
-.analysis-cache-value { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; margin-bottom: 9px; font: 500 21px/1.4 var(--mono); }
-.analysis-cache-value > span { color: var(--ink3); font-size: 12px; font-weight: 400; }
-.analysis-runtime-states { display: flex; flex-wrap: wrap; gap: 8px 14px; font-size: 12.5px; }
+.analysis-cache-value { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.analysis-cache-value strong { color: var(--ink); font: 400 36px/1.15 var(--disp); }
+.analysis-cache-value > span { color: var(--ink3); font-size: 12px; }
+.analysis-cache-details { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; margin-top: 8px; color: var(--ink3); font: 11.5px/1.6 'IBM Plex Mono', var(--sans); }
+.analysis-runtime-states { display: flex; flex-direction: column; gap: 8px; font-size: 12.5px; }
 .analysis-runtime-states > span { display: flex; align-items: center; gap: 6px; color: var(--ink3); }
 .analysis-runtime-states > span::before { content: ''; width: 6px; height: 6px; border: 1px solid currentColor; border-radius: 50%; box-sizing: border-box; }
 .analysis-runtime-states > span[data-available=true] { color: var(--ink2); }
 .analysis-runtime-states > span[data-available=true]::before { border-color: var(--ok); background: var(--ok); }
+.analysis-runtime-credits { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
+.analysis-runtime-credits h3 { margin: 0 0 8px; color: var(--ink2); font: 600 12px/1.5 var(--sans); }
 .analysis-settings { min-width: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--s1); }
 .analysis-settings > summary { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 12px; padding: 14px 16px; cursor: pointer; list-style: none; }
 .analysis-settings > summary::after { content: '+'; margin-left: auto; color: var(--ink3); font: 16px var(--mono); }

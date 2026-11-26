@@ -228,7 +228,7 @@ async function signIn(page: Page, name: string, password: string): Promise<void>
 
 async function completedScan(page: Page, request: APIRequestContext, job: Job): Promise<void> {
   await page.bringToFront();
-  await page.getByRole('button', { name: 'View tasks', exact: true }).first().click();
+  await page.getByRole('region', { name: 'Scans and processing', exact: true }).getByRole('button', { name: 'Scan history', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Tasks', exact: true })).toBeVisible();
   const card = page.locator(`[data-job-id="${job.Id}"]`);
   await expect(card).toBeVisible();
@@ -248,8 +248,7 @@ async function createScannedLibrary(page: Page, request: APIRequestContext, name
   await page.getByRole('button', { name: 'Create library', exact: true }).first().click();
   const dialog = page.getByRole('dialog', { name: 'Create library', exact: true });
   await dialog.getByLabel(/^Library name/).fill(name);
-  await dialog.getByRole('combobox', { name: /^Content type/ }).click();
-  await page.getByRole('option', { name: type, exact: true }).click();
+  await dialog.getByRole('combobox', { name: /^Content type/ }).selectOption({ label: type });
   await dialog.getByLabel(/^Media directories/).fill(mediaPath);
   await dialog.getByRole('checkbox', { name: /^Scan after creating/ }).check();
   const [response] = await Promise.all([
@@ -268,10 +267,10 @@ async function createScannedLibrary(page: Page, request: APIRequestContext, name
 }
 
 async function scanLibrary(page: Page, request: APIRequestContext, library: Library): Promise<void> {
-  const card = page.getByRole('list', { name: 'Media libraries', exact: true }).getByRole('listitem').filter({ has: page.getByRole('heading', { name: library.Name, exact: true }) });
+  const row = page.getByRole('row').filter({ has: page.getByRole('button', { name: library.Name, exact: true }) });
   const [response] = await Promise.all([
     responseFor(page, 'POST', `/admin/v1/libraries/${encodeURIComponent(library.Id)}/scan`),
-    card.getByRole('button', { name: 'Scan library', exact: true }).click(),
+    row.getByRole('button', { name: `Scan library ${library.Name}`, exact: true }).click(),
   ]);
   expect(response.status()).toBe(202);
   const result = await response.json() as { Job: Job };
@@ -288,7 +287,7 @@ async function itemsAction(page: Page, library: Library, action: () => Promise<u
   const data = await loaded.json() as MetadataItemsResponse;
   expect(data.Library.Id).toBe(library.Id);
   expect(data.Items.every((item) => item.LibraryId === library.Id)).toBe(true);
-  await expect(page.getByRole('button', { name: 'Search', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Search title', exact: true })).toBeEnabled();
   return data;
 }
 
@@ -298,16 +297,12 @@ async function manageLibrary(page: Page, library: Library): Promise<MetadataItem
 
 async function searchTitle(page: Page, library: Library, title: string): Promise<MetadataItemsResponse> {
   await page.getByRole('textbox', { name: 'Search title', exact: true }).fill(title);
-  return itemsAction(page, library, () => page.getByRole('button', { name: 'Search', exact: true }).click(), (parameters) => parameters.get('SearchTerm') === title && parameters.get('StartIndex') === '0');
+  return itemsAction(page, library, () => page.getByRole('button', { name: 'Search title', exact: true }).click(), (parameters) => parameters.get('SearchTerm') === title && parameters.get('StartIndex') === '0');
 }
 
-async function selectType(page: Page, library: Library, type: string, expected: string): Promise<MetadataItemsResponse> {
-  await page.getByRole('combobox', { name: 'Types', exact: true }).click();
-  return itemsAction(page, library, async () => {
-    await page.getByRole('option', { name: type, exact: true }).click();
-    // Multiple selections keep their modal menu open until the user closes it.
-    await page.keyboard.press('Escape');
-  }, (parameters) => parameters.get('Types') === expected && parameters.get('StartIndex') === '0');
+async function selectType(page: Page, library: Library, type: string): Promise<MetadataItemsResponse> {
+  return itemsAction(page, library, () => page.getByRole('combobox', { name: 'Item type', exact: true }).selectOption(type),
+    (parameters) => parameters.get('Types') === type && parameters.get('StartIndex') === '0');
 }
 
 async function openItem(page: Page, library: Library, title: string, ownedMediaPath: string, expectedInactive: MetadataFieldName[] = []): Promise<MetadataDetail> {
@@ -316,7 +311,7 @@ async function openItem(page: Page, library: Library, title: string, ownedMediaP
   expect(selected, 'The editor must select the exact owned media fixture.').toBeDefined();
   const [response] = await Promise.all([
     responseFor(page, 'GET', metadataPath(selected!.Id)),
-    page.getByRole('button', { name: `Edit metadata for ${selected!.Name}`, exact: true }).click(),
+    page.getByRole('button', { name: `Edit metadata for ${selected!.Name}`, exact: true }).first().click(),
   ]);
   expect(response.status()).toBe(200);
   const detail = await response.json() as MetadataDetail;
@@ -388,9 +383,8 @@ async function visibleControl(page: Page, control: Locator): Promise<void> {
 async function selectPersonType(page: Page, person: Locator, type: 'Actor' | 'Director'): Promise<void> {
   const control = person.getByRole('combobox', { name: /^Type/ });
   await visibleControl(page, control);
-  await control.click();
-  await page.getByRole('option', { name: type, exact: true }).click();
-  await expect(control).toHaveText(type);
+  await control.selectOption({ label: type });
+  await expect(control).toHaveValue(type);
 }
 
 // The orchestrator creates and later removes this entire database and fixture
@@ -441,11 +435,10 @@ test('isolated metadata scans, overrides, locks, conflict recovery, and mobile e
   await manageLibrary(page, movies);
 
   await test.step('browse owned movies through search, type filtering, and real pagination', async () => {
-    const filtered = await selectType(page, movies, 'Movie', 'Movie');
+    const filtered = await selectType(page, movies, 'Movie');
     expect(filtered.TotalRecordCount).toBeGreaterThan(25);
     expect(filtered.Items.every((item) => item.Type === 'Movie')).toBe(true);
-    await page.getByRole('combobox', { name: /Items per page/ }).click();
-    const first = await itemsAction(page, movies, () => page.getByRole('option', { name: '25', exact: true }).click(), (parameters) => parameters.get('Limit') === '25' && parameters.get('StartIndex') === '0');
+    const first = await itemsAction(page, movies, () => page.getByRole('combobox', { name: /Items per page/ }).selectOption('25'), (parameters) => parameters.get('Limit') === '25' && parameters.get('StartIndex') === '0');
     expect(first.Items).toHaveLength(25);
     const second = await itemsAction(page, movies, () => page.getByRole('button', { name: 'Go to next page', exact: true }).click(), (parameters) => parameters.get('StartIndex') === '25');
     expect(second.StartIndex).toBe(25);
@@ -597,11 +590,11 @@ test('isolated metadata scans, overrides, locks, conflict recovery, and mobile e
     await page.setViewportSize({ width: 390, height: 844 });
     await page.getByRole('button', { name: 'Back to libraries', exact: true }).click();
     await manageLibrary(page, television);
-    await expect(page.getByRole('list', { name: 'Library items', exact: true })).toBeVisible();
-    const series = await selectType(page, television, 'Series', 'Series');
+    await expect(page.getByRole('table', { name: 'Library items', exact: true })).toBeVisible();
+    const series = await selectType(page, television, 'Series');
     expect(series.Items.every((item) => item.Type === 'Series')).toBe(true);
-    const selectedTypes = await selectType(page, television, 'Episode', 'Series,Episode');
-    expect(new Set(selectedTypes.Items.map((item) => item.Type))).toEqual(new Set(['Series', 'Episode']));
+    const episodes = await selectType(page, television, 'Episode');
+    expect(new Set(episodes.Items.map((item) => item.Type))).toEqual(new Set(['Episode']));
     let episode = await openItem(page, television, 'Automatic episode', manifest.EpisodePath);
     expect(episode.Automatic.IndexNumber).toBe(1);
     expect(episode.Automatic.ParentIndexNumber).toBe(1);

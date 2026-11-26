@@ -225,11 +225,11 @@ async function main() {
     ensure((await completed.json()).Initialized === true, 'The fresh bootstrap did not persist its initialized state.');
     checkpoint('Fresh disposable bootstrap creates a task administrator before actual UI sign-in', { userId: created.User.Id });
   }
-  await administrator.goto(url('/admin/access/sessions'));
+  await administrator.goto(url('/admin/access/users'));
   await administrator.getByLabel('Username', { exact: true }).fill(username);
   await administrator.getByLabel('Password', { exact: true }).fill(password);
   await administrator.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(administrator.getByRole('heading', { name: 'Sessions', exact: true })).toBeVisible();
+  await expect(administrator.getByRole('heading', { name: 'Users', exact: true })).toBeVisible();
   const nativeSession = await nativeJSON('/admin/v1/session');
   ensure(nativeSession.User?.IsAdministrator === true && typeof nativeSession.CSRFToken === 'string',
     'The task account did not establish a native administrator session.');
@@ -398,69 +398,67 @@ async function main() {
   checkpoint('Authenticated WebSocket and real playback report', { playMethod: observed.PlayState.PlayMethod });
 
   await administrator.bringToFront();
-  await administrator.reload();
-  const row = administrator.locator('article.playback-row').filter({
-    has: administrator.getByText(observed.NowPlayingItem.Name, { exact: true }),
-  });
-  await expect(row).toHaveCount(1);
-  ensure(await row.getAttribute('data-playback-session') === observed.Id,
-    'The management UI displayed a different playback session.');
-  await expect(row.getByRole('button', { name: 'Pause playback', exact: true })).toBeEnabled();
-  await capture(administrator, '01-real-now-playing');
+  await administrator.goto(url('/admin/'));
+  await expect(administrator.getByRole('heading', { name: 'Overview', exact: true })).toBeVisible();
+  await expect(administrator.getByRole('main').getByText(observed.NowPlayingItem.Name, { exact: true })).toHaveCount(0);
+  checkpoint('The administrator overview omits the current media title');
+  await capture(administrator, '01-real-overview-no-playback-details');
 
+  // The retired per-session screen no longer exposes controls. Keep testing
+  // the existing contract directly against this explicitly isolated player.
   const commandPath = '/admin/v1/playback/sessions/' + encodeURIComponent(observed.Id) + '/command';
-  async function uiCommand(command, submit) {
-    const responsePromise = administrator.waitForResponse((response) =>
-      new URL(response.url()).pathname === commandPath && response.request().method() === 'POST', { timeout: 20_000 });
-    responsePromise.catch(() => undefined);
-    await submit();
-    const response = await responsePromise;
-    ensure(response.status() === 202, 'The ' + command + ' command was not accepted.');
-    const body = response.request().postDataJSON();
-    ensure(response.request().headers()['x-csrf-token'] === csrf && body.Command === command,
-      'The ' + command + ' UI action did not preserve its native request contract.');
-    if (['Pause', 'Unpause', 'Seek', 'Stop'].includes(command)) {
-      ensure(body.PlaySessionId === observed.PlaySessionId, 'The UI did not bind its control to the observed playback lifetime.');
-    }
+  async function nativeCommand(Command, details = {}) {
+    const response = await administratorContext.request.post(url(commandPath), {
+      headers: { Origin: target.origin, 'X-CSRF-Token': csrf }, timeout: 20_000,
+      data: { Command, ...(['Pause', 'Unpause', 'Seek', 'Stop'].includes(Command) ? { PlaySessionId: observed.PlaySessionId } : {}), ...details },
+    });
+    ensure(response.status() === 202, 'The ' + Command + ' command was not accepted.');
     const receipt = await response.json();
-    ensure(receipt.SessionId === observed.Id && receipt.Command === command && receipt.Status === 'queued'
+    ensure(receipt.SessionId === observed.Id && receipt.Command === Command && receipt.Status === 'queued'
       && receipt.ExecutionConfirmed === false && receipt.DeliveryCount >= 1,
       'The command receipt was incomplete or claimed execution without a player report.');
-    commands.push({ command, queued: true, executionConfirmedByReceipt: false });
+    commands.push({ command: Command, queued: true, executionConfirmedByReceipt: false });
   }
 
-  await uiCommand('Pause', () => row.getByRole('button', { name: 'Pause playback', exact: true }).click());
+  await nativeCommand('Pause');
   await eventually('The actual paused video', () => video.evaluate((element) => element.paused), (value) => value === true);
   observed = await eventually('The authenticated pause report', playingSession, (value) => value?.PlayState?.IsPaused === true);
-  await expect(row.getByRole('button', { name: 'Resume playback', exact: true })).toBeEnabled();
   checkpoint('Pause confirmed independently by media and server report');
-  await capture(administrator, '02-real-paused-report');
 
-  await row.locator('details.playback-more > summary').click();
-  await row.getByRole('button', { name: 'Seek to time', exact: true }).click();
-  const seek = administrator.getByRole('dialog', { name: 'Seek to time', exact: true });
   const positionBeforeSeek = await video.evaluate((element) => element.currentTime);
   const seekSeconds = Math.abs(positionBeforeSeek - 7) > 1 ? 7 : 3;
   const requestedSeekTicks = BigInt(seekSeconds) * 10_000_000n;
-  await seek.getByLabel('Playback time', { exact: true }).fill('0:' + String(seekSeconds).padStart(2, '0'));
-  await uiCommand('Seek', () => seek.getByRole('button', { name: 'Request seek', exact: true }).click());
+  await nativeCommand('Seek', { SeekPositionTicks: String(requestedSeekTicks) });
   await eventually('The actual seek position', () => video.evaluate((element) => element.currentTime), (value) => Math.abs(value - seekSeconds) < 0.2);
   observed = await eventually('The authenticated seek report', playingSession,
     (value) => value?.PlayState?.IsPaused === true && ticks(value.PlayState.PositionTicks) !== undefined
       && ticks(value.PlayState.PositionTicks) >= requestedSeekTicks - 2_000_000n && ticks(value.PlayState.PositionTicks) <= requestedSeekTicks + 2_000_000n);
   checkpoint('Seek confirmed independently by media and server report', { positionBeforeSeconds: positionBeforeSeek, requestedTicks: String(requestedSeekTicks), positionTicks: String(observed.PlayState.PositionTicks) });
 
-  await uiCommand('Unpause', () => row.getByRole('button', { name: 'Resume playback', exact: true }).click());
+  await nativeCommand('Unpause');
   await eventually('The actual resumed video', () => video.evaluate((element) => ({ paused: element.paused, time: element.currentTime })),
     (value) => value.paused === false && value.time >= seekSeconds);
   observed = await eventually('The authenticated resume report', playingSession, (value) => value?.PlayState?.IsPaused === false);
   checkpoint('Resume confirmed independently by media and server report');
 
   const messageText = '<b>Task-owned Goby smoke message</b> ' + runId.slice(-6);
-  await row.getByRole('button', { name: 'Message', exact: true }).click();
-  const messageDialog = administrator.getByRole('dialog', { name: 'Message this player', exact: true });
+  await administrator.goto(url('/admin/settings/general'));
+  await administrator.getByRole('button', { name: 'Send message', exact: true }).click();
+  const messageDialog = administrator.getByRole('dialog', { name: 'Send a message to playing clients', exact: true });
+  await expect(messageDialog).toContainText('1 client is playing');
+  await expect(messageDialog).not.toContainText(observed.NowPlayingItem.Name);
   await messageDialog.getByRole('textbox', { name: 'Message', exact: true }).fill(messageText);
-  await uiCommand('DisplayMessage', () => messageDialog.getByRole('button', { name: 'Send message', exact: true }).click());
+  const queued = administrator.waitForResponse((response) =>
+    new URL(response.url()).pathname === '/admin/v1/playback/message' && response.request().method() === 'POST');
+  await messageDialog.getByRole('button', { name: 'Send message', exact: true }).click();
+  const messageReceipt = await queued;
+  ensure(messageReceipt.status() === 202 && messageReceipt.request().headers()['x-csrf-token'] === csrf,
+    'The maintenance message did not use the protected broadcast endpoint.');
+  const messageResults = (await messageReceipt.json()).Results;
+  ensure(messageResults.length === 1 && messageResults[0].SessionId === observed.Id
+    && messageResults[0].Status === 'queued' && messageResults[0].ExecutionConfirmed === false,
+    'The maintenance message result did not name the intended queue disposition.');
+  commands.push({ command: 'DisplayMessage', queued: true, executionConfirmedByReceipt: false });
   const notice = player.getByRole('status').filter({ hasText: messageText });
   await expect(notice).toBeVisible();
   await expect(notice.locator('b, img, script')).toHaveCount(0);
@@ -469,14 +467,11 @@ async function main() {
   await notice.getByRole('button', { name: '关闭消息', exact: true }).click();
 
   await administrator.bringToFront();
-  await row.getByRole('button', { name: 'Stop', exact: true }).click();
-  const stop = administrator.getByRole('dialog', { name: 'Stop this playback?', exact: true });
-  await uiCommand('Stop', () => stop.getByRole('button', { name: 'Request stop', exact: true }).click());
+  await nativeCommand('Stop');
   await expect(video).toHaveCount(0);
   await expect(player).toHaveURL(new RegExp('#/detail/' + mediaId + '$'));
   const firstStoppedSnapshot = await eventually('The authenticated stop report', snapshot,
     (value) => !value.Items.some((entry) => entry.Id === observed.Id && entry.NowPlayingItem));
-  await expect(row).toHaveCount(0);
   checkpoint('Stop confirmed independently by player route and server report');
   await verifyPlaybackActivity(observed.PlaySessionId, nativeSession.User.Id, observed.NowPlayingItem.Name,
     playbackWindowStart, firstStoppedSnapshot.ObservedAt, 'before_restart');
@@ -523,28 +518,15 @@ async function main() {
     (value) => value.Items.some((entry) => entry.Id === observed.Id && entry.TransportConnected && entry.Controls?.Play));
   ensure(clientAfterRestart.Items.some((entry) => entry.Id === observed.Id),
     'The retained player login did not reconnect to the new generation.');
-  await administrator.goto(url('/admin/access/sessions'));
-  const available = administrator.locator('details.playback-idle');
-  await expect(available).toBeVisible();
-  await available.locator('summary').click();
-  const idleTarget = available.locator('li').filter({ has: administrator.locator('.playback-device-status.is-connected') });
-  await expect(idleTarget).toHaveCount(1);
-  await idleTarget.getByRole('button', { name: 'Play media', exact: true }).click();
-  const play = administrator.getByRole('dialog', { name: 'Play media on this device', exact: true });
-  await expect(play.getByRole('radio')).toHaveCount(1);
-  await play.getByRole('radio').check();
   const previousLifetime = observed.PlaySessionId;
   const secondPlaybackWindowStart = (await snapshot()).ObservedAt;
-  await uiCommand('PlayNow', () => play.getByRole('button', { name: 'Send to player', exact: true }).click());
+  await nativeCommand('PlayNow', { ItemIds: [mediaId] });
   await expect(player).toHaveURL(new RegExp('#/player/' + mediaId + '$'));
   await eventually('Actual playback controlled through the new generation', () => player.locator('video.player-video').evaluate((element) =>
     ({ paused: element.paused, ready: element.readyState })), (value) => value.ready >= 2 && value.paused === false);
   observed = await eventually('The new authenticated playback lifetime', playingSession,
     (value) => Boolean(value?.TransportConnected && value.PlaySessionId && value.PlaySessionId !== previousLifetime && value.Controls?.Stop));
-  await expect(row).toHaveCount(1);
-  await row.getByRole('button', { name: 'Stop', exact: true }).click();
-  const secondStop = administrator.getByRole('dialog', { name: 'Stop this playback?', exact: true });
-  await uiCommand('Stop', () => secondStop.getByRole('button', { name: 'Request stop', exact: true }).click());
+  await nativeCommand('Stop');
   await expect(player.locator('video.player-video')).toHaveCount(0);
   const secondStoppedSnapshot = await eventually('The stop report in the rebuilt generation', snapshot,
     (value) => !value.Items.some((entry) => entry.Id === observed.Id && entry.NowPlayingItem));

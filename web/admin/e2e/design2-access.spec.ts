@@ -27,16 +27,16 @@ test('the four user tabs preserve one account draft and save profile and policy 
   const pending = new Promise<void>((resolve) => { release = resolve; });
   api.handlers.set(`PUT ${userPath}`, async (route, request) => { await pending; await originalSave(route, request); });
   const sheet = await openViewer(page);
-  await expect(sheet.getByRole('tab')).toHaveText(['Permissions', 'Profile', 'Devices', 'Password']);
+  await expect(sheet.getByRole('tab')).toHaveText(['Permissions', 'Profile', 'Login devices', 'Password']);
   await sheet.getByRole('switch', { name: 'Remuxing', exact: true }).uncheck();
   await evidence(page, testInfo, 'design2-user-permissions-draft');
 
   await sheet.getByRole('tab', { name: 'Profile', exact: true }).click();
-  const username = sheet.getByRole('textbox', { name: 'Username', exact: true });
+  const username = sheet.getByRole('textbox', { name: 'Name', exact: true });
   await username.fill('  Family viewer revised  ');
   await expect(sheet.getByRole('button', { name: 'Manage avatar', exact: true })).toBeDisabled();
-  await sheet.getByRole('tab', { name: 'Devices', exact: true }).click();
-  await expect(sheet.getByRole('list', { name: 'User devices', exact: true })).toContainText('Family tablet');
+  await sheet.getByRole('tab', { name: 'Login devices', exact: true }).click();
+  await expect(sheet.getByRole('list', { name: 'Active logins', exact: true })).toContainText('Family tablet');
   await sheet.getByRole('tab', { name: 'Password', exact: true }).click();
   for (const name of ['Reset password', 'Manage local credentials', 'Delete user']) {
     await expect(sheet.getByRole('button', { name, exact: true })).toBeDisabled();
@@ -98,7 +98,7 @@ for (const failure of [
 
     const sheet = await openViewer(page);
     await sheet.getByRole('tab', { name: 'Profile', exact: true }).click();
-    const username = sheet.getByRole('textbox', { name: 'Username', exact: true });
+    const username = sheet.getByRole('textbox', { name: 'Name', exact: true });
     const save = sheet.getByRole('button', { name: 'Save changes', exact: true });
     await username.fill('Family viewer candidate');
     await save.click();
@@ -189,20 +189,22 @@ test('avatar uploads immediately while credential drafts keep separate confirmat
   expect(confirmations).toEqual([]);
 
   await sheet.getByRole('tab', { name: 'Password', exact: true }).click();
-  await sheet.getByRole('button', { name: 'Reset password', exact: true }).click();
-  const password = page.getByRole('dialog', { name: 'Reset password', exact: true });
-  const newPassword = password.locator('#reset-user-password');
-  const confirmPassword = password.locator('#reset-user-confirm-password');
+  const newPassword = sheet.locator('#reset-user-password');
+  const confirmPassword = sheet.locator('#reset-user-confirm-password');
   await newPassword.fill('synthetic-new-password');
   await confirmPassword.fill('synthetic-new-password');
+  await sheet.getByRole('button', { name: 'Reset password', exact: true }).click();
+  const password = page.getByRole('alertdialog', { name: 'Reset password?', exact: true });
+  await expect(password).toContainText('ends all logins for this account');
   await password.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await sheet.getByRole('button', { name: 'Close', exact: true }).click();
   const discard = page.getByRole('dialog', { name: 'Discard unsaved changes?', exact: true });
   await discard.getByRole('button', { name: 'Keep editing', exact: true }).click();
   await expect(newPassword).toHaveValue('synthetic-new-password');
   await expect(confirmPassword).toHaveValue('synthetic-new-password');
-  await password.getByRole('button', { name: 'Cancel', exact: true }).click();
-  await discard.getByRole('button', { name: 'Discard changes', exact: true }).click();
-  await expect(password).not.toBeVisible();
+  await sheet.getByRole('button', { name: 'Discard', exact: true }).click();
+  await expect(newPassword).toHaveValue('');
+  await expect(confirmPassword).toHaveValue('');
 
   await sheet.getByRole('button', { name: 'Manage local credentials', exact: true }).click();
   const credentials = page.getByRole('dialog', { name: 'Local credentials', exact: true });

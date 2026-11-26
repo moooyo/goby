@@ -3,7 +3,11 @@ import { ApiError, isAbortError } from './api';
 import { ErrorNotice } from './components';
 import { fieldError } from './formFields';
 import { confirmAction, useTranslation } from './i18n';
-import { RefreshRounded, RestartAltRounded, SaveOutlined } from './icons';
+import { RefreshRounded, RestartAltRounded, SaveOutlined, SubjectRounded } from './icons';
+import { playbackApi } from './playbackApi';
+import type { PlaybackMessageCounts, PlaybackMessageInput } from './playbackApi';
+import { emptyMaintenanceDraft, MaintenanceMessageForm, MaintenanceMessageOutcome, MaintenanceMessageReview, PlaybackAudienceStatus, restartReminder } from './ServerMaintenanceMessage';
+import type { MaintenanceDraft, PlaybackAudience } from './ServerMaintenanceMessage';
 import { SettingsGroup } from './SettingsLayout';
 import { ServerUpdatePanel } from './ServerUpdatePanel';
 import { parseServerPolicyDraft, serverPolicyApi, serverPolicyDraft } from './serverPolicyApi';
@@ -13,19 +17,33 @@ import './server-policy.css';
 
 export interface ServerPolicyState { dirty: boolean; busy: boolean }
 interface Props {
+  administratorId: string;
   disabled?: boolean;
+  listenerRestartRequired?: boolean;
   onStateChange?: (state: ServerPolicyState) => void;
 }
-type Pending = 'preview' | 'save' | 'restart' | null;
-type Confirmation = { kind: 'disconnect'; input: ServerPolicyInput } | { kind: 'restart' } | null;
+type Pending = 'preview' | 'save' | 'restart' | 'message' | null;
+type Confirmation = { kind: 'disconnect'; input: ServerPolicyInput } | { kind: 'restart' } | { kind: 'message'; fromRestart: boolean } | null;
 const requestTimeout = 15000;
+
+type PlaybackReview = 'review' | 'reviewed';
+// Reports cannot prove whether a prior broadcast reached a client. Keep its
+// review gate across Settings remounts for this administrator, not on disk.
+const playbackReviews = new Map<string, PlaybackReview>();
 
 function needsReview(error: unknown): boolean {
   return !(error instanceof ApiError) || error.status === 0 || error.status === 409 || error.status >= 500
     || ['network_error', 'invalid_response', 'session_changed'].includes(error.code);
 }
 
-export function ServerPolicyFields({ disabled = false, onStateChange }: Props) {
+function messageRejected(error: unknown): boolean {
+  // The native handler returns defined 4xx responses before queueing. If a
+  // transport or a proxy obscures the result, some clients may have received it.
+  return error instanceof ApiError && [400, 401, 403, 404, 409, 413, 415, 422, 429].includes(error.status)
+    && !['invalid_response', 'session_changed'].includes(error.code) && error.code !== `http_${error.status}`;
+}
+
+export function ServerPolicyFields({ administratorId, disabled = false, listenerRestartRequired = false, onStateChange }: Props) {
   const { t, locale } = useTranslation();
   const [saved, setSaved] = useState<ServerPolicy>();
   const [draft, setDraft] = useState<ServerPolicyDraft>();
@@ -34,6 +52,17 @@ export function ServerPolicyFields({ disabled = false, onStateChange }: Props) {
   const [pending, setPending] = useState<Pending>(null);
   const [confirmation, setConfirmation] = useState<Confirmation>(null);
   const [restartPhrase, setRestartPhrase] = useState('');
+  const [audience, setAudience] = useState<PlaybackAudience>({ state: 'loading' });
+  const [audienceRequest, setAudienceRequest] = useState<{ review: boolean }>();
+  const [messageDraft, setMessageDraft] = useState<MaintenanceDraft>(emptyMaintenanceDraft);
+  const [messageError, setMessageError] = useState<unknown>(null);
+  const [messageOutcome, setMessageOutcome] = useState<PlaybackMessageCounts>();
+  const [messageUnknown, setMessageUnknown] = useState(() => playbackReviews.get(administratorId));
+  const setPlaybackReview = useCallback((status?: PlaybackReview) => {
+    if (status) playbackReviews.set(administratorId, status);
+    else playbackReviews.delete(administratorId);
+    setMessageUnknown(status);
+  }, [administratorId]);
   const [error, setError] = useState<unknown>(null);
   const [review, setReview] = useState(false);
   const [stale, setStale] = useState(false);
@@ -80,17 +109,35 @@ export function ServerPolicyFields({ disabled = false, onStateChange }: Props) {
     }).finally(() => { clearTimeout(deadline); if (!disposed) setLoading(false); });
     return () => { disposed = true; clearTimeout(deadline); controller.abort(); };
   }, [loadVersion]);
+  useEffect(() => {
+    if (!audienceRequest) return;
+    const controller = new AbortController();
+    const deadline = window.setTimeout(() => {
+      controller.abort();
+      setAudience({ state: 'unavailable' });
+    }, requestTimeout);
+    void playbackApi.playingCount({ signal: controller.signal }).then((value) => {
+      if (controller.signal.aborted) return;
+      setAudience({ state: 'ready', value });
+      if (audienceRequest.review) setPlaybackReview('reviewed');
+    }).catch(() => {
+      if (!controller.signal.aborted) setAudience({ state: 'unavailable' });
+    }).finally(() => window.clearTimeout(deadline));
+    return () => { window.clearTimeout(deadline); controller.abort(); };
+  }, [audienceRequest, setPlaybackReview]);
 
   const request = useCallback(async <T,>(action: (signal: AbortSignal) => Promise<T>): Promise<T> => {
     const controller = new AbortController();
     mutation.current = controller;
-    let timedOut = false;
-    const deadline = setTimeout(() => { timedOut = true; controller.abort(); }, requestTimeout);
-    try { return await action(controller.signal); }
-    catch (cause) {
-      if (timedOut) throw new ApiError('The request timed out. Its result could not be confirmed.', { code: 'network_error' });
-      throw cause;
-    } finally { clearTimeout(deadline); if (mutation.current === controller) mutation.current = undefined; }
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const deadline = new Promise<never>((_resolve, reject) => {
+      timer = setTimeout(() => {
+        reject(new ApiError('The request timed out. Its result could not be confirmed.', { code: 'network_error' }));
+        controller.abort();
+      }, requestTimeout);
+    });
+    try { return await Promise.race([action(controller.signal), deadline]); }
+    finally { clearTimeout(timer); if (mutation.current === controller) mutation.current = undefined; }
   }, []);
 
   function change(patch: Partial<ServerPolicyDraft>) {
@@ -111,10 +158,56 @@ export function ServerPolicyFields({ disabled = false, onStateChange }: Props) {
     setError(null);
     setNotice('');
   }
+  function dismissConfirmation() {
+    setConfirmation(null);
+    setAudienceRequest(undefined);
+    setRestartPhrase('');
+    setMessageDraft(emptyMaintenanceDraft);
+    setMessageError(null);
+  }
   function closeConfirmation() {
     if (inFlight.current) return;
-    setConfirmation(null);
+    if (confirmation?.kind === 'message' && (messageDraft.header || messageDraft.text || messageDraft.timeoutMs !== emptyMaintenanceDraft.timeoutMs)
+      && !confirmAction('Discard this maintenance message draft?')) return;
+    dismissConfirmation();
+  }
+  function refreshAudience(review = false) {
+    setAudience({ state: 'loading' });
+    setAudienceRequest({ review });
+  }
+  function openRestart() {
+    if (blocked || dirty || !saved?.Restart.Available || inFlight.current) return;
     setRestartPhrase('');
+    setConfirmation({ kind: 'restart' });
+    refreshAudience();
+  }
+  function openMessage(fromRestart: boolean) {
+    if (disabled || inFlight.current || messageUnknown === 'review') return;
+    setRestartPhrase('');
+    setConfirmation({ kind: 'message', fromRestart });
+    setMessageDraft(fromRestart ? { header: t('Server maintenance'), text: t(restartReminder), timeoutMs: 30000 } : emptyMaintenanceDraft);
+    setMessageError(null);
+    setMessageOutcome(undefined);
+    refreshAudience();
+  }
+  async function sendMessage(input: PlaybackMessageInput) {
+    if (inFlight.current || disabled || confirmation?.kind !== 'message' || messageUnknown === 'review' || audience.state !== 'ready') return;
+    inFlight.current = true;
+    setPending('message');
+    setMessageError(null);
+    try {
+      const counts = await request((signal) => playbackApi.message(input, { signal }));
+      if (mounted.current) {
+        setPlaybackReview();
+        setMessageOutcome(counts);
+        dismissConfirmation();
+      }
+    } catch (cause) {
+      if (!messageRejected(cause)) {
+        if (mounted.current) setPlaybackReview('review');
+        else playbackReviews.set(administratorId, 'review');
+      } else if (mounted.current) setMessageError(cause);
+    } finally { inFlight.current = false; if (mounted.current) setPending(null); }
   }
   async function commit(input: ServerPolicyInput, confirmDisconnect: boolean) {
     setPending('save');
@@ -167,12 +260,13 @@ export function ServerPolicyFields({ disabled = false, onStateChange }: Props) {
     setNotice('');
     try {
       await request((signal) => serverPolicyApi.restart(saved.Revision, { signal }));
-      if (mounted.current) { setConfirmation(null); setRestartPhrase(''); setRestartRequested(true); }
+      if (mounted.current) { dismissConfirmation(); setRestartRequested(true); }
     } catch (cause) {
-      if (mounted.current) { setConfirmation(null); setError(cause); if (needsReview(cause)) setReview(true); }
+      if (mounted.current) { dismissConfirmation(); setError(cause); if (needsReview(cause)) setReview(true); }
     } finally { inFlight.current = false; if (mounted.current) setPending(null); }
   }
 
+  const maintenance = confirmation?.kind === 'disconnect' ? undefined : confirmation;
   const networkError = parsed?.errors.LocalNetworkSubnets ?? fieldError(error, 'LocalNetworkSubnets');
   const languageError = parsed?.errors.UICulture ?? fieldError(error, 'UICulture');
   return <div className="server-policy" aria-busy={loading || pending !== null}>
@@ -208,7 +302,13 @@ export function ServerPolicyFields({ disabled = false, onStateChange }: Props) {
         <Button type="button" variant="contained" size="small" onClick={() => void save()} disabled={blocked || !dirty || !parsed?.input} startIcon={pending === 'save' || pending === 'preview' ? <CircularProgress size={15} /> : <SaveOutlined />}>{t(pending === 'preview' ? 'Checking access…' : pending === 'save' ? 'Saving network policy…' : 'Save network policy')}</Button>
       </div>
       <SettingsGroup title="Server maintenance" description="Restart is available only when this deployment supplies a safe restart operation. Updates are managed through the Docker deployment.">
-        <div className="server-policy-row server-policy-maintenance-row"><div><strong>{t('Restart server')}</strong><span>{t(saved.Restart.InProgress ? 'A restart is already in progress.' : saved.Restart.Available ? 'Active playback and connections will be interrupted.' : 'This deployment has not enabled a safe restart operation.')}</span>{dirty && <span>{t('Save or discard network changes before restarting.')}</span>}</div><Button type="button" variant="outlined" color="error" startIcon={<RestartAltRounded />} disabled={blocked || dirty || !saved.Restart.Available} onClick={() => { setRestartPhrase(''); setConfirmation({ kind: 'restart' }); }}>Restart server</Button></div>
+        <div className="server-policy-row server-policy-maintenance-row">
+          <div><strong>{t('Send a message to playing clients')}</strong><span>{t('Warn viewers before maintenance or a restart. Only playing clients that support messages can receive it. Messages are not saved or replayed.')}</span></div>
+          <Button type="button" variant="outlined" startIcon={<SubjectRounded />} disabled={blocked || messageUnknown === 'review'} onClick={() => openMessage(false)}>Send message</Button>
+        </div>
+        {messageUnknown && confirmation?.kind !== 'message' && <MaintenanceMessageReview required={messageUnknown === 'review'} loading={Boolean(audienceRequest?.review && audience.state === 'loading')} readback={audienceRequest?.review ? audience : undefined} onReview={() => refreshAudience(true)} />}
+        {messageOutcome && <MaintenanceMessageOutcome counts={messageOutcome} onDismiss={() => setMessageOutcome(undefined)} />}
+        <div className="server-policy-row server-policy-maintenance-row"><div><strong>{t('Restart server')}</strong><span>{t(saved.Restart.InProgress ? 'A restart is already in progress.' : saved.Restart.Available ? 'Active playback and connections will be interrupted.' : 'This deployment has not enabled a safe restart operation.')}</span>{dirty && <span>{t('Save or discard network changes before restarting.')}</span>}</div><Button type="button" variant="outlined" color="error" startIcon={<RestartAltRounded />} disabled={blocked || dirty || !saved.Restart.Available} onClick={openRestart}>Restart server</Button></div>
       </SettingsGroup>
       <ServerUpdatePanel disabled={blocked} />
     </>}
@@ -217,10 +317,25 @@ export function ServerPolicyFields({ disabled = false, onStateChange }: Props) {
       <DialogContent><p id="server-policy-disconnect-description" className="server-policy-dialog-copy">{t('These changes will block your current connection and may prevent you from signing in again from this network. Make sure you can reconnect from an allowed local network.')}</p><Alert severity="warning">The new policy also applies to active remote playback and connections.</Alert></DialogContent>
       <DialogActions><Button type="button" onClick={closeConfirmation} disabled={pending !== null} autoFocus>Keep editing</Button><Button type="button" color="error" variant="contained" onClick={() => void confirmDisconnect()} disabled={disabled || pending !== null}>{t(pending === 'save' ? 'Saving network policy…' : 'Save and disconnect')}</Button></DialogActions>
     </Dialog>
-    <Dialog open={confirmation?.kind === 'restart'} data-layout="modal" maxWidth="xs" onClose={closeConfirmation} aria-labelledby="server-policy-restart-title" aria-describedby="server-policy-restart-description">
-      <DialogTitle id="server-policy-restart-title">Restart server?</DialogTitle>
-      <DialogContent><p id="server-policy-restart-description" className="server-policy-dialog-copy">{t('Active playback and connections will be interrupted. The server must finish shutting down before it can start again.')}</p><label className="server-policy-confirm-phrase" htmlFor="server-policy-restart-confirm"><span>{t('Type the confirmation word')} <code translate="no">RESTART</code></span><input id="server-policy-restart-confirm" value={restartPhrase} onChange={(event) => setRestartPhrase(event.target.value)} disabled={pending !== null} autoComplete="off" spellCheck={false} maxLength={7} autoFocus /></label></DialogContent>
-      <DialogActions><Button type="button" onClick={closeConfirmation} disabled={pending !== null}>Cancel</Button><Button type="button" color="error" variant="contained" onClick={() => void restart()} disabled={disabled || pending !== null || restartPhrase !== 'RESTART'}>{t(pending === 'restart' ? 'Requesting restart…' : 'Request restart')}</Button></DialogActions>
+    <Dialog open={Boolean(maintenance)} data-layout="modal" maxWidth={maintenance?.kind === 'restart' ? 'xs' : 'sm'} onClose={pending ? undefined : closeConfirmation}
+      aria-labelledby={maintenance?.kind === 'restart' ? 'server-policy-restart-title' : 'server-policy-message-title'} aria-describedby={maintenance?.kind === 'restart' ? 'server-policy-restart-description' : 'server-policy-message-description'}>
+      {maintenance?.kind === 'restart' && <>
+        <DialogTitle id="server-policy-restart-title">Restart server?</DialogTitle>
+        <DialogContent>
+          <p id="server-policy-restart-description" className="server-policy-dialog-copy">{t('Active playback and connections will be interrupted. The server must finish shutting down before it can start again.')}
+            {listenerRestartRequired && <> {t('Saved listener settings will take effect after the restart.')}</>}</p>
+          <div className="server-maintenance-audience server-maintenance-restart-audience">
+            <PlaybackAudienceStatus audience={audience} forRestart />
+            <Button type="button" size="small" onClick={() => openMessage(true)} disabled={disabled || pending !== null || messageUnknown === 'review'}>Send reminder first</Button>
+          </div>
+          <label className="server-policy-confirm-phrase" htmlFor="server-policy-restart-confirm"><span>{t('Type the confirmation word')} <code translate="no">RESTART</code></span><input id="server-policy-restart-confirm" value={restartPhrase} onChange={(event) => setRestartPhrase(event.target.value)} disabled={pending !== null} autoComplete="off" spellCheck={false} maxLength={7} autoFocus /></label>
+        </DialogContent>
+        <DialogActions><Button type="button" onClick={closeConfirmation} disabled={pending !== null}>Cancel</Button><Button type="button" color="error" variant="contained" onClick={() => void restart()} disabled={disabled || pending !== null || restartPhrase !== 'RESTART'}>{t(pending === 'restart' ? 'Requesting restart…' : 'Request restart')}</Button></DialogActions>
+      </>}
+      {maintenance?.kind === 'message' && <MaintenanceMessageForm audience={audience} draft={messageDraft} fromRestart={maintenance.fromRestart}
+        busy={pending === 'message'} disabled={disabled} error={messageError} unknown={Boolean(messageUnknown)} reviewRequired={messageUnknown === 'review'}
+        onRefresh={() => refreshAudience(messageUnknown === 'review')} onClose={closeConfirmation}
+        onDraftChange={(patch) => { setMessageDraft((current) => ({ ...current, ...patch })); setMessageError(null); }} onSend={(input) => void sendMessage(input)} />}
     </Dialog>
   </div>;
 }

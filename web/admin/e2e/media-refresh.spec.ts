@@ -163,12 +163,17 @@ test('explicit media refresh confirms intent, preserves normal scan, and persist
   await page.getByLabel(/^Password/).fill(password);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Libraries', exact: true })).toBeVisible();
-  const library = page.getByRole('list', { name: 'Media libraries' }).getByRole('listitem')
-    .filter({ has: page.getByRole('heading', { name: fixture.Library.Name, exact: true }) });
-  const refresh = () => library.getByRole('button', { name: `Refresh media details for ${fixture.Library.Name}`, exact: true });
+  const library = page.getByRole('row').filter({ has: page.getByRole('button', { name: fixture.Library.Name, exact: true }) });
+  const moreActions = library.getByRole('button', { name: `More actions for ${fixture.Library.Name}`, exact: true });
+  const normalScan = library.getByRole('button', { name: `Scan library ${fixture.Library.Name}`, exact: true });
+  const scanHistory = () => page.getByRole('region', { name: 'Scans and processing', exact: true }).getByRole('button', { name: 'Scan history', exact: true }).click();
+  const refresh = async () => {
+    await moreActions.click();
+    await page.getByRole('menuitem', { name: 'Refresh media details', exact: true }).click();
+  };
   await expect(library).toBeVisible();
-  await expect(library.getByRole('button', { name: 'Scan library', exact: true })).toBeEnabled();
-  await expect(refresh()).toBeEnabled();
+  await expect(normalScan).toBeEnabled();
+  await expect(moreActions).toBeEnabled();
   const metadataRoute = `/admin/v1/items/${fixture.ItemId}/metadata`;
   const initialMetadataResponse = await context.request.get(metadataRoute);
   expect(initialMetadataResponse.status()).toBe(200);
@@ -184,7 +189,7 @@ test('explicit media refresh confirms intent, preserves normal scan, and persist
   await test.step('cancel and escape the mobile confirmation without submitting any scan', async () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await checkLayout(page);
-    await refresh().click();
+    await refresh();
     const dialog = refreshDialog(page);
     await expect(dialog).toBeVisible();
     await expect(dialog.getByText(fixture.Library.Name, { exact: true })).toBeVisible();
@@ -196,8 +201,8 @@ test('explicit media refresh confirms intent, preserves normal scan, and persist
     await page.screenshot({ path: testInfo.outputPath('media-refresh-dialog-mobile.png'), fullPage: true, animations: 'disabled' });
     await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
     await expect(dialog).not.toBeVisible();
-    await expect(refresh()).toBeFocused();
-    await refresh().click();
+    await expect(moreActions).toBeFocused();
+    await refresh();
     await expect(dialog).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(dialog).not.toBeVisible();
@@ -207,19 +212,19 @@ test('explicit media refresh confirms intent, preserves normal scan, and persist
 
   await page.setViewportSize({ width: 1440, height: 1000 });
   const normalResponse = scanResponse();
-  await library.getByRole('button', { name: 'Scan library', exact: true }).click();
+  await normalScan.click();
   const normal = await readStarted(await normalResponse, fixture, false);
   expect(mutations).toHaveLength(1);
   expect(mutations[0]?.body).toBeNull();
   await expect(refreshDialog(page)).not.toBeVisible();
-  await page.getByRole('link', { name: 'Tasks', exact: true }).click();
+  await scanHistory();
   await expect(page.getByRole('heading', { name: 'Tasks', exact: true })).toBeVisible();
   await completedTask(page, context.request, fixture, normal, false);
   await page.getByRole('button', { name: 'Manage libraries', exact: true }).click();
   await expect(library).toBeVisible();
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await refresh().click();
+  await refresh();
   const dialog = refreshDialog(page);
   await expect(dialog).toBeVisible();
   const explicitResponse = scanResponse();
@@ -230,7 +235,7 @@ test('explicit media refresh confirms intent, preserves normal scan, and persist
   expect(JSON.parse(mutations[1]?.body ?? 'null')).toEqual({ ForceProbe: true });
   expect(mutations.every((mutation) => mutation.pathname === scanPath && mutation.query === '' && mutation.csrf)).toBe(true);
   await expect(dialog).not.toBeVisible();
-  await page.getByRole('button', { name: 'View tasks', exact: true }).first().click();
+  await scanHistory();
   await expect(page.getByRole('heading', { name: 'Tasks', exact: true })).toBeVisible();
   const completed = await completedTask(page, context.request, fixture, forced, true);
   expect(completed.Updated).toBe(1);

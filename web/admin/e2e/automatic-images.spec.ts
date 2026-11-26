@@ -68,8 +68,8 @@ test('new library creation clears unsupported image policy and submits one exact
     },
   }]);
   const row = page.getByRole('row').filter({ has: page.getByRole('button', { name: 'Artwork library', exact: true }) });
-  await expect(row.getByText('Automatic images', { exact: true })).toBeVisible();
-  await expect(row.getByText('No analysis enabled', { exact: true })).toBeVisible();
+  await expect(row).toBeVisible();
+  await expect(row.getByText('Not scanned yet', { exact: true })).toBeVisible();
   const notice = page.locator('.goby-snackbar');
   await expect(notice).toContainText('Automatic image downloads are enabled.');
   await expect(notice).toContainText('View image download progress in Tasks.');
@@ -82,7 +82,7 @@ test('missing images require an explicit independent opt in and preserve the exa
   const fixture = installLibrary(api);
   await page.goto('/admin/media/libraries');
   await page.getByRole('button', { name: `More actions for ${library.Name}`, exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Edit library', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Library settings', exact: true }).click();
   let sheet = page.getByRole('dialog', { name: 'Edit library', exact: true });
   const policy = sheet.getByRole('checkbox', { name: 'Automatically download missing images', exact: true });
   await expect(policy).not.toBeChecked();
@@ -98,7 +98,7 @@ test('missing images require an explicit independent opt in and preserve the exa
     body: { Revision: '9007199254740993', Scan: false, LibraryOptions: { EnableOnlineImages: true, EnableLocalImages: false, EnableEmbeddedArtwork: false } },
   });
   await page.getByRole('button', { name: `More actions for ${library.Name}`, exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Edit library', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Library settings', exact: true }).click();
   sheet = page.getByRole('dialog', { name: 'Edit library', exact: true });
   await expect(sheet.getByRole('checkbox', { name: 'Automatically download missing images', exact: true })).toBeChecked();
   await sheet.getByRole('checkbox', { name: 'Automatically download missing images', exact: true }).uncheck();
@@ -117,7 +117,7 @@ test('an unconfirmed policy save is read back before another mutation can be mad
   });
   await page.goto('/admin/media/libraries');
   await page.getByRole('button', { name: `More actions for ${library.Name}`, exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Edit library', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Library settings', exact: true }).click();
   const sheet = page.getByRole('dialog', { name: 'Edit library', exact: true });
   const policy = sheet.getByRole('checkbox', { name: 'Automatically download missing images', exact: true });
   await policy.check();
@@ -138,7 +138,7 @@ test('music library settings do not expose an unsupported automatic image policy
   installLibrary(api, 'music');
   await page.goto('/admin/media/libraries');
   await page.getByRole('button', { name: `More actions for ${library.Name}`, exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Edit library', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Library settings', exact: true }).click();
   const sheet = page.getByRole('dialog', { name: 'Edit library', exact: true });
   await expect(sheet.getByRole('textbox', { name: 'Library name', exact: true })).toBeVisible();
   await expect(sheet.getByRole('checkbox', { name: 'Automatically download missing images', exact: true })).toHaveCount(0);
