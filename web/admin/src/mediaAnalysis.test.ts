@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { analysisIntroStatus, analysisDraft, analysisRevision, parseAnalysisDraft, validAnalysisConfiguration, validAnalysisDetection, validAnalysisItems, validAnalysisOverview, validAnalysisProfile } from './mediaAnalysis.ts';
+import { analysisIntroStatus, analysisDraft, analysisRevision, parseAnalysisDraft, supportsVideoAnalysis, validAnalysisConfiguration, validAnalysisDetection, validAnalysisItems, validAnalysisOverview, validAnalysisProfile } from './mediaAnalysis.ts';
 import type { AnalysisCandidate, AnalysisDetection, AnalysisItem, AnalysisMetrics, AnalysisProfile, IntroSkipperCandidate } from './mediaAnalysis.ts';
 
 const profile: AnalysisProfile = { AutoPublishIntros: true, PreviewIntervalSeconds: 10, PreviewQuality: 80, MaxSourceBytes: 128 * 2 ** 30, MaxItemRuntimeSeconds: 1200, FeatureCacheMaxBytes: 128 * 2 ** 20,
@@ -20,6 +20,11 @@ function candidate(): AnalysisCandidate {
     VisualStartAnchorGapTicks: 10_000_000, VisualEndAnchorGapTicks: 15_000_000, VisualDistinctStates: 6, VisualDominantStatePermille: 300,
   } };
 }
+
+test('video analysis accepts the supported catalog types but not music or collections', () => {
+  for (const type of ['movies', 'tvshows', 'mixed']) assert.equal(supportsVideoAnalysis(type), true, type);
+  for (const type of ['music', 'boxsets', '']) assert.equal(supportsVideoAnalysis(type), false, type);
+});
 
 test('processing edits keep exact values and retain automatic publication', () => {
   const value = { ...profile, AutoPublishIntros: false, MaxSourceBytes: 1, PreviewQuality: 95, FeatureCacheMaxBytes: 512 * 2 ** 20 };

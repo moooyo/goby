@@ -109,41 +109,46 @@ function AnalysisItemDialog({ id, onClose }: { id: string; onClose: () => void }
 }
 
 export function MediaAnalysisResults({ libraries, disabled, refresh, currentUserId, onTasks, onCreditsActivityChange }: {
-  libraries: Library[]; disabled: boolean; refresh: number; currentUserId: string; onTasks: () => void; onCreditsActivityChange: (value: CreditsEditorActivity) => void;
+  libraries?: Library[]; disabled: boolean; refresh: number; currentUserId: string; onTasks: () => void; onCreditsActivityChange: (value: CreditsEditorActivity) => void;
 }) {
   const { t } = useTranslation();
   const [libraryId, setLibraryId] = useState(''); const [search, setSearch] = useState(''); const [query, setQuery] = useState(''); const [page, setPage] = useState(0);
   const [data, setData] = useState<AnalysisItems>(); const [error, setError] = useState<unknown>(); const [loading, setLoading] = useState(true); const [revision, setRevision] = useState(0);
   const [detail, setDetail] = useState<string>();
   const [creditsItem, setCreditsItem] = useState<AnalysisItem>();
+  const hasVideoLibraries = Boolean(libraries?.length);
+  const selectedLibraryId = libraries?.some(({ Id }) => Id === libraryId) ? libraryId : '';
   useEffect(() => {
+    if (!hasVideoLibraries) { setData(undefined); setError(undefined); return; }
+    if (libraryId !== selectedLibraryId) { setLibraryId(''); setPage(0); return; }
     const controller = new AbortController(); setLoading(true); setError(undefined); setData(undefined);
-    void mediaAnalysisApi.items(libraryId, query, page * 25, { signal: controller.signal }).then((value) => {
+    void mediaAnalysisApi.items(selectedLibraryId, query, page * 25, { signal: controller.signal }).then((value) => {
       if (controller.signal.aborted) return;
       if (page > 0 && page * 25 >= value.TotalRecordCount) setPage(Math.max(0, Math.ceil(value.TotalRecordCount / 25) - 1)); else setData(value);
     }).catch((cause: unknown) => { if (!controller.signal.aborted && !isAbortError(cause)) setError(cause); }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [libraryId, query, page, revision, refresh]);
+  }, [hasVideoLibraries, libraryId, selectedLibraryId, query, page, revision, refresh]);
   return <Paper component="section" aria-labelledby="analysis-results-title" variant="outlined" sx={mediaPanelSx}>
     <Stack direction={{ xs: 'column', md: 'row' }} sx={{ alignItems: { xs: 'stretch', md: 'center' }, gap: 2, p: 2.5 }}>
       <Typography component="h2" variant="h3" id="analysis-results-title" sx={{ flex: 1 }}>Analysis results</Typography>
-      <Box component="form" onSubmit={(event) => { event.preventDefault(); setQuery(search.trim()); setPage(0); }} sx={{ width: { xs: '100%', md: 'auto' } }}>
+      {hasVideoLibraries && <Box component="form" onSubmit={(event) => { event.preventDefault(); setQuery(search.trim()); setPage(0); }} sx={{ width: { xs: '100%', md: 'auto' } }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ gap: 1.5, alignItems: { xs: 'stretch', sm: 'center' } }}>
-          <TextField select label="Filter library" size="small" value={libraryId} disabled={disabled} onChange={(event) => { setLibraryId(event.target.value); setPage(0); }} slotProps={{ inputLabel: { shrink: true }, select: { displayEmpty: true } }} sx={mediaSelectSx}><MenuItem value="">All libraries</MenuItem>{libraries.map((library) => <MenuItem key={library.Id} value={library.Id} translate="no">{library.Name}</MenuItem>)}</TextField>
+          <TextField select label="Filter library" size="small" value={selectedLibraryId} disabled={disabled} onChange={(event) => { setLibraryId(event.target.value); setPage(0); }} slotProps={{ inputLabel: { shrink: true }, select: { displayEmpty: true } }} sx={mediaSelectSx}><MenuItem value="">All libraries</MenuItem>{libraries?.map((library) => <MenuItem key={library.Id} value={library.Id} translate="no">{library.Name}</MenuItem>)}</TextField>
           <Box sx={{ width: { xs: '100%', sm: 260 } }}><MediaSearchField label="Search media" value={search} onChange={setSearch} disabled={disabled} maxLength={256} /></Box>
           <Tooltip title="Refresh results"><span><IconButton aria-label="Refresh results" disabled={disabled || loading} onClick={() => setRevision((value) => value + 1)}><RefreshRounded sx={{ fontSize: 20 }} /></IconButton></span></Tooltip>
         </Stack>
-      </Box>
+      </Box>}
     </Stack>
-    {error != null && <Box sx={{ px: 2.5, pb: 2.5 }}><ErrorNotice error={error} retry={() => setRevision((value) => value + 1)} /></Box>}
-    {loading && <Box role="status" aria-label="Loading media analysis items" sx={{ px: 2.5, pb: 2.5 }}><Skeleton height={54} /><Skeleton height={54} /></Box>}
-    {data?.Items.length === 0 && <Box sx={{ mx: 2.5, mb: 2.5, p: 4, textAlign: 'center', border: '1px dashed', borderColor: 'divider', borderRadius: '12px' }}><Typography variant="body2" color="text.secondary">No matching media. Scan a supported library or change the filters.</Typography></Box>}
-    {data && data.Items.length > 0 && <>
+    {libraries?.length === 0 && <Box sx={{ px: 2.5, pb: 2.5 }}><Typography color="text.secondary">No video libraries are available for analysis.</Typography></Box>}
+    {hasVideoLibraries && error != null && <Box sx={{ px: 2.5, pb: 2.5 }}><ErrorNotice error={error} retry={() => setRevision((value) => value + 1)} /></Box>}
+    {hasVideoLibraries && loading && <Box role="status" aria-label="Loading media analysis items" sx={{ px: 2.5, pb: 2.5 }}><Skeleton height={54} /><Skeleton height={54} /></Box>}
+    {hasVideoLibraries && data?.Items.length === 0 && <Box sx={{ mx: 2.5, mb: 2.5, p: 4, textAlign: 'center', border: '1px dashed', borderColor: 'divider', borderRadius: '12px' }}><Typography variant="body2" color="text.secondary">No matching media. Scan a supported library or change the filters.</Typography></Box>}
+    {hasVideoLibraries && data && data.Items.length > 0 && <>
       <TableContainer sx={{ borderRadius: 0, display: { xs: 'none', md: 'block' } }}>
         <Table aria-label="Media analysis items" sx={{ '& td, & th': { px: 2.5 } }}>
           <TableHead><TableRow><TableCell sx={{ width: '36%' }}>Item</TableCell><TableCell sx={{ width: '26%' }}>Intro analysis</TableCell><TableCell>Seek previews</TableCell><TableCell>片尾标记</TableCell></TableRow></TableHead>
           <TableBody>{data.Items.map((item) => <TableRow key={item.Id} hover>
-            <TableCell component="th" scope="row"><Button disabled={disabled} onClick={() => setDetail(item.Id)} aria-label={t('View analysis for {name}', { name: item.Name })} sx={{ color: 'text.primary', display: 'block', minHeight: 0, minWidth: 0, p: 0, borderRadius: 0.5, textAlign: 'left', overflowWrap: 'anywhere', fontSize: 13, fontWeight: 600 }}>{item.Name || 'Untitled media'}</Button><Typography component="div" variant="caption" color="text.secondary" sx={{ mt: 0.25 }}>{libraries.find((library) => library.Id === item.LibraryId)?.Name ?? 'Unknown library'} · {item.Type}</Typography></TableCell>
+            <TableCell component="th" scope="row"><Button disabled={disabled} onClick={() => setDetail(item.Id)} aria-label={t('View analysis for {name}', { name: item.Name })} sx={{ color: 'text.primary', display: 'block', minHeight: 0, minWidth: 0, p: 0, borderRadius: 0.5, textAlign: 'left', overflowWrap: 'anywhere', fontSize: 13, fontWeight: 600 }}>{item.Name || 'Untitled media'}</Button><Typography component="div" variant="caption" color="text.secondary" sx={{ mt: 0.25 }}>{libraries?.find((library) => library.Id === item.LibraryId)?.Name ?? 'Unknown library'} · {item.Type}</Typography></TableCell>
             <TableCell><IntroStatus item={item} /></TableCell><TableCell><PreviewStatus previews={item.Previews} /></TableCell><TableCell>{['Movie', 'Episode'].includes(item.Type) && <Button disabled={disabled} onClick={() => setCreditsItem(item)} aria-label={`查看「${item.Name}」的片尾标记`}>查看与识别</Button>}</TableCell>
           </TableRow>)}</TableBody>
         </Table>
@@ -151,7 +156,7 @@ export function MediaAnalysisResults({ libraries, disabled, refresh, currentUser
       <Box sx={{ display: { xs: 'block', md: 'none' } }}>
         {data.Items.map((item) => <Box key={item.Id} sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
           <Stack direction="row" sx={{ alignItems: 'flex-start', gap: 0.5 }}>
-            <Box sx={{ minWidth: 0, flex: 1 }}><Button disabled={disabled} onClick={() => setDetail(item.Id)} aria-label={t('View analysis for {name}', { name: item.Name })} sx={{ minHeight: 0, p: 0, color: 'text.primary', textAlign: 'left', overflowWrap: 'anywhere', fontWeight: 600 }}>{item.Name || 'Untitled media'}</Button><Typography variant="caption" component="div" color="text.secondary" sx={{ mt: 0.25 }}>{libraries.find((library) => library.Id === item.LibraryId)?.Name ?? 'Unknown library'} · {item.Type}</Typography></Box>
+            <Box sx={{ minWidth: 0, flex: 1 }}><Button disabled={disabled} onClick={() => setDetail(item.Id)} aria-label={t('View analysis for {name}', { name: item.Name })} sx={{ minHeight: 0, p: 0, color: 'text.primary', textAlign: 'left', overflowWrap: 'anywhere', fontWeight: 600 }}>{item.Name || 'Untitled media'}</Button><Typography variant="caption" component="div" color="text.secondary" sx={{ mt: 0.25 }}>{libraries?.find((library) => library.Id === item.LibraryId)?.Name ?? 'Unknown library'} · {item.Type}</Typography></Box>
           </Stack>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 1.5 }}>
             <Stack spacing={0.75}><Typography variant="caption" color="text.secondary">Intro analysis</Typography><IntroStatus item={item} /></Stack>
@@ -161,7 +166,7 @@ export function MediaAnalysisResults({ libraries, disabled, refresh, currentUser
         </Box>)}
       </Box>
     </>}
-    {data && <TablePagination component="div" count={data.TotalRecordCount} page={page} rowsPerPage={25} rowsPerPageOptions={[25]} disabled={disabled || loading} onPageChange={(_, value) => setPage(value)} sx={{ borderTop: '1px solid', borderColor: 'divider' }} />}
+    {hasVideoLibraries && data && <TablePagination component="div" count={data.TotalRecordCount} page={page} rowsPerPage={25} rowsPerPageOptions={[25]} disabled={disabled || loading} onPageChange={(_, value) => setPage(value)} sx={{ borderTop: '1px solid', borderColor: 'divider' }} />}
     {detail && <AnalysisItemDialog id={detail} onClose={() => setDetail(undefined)} />}
     {creditsItem && <CreditsEditorDialog key={creditsItem.Id} itemId={creditsItem.Id} itemName={creditsItem.Name} currentUserId={currentUserId} onTasks={onTasks} onActivityChange={onCreditsActivityChange} onClose={() => { setCreditsItem(undefined); onCreditsActivityChange({ dirty: false, busy: false, pending: false }); }} />}
   </Paper>;

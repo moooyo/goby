@@ -47,6 +47,7 @@ export const design3MediaMessages: Record<string, string> = {
   'Applying identification…': '正在应用识别结果…',
   'Apply identification': '应用识别结果',
   'Analysis settings': '分析设置',
+  'No video libraries are available for analysis.': '没有可用于分析的视频媒体库。',
   '{count} task active': '{count} 项正在进行',
   '{count} tasks active': '{count} 项正在进行',
   'Analyses enabled by library': '各媒体库启用的分析',

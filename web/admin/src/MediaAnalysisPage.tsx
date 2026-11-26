@@ -7,7 +7,7 @@ import { ErrorNotice } from './components';
 import { AnalysisConfigurationFields } from './AnalysisConfigurationFields';
 import { BackgroundPreviewSettings } from './BackgroundPreviewSettings';
 import type { BackgroundPreviewSettingsState } from './BackgroundPreviewSettings';
-import { analysisDraft, parseAnalysisDraft } from './mediaAnalysis';
+import { analysisDraft, parseAnalysisDraft, supportsVideoAnalysis } from './mediaAnalysis';
 import { formatDirectoryBytes } from './directoryCapacity';
 import type { AnalysisDraft, AnalysisOverview, AnalysisPrune, AnalysisRunInput, AnalysisRunReceipt } from './mediaAnalysis';
 import { mediaAnalysisApi } from './mediaAnalysisApi';
@@ -57,7 +57,7 @@ type AnalysisFeature = (typeof analysisFeatures)[number];
 type AnalysisFeatureStatus = 'Enabled' | 'Disabled' | 'Not applicable' | 'Not reported';
 
 function analysisFeatureStatus(library: Library, feature: AnalysisFeature): AnalysisFeatureStatus {
-  const applicable = 'seriesOnly' in feature ? library.CollectionType === 'tvshows' : ['movies', 'tvshows', 'mixed'].includes(library.CollectionType);
+  const applicable = 'seriesOnly' in feature ? library.CollectionType === 'tvshows' : supportsVideoAnalysis(library.CollectionType);
   const enabled = library.LibraryOptions?.[feature.key];
   return !applicable ? 'Not applicable' : typeof enabled !== 'boolean' ? 'Not reported' : enabled ? 'Enabled' : 'Disabled';
 }
@@ -101,6 +101,8 @@ export function MediaAnalysisPage({ currentUserId, onTasks, onTaskRun, onLibrari
   const [creditsActivity, setCreditsActivity] = useState<CreditsEditorActivity>({ dirty: false, pending: false, busy: false });
   const [creditsLibraryId, setCreditsLibraryId] = useState('');
   const [resultsTab, setResultsTab] = useState<'analysis' | 'waveform' | 'subtitle-timeline'>('analysis');
+  const videoLibraries = libraries.filter((library) => supportsVideoAnalysis(library.CollectionType));
+  const selectedCreditsLibraryId = videoLibraries.some(({ Id }) => Id === creditsLibraryId) ? creditsLibraryId : '';
   const parsed = draft ? parseAnalysisDraft(draft) : undefined;
   const dirty = Boolean(draft && overview && JSON.stringify(draft) !== JSON.stringify(analysisDraft(overview.Configuration.Profile)));
   const locked = Boolean(busy);
@@ -153,8 +155,8 @@ export function MediaAnalysisPage({ currentUserId, onTasks, onTaskRun, onLibrari
   }
   async function checkRequest() { if (pending) await submitRun(pending); }
   async function startCredits(force: boolean) {
-    if (pending || !creditsLibraryId || overview?.Runtime.CreditsAvailable === false || run.data && isActiveTaskRun(run.data.Run)) return;
-    await submitRun({ Kind: 'credits', RequestId: crypto.randomUUID(), LibraryIds: [creditsLibraryId], ItemIds: [], Force: force });
+    if (pending || !selectedCreditsLibraryId || overview?.Runtime.CreditsAvailable === false || run.data && isActiveTaskRun(run.data.Run)) return;
+    await submitRun({ Kind: 'credits', RequestId: crypto.randomUUID(), LibraryIds: [selectedCreditsLibraryId], ItemIds: [], Force: force });
   }
   function requestStop(runId: string) { setStopError(undefined); setStopRunId(runId); }
 
@@ -297,7 +299,7 @@ export function MediaAnalysisPage({ currentUserId, onTasks, onTaskRun, onLibrari
         <Tab id="waveform-results-tab" value="waveform" label={t('Audio waveforms')} aria-controls="waveform-results-panel" disabled={locked || backgroundState.busy || creditsActivity.busy || subtitleTimelineActivity.busy} />
         <Tab id="subtitle-timeline-results-tab" value="subtitle-timeline" label={t('Subtitle timelines')} aria-controls="subtitle-timeline-results-panel" disabled={locked || backgroundState.busy || creditsActivity.busy || waveformActivity.busy} />
       </Tabs>
-      <div id="analysis-results-panel" role="tabpanel" aria-labelledby="analysis-results-tab" hidden={resultsTab !== 'analysis'}><MediaAnalysisResults libraries={libraries} disabled={blocked} refresh={resultsRevision} currentUserId={currentUserId} onTasks={onTasks} onCreditsActivityChange={setCreditsActivity} /></div>
+      <div id="analysis-results-panel" role="tabpanel" aria-labelledby="analysis-results-tab" hidden={resultsTab !== 'analysis'}><MediaAnalysisResults libraries={overview ? videoLibraries : undefined} disabled={blocked} refresh={resultsRevision} currentUserId={currentUserId} onTasks={onTasks} onCreditsActivityChange={setCreditsActivity} /></div>
       <div id="waveform-results-panel" role="tabpanel" aria-labelledby="waveform-results-tab" hidden={resultsTab !== 'waveform'}><AudioWaveformPanel currentUserId={currentUserId} libraries={libraries} onLibraries={onLibraries} onTasks={onTasks} onActivityChange={setWaveformActivity} visible={resultsTab === 'waveform'} /></div>
       <div id="subtitle-timeline-results-panel" role="tabpanel" aria-labelledby="subtitle-timeline-results-tab" hidden={resultsTab !== 'subtitle-timeline'}><SubtitleTimelinePanel currentUserId={currentUserId} libraries={libraries} onLibraries={onLibraries} onTasks={onTasks} onActivityChange={setSubtitleTimelineActivity} visible={resultsTab === 'subtitle-timeline'} available={overview?.Runtime.SubtitleTimelineAvailable} reasons={overview?.Runtime.SubtitleTimelineReasons} /></div>
     </section>
@@ -313,11 +315,11 @@ export function MediaAnalysisPage({ currentUserId, onTasks, onTaskRun, onLibrari
           <div className="analysis-runtime-credits">
             <h3>{t('Automatic credits detection')}</h3>
             {overview?.Runtime.CreditsReasons && overview.Runtime.CreditsReasons.length > 0 && <Alert severity="info" sx={{ mb: 1 }}>{overview.Runtime.CreditsReasons.join('; ')}</Alert>}
-            <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ gap: 1, alignItems: { xs: 'stretch', sm: 'flex-end' }, flexWrap: 'wrap' }}>
-              <TextField select size="small" label="Credits analysis library" value={creditsLibraryId} disabled={blocked || Boolean(pending)} onChange={(event) => setCreditsLibraryId(event.target.value)} sx={{ flex: { sm: '1 1 152px' }, minWidth: 0 }}><MenuItem value="">Choose a library</MenuItem>{libraries.filter((library) => ['movies', 'tvshows', 'mixed'].includes(library.CollectionType)).map((library) => <MenuItem key={library.Id} value={library.Id} translate="no">{library.Name}</MenuItem>)}</TextField>
-              <Button size="small" variant="outlined" disabled={blocked || dirty || Boolean(pending) || !creditsLibraryId || overview?.Runtime.CreditsAvailable === false || Boolean(run.data && isActiveTaskRun(run.data.Run))} onClick={() => void startCredits(false)}>Detect credits in this library</Button>
-              <Button size="small" disabled={blocked || dirty || Boolean(pending) || !creditsLibraryId || overview?.Runtime.CreditsAvailable === false || Boolean(run.data && isActiveTaskRun(run.data.Run))} onClick={() => void startCredits(true)}>Detect credits again</Button>
-            </Stack>
+            {videoLibraries.length > 0 ? <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ gap: 1, alignItems: { xs: 'stretch', sm: 'flex-end' }, flexWrap: 'wrap' }}>
+              <TextField select size="small" label="Credits analysis library" value={selectedCreditsLibraryId} disabled={blocked || Boolean(pending)} onChange={(event) => setCreditsLibraryId(event.target.value)} sx={{ flex: { sm: '1 1 152px' }, minWidth: 0 }}><MenuItem value="">Choose a library</MenuItem>{videoLibraries.map((library) => <MenuItem key={library.Id} value={library.Id} translate="no">{library.Name}</MenuItem>)}</TextField>
+              <Button size="small" variant="outlined" disabled={blocked || dirty || Boolean(pending) || !selectedCreditsLibraryId || overview?.Runtime.CreditsAvailable === false || Boolean(run.data && isActiveTaskRun(run.data.Run))} onClick={() => void startCredits(false)}>Detect credits in this library</Button>
+              <Button size="small" disabled={blocked || dirty || Boolean(pending) || !selectedCreditsLibraryId || overview?.Runtime.CreditsAvailable === false || Boolean(run.data && isActiveTaskRun(run.data.Run))} onClick={() => void startCredits(true)}>Detect credits again</Button>
+            </Stack> : overview && <Typography variant="body2" color="text.secondary">No video libraries are available for analysis.</Typography>}
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.5 }}>Manual and imported markers take priority. Regeneration changes only automatic results.</Typography>
           </div>
         </div>

@@ -170,6 +170,33 @@ test('a conflicted identification requires a fresh read and a new explicit candi
   expect(api.writes().filter((entry) => entry.path.endsWith('/apply'))).toHaveLength(1);
 });
 
+test('analysis inventory and credits selectors offer only supported video libraries', async ({ page, api }) => {
+  const music: Library = { ...library, Id: 'music-library', Name: 'Music catalog', CollectionType: 'music' };
+  const homeVideos: Library = { ...library, Id: 'mixed-video-library', Name: 'Home videos', CollectionType: 'mixed' };
+  const libraries = [library, seriesLibrary, music, homeVideos];
+  api.handlers.set(`GET ${libraryList}`, (route) => json(route, { Items: libraries, TotalRecordCount: libraries.length }));
+  await page.goto('/admin/media/analysis');
+  await expect(page.getByRole('combobox', { name: 'Filter library' }).getByRole('option')).toHaveText(['All libraries', library.Name, seriesLibrary.Name, homeVideos.Name]);
+  await expect(page.getByRole('combobox', { name: 'Credits analysis library' }).getByRole('option')).toHaveText(['Choose a library', library.Name, seriesLibrary.Name, homeVideos.Name]);
+  await expect(page.getByRole('table', { name: 'Media analysis items' })).toBeVisible();
+  const filtered = page.waitForRequest((request) => {
+    const url = new URL(request.url());
+    return url.pathname === '/admin/v1/media-analysis/items' && url.searchParams.get('LibraryId') === seriesLibrary.Id;
+  });
+  await page.getByRole('combobox', { name: 'Filter library' }).selectOption(seriesLibrary.Id);
+  await filtered;
+});
+
+test('a music-only catalog has an analysis empty state without inventory reads or blank selectors', async ({ page, api }) => {
+  const music: Library = { ...library, Id: 'music-library', Name: 'Music catalog', CollectionType: 'music' };
+  api.handlers.set(`GET ${libraryList}`, (route) => json(route, { Items: [music], TotalRecordCount: 1 }));
+  await page.goto('/admin/media/analysis');
+  await expect(page.getByText('No video libraries are available for analysis.', { exact: true })).toHaveCount(2);
+  await expect(page.getByRole('combobox', { name: 'Filter library' })).toHaveCount(0);
+  await expect(page.getByRole('combobox', { name: 'Credits analysis library' })).toHaveCount(0);
+  expect(api.reads('/admin/v1/media-analysis/items')).toHaveLength(0);
+});
+
 function taskRun(Id: string, TaskId: string, fields: Partial<TaskRun> = {}): TaskRun {
   return { Id, TaskId, State: 'running', Source: 'manual', RequestId: null, CreatedAt: stamp, StartedAt: stamp, FinishedAt: null, StopRequestedAt: null,
     StopReason: '', ErrorCode: '', ErrorMessage: '', TotalChildren: 3, TerminalChildren: 1, CompletedChildren: 1, FailedChildren: 0,

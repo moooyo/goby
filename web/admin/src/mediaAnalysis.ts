@@ -48,6 +48,11 @@ export interface AnalysisItem {
   Previews: { Width: number; Height: number; Size: number; FrameCount: number; Status: string; FailureCode: string; UpdatedAt: string }[];
 }
 export interface AnalysisItems { Items: AnalysisItem[]; TotalRecordCount: number; StartIndex: number; Limit: number }
+
+export function supportsVideoAnalysis(collectionType: string): boolean {
+  return collectionType === 'movies' || collectionType === 'tvshows' || collectionType === 'mixed';
+}
+
 export interface AnalysisRunInput { Kind: 'intro' | 'previews' | 'credits'; RequestId: string; LibraryIds: string[]; ItemIds: string[]; Force: boolean }
 export interface AnalysisRunReceipt { RunId: string; TaskId: string; Admitted: boolean }
 export interface AnalysisPrune { RemovedEntries: number; RemovedBytes: number; RemainingBytes: number; BusyEntries: number }
