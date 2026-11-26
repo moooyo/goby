@@ -438,6 +438,7 @@ test('isolated user management, library access, conflict recovery, and temporary
     await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill(`managed-rejected-${suffix}`);
     await otherTab.getByRole('button', { name: `Account: ${originalAdministrator.Name}`, exact: true }).click();
     await otherTab.getByRole('menuitem', { name: 'Sign out', exact: true }).click();
+    await expect(otherTab.getByRole('heading', { name: 'Sign in to Goby', exact: true })).toBeVisible();
     await signIn(otherTab, administrator.Name, adminPassword);
     let mutations = 0;
     page.on('request', (request) => {

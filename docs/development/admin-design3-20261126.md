@@ -120,7 +120,9 @@ own fresh Goby process and PostgreSQL 17.12 database with a dedicated
 administrator. The run used the production dashboard build from `12dee962` and
 updated the management test to use the account menu and its renamed-account
 label. The production login limiter was unchanged; no requests returned HTTP
-429. Each journey passed once with no Playwright retries or skips:
+429. Both journeys passed without Playwright retries or skips. The management
+journey also passed on a new fixture after adding a wait for sign-out to finish
+before navigating to sign in again:
 
 - Account deletion: real revision conflict and explicit reload, lost response
   recovery without replay, and temporary administrator self-deletion.
