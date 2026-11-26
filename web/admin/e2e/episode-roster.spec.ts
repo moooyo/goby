@@ -1,7 +1,12 @@
 import { expect, test as base } from '@playwright/test';
 import type { BrowserContext, Locator, Page, Request, Route } from '@playwright/test';
 import type { MetadataDetail, MetadataValues } from '../src/api';
+import type { ItemCredits } from '../src/credits';
 import type { EpisodeRoster, EpisodeRosterEntryInput, EpisodeRosterImport, EpisodeRosterInput } from '../src/episodeRosterApi';
+import type { MediaInfoResponse } from '../src/mediaSummaryApi';
+import type { SeriesOrderDetail } from '../src/seriesOrderApi';
+import { dashboardShellResponse, setDashboardPreferences } from './dashboard-fixture';
+import { mediaInfoFixture } from './media-summary-data';
 
 // Every administrator API response is synthetic. Unknown requests are rejected
 // rather than reaching the server that serves these browser assets.
@@ -78,6 +83,8 @@ class RosterAPI {
         if (captured.path === `/admin/v1/libraries/${library.Id}/items`) return json(route, { Library: library, Items: [{ ...this.item.Item, ProductionYear: 2026, IndexNumber: null, ParentIndexNumber: null, HasOverrides: false, LockedFieldCount: 0 }], TotalRecordCount: 1, StartIndex: Number(url.searchParams.get('StartIndex')), Limit: Number(url.searchParams.get('Limit')) });
         if (captured.path === metadataPath) return json(route, this.item);
         if (captured.path === rosterPath) return json(route, this.roster);
+        const shell = dashboardShellResponse(captured.path, library.Paths);
+        if (shell !== undefined) return json(route, shell);
       }
       if (captured.path === rosterPath && ['PUT', 'DELETE'].includes(captured.method)) {
         const input = captured.body as EpisodeRosterInput;
@@ -97,6 +104,7 @@ const test = base.extend<{ api: RosterAPI }>({
     const api = new RosterAPI();
     const pageErrors: string[] = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
+    await setDashboardPreferences(context);
     await api.install(context);
     await use(api);
     expect(api.unexpected, 'Every administrator API request must be explicitly mocked.').toEqual([]);
@@ -106,9 +114,17 @@ const test = base.extend<{ api: RosterAPI }>({
 });
 test.use({ serviceWorkers: 'block', trace: 'off', video: 'off' });
 
+async function openItemActions(page: Page): Promise<Locator> {
+  const items = page.getByRole('table', { name: 'Library items', exact: true });
+  await items.locator(`summary[aria-label="More actions: ${seriesName}"]`).click();
+  const actions = items.getByRole('group', { name: `Actions: ${seriesName}`, exact: true });
+  await expect(actions).toBeVisible();
+  return actions;
+}
+
 async function chooseRoster(page: Page): Promise<void> {
-  await page.getByRole('button', { name: `More actions for ${seriesName}`, exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Episode roster', exact: true }).click();
+  const actions = await openItemActions(page);
+  await actions.getByRole('button', { name: 'Episode roster', exact: true }).click();
 }
 
 async function openRoster(page: Page): Promise<Locator> {
@@ -116,7 +132,15 @@ async function openRoster(page: Page): Promise<Locator> {
   await chooseRoster(page);
   const dialog = page.getByRole('dialog', { name: 'Episode roster', exact: true });
   await expect(dialog.getByRole('region', { name: 'Saved episode roster', exact: true })).toBeVisible();
+  await expandRosterSource(dialog);
   return dialog;
+}
+
+async function expandRosterSource(dialog: Locator): Promise<void> {
+  const details = dialog.locator('details.episode-roster-source');
+  const summary = details.getByText('Import & source', { exact: true });
+  await expect(summary).toBeVisible();
+  if (await details.getAttribute('open') === null) await summary.click();
 }
 
 async function importRoster(dialog: Locator, value: EpisodeRosterImport | string): Promise<void> {
@@ -125,13 +149,27 @@ async function importRoster(dialog: Locator, value: EpisodeRosterImport | string
   await input.setInputFiles({ name: 'episode-roster.json', mimeType: 'application/json', buffer: Buffer.from(typeof value === 'string' ? value : JSON.stringify(value)) });
 }
 
+function reloadButton(dialog: Locator): Locator {
+  return dialog.locator('footer').getByRole('button', { name: 'Reload', exact: true });
+}
+
 async function save(page: Page, dialog: Locator, status = 200): Promise<void> {
   const [response] = await Promise.all([
     page.waitForResponse((result) => result.request().method() === 'PUT' && new URL(result.url()).pathname === rosterPath),
     dialog.getByRole('button', { name: 'Save roster', exact: true }).click(),
   ]);
   expect(response.status()).toBe(status);
-  await expect(dialog.getByRole('button', { name: 'Reload', exact: true }).last()).toBeEnabled();
+  await expect(reloadButton(dialog)).toBeEnabled();
+}
+
+async function confirmRosterAction(page: Page, button: Locator, message: string, accept: boolean): Promise<void> {
+  const confirmation = page.waitForEvent('dialog').then(async (prompt) => {
+    const observed = { type: prompt.type(), message: prompt.message() };
+    if (accept) await prompt.accept(); else await prompt.dismiss();
+    return observed;
+  });
+  const [, observed] = await Promise.all([button.click(), confirmation]);
+  expect(observed).toEqual({ type: 'confirm', message });
 }
 
 test('a declared roster is previewed before saving and numbering gaps do not add entries', async ({ page, api }) => {
@@ -151,28 +189,60 @@ test('a declared roster is previewed before saving and numbering gaps do not add
 });
 
 test('metadata opens the same roster only after its draft is clean and other item types have no roster action', async ({ page, api }) => {
+  const orderPath = `/admin/v1/series/${seriesId}/display-order`;
+  const mediaInfoPath = `/admin/v1/items/${seriesId}/media-info`;
+  const displayOrder: SeriesOrderDetail = {
+    SeriesId: seriesId, SeriesName: seriesName, Revision: '0', DisplayOrder: 'Aired', ProviderSeriesId: '', GroupId: '', GroupName: '', MappingSHA256: '', Entries: [],
+    Coverage: { PhysicalEpisodeCount: 0, ExpectedEpisodeCount: 0, UnmappedCount: 0, Unmapped: [] }, SourceMatches: true, FetchedAt: null, UpdatedAt: null,
+  };
+  const seriesMediaInfo: MediaInfoResponse = {
+    Id: seriesId, LibraryId: library.Id, ProbeVersion: null, UpdatedAt: timestamp, Streams: [], Chapters: [], StreamCount: 0, ChapterCount: 0, StreamsTruncated: false, ChaptersTruncated: false,
+    Summary: { State: 'not_applicable', DurationTicks: null, Size: null, Bitrate: null, Container: '', Video: null, Audio: null, Images: { Count: 0, Types: [] }, Analysis: { Intro: null, Credits: null, PreviewCount: 0, BackgroundPreview: null, AudioWaveform: null, SubtitleTimeline: null } },
+  };
+  api.handlers.set(`GET ${orderPath}`, (route) => json(route, displayOrder));
+  api.handlers.set(`GET ${mediaInfoPath}`, (route) => json(route, seriesMediaInfo));
+
   await page.goto(`/admin/media/libraries/${library.Id}/items`);
-  await page.getByRole('button', { name: `Edit metadata for ${seriesName}`, exact: true }).click();
+  const editMetadata = page.getByRole('table', { name: 'Library items', exact: true })
+    .getByRole('button', { name: `Edit metadata for ${seriesName}`, exact: true }).filter({ has: page.getByText(seriesName, { exact: true }) });
   const metadataDialog = page.getByRole('dialog', { name: /^Edit metadata/ });
-  const rosterButton = metadataDialog.getByRole('button', { name: 'Episode roster', exact: true });
+  const chaptersTab = metadataDialog.getByRole('tab', { name: 'Chapters & credits', exact: true });
+  const chaptersPanel = metadataDialog.getByRole('tabpanel', { name: 'Chapters & credits', exact: true });
+  const rosterButton = chaptersPanel.getByRole('button', { name: 'Episode roster', exact: true });
+  await editMetadata.click();
+  await chaptersTab.click();
   await expect(rosterButton).toBeEnabled();
+  await metadataDialog.getByRole('tab', { name: 'Basic information', exact: true }).click();
   await metadataDialog.locator('#metadata-Name-input').fill('Unsaved series title');
+  await chaptersTab.click();
   await expect(rosterButton).toBeDisabled();
   await metadataDialog.getByRole('button', { name: 'Close', exact: true }).click();
-  await page.getByRole('dialog', { name: 'Discard unsaved metadata changes?', exact: true }).getByRole('button', { name: 'Discard changes', exact: true }).click();
-  await page.getByRole('button', { name: `Edit metadata for ${seriesName}`, exact: true }).click();
+  await page.getByRole('alertdialog', { name: 'Discard unsaved metadata changes?', exact: true }).getByRole('button', { name: 'Discard changes', exact: true }).click();
+  await editMetadata.click();
+  await chaptersTab.click();
   await rosterButton.click();
-  await expect(page.getByRole('dialog', { name: 'Episode roster', exact: true })).toBeVisible();
-  await page.getByRole('dialog', { name: 'Episode roster', exact: true }).getByRole('button', { name: 'Close', exact: true }).click();
+  const rosterDialog = page.getByRole('dialog', { name: 'Episode roster', exact: true });
+  await expect(rosterDialog.getByRole('region', { name: 'Saved episode roster', exact: true })).toContainText('No roster');
+  await rosterDialog.getByRole('button', { name: 'Close', exact: true }).click();
   await metadataDialog.getByRole('button', { name: 'Close', exact: true }).click();
+
+  const movieCredits: ItemCredits = {
+    ItemId: seriesId, MediaSourceId: 'movie-source', SourceRevision: 'movie-source-revision', Revision: '1', DurationTicks: 72_000_000_000,
+    Automatic: null, Effective: null, Override: null, OverrideStale: false, LastEditedBy: '', LastEditedAt: null,
+    Detected: [], DetectedStale: false, DetectedRevision: '0', DetectedStatus: 'not_analyzed', DetectedReason: '', DetectedUpdatedAt: null,
+  };
   api.item = metadata('Movie');
+  api.handlers.delete(`GET ${orderPath}`);
+  api.handlers.set(`GET ${mediaInfoPath}`, (route) => json(route, { ...mediaInfoFixture, Id: seriesId, LibraryId: library.Id }));
+  api.handlers.set(`GET /admin/v1/items/${seriesId}/credits`, (route) => json(route, movieCredits));
   await page.reload();
-  await expect(page.getByRole('button', { name: `Edit metadata for ${seriesName}`, exact: true })).toBeVisible();
-  await page.getByRole('button', { name: `More actions for ${seriesName}`, exact: true }).click();
-  await expect(page.getByRole('menuitem', { name: 'Episode roster', exact: true })).toHaveCount(0);
+  const actions = await openItemActions(page);
+  await expect(actions.getByRole('button', { name: 'Episode roster', exact: true })).toHaveCount(0);
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: `Edit metadata for ${seriesName}`, exact: true }).click();
-  await expect(metadataDialog.getByRole('button', { name: 'Episode roster', exact: true })).toHaveCount(0);
+  await editMetadata.click();
+  await chaptersTab.click();
+  await expect(chaptersPanel.getByRole('heading', { name: 'Intro & credits', exact: true })).toBeVisible();
+  await expect(rosterButton).toHaveCount(0);
   expect(api.writes()).toEqual([]);
 });
 
@@ -209,7 +279,7 @@ test('entry validation rejects duplicate identities, invalid dates, unsupported 
 test('invalid and oversized imports preserve the existing draft and never write', async ({ page, api }) => {
   const dialog = await openRoster(page);
   await importRoster(dialog, { Source: source, Entries: [first] });
-  await expect(dialog.getByRole('alert')).toHaveText('Imported roster ready for review. Save roster to replace the current expected episode list.');
+  await expect(dialog.getByRole('status').getByText('Imported roster ready for review. Save roster to replace the current expected episode list.', { exact: true })).toBeVisible();
   const preview = dialog.getByRole('table', { name: 'Episode roster preview', exact: true });
   await expect(preview).toBeVisible();
   await expect(preview.getByRole('row')).toHaveCount(2);
@@ -223,8 +293,7 @@ test('invalid and oversized imports preserve the existing draft and never write'
   ];
   for (const { value, message } of invalid) {
     await importRoster(dialog, value);
-    await expect(dialog.getByRole('alert')).toHaveText(message);
-    await expect(dialog.getByRole('alert')).toBeVisible();
+    await expect(dialog.getByRole('alert').getByText(message, { exact: true })).toBeVisible();
     await expect(dialog.getByLabel('Episode entries JSON', { exact: true })).toHaveValue(before);
     await expect(dialog.getByRole('textbox', { name: 'Source key', exact: true })).toHaveValue(source.Key);
   }
@@ -278,8 +347,9 @@ test('revision conflicts retain the draft and reload preserves a revision above 
   await expect(dialog.getByRole('textbox', { name: 'Source version', exact: true })).toBeDisabled();
   await expect(dialog.getByRole('button', { name: 'Withdraw roster', exact: true })).toBeDisabled();
   await expect(dialog.getByRole('button', { name: 'Save roster', exact: true })).toBeDisabled();
-  page.once('dialog', (prompt) => { void prompt.accept(); });
-  await dialog.getByRole('button', { name: 'Reload', exact: true }).last().click();
+  await confirmRosterAction(page, reloadButton(dialog), 'Discard your draft and reload the saved episode roster?', true);
+  await expect(dialog.getByRole('region', { name: 'Saved episode roster', exact: true })).toContainText('Saved revision 9007199254740993');
+  await expandRosterSource(dialog);
   await expect(dialog.getByRole('textbox', { name: 'Source version', exact: true })).toHaveValue('guide-v1');
   await expect(dialog.getByRole('textbox', { name: 'Source version', exact: true })).toBeEnabled();
   await dialog.getByRole('textbox', { name: 'Source version', exact: true }).fill('guide-v3');
@@ -308,9 +378,9 @@ test('an unconfirmed mutation response requires reload and never retries the wri
   await expect(dialog).toContainText('save response could not be confirmed');
   await expect(dialog.getByRole('button', { name: 'Save roster', exact: true })).toBeDisabled();
   expect(api.writes()).toHaveLength(1);
-  page.once('dialog', (prompt) => { void prompt.accept(); });
-  await dialog.getByRole('button', { name: 'Reload', exact: true }).last().click();
-  await expect(dialog.getByRole('region', { name: 'Saved episode roster', exact: true })).toContainText('1 expected episodes');
+  await confirmRosterAction(page, reloadButton(dialog), 'Discard your draft and reload the saved episode roster?', true);
+  await expect(dialog.getByRole('region', { name: 'Saved episode roster', exact: true })).toContainText('1 expected episode · 1 available · 0 missing');
+  await expandRosterSource(dialog);
   await expect(dialog.getByRole('textbox', { name: 'Source version', exact: true })).toBeEnabled();
   expect(api.writes()).toHaveLength(1);
 });
@@ -320,7 +390,7 @@ test('withdrawal is explicit, sends only the saved revision, and retains source 
   const dialog = await openRoster(page);
   await dialog.getByRole('textbox', { name: 'Source version', exact: true }).fill('unsaved-version');
   await dialog.getByRole('button', { name: 'Withdraw roster', exact: true }).click();
-  const confirmation = page.getByRole('dialog', { name: 'Withdraw episode roster?', exact: true });
+  const confirmation = page.getByRole('alertdialog', { name: 'Withdraw episode roster?', exact: true });
   await expect(confirmation).toContainText('unsaved roster draft will also be discarded');
   await confirmation.getByRole('button', { name: 'Keep roster', exact: true }).click();
   expect(api.writes()).toEqual([]);
@@ -358,14 +428,15 @@ test('malformed roster reads cannot be edited and retry admits a complete respon
 test('closing a dirty roster keeps or discards the draft only after an explicit choice', async ({ page, api }) => {
   const dialog = await openRoster(page);
   await importRoster(dialog, { Source: source, Entries: [first] });
-  page.once('dialog', (prompt) => { void prompt.dismiss(); });
-  await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+  const sourceKey = dialog.getByRole('textbox', { name: 'Source key', exact: true });
+  await expect(sourceKey).toHaveValue(source.Key);
+  const close = dialog.getByRole('button', { name: 'Close', exact: true });
+  await confirmRosterAction(page, close, 'Discard the unsaved episode roster?', false);
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole('textbox', { name: 'Source key', exact: true })).toHaveValue(source.Key);
-  page.once('dialog', (prompt) => { void prompt.accept(); });
-  await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(sourceKey).toHaveValue(source.Key);
+  await confirmRosterAction(page, close, 'Discard the unsaved episode roster?', true);
   await expect(dialog).not.toBeVisible();
   await chooseRoster(page);
-  await expect(dialog.getByRole('textbox', { name: 'Source key', exact: true })).toHaveValue('');
+  await expect(sourceKey).toHaveValue('');
   expect(api.writes()).toEqual([]);
 });

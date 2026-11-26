@@ -88,11 +88,13 @@ is changed.
 
 - The production build and TypeScript check passed on `test-env`. The Node
   suite passed 65 utility and packaging cases. The final Playwright run recorded
-  562 passes, including all 24 Design 3 cases, 48 failures, and 13 skips. Each
-  of the 48 failures also reproduced on unchanged `main` under its matching
-  baseline check (one was rerun individually after the initial baseline timed
-  out). They include old task/media/notification fixtures and playback cases
-  that require specialized runtime fixtures. This is not a clean full-suite run.
+  562 passes, including all 24 Design 3 cases, 48 failures, and 13 skips. Of the
+  48, 46 failed in the unchanged `main` run and one failed in a separate
+  baseline run. The malformed episode roster read case stalled at the same
+  menu locator in the baseline, but the reporter marked it as interrupted,
+  not failed. The failures include stale task, media, and notification fixtures
+  and tests missing specialized runtime fixtures. This is not a clean
+  full-suite run.
 - Browser checks exercised the overview and bell together, a 20,000-account
   dataset with real request sizes and pagination, role safeguards, stopped or
   conflicted batches, real provider payload shapes and redacted activity exports.
@@ -136,3 +138,23 @@ full-suite result above. Both task-owned Goby and PostgreSQL processes stopped
 cleanly. The disposable databases, build output, and tools were removed. The
 test source, media fixtures, and raw evidence were retained in the private task
 workspace on `test-env`.
+
+### Shared browser fixtures and locators
+
+The episode roster and media processing suites now share explicit read-only
+responses for dashboard status, settings, storage, and backup policy. Both
+initialize the established English browser preference before navigation. They
+still reject unhandled API requests and assert exact writes, revisions, and
+CSRF headers. The tests use the current action menus, editor tabs, and native
+controls. The media processing suite verifies that a browser reload restores
+the selected view without forcing history state in the test.
+
+On November 26, 2026, the two repaired suites passed all 24 cases on `test-env`
+with no retries or skips. The 46 existing consumers of the shared fixture
+passed the same 480 cases before and after the extraction, with no retries or
+skips. The administrator production build and the explicit TypeScript check
+for the changed test files passed. An earlier targeted baseline run reached
+its overall deadline and its partial results are not counted as a complete
+comparison. This follow-up used a loopback static server and synthetic APIs;
+it did not rerun the full suite, validate a backend, or run the specialized
+native media fixtures.

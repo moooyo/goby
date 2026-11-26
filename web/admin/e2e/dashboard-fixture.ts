@@ -88,6 +88,34 @@ function status(): SystemStatus {
   };
 }
 
+// Shared shell payloads are for GET requests only. Callers still own routing
+// and must reject requests that do not have an explicit response.
+export function dashboardShellResponse(path: string, mediaPaths: readonly string[], serverSettings?: ServerSettings, systemStatus?: SystemStatus): unknown {
+  switch (path) {
+    case '/admin/v1/overview':
+      return { Server: { Id: 'd'.repeat(32), Name: 'Goby living room', Version: '0.1.0' }, Database: { Status: 'ok' }, Counts: { Users: 2, Libraries: 2, Items: 1240, ActiveSessions: 3 }, Runtime: { GoVersion: 'go1.26.1' }, Features: { LibraryManagement: true, Playback: true, Transcoding: true, ApplicationKeys: true } };
+    case '/admin/v1/system/status':
+      return systemStatus ?? status();
+    case '/admin/v1/settings':
+      return serverSettings ?? settings();
+    case '/admin/v1/storage/library-directories': {
+      const items = [...new Set(mediaPaths)].map((Path) => ({
+        Path, Available: true, Readable: true, Writable: false,
+        TotalBytes: '1099511627776', UsedBytes: '549755813888', AvailableBytes: '548682072064',
+      }));
+      return { Items: items, TotalRecordCount: items.length };
+    }
+    case '/admin/v1/backups/policy':
+      return {
+        Revision: '1', Enabled: true, Schedule: { Kind: 'daily', DayOfWeek: null, TimeOfDay: '03:00', Timezone: 'UTC' },
+        KeepCount: 7, IncludeImages: true, HasPassphrase: true, NextRunAt: backupTask.NextRunAt, Available: true, UnavailableReason: '',
+        TaskId: backupTask.Id, LastRunAt: null, LastRunState: '', LastBackupId: '',
+      };
+    default:
+      return undefined;
+  }
+}
+
 const activities: ActivityEntry[] = [
   { Id: '1', Date: stamp, Action: 'session.login', Severity: 'Info', Source: 'native', Actor: { Kind: 'user', Id: administrator.Id, Name: administrator.Name }, Resource: { Kind: 'session', Id: 'session-one' }, Revision: null, Count: '1', State: 'completed', ChangedFields: [], Name: 'Administrator signed in', Overview: 'A dashboard session started.' },
   { Id: '2', Date: stamp, Action: 'scan.finished', Severity: 'Info', Source: 'system', Actor: { Kind: 'system', Id: null, Name: null }, Resource: { Kind: 'library', Id: library.Id }, Revision: null, Count: '12', State: 'completed', ChangedFields: [], Name: 'Feature films scan completed', Overview: 'Twelve media items were added.' },
@@ -124,8 +152,8 @@ export class DashboardAPI {
       if (method === 'GET') {
         if (path === '/admin/v1/bootstrap') return json(route, { Initialized: true, UICulture: 'zh-CN' });
         if (path === '/admin/v1/session') return json(route, { User: administrator, CSRFToken: csrf });
-        if (path === '/admin/v1/overview') return json(route, { Server: { Id: 'd'.repeat(32), Name: 'Goby living room', Version: '0.1.0' }, Database: { Status: 'ok' }, Counts: { Users: 2, Libraries: 2, Items: 1240, ActiveSessions: 3 }, Runtime: { GoVersion: 'go1.26.1' }, Features: { LibraryManagement: true, Playback: true, Transcoding: true, ApplicationKeys: true } });
-        if (path === '/admin/v1/system/status') return json(route, this.status);
+        const shell = dashboardShellResponse(path, [library.Paths[0], seriesLibrary.Paths[0]], this.settings, this.status);
+        if (shell !== undefined) return json(route, shell);
         if (path === '/admin/v1/activity') {
           const filtered = activities.filter((entry) => (!url.searchParams.get('Action') || entry.Action === url.searchParams.get('Action'))
             && (!url.searchParams.get('Severity') || entry.Severity === url.searchParams.get('Severity'))
@@ -135,7 +163,6 @@ export class DashboardAPI {
           return json(route, { Items: filtered.slice(start, start + limit), TotalRecordCount: filtered.length, StartIndex: start, Limit: limit, RetentionDays: 30 });
         }
         if (path === '/admin/v1/logs') return json(route, { ...paged([]), Status: { Healthy: true, Degraded: false, Closed: false, MaxFileBytes: '1048576', MaxFiles: 10, RetentionDays: 30, MinFreeBytes: '0', Format: 'jsonl' } });
-        if (path === '/admin/v1/settings') return json(route, this.settings);
         if (path === '/admin/v1/server-policy') return json(route, {
           Revision: '9007199254740993', EnableRemoteAccess: true, LocalNetworkSubnets: ['10.0.0.0/8', '192.168.0.0/16'],
           UICulture: 'zh-CN', UpdatedAt: stamp, Client: { Address: '192.168.0.2', IsLocal: true },
@@ -169,12 +196,6 @@ export class DashboardAPI {
         if (path === '/admin/v1/api-keys') return json(route, paged([{ Id: '201', AppName: 'Home automation', CreatedAt: stamp, LastUsedAt: stamp, RevokedAt: null, CreatedBy: administrator.Id, IPAddress: '192.0.2.5', Status: 'active' }]));
         if (path === '/admin/v1/libraries') return json(route, { Items: [library, seriesLibrary], TotalRecordCount: 2 });
         if (path === '/admin/v1/storage/roots') return json(route, { Configured: true, Items: [{ Path: '/media', Available: true, Readable: true, Writable: false }] });
-        if (path === '/admin/v1/storage/library-directories') return json(route, {
-          Items: [library.Paths[0], seriesLibrary.Paths[0]].map((Path) => ({
-            Path, Available: true, Readable: true, Writable: false,
-            TotalBytes: '1099511627776', UsedBytes: '549755813888', AvailableBytes: '548682072064',
-          })), TotalRecordCount: 2,
-        });
         if (path === `/admin/v1/libraries/${library.Id}/items`) return json(route, { Library: library, ...paged([{ Id: 'film-one', LibraryId: library.Id, ParentId: '', ParentName: '', Name: 'The feature film', Type: 'Movie', Path: '/media/movies/Feature.mkv', IsFolder: false, ProductionYear: 2025, IndexNumber: null, ParentIndexNumber: null, HasOverrides: false, LockedFieldCount: 0, Media: mediaSummaryFixture }]) });
         if (path === `/admin/v1/libraries/${seriesLibrary.Id}/items`) return json(route, { Library: seriesLibrary, ...paged([{ Id: 'series-one', LibraryId: seriesLibrary.Id, ParentId: '', ParentName: '', Name: 'Opening series', Type: 'Series', Path: '/media/series/Opening series', IsFolder: true, ProductionYear: 2025, IndexNumber: null, ParentIndexNumber: null, HasOverrides: false, LockedFieldCount: 0 }]) });
         if (path === '/admin/v1/entities') return json(route, paged([{ Id: 'person-one', Name: 'Alex Morgan', Type: 'Person' }]));
@@ -196,11 +217,6 @@ export class DashboardAPI {
         if (path === '/admin/v1/providers/configuration') return json(route, providerConfigurationFixture());
         if (path === '/admin/v1/tasks') return json(route, { Items: [{ Id: 'scan-library', Key: 'library.scan', Name: 'Scan media libraries', Description: 'Discover new files and update library metadata.', Category: 'Library', IsHidden: false, Enabled: true, Revision: '1', ScheduleTimezone: 'UTC', Triggers: [], CurrentRun: null, LastRun: null, NextRunAt: null }, backupTask], TotalRecordCount: 2 });
         if (/^\/admin\/v1\/tasks\/[^/]+\/runs$/.test(path)) return json(route, paged([]));
-        if (path === '/admin/v1/backups/policy') return json(route, {
-          Revision: '1', Enabled: true, Schedule: { Kind: 'daily', DayOfWeek: null, TimeOfDay: '03:00', Timezone: 'UTC' },
-          KeepCount: 7, IncludeImages: true, HasPassphrase: true, NextRunAt: backupTask.NextRunAt, Available: true, UnavailableReason: '',
-          TaskId: '9'.repeat(32), LastRunAt: null, LastRunState: '', LastBackupId: '',
-        });
         if (path === '/admin/v1/tasks/' + backupTask.Id) return json(route, { Task: backupTask });
         if (path === '/admin/v1/jobs') return json(route, { Items: [], TotalRecordCount: 0 });
         if (path === '/admin/v1/notifications') return json(route, { Revision: '1', Enabled: false, Endpoint: '', AllowedNetworks: [], HasReceiverCredential: false, SupportedEvents: ['CatalogInvalidated', 'UserDataInvalidated'], PendingCount: 0 });
@@ -239,18 +255,25 @@ export class DashboardAPI {
 }
 
 export interface DashboardPreferences { language: 'zh' | 'en'; theme: 'dark' | 'light' }
-export const test = base.extend<{ api: DashboardAPI; preferences: DashboardPreferences }>({
-  preferences: [{ language: 'en', theme: 'light' }, { option: true }],
-  api: async ({ context, page, preferences }, use) => {
+const defaultPreferences: DashboardPreferences = { language: 'en', theme: 'light' };
+
+export async function setDashboardPreferences(context: BrowserContext, preferences: DashboardPreferences = defaultPreferences): Promise<void> {
   await context.addInitScript((initial) => {
     if (!localStorage.getItem('goby.admin.language')) localStorage.setItem('goby.admin.language', initial.language);
     if (!localStorage.getItem('goby.admin.theme')) localStorage.setItem('goby.admin.theme', initial.theme);
   }, preferences);
-  const api = new DashboardAPI(); const errors: string[] = [];
-  page.on('pageerror', (error) => errors.push(error.message)); await api.install(context); await use(api);
-  expect(api.unexpected, 'All API calls must use an explicit fixture.').toEqual([]);
-  expect(errors, 'Dashboard routes must not throw browser errors.').toEqual([]);
-  expect(api.writes().every((value) => value.path === '/admin/v1/bootstrap' || value.method === 'POST' && value.path === '/admin/v1/session' || value.csrf === csrf), 'Authenticated writes must preserve CSRF protection.').toBe(true);
-} });
+}
+
+export const test = base.extend<{ api: DashboardAPI; preferences: DashboardPreferences }>({
+  preferences: [defaultPreferences, { option: true }],
+  api: async ({ context, page, preferences }, use) => {
+    await setDashboardPreferences(context, preferences);
+    const api = new DashboardAPI(); const errors: string[] = [];
+    page.on('pageerror', (error) => errors.push(error.message)); await api.install(context); await use(api);
+    expect(api.unexpected, 'All API calls must use an explicit fixture.').toEqual([]);
+    expect(errors, 'Dashboard routes must not throw browser errors.').toEqual([]);
+    expect(api.writes().every((value) => value.path === '/admin/v1/bootstrap' || value.method === 'POST' && value.path === '/admin/v1/session' || value.csrf === csrf), 'Authenticated writes must preserve CSRF protection.').toBe(true);
+  },
+});
 
 export { expect };

@@ -1,7 +1,9 @@
 import { expect, test as base } from '@playwright/test';
-import type { BrowserContext, Locator, Page, Request, Route } from '@playwright/test';
+import type { BrowserContext, Dialog, Locator, Page, Request, Route } from '@playwright/test';
 import type { MetadataDetail, MetadataValues } from '../src/api';
 import type { MediaOperation, MediaOperationApplyRequest, MediaOperationCue, MediaOperationCueEdit, MediaOperationRequest, MediaProcessingStream, MediaProcessingTarget } from '../src/mediaOperationsApi';
+import { dashboardShellResponse, setDashboardPreferences } from './dashboard-fixture';
+import { mediaInfoFixture } from './media-summary-data';
 
 // All administrator requests, including cue images and rejected writes, are synthetic.
 // Unhandled requests never reach the server that serves the browser assets.
@@ -119,11 +121,13 @@ class MediaProcessingAPI {
         if (captured.path === '/admin/v1/bootstrap') return json(route, { Initialized: true });
         if (captured.path === '/admin/v1/session') return json(route, { User: administrator, CSRFToken: csrfToken });
         if (captured.path === '/admin/v1/libraries') return json(route, { Items: [library], TotalRecordCount: 1 });
+        if (captured.path === '/admin/v1/tasks') return json(route, { Items: [], TotalRecordCount: 0 });
         if (captured.path === `/admin/v1/libraries/${library.Id}/items`) return json(route, {
           Library: library, Items: [{ ...this.item.Item, ProductionYear: this.item.Effective.ProductionYear, IndexNumber: null, ParentIndexNumber: null, HasOverrides: false, LockedFieldCount: 0 }],
           TotalRecordCount: 1, StartIndex: Number(url.searchParams.get('StartIndex')), Limit: Number(url.searchParams.get('Limit')),
         });
         if (captured.path === `${itemPath}/metadata`) return json(route, this.item);
+        if (captured.path === `${itemPath}/media-info`) return json(route, { ...mediaInfoFixture, Id: itemId, LibraryId: library.Id });
         if (captured.path === targetPath) return json(route, this.target);
         if (captured.path === operationsPath) {
           const start = Number(url.searchParams.get('StartIndex')); const limit = Number(url.searchParams.get('Limit'));
@@ -181,6 +185,10 @@ class MediaProcessingAPI {
           return json(route, action === 'cancel' ? { Operation: updated } : { Operation: updated, Admitted: true }, 202);
         }
       }
+      if (captured.method === 'GET') {
+        const shell = dashboardShellResponse(captured.path, library.Paths);
+        if (shell !== undefined) return json(route, shell);
+      }
       this.unexpected.push(`${captured.method} ${captured.path}${captured.query}`);
       return json(route, { Error: { Code: 'unexpected_synthetic_request', Message: 'No synthetic response was configured.' } }, 501);
     });
@@ -189,6 +197,7 @@ class MediaProcessingAPI {
 
 const test = base.extend<{ api: MediaProcessingAPI }>({
   api: async ({ context }, use) => {
+    await setDashboardPreferences(context);
     const api = new MediaProcessingAPI();
     await api.install(context);
     await use(api);
@@ -199,19 +208,28 @@ const test = base.extend<{ api: MediaProcessingAPI }>({
 
 test.use({ serviceWorkers: 'block', trace: 'off', video: 'off' });
 
-async function choose(page: Page, parent: Locator, label: string, option: string): Promise<void> {
-  await parent.getByRole('combobox', { name: label, exact: true }).click();
-  await page.getByRole('option', { name: option, exact: true }).click();
+async function choose(parent: Locator, label: string, option: string): Promise<void> {
+  await parent.getByRole('combobox', { name: label, exact: true }).selectOption({ label: option });
+}
+
+async function confirmPrompt(page: Page, action: () => Promise<unknown>, message: string, accept = false): Promise<void> {
+  const [observed] = await Promise.all([
+    page.waitForEvent('dialog').then(async (prompt) => {
+      const details = { type: prompt.type(), message: prompt.message() };
+      if (accept) await prompt.accept(); else await prompt.dismiss();
+      return details;
+    }),
+    action(),
+  ]);
+  expect(observed).toEqual({ type: 'confirm', message });
 }
 
 async function openOperations(page: Page): Promise<Locator> {
-  await page.addInitScript(() => window.history.replaceState({ ...window.history.state, tasksTab: 'media-processing' }, ''));
-  const response = page.waitForResponse((entry) => entry.request().method() === 'GET' && new URL(entry.url()).pathname === operationsPath);
   await page.goto('/admin/system/tasks');
-  expect((await response).status()).toBe(200);
-  await expect(page.getByRole('tab', { name: 'Media processing', exact: true })).toHaveAttribute('aria-selected', 'true');
-  const panel = page.getByRole('tabpanel', { name: 'Media processing', exact: true });
-  await expect(panel.getByRole('button', { name: 'Refresh operations', exact: true })).toBeEnabled();
+  await page.locator('summary[aria-label="More task views"]').click();
+  const panel = page.getByRole('region', { name: 'Media processing', exact: true });
+  const view = page.getByRole('group', { name: 'Task views', exact: true }).getByRole('button', { name: 'Media processing', exact: true });
+  await changeList(page, panel, '?StartIndex=0&Limit=25', () => view.click());
   return panel;
 }
 
@@ -225,8 +243,11 @@ async function openOperation(page: Page, id: string): Promise<Locator> {
 
 async function openPreparation(page: Page): Promise<Locator> {
   await page.goto(`/admin/media/libraries/${library.Id}/items`);
-  await page.getByRole('button', { name: 'Edit metadata for Synthetic subtitle movie', exact: true }).click();
-  await page.getByRole('dialog', { name: /^Edit metadata/ }).getByRole('button', { name: 'Media processing', exact: true }).click();
+  const row = page.getByRole('table', { name: 'Library items', exact: true }).getByRole('row').filter({ hasText: 'Synthetic subtitle movie' });
+  await row.locator('.media-row-actions').getByRole('button', { name: 'Edit metadata for Synthetic subtitle movie', exact: true }).click();
+  const editor = page.getByRole('dialog', { name: /^Edit metadata/ });
+  await editor.getByRole('tab', { name: 'File', exact: true }).click();
+  await editor.getByRole('tabpanel', { name: 'File', exact: true }).getByRole('button', { name: 'Media processing', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Prepare media processing', exact: true });
   await expect(dialog.getByRole('combobox', { name: 'Embedded subtitle stream', exact: true })).toBeEnabled();
   return dialog;
@@ -250,7 +271,7 @@ async function changeList(page: Page, panel: Locator, query: string, change: () 
   await expect(panel.getByRole('button', { name: 'Refresh operations', exact: true })).toBeEnabled();
 }
 
-test('operation filters and pagination send exact queries and retain the media processing tab', async ({ page, api }) => {
+test('operation filters and pagination send exact queries and restore the media processing view', async ({ page, api }) => {
   for (let index = 1; index <= 56; index++) api.add(operation(index, { Kind: index % 2 === 0 ? 'subtitle_ocr' : 'remove_embedded_subtitle', State: index % 5 === 0 ? 'failed' : 'completed', CanCancel: false, CanApply: false, Applied: index % 5 !== 0, PublicationPhase: index % 5 === 0 ? 'none' : 'done' }));
   const panel = await openOperations(page);
   const rows = panel.getByRole('list', { name: 'Media processing operations', exact: true }).getByRole('listitem');
@@ -258,28 +279,31 @@ test('operation filters and pagination send exact queries and retain the media p
   expect(api.reads(operationsPath).at(-1)?.query).toBe('?StartIndex=0&Limit=25');
   await changeList(page, panel, '?StartIndex=25&Limit=25', () => panel.getByRole('button', { name: 'Go to next page', exact: true }).click());
   await expect(panel.getByRole('button', { name: `View media operation ${operationId(26)}`, exact: true })).toBeVisible();
-  await changeList(page, panel, '?StartIndex=0&Limit=25&Kind=subtitle_ocr', () => choose(page, panel, 'Operation kind', 'Subtitle OCR'));
+  await changeList(page, panel, '?StartIndex=0&Limit=25&Kind=subtitle_ocr', () => choose(panel, 'Operation kind', 'Subtitle OCR'));
   await expect(panel.getByRole('button', { name: `View media operation ${operationId(2)}`, exact: true })).toBeVisible();
-  await changeList(page, panel, '?StartIndex=0&Limit=25&Kind=subtitle_ocr&State=completed', () => choose(page, panel, 'Operation state', 'Published'));
+  await changeList(page, panel, '?StartIndex=0&Limit=25&Kind=subtitle_ocr&State=completed', () => choose(panel, 'Operation state', 'Published'));
   await expect(rows).toHaveCount(23);
-  await changeList(page, panel, '?StartIndex=0&Limit=50&Kind=subtitle_ocr&State=completed', () => choose(page, panel, 'Operations per page', '50'));
+  await changeList(page, panel, '?StartIndex=0&Limit=50&Kind=subtitle_ocr&State=completed', () => choose(panel, 'Operations per page', '50'));
   await changeList(page, panel, '?StartIndex=0&Limit=50', () => panel.getByRole('button', { name: 'Clear filters', exact: true }).click());
   await expect(rows).toHaveCount(50);
-  await expect(panel.getByRole('combobox', { name: 'Operation kind', exact: true })).toHaveText('All kinds');
-  await expect(panel.getByRole('combobox', { name: 'Operation state', exact: true })).toHaveText('All states');
+  await expect(panel.getByRole('combobox', { name: 'Operation kind', exact: true }).locator('option:checked')).toHaveText('All kinds');
+  await expect(panel.getByRole('combobox', { name: 'Operation state', exact: true }).locator('option:checked')).toHaveText('All states');
   await changeList(page, panel, '?StartIndex=50&Limit=50', () => panel.getByRole('button', { name: 'Go to next page', exact: true }).click());
   await expect(rows).toHaveCount(6);
   await changeList(page, panel, '?StartIndex=50&Limit=50', () => panel.getByRole('button', { name: 'Refresh operations', exact: true }).click());
+  await expect(rows).toHaveCount(6);
   expect(await page.evaluate(() => window.history.state?.tasksTab)).toBe('media-processing');
+  await changeList(page, panel, '?StartIndex=0&Limit=25', () => page.reload());
+  await expect(rows).toHaveCount(25);
   expect(api.writes()).toEqual([]);
 });
 
 test('removal preparation targets the chosen embedded stream without applying it', async ({ page, api }) => {
   const dialog = await openPreparation(page);
-  await dialog.getByRole('combobox', { name: 'Embedded subtitle stream', exact: true }).click();
-  await expect(page.getByRole('option', { name: /External subtitle/ })).toHaveCount(0);
-  await page.getByRole('option', { name: 'Stream 2 · subrip · en · English text', exact: true }).click();
-  await choose(page, dialog, 'Writable container profile', 'Matroska');
+  const stream = dialog.getByRole('combobox', { name: 'Embedded subtitle stream', exact: true });
+  await expect(stream.getByRole('option', { name: /External subtitle/ })).toHaveCount(0);
+  await stream.selectOption({ label: 'Stream 2 · subrip · en · English text' });
+  await choose(dialog, 'Writable container profile', 'Matroska');
   await prepare(page, dialog);
   expect(api.writes().map(({ method, path, body }) => ({ method, path, body }))).toEqual([{
     method: 'POST', path: preparePath, body: { RequestId: expect.any(String), Kind: 'remove_embedded_subtitle', MediaSourceId: 'source-one', SourceRevision: 'source-revision-one', StreamIndex: 2, Parameters: { Profile: 'matroska-v1' } },
@@ -291,14 +315,14 @@ test('removal preparation targets the chosen embedded stream without applying it
 
 test('OCR preparation sends selected models and subtitle properties for the bitmap stream', async ({ page, api }) => {
   const dialog = await openPreparation(page);
-  await choose(page, dialog, 'Processing operation', 'Recognize bitmap subtitle (OCR)');
-  await dialog.getByRole('combobox', { name: 'Embedded subtitle stream', exact: true }).click();
-  await expect(page.getByRole('option', { name: /English text|External subtitle/ })).toHaveCount(0);
-  await page.getByRole('option', { name: 'Stream 5 · hdmv_pgs_subtitle · en · English bitmap', exact: true }).click();
+  await choose(dialog, 'Processing operation', 'Recognize bitmap subtitle (OCR)');
+  const stream = dialog.getByRole('combobox', { name: 'Embedded subtitle stream', exact: true });
+  await expect(stream.getByRole('option', { name: /English text|External subtitle/ })).toHaveCount(0);
+  await stream.selectOption({ label: 'Stream 5 · hdmv_pgs_subtitle · en · English bitmap' });
   await expect(dialog.getByRole('button', { name: 'Prepare for review', exact: true })).toBeDisabled();
   await dialog.getByRole('checkbox', { name: 'English (eng)', exact: true }).check();
   await dialog.getByRole('checkbox', { name: 'Simplified Chinese (chi_sim)', exact: true }).check();
-  await choose(page, dialog, 'Subtitle output format', 'VTT');
+  await choose(dialog, 'Subtitle output format', 'VTT');
   await dialog.getByRole('textbox', { name: 'Subtitle language', exact: true }).fill('zh');
   await dialog.getByRole('textbox', { name: 'Subtitle title', exact: true }).fill('Reviewed bilingual subtitles');
   await dialog.getByRole('checkbox', { name: 'Default subtitle', exact: true }).check();
@@ -314,17 +338,18 @@ test('OCR preparation sends selected models and subtitle properties for the bitm
 
 test('a source conflict preserves setup and requires the current source before preparing again', async ({ page, api }) => {
   const dialog = await openPreparation(page);
-  await choose(page, dialog, 'Embedded subtitle stream', 'Stream 2 · subrip · en · English text');
+  await choose(dialog, 'Embedded subtitle stream', 'Stream 2 · subrip · en · English text');
   api.target = { ...api.target, MediaSourceId: 'source-two', SourceRevision: 'source-revision-two' };
   await prepare(page, dialog, 409);
-  await expect(dialog.getByRole('alert').filter({ hasText: 'The source or operation state changed.' })).toBeVisible();
-  await expect(dialog.getByRole('combobox', { name: 'Embedded subtitle stream', exact: true })).toHaveText('Stream 2 · subrip · en · English text');
+  const conflict = dialog.getByRole('status').filter({ hasText: 'The source or operation state changed.' });
+  await expect(conflict).toBeVisible();
+  await expect(dialog.getByRole('combobox', { name: 'Embedded subtitle stream', exact: true }).locator('option:checked')).toHaveText('Stream 2 · subrip · en · English text');
   await expect(dialog.getByRole('button', { name: 'Prepare for review', exact: true })).toBeDisabled();
-  await expect(dialog.getByRole('button', { name: 'Reload source', exact: true }).last()).toBeEnabled();
-  page.once('dialog', (prompt) => { void prompt.accept(); });
-  await dialog.getByRole('button', { name: 'Reload source', exact: true }).last().click();
+  const reload = conflict.getByRole('button', { name: 'Reload source', exact: true });
+  await expect(reload).toBeEnabled();
+  await confirmPrompt(page, () => reload.click(), 'Discard this setup and reload the current source?', true);
   await expect(dialog.getByText('Current source: source-two · Container: mkv', { exact: true })).toBeVisible();
-  await choose(page, dialog, 'Embedded subtitle stream', 'Stream 5 · hdmv_pgs_subtitle · en · English bitmap');
+  await choose(dialog, 'Embedded subtitle stream', 'Stream 5 · hdmv_pgs_subtitle · en · English bitmap');
   await prepare(page, dialog);
   expect(api.writes(preparePath).map(({ body }) => body)).toEqual([
     { RequestId: expect.any(String), Kind: 'remove_embedded_subtitle', MediaSourceId: 'source-one', SourceRevision: 'source-revision-one', StreamIndex: 2, Parameters: { Profile: 'matroska-v1' } },
@@ -335,9 +360,9 @@ test('a source conflict preserves setup and requires the current source before p
 test('a lost preparation response retries the same request without admitting a duplicate', async ({ page, api }) => {
   api.loseNextPreparationResponse = true;
   const dialog = await openPreparation(page);
-  await choose(page, dialog, 'Embedded subtitle stream', 'Stream 2 · subrip · en · English text');
+  await choose(dialog, 'Embedded subtitle stream', 'Stream 2 · subrip · en · English text');
   await dialog.getByRole('button', { name: 'Prepare for review', exact: true }).click();
-  await expect(dialog.getByRole('alert').filter({ hasText: 'The preparation response could not be confirmed.' })).toBeVisible();
+  await expect(dialog.getByRole('status').filter({ hasText: 'The preparation response could not be confirmed.' })).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Prepare for review', exact: true })).toBeDisabled();
   const [response] = await Promise.all([
     page.waitForResponse((entry) => entry.request().method() === 'POST' && new URL(entry.url()).pathname === preparePath),
@@ -368,14 +393,19 @@ test('OCR review saves only edited cues, paginates images, and guards dirty task
   await review.getByRole('checkbox', { name: 'Include cue 2', exact: true }).uncheck();
   await expect(dialog.getByRole('button', { name: 'Apply reviewed result', exact: true })).toBeDisabled();
 
+  const views = page.getByRole('group', { name: 'Task views', exact: true, includeHidden: true });
   const prompts: string[] = [];
-  page.on('dialog', (prompt) => { prompts.push(prompt.message()); void prompt.dismiss(); });
-  // Modal dialogs hide background tabs from accessibility. Dispatch only exercises
-  // TasksPage's internal tab guard without pretending the background is clickable.
-  await page.getByRole('tab', { name: 'Media processing', exact: true, includeHidden: true }).dispatchEvent('click');
-  expect(prompts).toEqual([]);
-  await page.getByRole('tab', { name: 'Scan history', exact: true, includeHidden: true }).dispatchEvent('click');
-  expect(prompts).toEqual(['Discard unsaved OCR cue changes and leave this operation?']);
+  const dismiss = async (prompt: Dialog) => { prompts.push(prompt.message()); await prompt.dismiss(); };
+  page.on('dialog', dismiss);
+  // The modal makes the background inert. Dispatch directly to exercise the
+  // task-view guard rather than pretending the background controls are clickable.
+  try {
+    await views.getByRole('button', { name: 'Media processing', exact: true, includeHidden: true }).dispatchEvent('click');
+    expect(prompts).toEqual([]);
+  } finally {
+    page.off('dialog', dismiss);
+  }
+  await confirmPrompt(page, () => views.getByRole('button', { name: 'Scan history', exact: true, includeHidden: true }).dispatchEvent('click'), 'Discard unsaved OCR cue changes and leave this operation?');
   expect(await page.evaluate(() => window.history.state?.tasksTab)).toBe('media-processing');
   await expect(first.getByRole('textbox', { name: 'Cue 1 text', exact: true })).toHaveValue('Corrected first line');
 
@@ -384,7 +414,7 @@ test('OCR review saves only edited cues, paginates images, and guards dirty task
     review.getByRole('button', { name: 'Save cue changes', exact: true }).click(),
   ]);
   expect(response.status()).toBe(200);
-  await expect(review.getByRole('alert').filter({ hasText: 'Cue changes saved.' })).toBeVisible();
+  await expect(review.getByRole('status').filter({ hasText: 'Cue changes saved.' })).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Apply reviewed result', exact: true })).toBeEnabled();
   expect(api.writes().map(({ method, path, body }) => ({ method, path, body }))).toEqual([{
     method: 'PUT', path: `${operationPath(current.Id)}/review`, body: { Revision: '5', Edits: [
@@ -416,18 +446,17 @@ test('review revision conflicts keep the draft and block applying until an expli
     review.getByRole('button', { name: 'Save cue changes', exact: true }).click(),
   ]);
   expect(response.status()).toBe(409);
-  await expect(review.getByRole('alert').filter({ hasText: 'Your draft is kept.' })).toBeVisible();
+  await expect(review.getByRole('status').filter({ hasText: 'Your draft is kept.' })).toBeVisible();
   await expect(review.getByRole('button', { name: 'Reload review', exact: true })).toBeEnabled();
   await expect(text).toHaveValue('Preserve this unsaved correction');
   await expect(text).toBeDisabled();
   await expect(review.getByRole('button', { name: 'Save cue changes', exact: true })).toBeDisabled();
   await expect(dialog.getByRole('button', { name: 'Apply reviewed result', exact: true })).toBeDisabled();
   expect(api.writes()).toHaveLength(1);
-  page.once('dialog', (prompt) => { void prompt.dismiss(); });
-  await review.getByRole('button', { name: 'Reload review', exact: true }).click();
+  const reload = review.getByRole('button', { name: 'Reload review', exact: true });
+  await confirmPrompt(page, () => reload.click(), 'Discard unsaved cue changes on this page?');
   await expect(text).toHaveValue('Preserve this unsaved correction');
-  page.once('dialog', (prompt) => { void prompt.accept(); });
-  await review.getByRole('button', { name: 'Reload review', exact: true }).click();
+  await confirmPrompt(page, () => reload.click(), 'Discard unsaved cue changes on this page?', true);
   await expect(text).toHaveValue('Changed by another reviewer');
   await expect(text).toBeEnabled();
   await expect(dialog.getByRole('button', { name: 'Apply reviewed result', exact: true })).toBeEnabled();
@@ -452,7 +481,7 @@ test('a background revision change requires reloading cues and invalidates an op
     page.evaluate(() => document.dispatchEvent(new Event('visibilitychange'))),
   ]);
   expect(refresh.status()).toBe(200);
-  await expect(review.getByRole('alert').filter({ hasText: 'This operation changed after these cues were loaded.' })).toBeVisible();
+  await expect(review.getByRole('status').filter({ hasText: 'This operation changed after these cues were loaded.' })).toBeVisible();
   await expect(text).toHaveValue('Recognized line 1');
   await expect(apply).toBeDisabled();
   await review.getByRole('button', { name: 'Reload review', exact: true }).click();
@@ -468,7 +497,7 @@ test('a background revision change requires reloading cues and invalidates an op
     page.evaluate(() => document.dispatchEvent(new Event('visibilitychange'))),
   ]);
   expect(confirmationRefresh.status()).toBe(200);
-  await expect(confirmation.getByRole('alert').filter({ hasText: 'The operation changed while this confirmation was open.' })).toBeVisible();
+  await expect(confirmation.getByRole('status').filter({ hasText: 'The operation changed while this confirmation was open.' })).toBeVisible();
   await expect(confirmation.getByRole('button', { name: 'Confirm apply', exact: true })).toBeDisabled();
   expect(api.writes()).toEqual([]);
 });
@@ -498,13 +527,13 @@ for (const action of [
     ]);
     expect(response.status()).toBe(202);
     await expect(confirmation).not.toBeVisible();
-    await expect(dialog.getByRole('alert').filter({ hasText: action.notice })).toBeVisible();
+    await expect(dialog.getByRole('status').filter({ hasText: action.notice })).toBeVisible();
     await expect(dialog.getByRole('button', { name: 'Refresh operation', exact: true })).toBeEnabled();
     expect(api.writes().map(({ method, path, body }) => ({ method, path, body }))).toEqual([{
       method: 'POST', path: `${operationPath(current.Id)}/${action.kind}`,
       body: action.kind === 'cancel' ? { Revision: '5' } : { Revision: '5', SourceRevision: 'source-revision-one', ResultHash: resultHash, RequestId: expect.any(String) },
     }]);
-    await expect(dialog.getByRole('alert').filter({ hasText: action.kind === 'cancel' ? 'The operation was cancelled.' : 'The selected embedded subtitle was removed and the replacement media was published.' })).toBeVisible();
+    await expect(dialog.getByRole('status').filter({ hasText: action.kind === 'cancel' ? 'The operation was cancelled.' : 'The selected embedded subtitle was removed and the replacement media was published.' })).toBeVisible();
     expect(api.operations.get(current.Id)?.State).toBe(action.kind === 'cancel' ? 'cancelled' : 'completed');
     if (action.kind === 'cancel') {
       expect(api.operations.get(current.Id)?.CancelRequestedAt).toBe(timestamp);
@@ -534,7 +563,7 @@ test('reloading after an apply conflict blocks another apply until the new detai
   expect(conflict.status()).toBe(409);
   expect((await automaticRefresh).status()).toBe(200);
   await expect(confirmation).not.toBeVisible();
-  await expect(dialog.getByRole('alert').filter({ hasText: 'The operation changed or the request could not be confirmed.' })).toBeVisible();
+  await expect(dialog.getByRole('status').filter({ hasText: 'The operation changed or the request could not be confirmed.' })).toBeVisible();
   await expect(dialog.locator('[aria-busy]')).toHaveAttribute('aria-busy', 'false');
 
   let release!: () => void;
