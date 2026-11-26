@@ -1,8 +1,9 @@
 # Administrator media diagnostics
 
-The media-diagnostics branch implements this native administrator API and its
-Settings panel. The source has not yet passed Go, database, browser, real media
-or deployment verification. No runtime or M5 acceptance is claimed here.
+The native administrator API backs the Media diagnostics panel under
+Settings → Transcoding. Synthetic browser checks cover the dashboard's
+handling of status and run responses; they do not establish native media or
+deployment acceptance.
 
 All routes require the native administrator cookie. Emby logins and application
 keys are rejected. Writes additionally require the existing same-origin and
@@ -18,7 +19,9 @@ missing and unknown fields, and are limited to 4 KiB.
   server generation.
 - `Available` and `UnavailableReason`: whether the deployment permits requesting
   diagnostics. This is not a probe of the actual tool, device or resource profile.
-- `HardwareConfigured`: whether a hardware backend is selected in deployment.
+- `HardwareConfigured`: whether the effective settings select a hardware
+  backend. `HardwareAvailable` reports whether the selected profile is currently
+  available according to server settings. Neither flag is a passed diagnostic.
 - `StartToken` and `StartTokenExpiresAt`: an opaque start-window value and its
   informational wall-clock expiry. The token is not a credential and must not
   be persisted by the dashboard.
@@ -26,11 +29,13 @@ missing and unknown fields, and are limited to 4 KiB.
   summaries. Unfinished resource owners are retained beyond the normal expiry.
 
 A summary contains `Id`, `InstanceId`, `Revision`, `Mode`, `State`, `Code`,
-`CreatedAt`, `UpdatedAt`, and nullable `FinishedAt`. Revision is a positive
-decimal string that increases on each visible update for the same instance/run.
-Clients must compare revisions rather than relying on wall-clock timestamps to
-merge index, detail, and mutation responses. A delayed response must not restore
-a completed run to an earlier running state.
+`CreatedAt`, `UpdatedAt`, nullable `FinishedAt`, and `SettingsRevision`.
+`SettingsRevision` is the decimal string for the effective settings captured
+when the run was admitted. It is not the run's update counter. `Revision` is a
+positive decimal string that increases on each visible update for the same
+instance/run. Clients must compare run revisions rather than relying on
+wall-clock timestamps to merge index, detail, and mutation responses. A delayed
+response must not restore a completed run to an earlier running state.
 
 History is held in this process/generation only. A restart clears it and changes
 the instance identifier. Unexpired entries are never silently evicted to admit
@@ -118,5 +123,6 @@ for diagnostics and conversion work before releasing the catalog/database.
 Resource delegation and the borrowed non-writable scratch directory require
 explicit deployment setup; see [installation guidance](../../deploy/linux/INSTALL.md).
 Missing prerequisites yield an unavailable run rather than unbounded execution.
-Actual codec-log compatibility, output tolerances, cgroup behavior, browser flows
-and the complete software/hardware profiles still require remote verification.
+Actual codec-log compatibility, output tolerances, cgroup behavior and complete
+software/hardware profiles still require native verification. The synthetic
+browser checks do not exercise a live diagnostic endpoint.

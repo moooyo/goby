@@ -1,6 +1,6 @@
 import { expect, test as base } from '@playwright/test';
 import type { BrowserContext, Page, Request, Route } from '@playwright/test';
-import type { MediaDiagnosticRunDetail, MediaDiagnosticRunState, MediaDiagnosticRunSummary, MediaDiagnosticsResponse, ServerSettings, StartMediaDiagnosticInput } from '../src/api';
+import type { MediaDiagnosticRunDetail, MediaDiagnosticRunResponse, MediaDiagnosticRunState, MediaDiagnosticRunSummary, MediaDiagnosticsResponse, ServerSettings, StartMediaDiagnosticInput } from '../src/api';
 import type { SystemStatus } from '../src/systemStatusApi';
 import { dashboardShellResponse, json, setDashboardPreferences } from './dashboard-fixture';
 
@@ -13,11 +13,12 @@ const retainedRunId = 'c'.repeat(32);
 const csrfToken = 'synthetic-media-diagnostics-csrf';
 const startToken = '0.' + 'd'.repeat(64);
 const timestamp = '2026-09-16T08:00:00Z';
+const capturedSettingsRevision = '9007199254740993';
 const endpoint = '/admin/v1/media-diagnostics';
 const pendingStorageKey = `goby.media-diagnostics.pending.${administratorId}`;
 
 const settings: ServerSettings = {
-  Revision: '1',
+  Revision: capturedSettingsRevision,
   Defaults: { ServerName: 'Synthetic diagnostics browser', MaxBitrate: 20_000_000, MaxWidth: 1920, MaxHeight: 1080, MaxAudioChannels: 2 },
   Overrides: { ServerName: null, MaxBitrate: null, MaxWidth: null, MaxHeight: null, MaxAudioChannels: null },
   Effective: { ServerName: 'Synthetic diagnostics browser', MaxBitrate: 20_000_000, MaxWidth: 1920, MaxHeight: 1080, MaxAudioChannels: 2 },
@@ -37,7 +38,7 @@ const systemStatus: SystemStatus = {
 function summary(state: MediaDiagnosticRunState, revision: string, id = retainedRunId): MediaDiagnosticRunSummary {
   const terminal = state === 'failed' || state === 'cancelled';
   return {
-    Id: id, InstanceId: instanceId, Revision: revision, Mode: 'software', State: state,
+    Id: id, InstanceId: instanceId, Revision: revision, SettingsRevision: capturedSettingsRevision, Mode: 'software', State: state,
     Code: state === 'failed' ? 'diagnostic_execution_failed' : state === 'cancelled' ? 'diagnostic_cancelled' : '',
     CreatedAt: timestamp, UpdatedAt: terminal ? '2026-09-16T08:00:02Z' : timestamp,
     FinishedAt: terminal ? '2026-09-16T08:00:02Z' : null,
@@ -54,9 +55,10 @@ function runPath(id = retainedRunId): string { return `${endpoint}/runs/${instan
 interface CapturedRequest { method: string; path: string; body: string | null; csrf: string | undefined }
 
 class MediaDiagnosticsMock {
+  serverSettings = settings;
   index: MediaDiagnosticsResponse = {
     InstanceId: instanceId, StartToken: startToken, StartTokenExpiresAt: new Date(Date.now() + 5 * 60_000).toISOString(),
-    Available: true, UnavailableReason: '', HardwareConfigured: false, RetentionSeconds: 1800, MaxRetainedRuns: 32, Items: [],
+    Available: true, UnavailableReason: '', HardwareConfigured: false, HardwareAvailable: false, RetentionSeconds: 1800, MaxRetainedRuns: 32, Items: [],
   };
   requests: CapturedRequest[] = [];
   unexpected: string[] = [];
@@ -79,7 +81,7 @@ class MediaDiagnosticsMock {
           CSRFToken: csrfToken,
         });
         if (captured.path === endpoint) return json(route, this.index);
-        const shell = dashboardShellResponse(captured.path, [], settings, systemStatus);
+        const shell = dashboardShellResponse(captured.path, [], this.serverSettings, systemStatus);
         if (shell !== undefined) return json(route, shell);
       }
       this.unexpected.push(`${captured.method} ${captured.path}${url.search}`);
@@ -110,6 +112,11 @@ const softwareScope = (page: Page) => diagnosticScope(page).getByRole('radio', {
 const configuredScope = (page: Page) => diagnosticScope(page).getByRole('radio', { name: 'Configured hardware path, including the software baseline', exact: true });
 const selectedRunStatus = (page: Page, state: string) => panel(page)
   .getByRole('heading', { name: 'Run results', exact: true }).locator('..').getByText(state, { exact: true });
+const refreshRun = (page: Page) => panel(page).getByRole('button', { name: 'Refresh run', exact: true });
+
+function waitForRunRead(page: Page, path: string) {
+  return page.waitForResponse((response) => response.request().method() === 'GET' && new URL(response.url()).pathname === path);
+}
 
 async function openDiagnostics(page: Page): Promise<void> {
   await page.goto('/admin/settings/transcode');
@@ -125,9 +132,10 @@ async function openDiagnostics(page: Page): Promise<void> {
 
 test('configured diagnostics are submitted only after selecting the available hardware scope', async ({ page, api }) => {
   api.index.HardwareConfigured = true;
+  api.serverSettings = { ...settings, Deployment: { ...settings.Deployment, TranscodingEnabled: true, HardwareDecoder: 'vaapi', MaxJobs: 2, MaxUserJobs: 1, MaxSessionJobs: 1 } };
   api.handlers.set(`POST ${endpoint}/runs`, async (route, request) => {
     const input = request.postDataJSON() as StartMediaDiagnosticInput;
-    const run = { ...detail(summary('failed', '1', input.RequestId)), Mode: 'configured' as const };
+    const run: MediaDiagnosticRunDetail = { ...detail(summary('queued', '1', input.RequestId)), Mode: 'configured' };
     api.handlers.set(`GET ${runPath(input.RequestId)}`, (route) => json(route, { Run: run }));
     await json(route, { Run: run }, 202);
   });
@@ -135,24 +143,85 @@ test('configured diagnostics are submitted only after selecting the available ha
   await openDiagnostics(page);
   const software = softwareScope(page);
   const configured = configuredScope(page);
+  const startButton = panel(page).getByRole('button', { name: 'Start diagnostic', exact: true });
+  const refresh = panel(page).getByRole('button', { name: 'Refresh diagnostics', exact: true });
+  const unavailable = panel(page).getByText('The configured hardware path is unavailable. Select the software baseline to run without it.', { exact: true });
+  await expect(configured).toBeDisabled();
+  await expect(unavailable).toBeVisible();
+  await expect(startButton).toBeEnabled();
+
+  async function observeHardware(available: boolean) {
+    api.index.HardwareAvailable = available;
+    const [response] = await Promise.all([waitForRunRead(page, endpoint), refresh.click()]);
+    expect(response.status()).toBe(200);
+    await expect(refresh).toBeEnabled();
+  }
+  await observeHardware(true);
   await expect(configured).toBeEnabled();
+  await expect(unavailable).toHaveCount(0);
   await configured.check();
   await expect(configured).toBeChecked();
   await expect(software).not.toBeChecked();
+
+  await observeHardware(false);
+  await expect(configured).toBeDisabled();
+  await expect(startButton).toBeDisabled();
+  await expect(unavailable).toBeVisible();
+  await software.check();
+  await expect(startButton).toBeEnabled();
+  await observeHardware(true);
+  await configured.check();
+  await expect(configured).toBeChecked();
   expect(api.mutations()).toEqual([]);
 
   const [response] = await Promise.all([
     page.waitForResponse((response) => response.request().method() === 'POST' && new URL(response.url()).pathname === `${endpoint}/runs`),
-    panel(page).getByRole('button', { name: 'Start diagnostic', exact: true }).click(),
+    startButton.click(),
   ]);
   expect(response.status()).toBe(202);
-  await expect(selectedRunStatus(page, 'Failed')).toBeVisible();
+  await expect(selectedRunStatus(page, 'Queued')).toBeVisible();
   await expect(history(page).getByRole('cell', { name: 'Configured + software', exact: true })).toBeVisible();
   await expect(panel(page).getByText(/No stage results have been reported/)).toBeVisible();
   expect(api.mutations()).toHaveLength(1);
   const [start] = api.mutations();
   expect(start.csrf).toBe(csrfToken);
   expect(JSON.parse(start.body!)).toEqual({ InstanceId: instanceId, RequestId: expect.stringMatching(/^[0-9a-f]{32}$/), StartToken: startToken, Mode: 'configured' });
+});
+
+test('an invalid diagnostic status blocks starting until a valid status is read', async ({ page, api }) => {
+  const retained = summary('cancelled', '3');
+  api.index.Items = [retained];
+  api.handlers.set(`GET ${runPath()}`, (route) => json(route, { Run: detail(retained) }));
+  const invalid = [
+    { ...api.index, HardwareAvailable: 'true' },
+    { ...api.index, UnknownField: true },
+    { ...api.index, Items: [{ ...retained, SettingsRevision: 9007199254740992 }] },
+    { ...api.index, Items: [{ ...retained, SettingsRevision: '9223372036854775808' }] },
+  ];
+  api.handlers.set(`GET ${endpoint}`, (route) => json(route, invalid[0]));
+  await openDiagnostics(page);
+  const start = panel(page).getByRole('button', { name: 'Start diagnostic', exact: true });
+  const refresh = panel(page).getByRole('button', { name: 'Refresh diagnostics', exact: true });
+  const error = panel(page).getByRole('alert');
+  await expect(error).toBeVisible();
+  await expect(start).toBeDisabled();
+  await expect(history(page)).toHaveCount(0);
+
+  for (const payload of invalid.slice(1)) {
+    api.handlers.set(`GET ${endpoint}`, (route) => json(route, payload));
+    await Promise.all([waitForRunRead(page, endpoint), refresh.click()]);
+    await expect(refresh).toBeEnabled();
+    await expect(error).toBeVisible();
+    await expect(start).toBeDisabled();
+    await expect(history(page)).toHaveCount(0);
+  }
+  api.handlers.delete(`GET ${endpoint}`);
+  await Promise.all([waitForRunRead(page, endpoint), refresh.click()]);
+  await expect(error).toHaveCount(0);
+  await expect(historyStatus(page, 'Cancelled')).toBeVisible();
+  await expect(selectedRunStatus(page, 'Cancelled')).toBeVisible();
+  await expect(start).toBeEnabled();
+  expect(api.mutations()).toEqual([]);
 });
 
 test('unknown start retains its original identifiers and only reads the outcome after reload', async ({ page, api }) => {
@@ -185,19 +254,25 @@ test('unknown start retains its original identifiers and only reads the outcome 
   expect(api.reads(runPath(submitted.RequestId))).toHaveLength(0);
   await expect(panel(page).getByRole('button', { name: 'Start another diagnostic', exact: true })).toBeDisabled();
 
-  api.handlers.set(`GET ${runPath(submitted.RequestId)}`, async (route) => {
+  const originalRunPath = runPath(submitted.RequestId);
+  api.handlers.set(`GET ${originalRunPath}`, async (route) => {
     await json(route, { Run: detail(summary('failed', '7', submitted.RequestId)) });
   });
-  await checkStart.click();
+  const [lookup] = await Promise.all([waitForRunRead(page, originalRunPath), checkStart.click()]);
+  expect(lookup.status()).toBe(200);
   await expect(historyStatus(page, 'Failed')).toBeVisible();
   await expect(selectedRunStatus(page, 'Failed')).toBeVisible();
   await expect(panel(page).getByText(/The start result has not been confirmed/)).toHaveCount(0);
   await expect(panel(page).getByRole('button', { name: 'Start diagnostic', exact: true })).toBeEnabled();
   expect(await page.evaluate((key) => sessionStorage.getItem(key), pendingStorageKey)).toBeNull();
-  await panel(page).getByRole('button', { name: 'Refresh run', exact: true }).click();
-  await expect.poll(() => api.reads(runPath(submitted.RequestId)).length).toBeGreaterThanOrEqual(2);
+  expect(api.reads(originalRunPath)).toHaveLength(1);
+  const refresh = refreshRun(page);
+  const [refreshed] = await Promise.all([waitForRunRead(page, originalRunPath), refresh.click()]);
+  expect(refreshed.status()).toBe(200);
+  await expect(refresh).toBeEnabled();
+  expect(api.reads(originalRunPath)).toHaveLength(2);
   expect(api.mutations()).toHaveLength(1);
-  expect(api.requests.filter((request) => request.path.startsWith(`${endpoint}/runs/`)).every((request) => request.method === 'GET' && request.path === runPath(submitted.RequestId))).toBe(true);
+  expect(api.requests.filter((request) => request.path.startsWith(`${endpoint}/runs/`)).every((request) => request.method === 'GET' && request.path === originalRunPath)).toBe(true);
 });
 
 test('a late older index cannot replace a newer terminal detail or keep Start locked', async ({ page, api }) => {
@@ -243,32 +318,41 @@ test('a late older index cannot replace a newer terminal detail or keep Start lo
 });
 
 test('confirmed cancellation remains visible when a later run read fails without retrying a mutation', async ({ page, api }) => {
-  let current = summary('running', '2');
+  const current = summary('running', '2');
+  const cancelling = detail(summary('cancelling', '3'));
+  const cancelled = detail(summary('cancelled', '4'));
+  const target = runPath();
   api.index.Items = [current];
-  api.handlers.set(`GET ${runPath()}`, async (route) => { await json(route, { Run: detail(current) }); });
-  api.handlers.set(`POST ${runPath()}/cancel`, async (route, request) => {
+  api.handlers.set(`GET ${target}`, (route) => json(route, { Run: detail(current) }));
+  api.handlers.set(`POST ${target}/cancel`, async (route, request) => {
     expect(request.postDataJSON()).toEqual({});
-    current = summary('cancelled', '3');
-    await json(route, { Run: detail(current) });
+    api.handlers.set(`GET ${target}`, (route) => json(route, { Run: cancelled }));
+    await json(route, { Run: cancelling });
   });
   await openDiagnostics(page);
   const cancel = panel(page).getByRole('button', { name: 'Cancel run', exact: true });
-  await cancel.click();
+  const [acknowledgement, readback] = await Promise.all([
+    page.waitForResponse((response) => response.request().method() === 'POST' && new URL(response.url()).pathname === `${target}/cancel`),
+    page.waitForResponse(async (response) => response.request().method() === 'GET'
+      && new URL(response.url()).pathname === target && response.ok()
+      && ((await response.json()) as MediaDiagnosticRunResponse).Run.Revision === cancelled.Revision),
+    cancel.click(),
+  ]);
+  expect(acknowledgement.status()).toBe(200);
+  expect((await acknowledgement.json() as MediaDiagnosticRunResponse).Run).toEqual(cancelling);
+  expect((await readback.json() as MediaDiagnosticRunResponse).Run).toEqual(cancelled);
   await expect(historyStatus(page, 'Cancelled')).toBeVisible();
   await expect(selectedRunStatus(page, 'Cancelled')).toBeVisible();
   await expect(cancel).toHaveCount(0);
   await expect(panel(page).getByText('No stage results have been reported. No decoding or encoding result is confirmed yet.', { exact: true })).toBeVisible();
 
-  const refreshRun = panel(page).getByRole('button', { name: 'Refresh run', exact: true });
-  // Let the post-cancellation read settle before failing the explicit refresh.
-  await expect(refreshRun).toBeEnabled();
-  api.handlers.set(`GET ${runPath()}`, async (route) => {
+  const refresh = refreshRun(page);
+  await expect(refresh).toBeEnabled();
+  const readsBeforeRefresh = api.reads(target).length;
+  api.handlers.set(`GET ${target}`, async (route) => {
     await json(route, { Error: { Code: 'synthetic_read_unavailable', Message: 'Synthetic diagnostic read is unavailable.' }, RequestId: 'synthetic-read' }, 503);
   });
-  const [failedRead] = await Promise.all([
-    page.waitForResponse((response) => response.request().method() === 'GET' && new URL(response.url()).pathname === runPath()),
-    refreshRun.click(),
-  ]);
+  const [failedRead] = await Promise.all([waitForRunRead(page, target), refresh.click()]);
   expect(failedRead.status()).toBe(503);
   const alert = panel(page).getByRole('alert').filter({ hasText: 'Synthetic diagnostic read is unavailable.' });
   await expect(alert).toBeVisible();
@@ -280,5 +364,6 @@ test('confirmed cancellation remains visible when a later run read fails without
   await expect(panel(page).getByText(/^Software baseline · Created:.* · diagnostic cancelled$/)).toBeVisible();
   await expect(cancel).toHaveCount(0);
   await expect(panel(page).getByRole('button', { name: 'Start diagnostic', exact: true })).toBeDisabled();
-  expect(api.mutations()).toEqual([{ method: 'POST', path: `${runPath()}/cancel`, body: '{}', csrf: csrfToken }]);
+  expect(api.reads(target)).toHaveLength(readsBeforeRefresh + 1);
+  expect(api.mutations()).toEqual([{ method: 'POST', path: `${target}/cancel`, body: '{}', csrf: csrfToken }]);
 });

@@ -1,6 +1,6 @@
 import { expect, test as base } from '@playwright/test';
 import type { BrowserContext, Locator, Page, Request } from '@playwright/test';
-import type { TaskDefinition, TaskRun } from '../src/api';
+import type { TaskDefinition, TaskDefinitionsResponse, TaskRun } from '../src/api';
 import { dashboardShellResponse, json, setDashboardPreferences } from './dashboard-fixture';
 import { noOverflow } from './dashboard-review';
 
@@ -111,11 +111,10 @@ class TasksAPI {
         }
         if (runMatch[2] && input && Object.keys(input).length === 0) {
           this.cancels.push(previous.Id);
-          const value: TaskRun = { ...previous, State: 'cancelled', FinishedAt: now, StopRequestedAt: now, TerminalChildren: previous.TotalChildren, CancelledChildren: previous.TotalChildren - previous.CompletedChildren };
+          const value: TaskRun = { ...previous, State: 'stopping', StopRequestedAt: now, StopReason: 'administrator' };
           this.runs.set(value.Id, value);
           const task = this.tasks.find(({ Id }) => Id === value.TaskId)!;
-          if (task.CurrentRun?.Id === value.Id) task.CurrentRun = null;
-          task.LastRun = value;
+          if (task.CurrentRun?.Id === value.Id) task.CurrentRun = value;
           return json(route, { Run: value }, 202);
         }
       }
@@ -152,7 +151,16 @@ async function readAfter(page: Page, path: string, action: () => Promise<unknown
   ]);
   expect(response.ok()).toBe(true);
 }
-function pollTasks(page: Page) { return readAfter(page, taskListPath, () => page.clock.fastForward(5_001)); }
+async function pollTasks(page: Page, expectedRunId: string) {
+  // Match the wanted snapshot even if a previous poll was already in flight.
+  const [response] = await Promise.all([
+    page.waitForResponse(async (response) => response.request().method() === 'GET'
+      && new URL(response.url()).pathname === taskListPath && response.ok()
+      && ((await response.json()) as TaskDefinitionsResponse).Items.some((task) => task.CurrentRun?.Id === expectedRunId)),
+    page.clock.fastForward(5_001),
+  ]);
+  expect(response.status()).toBe(200);
+}
 
 const receiptPrefix = 'goby.task-start.';
 const metadataReceipt = `${receiptPrefix}${administrator.Id}.metadata`;
@@ -178,7 +186,7 @@ test('an unconfirmed start keeps its receipt across reload and does not admit an
   await expect(checkStart).toBeEnabled();
   await expect(metadata).toContainText('A start request has not been confirmed');
   expect(api.starts).toEqual([start]);
-  await pollTasks(page);
+  await pollTasks(page, 'metadata-started-1');
   await expect(checkStart).toBeEnabled();
   await expect(details).toHaveCount(0);
   expect(await readMetadataReceipt(page)).toBe(start.requestId);
@@ -209,7 +217,7 @@ test('direct stop remains bound to the confirmed run when another run appears', 
   const next = { ...run('scan', 'scan-newer'), CreatedAt: '2026-09-30T08:00:30Z', StartedAt: '2026-09-30T08:00:30Z', Scanned: 45_678 };
   api.runs.set(next.Id, next);
   api.tasks[0].CurrentRun = next;
-  await pollTasks(page);
+  await pollTasks(page, next.Id);
   // The modal keeps the overview inert; verify that the replacement actually rendered before confirming the stop.
   const background = scanCard(page, true);
   await expect(background.getByText('45,678', { exact: true })).toBeVisible();
@@ -221,11 +229,18 @@ test('direct stop remains bound to the confirmed run when another run appears', 
   const details = page.getByRole('dialog', { name: 'Run details · Scan all libraries', exact: true });
   await expect(details).toBeVisible();
   await expect(details.getByText('scan-original', { exact: true })).toBeVisible();
-  await expect(details.getByText('Cancelled', { exact: true })).toBeVisible();
+  await expect(details.getByText('Stopping', { exact: true })).toBeVisible();
+  await expect(details.getByText('Stop reason: administrator', { exact: true })).toBeVisible();
+  await expect(details.getByText('No work items were recorded for this run.', { exact: true })).toBeVisible();
   const refresh = details.getByRole('button', { name: 'Refresh run', exact: true });
   await expect(refresh).toBeEnabled();
+  const original = api.runs.get('scan-original')!;
+  const cancelled: TaskRun = { ...original, State: 'cancelled', FinishedAt: '2026-09-30T08:01:10Z', TerminalChildren: original.TotalChildren, CancelledChildren: original.TotalChildren - original.CompletedChildren };
+  // The coordinator finishes the original run after the stop was acknowledged.
+  api.runs.set(original.Id, cancelled);
+  api.tasks[0].LastRun = cancelled;
   await readAfter(page, '/admin/v1/task-runs/scan-original', () => refresh.click());
-  await expect(refresh).toBeEnabled();
+  await expect(details.getByText('Stop reason: administrator', { exact: true })).toBeVisible();
   await expect(details.getByText('scan-original', { exact: true })).toBeVisible();
   await expect(details.getByText('scan-newer', { exact: true })).toHaveCount(0);
   await expect(details.getByText('Cancelled', { exact: true })).toBeVisible();

@@ -2115,6 +2115,7 @@ const chinese: Record<string, string> = {
   'Run fixed video and audio samples to check actual decoding, encoding and their combined path. A configured codec or listed device is not a passed diagnostic. Runs continue on the server when you leave this page.': '运行固定音视频样本，检查实际解码、编码及组合处理路径。已配置的编码器或已列出的设备不代表诊断通过，离开页面后任务仍在服务器继续。',
   'Any displayed history is the last recorded result. Refresh diagnostics to confirm the current server.': '显示的历史是上次记录的结果，请刷新诊断以确认当前服务器状态。',
   'No hardware path is configured. Software results do not establish hardware support.': '未配置硬件路径，软件结果不能证明硬件支持。',
+  'The configured hardware path is unavailable. Select the software baseline to run without it.': '配置的硬件路径不可用。请选择软件基线继续诊断。',
   'No retained diagnostic runs.': '暂无保留的诊断运行。',
   'Media operation': '媒体操作',
   'Reload operation': '重新加载操作',

@@ -182,7 +182,7 @@ export function MediaDiagnosticsPanel({ currentUserId, startBlocked, onBusyChang
     if ((previous && BigInt(previous.summary.Revision) > BigInt(run.Revision))
       || (visible && BigInt(visible.Revision) > BigInt(run.Revision))) return false;
     const summary: MediaDiagnosticRunSummary = { Id: run.Id, InstanceId: run.InstanceId, Revision: run.Revision, Mode: run.Mode, State: run.State,
-      Code: run.Code, CreatedAt: run.CreatedAt, UpdatedAt: run.UpdatedAt, FinishedAt: run.FinishedAt };
+      Code: run.Code, CreatedAt: run.CreatedAt, UpdatedAt: run.UpdatedAt, FinishedAt: run.FinishedAt, SettingsRevision: run.SettingsRevision };
     const changed = !previous?.detailRevision || BigInt(run.Revision) > BigInt(previous.detailRevision);
     facts.current.set(key, { summary, detailRevision: run.Revision, sequence: changed ? ++detailSequence.current : previous?.sequence ?? 0 });
     if (current?.InstanceId === run.InstanceId) publishIndex({
@@ -309,8 +309,9 @@ export function MediaDiagnosticsPanel({ currentUserId, startBlocked, onBusyChang
   const pendingProblem = pendingIssue?.key === pendingKey ? pendingIssue : undefined;
   const canReplaceUnknown = Boolean(pending && pendingProblem && generation > pendingProblem.generation && indexFresh);
   const retentionFull = Boolean(index && index.Items.length >= index.MaxRetainedRuns);
+  const canSelectConfigured = Boolean(index?.HardwareConfigured && index.HardwareAvailable);
   const canStart = Boolean(index?.Available && indexFresh && !indexLoading && !expired && !active && !retentionFull && !mutation && !startBlocked
-    && (mode === 'software' || index.HardwareConfigured) && (!pending || canReplaceUnknown));
+    && (mode === 'software' || canSelectConfigured) && (!pending || canReplaceUnknown));
 
   function refreshRun() {
     if (mutationRef.current || instanceChanged) return;
@@ -374,10 +375,11 @@ export function MediaDiagnosticsPanel({ currentUserId, startBlocked, onBusyChang
         <FormLabel id="media-diagnostics-mode-label">Diagnostic scope</FormLabel>
         <RadioGroup aria-labelledby="media-diagnostics-mode-label" value={mode} onChange={(_event, value) => { if (value === 'software' || value === 'configured') setMode(value); }}>
           <FormControlLabel control={<Radio value="software" />} label="Software video and audio baseline" />
-          <FormControlLabel control={<Radio value="configured" />} disabled={!index?.HardwareConfigured} label="Configured hardware path, including the software baseline" />
+          <FormControlLabel control={<Radio value="configured" />} disabled={!canSelectConfigured} label="Configured hardware path, including the software baseline" />
         </RadioGroup>
       </FormControl>
       {index && !index.HardwareConfigured && <Typography variant="body2" color="text.secondary">No hardware path is configured. Software results do not establish hardware support.</Typography>}
+      {index?.HardwareConfigured && !index.HardwareAvailable && <Typography variant="body2" color="text.secondary">The configured hardware path is unavailable. Select the software baseline to run without it.</Typography>}
       {startBlocked && <Typography variant="body2" color="text.secondary">Save or discard pending settings changes before starting diagnostics. The run uses the server's saved configuration.</Typography>}
       {active && <Alert severity="info">A diagnostic is already active. Another run cannot start until it has finished and released its resources.</Alert>}
       {retentionFull && <Alert severity="info">The recent-run history is full. Wait for older results to expire, then refresh diagnostics before starting another run.</Alert>}

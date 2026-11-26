@@ -230,7 +230,7 @@ export class DashboardAPI {
           const profile = { DurationSeconds: 15, MaxWidth: 1280, VideoBitrate: 2_000_000, MaxItemRuntimeSeconds: 600 };
           return json(route, { Revision: '1', Profile: profile, Defaults: profile, UpdatedAt: stamp });
         }
-        if (path === '/admin/v1/media-diagnostics') return json(route, { InstanceId: 'a'.repeat(32), StartToken: '', StartTokenExpiresAt: stamp, Available: false, UnavailableReason: 'No diagnostic fixture configured', HardwareConfigured: false, RetentionSeconds: 1800, MaxRetainedRuns: 32, Items: [] });
+        if (path === '/admin/v1/media-diagnostics') return json(route, { InstanceId: 'a'.repeat(32), StartToken: '', StartTokenExpiresAt: stamp, Available: false, UnavailableReason: 'No diagnostic fixture configured', HardwareConfigured: false, HardwareAvailable: false, RetentionSeconds: 1800, MaxRetainedRuns: 32, Items: [] });
         if (path === '/admin/v1/backups/status') return json(route, { Available: true, UnavailableReason: '', RestoreAvailable: true, RestoreUnavailableReason: '', Busy: false, ActiveOperationId: '', GenerationRevision: '1', Limits: { MaxBackupBytes: '1073741824', MaxStoredBytes: '4294967296', MaxBackups: 10, MinPassphraseBytes: 12, MaxPassphraseBytes: 1024 }, Storage: { Bytes: '0', Objects: 0 }, Rollback: { Available: false, MustReplace: false, CreatedAt: null, ServerName: '', Generation: '', UnavailableReason: '' } });
         if (path === '/admin/v1/backups' || path === '/admin/v1/backup-operations') return json(route, paged([]));
         if (path === '/admin/v1/media-analysis') {

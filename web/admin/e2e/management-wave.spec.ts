@@ -122,7 +122,7 @@ class ManagementMock {
         if (captured.path === '/admin/v1/settings') return json(route, this.settings);
         if (captured.path === '/admin/v1/media-diagnostics') return json(route, {
           InstanceId: 'a'.repeat(32), StartToken: '', StartTokenExpiresAt: timestamp, Available: false,
-          UnavailableReason: 'Synthetic fixture', HardwareConfigured: false, RetentionSeconds: 1800, MaxRetainedRuns: 32, Items: [],
+          UnavailableReason: 'Synthetic fixture', HardwareConfigured: false, HardwareAvailable: false, RetentionSeconds: 1800, MaxRetainedRuns: 32, Items: [],
         });
       }
       this.unexpected.push(`${captured.method} ${captured.path}${captured.query}`);

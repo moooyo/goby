@@ -166,25 +166,33 @@ again on `test-env`.
 
 ### Tasks and media diagnostics browser regressions
 
-The [task suite](../../web/admin/e2e/dashboard-tasks.spec.ts) now checks observed
+The [task suite](../../web/admin/e2e/dashboard-tasks.spec.ts) checks observed
 scan counts, recent failure history, and the task-view menu at desktop and
 phone widths. Reloading does not replay an unconfirmed start; explicit recovery
-reuses its original request ID. The stop check observes a newer run on the page
-before confirming that the cancellation still targets the original run.
+reuses its original request ID. The stop check observes a newer run before
+confirming the cancellation, then reads the original run from `stopping` to
+`cancelled` without stopping the newer run.
 
 The [media diagnostics suite](../../web/admin/e2e/media-diagnostics.spec.ts)
-opens the current Transcoding page and checks the software scope. Its mocked
-flows cover read-only recovery of an uncertain start, a late older index that
-must not replace a newer result, and a confirmed cancellation followed by a
-failed read. Both suites use the shared dashboard reads and still reject
-unhandled requests. The browser check exposed a missing value on each native
-radio input. The software scope is now selected by default, and choosing an
-available configured scope submits `Mode: "configured"`. A new regression
-checks the exact request without claiming any hardware or media result.
+opens the current Transcoding page. Its mocked flows cover read-only recovery
+of an uncertain start, a late older index that must not replace a newer result,
+and a cancellation acknowledged before a terminal readback and a later read
+failure. Both suites use the shared dashboard reads and reject unhandled requests.
+
+The dashboard now binds each scope value to its native radio input and accepts
+`HardwareAvailable` and `SettingsRevision` from the existing diagnostic API
+without relaxing its rejection of unknown fields. The software scope is selected
+by default. A configured scope must be both configured and available; a change
+in availability does not silently change the selected scope. The tests cover
+request mode, availability changes, and rejection of malformed status responses
+without claiming any hardware or media result.
 
 On November 26, 2026, the matching `b151edbb` baseline failed all seven original
-cases. The candidate passed those seven plus the new scope case. All 60 related
-task, overview, and transcoding cases passed on both builds with no retries or
-skips. The candidate production build and the explicit TypeScript check passed.
-The browser used a loopback static server and synthetic APIs; the full suite,
-backend runtime, and specialized media fixtures were not run.
+cases. The final candidate passed those seven, both added diagnostic cases, and
+159 related regressions on `test-env`, with no retries or skips. The 159 include
+all 60 cases also verified on the baseline, plus 99 dashboard and layout cases.
+The administrator production build and strict TypeScript check for all changed
+test files passed. The browser used a loopback static server and synthetic APIs;
+the full suite, backend runtime, and specialized media fixtures were not run.
+The remaining historical groups are notifications (eight cases), media
+management (six), and three specialized native fixtures.

@@ -755,13 +755,13 @@ export interface MediaDiagnosticReport {
 }
 export interface MediaDiagnosticRunSummary {
   Id: string; InstanceId: string; Revision: string; Mode: MediaDiagnosticMode; State: MediaDiagnosticRunState; Code: string;
-  CreatedAt: string; UpdatedAt: string; FinishedAt: string | null;
+  CreatedAt: string; UpdatedAt: string; FinishedAt: string | null; SettingsRevision: string;
 }
 export interface MediaDiagnosticRunDetail extends MediaDiagnosticRunSummary { Report: MediaDiagnosticReport | null }
 export interface MediaDiagnosticRunResponse { Run: MediaDiagnosticRunDetail }
 export interface MediaDiagnosticsResponse {
   InstanceId: string; StartToken: string; StartTokenExpiresAt: string;
-  Available: boolean; UnavailableReason: string; HardwareConfigured: boolean;
+  Available: boolean; UnavailableReason: string; HardwareConfigured: boolean; HardwareAvailable: boolean;
   RetentionSeconds: 1800; MaxRetainedRuns: 32; Items: MediaDiagnosticRunSummary[];
 }
 export interface StartMediaDiagnosticInput {
@@ -1400,6 +1400,10 @@ function diagnosticRevision(value: unknown): value is string {
   return typeof value === "string" && /^[1-9]\d{0,19}$/.test(value) && BigInt(value) <= 18446744073709551615n;
 }
 
+function diagnosticSettingsRevision(value: unknown): value is string {
+  return typeof value === "string" && /^(0|[1-9]\d{0,18})$/.test(value) && BigInt(value) <= 9223372036854775807n;
+}
+
 function diagnosticCode(value: unknown): boolean {
   return typeof value === "string" && /^(?:[a-z][a-z0-9_]{0,127})?$/.test(value);
 }
@@ -1535,8 +1539,9 @@ function diagnosticReport(value: unknown): value is MediaDiagnosticReport {
 function diagnosticRun(value: unknown, detail: true): value is MediaDiagnosticRunDetail;
 function diagnosticRun(value: unknown, detail: false): value is MediaDiagnosticRunSummary;
 function diagnosticRun(value: unknown, detail: boolean): value is MediaDiagnosticRunSummary {
-  if (!diagnosticRecord(value, `Id InstanceId Revision Mode State Code CreatedAt UpdatedAt FinishedAt${detail ? " Report" : ""}`)
-    || !diagnosticID(value.Id) || !diagnosticID(value.InstanceId) || !diagnosticRevision(value.Revision) || !["software", "configured"].includes(value.Mode as string)
+  if (!diagnosticRecord(value, `Id InstanceId Revision Mode State Code CreatedAt UpdatedAt FinishedAt SettingsRevision${detail ? " Report" : ""}`)
+    || !diagnosticID(value.Id) || !diagnosticID(value.InstanceId) || !diagnosticRevision(value.Revision)
+    || !diagnosticSettingsRevision(value.SettingsRevision) || !["software", "configured"].includes(value.Mode as string)
     || !["queued", "running", "cancelling", "cleanup_pending", "passed", "failed", "cancelled", "unavailable"].includes(value.State as string)
     || !diagnosticCode(value.Code) || !diagnosticTimestamp(value.CreatedAt) || !diagnosticTimestamp(value.UpdatedAt)
     || (value.FinishedAt !== null && !diagnosticTimestamp(value.FinishedAt))) return false;
@@ -1814,9 +1819,9 @@ export const adminApi = {
     const revision = sessionRevision;
     const result = await request<MediaDiagnosticsResponse>("/media-diagnostics", options);
     if (revision !== sessionRevision) throw sessionChanged();
-    if (!diagnosticRecord(result, "InstanceId StartToken StartTokenExpiresAt Available UnavailableReason HardwareConfigured RetentionSeconds MaxRetainedRuns Items")
+    if (!diagnosticRecord(result, "InstanceId StartToken StartTokenExpiresAt Available UnavailableReason HardwareConfigured HardwareAvailable RetentionSeconds MaxRetainedRuns Items")
       || !diagnosticID(result.InstanceId) || !diagnosticText(result.StartToken, 4096) || !diagnosticTimestamp(result.StartTokenExpiresAt)
-      || typeof result.Available !== "boolean" || typeof result.HardwareConfigured !== "boolean"
+      || typeof result.Available !== "boolean" || typeof result.HardwareConfigured !== "boolean" || typeof result.HardwareAvailable !== "boolean"
       || !diagnosticText(result.UnavailableReason, 512) || result.RetentionSeconds !== 1800 || result.MaxRetainedRuns !== 32
       || !Array.isArray(result.Items) || result.Items.length > 32
       || !result.Items.every((run: unknown) => diagnosticRun(run, false) && run.InstanceId === result.InstanceId)
