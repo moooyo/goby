@@ -373,8 +373,8 @@ export function MediaDiagnosticsPanel({ currentUserId, startBlocked, onBusyChang
       <FormControl disabled={Boolean(mutation) || Boolean(pending && !canReplaceUnknown)}>
         <FormLabel id="media-diagnostics-mode-label">Diagnostic scope</FormLabel>
         <RadioGroup aria-labelledby="media-diagnostics-mode-label" value={mode} onChange={(_event, value) => { if (value === 'software' || value === 'configured') setMode(value); }}>
-          <FormControlLabel value="software" control={<Radio />} label="Software video and audio baseline" />
-          <FormControlLabel value="configured" control={<Radio />} disabled={!index?.HardwareConfigured} label="Configured hardware path, including the software baseline" />
+          <FormControlLabel control={<Radio value="software" />} label="Software video and audio baseline" />
+          <FormControlLabel control={<Radio value="configured" />} disabled={!index?.HardwareConfigured} label="Configured hardware path, including the software baseline" />
         </RadioGroup>
       </FormControl>
       {index && !index.HardwareConfigured && <Typography variant="body2" color="text.secondary">No hardware path is configured. Software results do not establish hardware support.</Typography>}

@@ -163,3 +163,28 @@ A review follow-up restored the assertions that a guarded action opens exactly
 one confirmation and that the Media processing menu item remains selected after
 reload. All 12 media processing cases and the explicit TypeScript check passed
 again on `test-env`.
+
+### Tasks and media diagnostics browser regressions
+
+The [task suite](../../web/admin/e2e/dashboard-tasks.spec.ts) now checks observed
+scan counts, recent failure history, and the task-view menu at desktop and
+phone widths. Reloading does not replay an unconfirmed start; explicit recovery
+reuses its original request ID. The stop check observes a newer run on the page
+before confirming that the cancellation still targets the original run.
+
+The [media diagnostics suite](../../web/admin/e2e/media-diagnostics.spec.ts)
+opens the current Transcoding page and checks the software scope. Its mocked
+flows cover read-only recovery of an uncertain start, a late older index that
+must not replace a newer result, and a confirmed cancellation followed by a
+failed read. Both suites use the shared dashboard reads and still reject
+unhandled requests. The browser check exposed a missing value on each native
+radio input. The software scope is now selected by default, and choosing an
+available configured scope submits `Mode: "configured"`. A new regression
+checks the exact request without claiming any hardware or media result.
+
+On November 26, 2026, the matching `b151edbb` baseline failed all seven original
+cases. The candidate passed those seven plus the new scope case. All 60 related
+task, overview, and transcoding cases passed on both builds with no retries or
+skips. The candidate production build and the explicit TypeScript check passed.
+The browser used a loopback static server and synthetic APIs; the full suite,
+backend runtime, and specialized media fixtures were not run.
