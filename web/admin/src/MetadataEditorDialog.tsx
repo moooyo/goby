@@ -32,6 +32,7 @@ import type { UserNavigationGuard, UserNavigationGuardChange } from './userDraft
 
 interface MetadataEditorDialogProps {
   itemId: string;
+  library?: { Id: string; Name: string };
   currentUserId?: string;
   initialTab?: number;
   initialImageType?: ImageType;
@@ -170,7 +171,7 @@ function MetadataChaptersPanel({ detail, disabled, canEditCredits, onIntro, onCr
   </div>;
 }
 
-function MetadataFilePanel({ detail, disabled, onProcessing }: { detail: MetadataDetail; disabled: boolean; onProcessing: () => void }) {
+function MetadataFilePanel({ detail, libraryName, disabled, onProcessing }: { detail: MetadataDetail; libraryName?: string; disabled: boolean; onProcessing: () => void }) {
   const { t } = useTranslation();
   const [copyError, setCopyError] = useState<unknown>();
   const [copied, setCopied] = useState(false);
@@ -184,7 +185,7 @@ function MetadataFilePanel({ detail, disabled, onProcessing }: { detail: Metadat
       <dl className="editor-detail-list">
         <div><dt>{t('Path')}</dt><dd className="mono" translate="no">{detail.Item.Path || t('Not available')}</dd></div>
         <div><dt>{t('Parent item')}</dt><dd translate="no">{detail.Item.ParentName || detail.Item.ParentId || t('No parent item')}</dd></div>
-        <div><dt>{t('Library')}</dt><dd className="mono" translate="no">{detail.Item.LibraryId}</dd></div>
+        <div><dt>{t('Library')}</dt><dd className={libraryName ? undefined : 'mono'} translate="no">{libraryName ?? detail.Item.LibraryId}</dd></div>
       </dl>
       {detail.Item.Path && <Button type="button" size="small" startIcon={<ContentCopyRounded />} onClick={() => void copyPath()}>{copied ? 'Copied' : 'Copy path'}</Button>}
       {copyError != null && <ErrorNotice error={copyError} />}
@@ -193,7 +194,7 @@ function MetadataFilePanel({ detail, disabled, onProcessing }: { detail: Metadat
   </div>;
 }
 
-export function MetadataEditorDialog({ itemId, currentUserId = '', initialTab = 0, initialImageType = 'Primary', onClose, onSaved, onNavigationGuardChange }: MetadataEditorDialogProps) {
+export function MetadataEditorDialog({ itemId, library, currentUserId = '', initialTab = 0, initialImageType = 'Primary', onClose, onSaved, onNavigationGuardChange }: MetadataEditorDialogProps) {
   const { t, formatCount } = useTranslation();
   const [detail, setDetail] = useState<MetadataDetail>();
   const [overrides, setOverrides] = useState<MetadataDraftOverrides>({});
@@ -589,7 +590,7 @@ export function MetadataEditorDialog({ itemId, currentUserId = '', initialTab = 
                   {tab === 3 && <MetadataChaptersPanel key={analysisRevision} detail={detail} disabled={disabled || dirty || Boolean(review)} canEditCredits={Boolean(currentUserId)} onIntro={() => setEditingIntro(true)} onCredits={() => setEditingCredits(true)} onRoster={() => setEditingRoster(true)} />}
                 </Box>
                 <Box id="metadata-panel-4" role="tabpanel" aria-labelledby="metadata-tab-4" hidden={tab !== 4}>
-                  {tab === 4 && <MetadataFilePanel detail={detail} disabled={disabled || dirty || Boolean(review)} onProcessing={() => setProcessingMedia(true)} />}
+                  {tab === 4 && <MetadataFilePanel detail={detail} libraryName={library && library.Id === detail.Item.LibraryId ? library.Name : undefined} disabled={disabled || dirty || Boolean(review)} onProcessing={() => setProcessingMedia(true)} />}
                 </Box>
               </>}
             </Stack>

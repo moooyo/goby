@@ -127,6 +127,17 @@ test('item-type choices follow library content and send one exact server filter 
   expect(api.writes()).toHaveLength(0);
 });
 
+test('the file tab shows the known library name without another lookup', async ({ page, api }) => {
+  await page.goto(featuredItemsUrl);
+  await page.getByRole('button', { name: `Edit metadata for ${movieMetadata.Item.Name}`, exact: true }).first().click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('tab', { name: 'File', exact: true }).click();
+  const panel = dialog.getByRole('tabpanel', { name: 'File', exact: true });
+  await expect(panel.getByText(library.Name, { exact: true })).toHaveAttribute('translate', 'no');
+  await expect(panel.getByText(library.Id, { exact: true })).toHaveCount(0);
+  expect(api.reads(`${libraryList}/${library.Id}`)).toHaveLength(0);
+});
+
 test('re-identification applies only the explicitly selected provider result with the read revision', async ({ page, api }) => {
   const original = structuredClone(movieMetadata);
   original.LockedFields = ['Name']; original.LockedValues = { Name: original.Effective.Name };

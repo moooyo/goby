@@ -274,7 +274,7 @@ function LibraryItemsView({ libraryId, currentUserId, onLibraries, onTasks, onNa
       {tab === 'history' && <LibraryScanHistory libraryId={libraryId} onTasks={onTasks} />}
     </div>
     {tab === 'items' && <p className="media-muted media-library-footnote">{t('Manual overrides stay in effect during library scans. Locked fields keep their saved values.')}</p>}
-    {editingItemId && <MetadataEditorDialog key={editingItemId} itemId={editingItemId} currentUserId={currentUserId} initialTab={editorTab} initialImageType={editorImageType} onClose={() => { setEditingItemId(undefined); refresh(); }} onSaved={refresh} onNavigationGuardChange={registerModalGuard} />}
+    {editingItemId && <MetadataEditorDialog key={editingItemId} itemId={editingItemId} library={loaded?.result.Library ?? library} currentUserId={currentUserId} initialTab={editorTab} initialImageType={editorImageType} onClose={() => { setEditingItemId(undefined); refresh(); }} onSaved={refresh} onNavigationGuardChange={registerModalGuard} />}
     {sourcesItemId && <OnlineSourcesDialog key={sourcesItemId} itemId={sourcesItemId} onClose={() => { setSourcesItemId(undefined); refresh(); }} onSaved={refresh} onNavigationGuardChange={registerModalGuard} />}
     {identifyingItem && <IdentifyMetadataDialog key={identifyingItem.Id} item={identifyingItem} onClose={(needsRefresh) => { setIdentifyingItem(undefined); if (needsRefresh) refresh(); }} onApplied={(name) => {
       setIdentifyingItem(undefined); setActionError(undefined); setNotice({ message: t('Identification applied: {name}.', { name }) }); refresh();
