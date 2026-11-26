@@ -9,6 +9,7 @@ export interface Observation<T> {
   data?: T;
   error?: unknown;
   loading: boolean;
+  readAt?: number;
 }
 
 const readOverview = async (signal: AbortSignal) => {
@@ -59,7 +60,7 @@ function useObservation<T>(load: (signal: AbortSignal) => Promise<T>, interval: 
       const deadline = setTimeout(() => request.abort(new Error('Status check timed out.')), 15_000);
       try {
         const data = await Promise.race([load(request.signal), cancelled]);
-        if (pending === request) setSnapshot({ data, loading: false });
+        if (pending === request) setSnapshot({ data, loading: false, readAt: Date.now() });
       } catch (error) {
         if (pending === request) setSnapshot((previous) => ({ ...previous, error, loading: false }));
       } finally {

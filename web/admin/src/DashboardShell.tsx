@@ -6,6 +6,7 @@ import { AttentionChecks } from './AttentionChecks';
 import { dashboardTargetURL, pageURL } from './dashboardNavigation';
 import type { DashboardTarget, Page } from './dashboardNavigation';
 import type { DashboardStatus } from './useDashboardStatus';
+import { sidebarStatus } from './dashboardServerStatus';
 import { translateText, useAdminPreferences, useTranslation } from './i18n';
 import { BackupOutlined, CloseRounded, CollectionsBookmarkRounded, MonitorHeartOutlined, SpaceDashboardOutlined, LightModeOutlined, DarkModeOutlined, LogoutRounded, MenuRounded, NotificationsOutlined, PeopleOutlineRounded, PlaylistAddCheckRounded, RefreshRounded, SearchRounded, SpeedOutlined, SubtitlesRounded, TuneRounded, VpnKeyOutlined, VideoLibraryOutlined, AudioWaveformOutlined, NavigateNextRounded, WarningAmberRounded } from './icons';
 import type { IconProps } from './icons';
@@ -51,7 +52,7 @@ export function DashboardShell({ user, page, libraryId, status, onAttentionVisib
   const { attention } = status;
   const overview = status.overview.data;
   const system = status.system.data;
-  const stale = status.overview.error != null || status.system.error != null;
+  const serverStatus = sidebarStatus(status.overview, status.system);
   const [now, setNow] = useState(() => new Date());
   const nav = useRef<HTMLElement>(null);
   const navTrigger = useRef<HTMLButtonElement>(null);
@@ -170,10 +171,19 @@ export function DashboardShell({ user, page, libraryId, status, onAttentionVisib
       <button className="sidebar-search" onClick={() => { setNavOpen(false); setPaletteOpen(true); }} aria-label={t('Search or jump to')}><SearchRounded /><span>{t('Search or jump to')}</span><kbd>⌘K</kbd></button>
       <nav aria-label="Administration">{sections.map((group, index) => <div className="nav-section" key={index}>{group.label && <div className="nav-section-label">{t(group.label)}</div>}{group.items.map((item) => {
         const Icon = item.icon;
-        const count = item.count ? overview?.Counts[item.count] : undefined;
+        const count = item.count && serverStatus.complete ? overview?.Counts[item.count] : undefined;
         return <a key={item.page} href={pageURL(item.page)} onClick={(event) => navigate({ page: item.page }, event)} aria-current={selected === item.page ? 'page' : undefined} aria-disabled={navigationBusy && selected !== item.page || undefined}><Icon /><span>{t(item.label)}</span>{count !== undefined && <span className="nav-count">{new Intl.NumberFormat(locale).format(count)}</span>}</a>;
       })}</div>)}</nav>
-      <div className="sidebar-server"><strong><i className={`status-dot ${stale ? 'is-stale' : ''}`}/>{overview?.Server.Name ?? t('Goby server')}</strong><span>goby {overview?.Server.Version ?? '—'}{system && ` · ${t('Up')} ${new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(Math.floor(system.UptimeSeconds / 86400))}${t('d')}`}{stale && ` · ${t('Last update')}`}</span></div>
+      <div className="sidebar-server" data-state={serverStatus.state}>
+        <strong><i className={`status-dot${serverStatus.state === 'failed' ? ' is-stale' : ''}`} aria-hidden="true" />
+          {serverStatus.state === 'checking' ? t('Checking server status…') : overview?.Server.Name ? <span translate="no">{overview.Server.Name}</span> : t('Goby server')}
+        </strong>
+        {serverStatus.state !== 'checking' && (overview || system) && <span>{overview && `goby ${overview.Server.Version}`}{overview && system && ' · '}{system && `${t('Up')} ${Math.floor(system.UptimeSeconds / 86400).toLocaleString(locale)}${t('d')}`}</span>}
+        {serverStatus.state === 'ready' && <span className="visually-hidden">{t('Server status checked')}</span>}
+        {serverStatus.state === 'failed' && <span role="status">{serverStatus.retainedAt === undefined ? t('Server status refresh failed') : t('Refresh failed · showing results from {time}', {
+          time: new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(serverStatus.retainedAt),
+        })}</span>}
+      </div>
     </aside>
     {navOpen && <button className="navigation-scrim" aria-label={t('Close navigation')} tabIndex={-1} onClick={() => setNavOpen(false)} />}
     <div className="admin-workspace" inert={navOpen || undefined}>

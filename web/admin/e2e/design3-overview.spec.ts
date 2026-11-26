@@ -23,6 +23,40 @@ const policy = (Enabled: boolean): BackupPolicy => ({ Revision: '1', Enabled, Sc
 
 function items<T>(values: T[]) { return { Items: values, TotalRecordCount: values.length }; }
 
+test('the sidebar stays neutral until both reads and retains dated results across a failure', async ({ page, api }) => {
+  const systemPath = '/admin/v1/system/status';
+  let release = () => {};
+  const firstStatus = new Promise<void>((resolve) => { release = resolve; });
+  api.handlers.set(`GET ${systemPath}`, async (route) => { await firstStatus; await json(route, api.status); });
+  try {
+    await page.goto('/admin/');
+    const sidebar = page.locator('.sidebar-server');
+    await expect(sidebar).toHaveAttribute('data-state', 'checking');
+    await expect(sidebar).toContainText('Checking server status…');
+    await expect(page.getByRole('main').getByText('Goby living room', { exact: true })).toBeVisible();
+    const counts = page.locator('.admin-sidebar .nav-count');
+    await expect(counts).toHaveCount(0);
+    expect(await sidebar.locator('.status-dot').evaluate((dot) => {
+      const color = getComputedStyle(dot).backgroundColor;
+      const swatch = document.createElement('span');
+      swatch.style.backgroundColor = 'var(--ink3)';
+      dot.append(swatch);
+      const neutral = color === getComputedStyle(swatch).backgroundColor;
+      swatch.remove();
+      return neutral;
+    })).toBe(true);
+    release();
+    await expect(sidebar).toHaveAttribute('data-state', 'ready');
+    await expect(counts).toHaveText(['2', '2']);
+    api.handlers.set(`GET ${systemPath}`, (route) => json(route, { Error: { Code: 'offline', Message: 'No status returned' } }, 503));
+    await page.getByRole('button', { name: 'Refresh overview' }).click();
+    await expect(sidebar).toHaveAttribute('data-state', 'failed');
+    await expect(sidebar).toContainText(/Refresh failed · showing results from \d{2}:\d{2}/);
+    await expect(sidebar).toContainText('Goby living room');
+    await expect(counts).toHaveText(['2', '2']);
+  } finally { release(); }
+});
+
 test('attention shares ordered issues, independent checks, and recovery between the overview and bell', async ({ page, api }) => {
   const partial = { ...run(85, 'completed', 3), TerminalChildren: 20, CompletedChildren: 19 };
   const failing = { ...run(84, 'failed'), ErrorMessage: 'Work item failed' };
