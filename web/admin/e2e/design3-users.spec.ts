@@ -214,6 +214,49 @@ test('blocks passwordless promotion and protects the only enabled administrator'
   expect(api.writes()).toHaveLength(0);
 });
 
+for (const language of ['en', 'zh'] as const) test.describe(`${language} role receipts`, () => {
+  test.use({ preferences: { language, theme: 'light' } });
+
+  test('keeps role descriptions fixed and confirms the saved roles in the open drawer', async ({ api, page }) => {
+    const zh = language === 'zh';
+    const { user } = installUserDesignFixture(api);
+    const member = zh ? '普通用户' : 'Member';
+    const administratorRole = zh ? '管理员' : 'Administrator';
+    const save = zh ? '保存更改' : 'Save changes';
+    await page.goto(userURL);
+    await page.getByRole('button', { name: zh ? `管理 ${user.Name}` : `Manage ${user.Name}`, exact: true }).click();
+    const sheet = page.getByRole('dialog', { name: zh ? `管理用户 ${user.Name}` : `Manage user ${user.Name}`, exact: true });
+    const memberCard = sheet.getByRole('radio', { name: member, exact: true });
+    const adminCard = sheet.getByRole('radio', { name: administratorRole, exact: true });
+    const verifyDescriptions = async () => {
+      await expect(memberCard).toHaveAccessibleDescription(zh ? '使用媒体服务，按设置的权限访问。' : 'Use media services with the configured permissions.');
+      await expect(adminCard).toHaveAccessibleDescription(zh ? '管理服务器和所有用户，访问全部媒体库。' : 'Manage the server and all users, and access every library.');
+    };
+    await verifyDescriptions();
+    await adminCard.check();
+    await verifyDescriptions();
+    await sheet.getByRole('button', { name: save, exact: true }).click();
+    expect(api.writes()).toHaveLength(0);
+    await page.getByRole('alertdialog').getByRole('button', { name: zh ? '设为管理员' : 'Make administrator', exact: true }).click();
+    const promoted = zh ? `已将 ${user.Name} 设为管理员。` : `Made ${user.Name} an administrator.`;
+    await expect(sheet.getByRole('status').filter({ hasText: promoted })).toBeVisible();
+    await expect(adminCard).toBeChecked();
+    await expect(page.locator('.users-table tr').filter({ hasText: user.Name }).getByText(administratorRole, { exact: true })).toBeVisible();
+
+    await memberCard.check();
+    await verifyDescriptions();
+    await sheet.getByRole('button', { name: save, exact: true }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: zh ? '改为普通用户' : 'Change to member', exact: true }).click();
+    const demoted = zh ? `已将 ${user.Name} 改为普通用户，该账户的管理端登录已失效。` : `Changed ${user.Name} to a member. Their administrator logins have ended.`;
+    const receipt = sheet.getByRole('status').filter({ hasText: demoted });
+    await expect(receipt).toBeVisible();
+    await expect(receipt.locator('[translate="no"]')).toHaveText(user.Name);
+    await expect(memberCard).toBeChecked();
+    await expect(page.locator('.users-table tr').filter({ hasText: user.Name }).getByText(member, { exact: true })).toBeVisible();
+    expect(api.writes().map(({ body }) => (body as UpdateUserInput).Revision)).toEqual([initialUserRevision, '9007199254740994']);
+  });
+});
+
 test('confirms self-demotion and handles CurrentSessionRevoked without a logout request', async ({ api, page }) => {
   const { initialPolicy, user } = installUserDesignFixture(api);
   const administratorDetail = { ...administrator, Revision: initialUserRevision, Policy: initialPolicy };

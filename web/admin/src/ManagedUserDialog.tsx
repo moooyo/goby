@@ -4,7 +4,8 @@ import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogCont
 import { DeleteOutlineRounded, LockResetRounded, RefreshRounded, SaveOutlined } from './icons';
 import { adminApi, ApiError, isAbortError } from './api';
 import type { DeleteUserResponse, Library, ManagedUser, UpdateUserInput, User, UserMutationResponse } from './api';
-import { ErrorNotice } from './components';
+import { ErrorNotice, NamedMessage } from './components';
+import { userMutationReceipt } from './userMutationReceipt';
 import { UserPolicyFields, UserPolicyLimits } from './UserPolicyFields';
 import { FeatureAccessFields } from './FeatureAccessFields';
 import { LocalCredentialsDialog } from './LocalCredentialsDialog';
@@ -195,7 +196,7 @@ export function ManagedUserDialog({ userId, initialName, currentUserId, enabledA
   const [password, setPassword] = useState('');
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [pendingAction, setPendingAction] = useState<'close' | 'reload'>();
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useState<{ template: string; name: string }>();
   const parsedPolicy = draft ? parseUserPolicyDraft(draft.Policy) : undefined;
   const error = mutation?.operation === 'settings' ? mutation.error : undefined;
   const folderError = parsedPolicy?.errors['Policy.EnabledFolders'] ?? fieldError(error, 'Policy.EnabledFolders');
@@ -228,7 +229,7 @@ export function ManagedUserDialog({ userId, initialName, currentUserId, enabledA
       setUser(result);
       setDraft(inputFor(result));
       setMutation(undefined);
-      setNotice('');
+      setNotice(undefined);
       onObserved(result);
     }).catch((cause) => {
       if (controller.signal.aborted || isAbortError(cause)) return;
@@ -274,12 +275,12 @@ export function ManagedUserDialog({ userId, initialName, currentUserId, enabledA
 
   function change<K extends keyof ManagedUserDraft>(key: K, value: ManagedUserDraft[K]) {
     setDraft((current) => current && ({ ...current, [key]: value }));
-    setNotice('');
+    setNotice(undefined);
   }
 
   function changePolicy<K extends keyof UserPolicyDraft>(key: K, value: UserPolicyDraft[K]) {
     setDraft((current) => current && ({ ...current, Policy: { ...current.Policy, [key]: value } }));
-    setNotice('');
+    setNotice(undefined);
   }
 
   function changeLibrary(id: string, checked: boolean) {
@@ -288,10 +289,10 @@ export function ManagedUserDialog({ userId, initialName, currentUserId, enabledA
       const folders = current.Policy.EnableAllFolders ? [...new Set([...(libraries ?? []).map((library) => library.Id), ...current.Policy.EnabledFolders])] : current.Policy.EnabledFolders;
       return { ...current, Policy: { ...current.Policy, EnableAllFolders: false, EnabledFolders: checked ? [...folders, id] : folders.filter((value) => value !== id) } };
     });
-    setNotice('');
+    setNotice(undefined);
   }
 
-  function saved(result: UserMutationResponse, resettingPassword: boolean) {
+  function saved(result: UserMutationResponse, wasAdministrator: boolean, resettingPassword: boolean) {
     if (result.CurrentSessionRevoked) return;
     if (result.User.Id !== userId) throw new ApiError('The selected user could not be verified.', { code: 'invalid_response' });
     setUser(result.User);
@@ -299,9 +300,9 @@ export function ManagedUserDialog({ userId, initialName, currentUserId, enabledA
     setPassword('');
     setPasswordConfirmation('');
     setMutation(undefined);
-    const message = t(resettingPassword ? 'Password reset for {name}. Existing sign-ins have ended.' : 'Saved settings for {name}.', { name: result.User.Name });
-    setNotice(message);
-    onUpdated(result.User, message);
+    const template = userMutationReceipt(wasAdministrator, result.User.IsAdministrator, resettingPassword);
+    setNotice({ template, name: result.User.Name });
+    onUpdated(result.User, t(template, { name: result.User.Name }));
   }
 
   async function write(resettingPassword: boolean) {
@@ -309,12 +310,12 @@ export function ManagedUserDialog({ userId, initialName, currentUserId, enabledA
     inFlight.current = true;
     setBusy(true);
     setMutation(undefined);
-    setNotice('');
+    setNotice(undefined);
     try {
       const result = await boundedUserRequest((signal) => resettingPassword
         ? adminApi.resetUserPassword(userId, { Revision: user.Revision, Password: password }, { signal })
         : adminApi.updateUser(userId, { ...draft, Name: draft.Name.trim(), Policy: parsedPolicy!.policy! }, { signal }));
-      saved(result, resettingPassword);
+      saved(result, user.IsAdministrator, resettingPassword);
     } catch (cause) {
       if (!isAbortError(cause)) setMutation({ operation: resettingPassword ? 'password' : 'settings', error: cause });
     } finally {
@@ -382,7 +383,7 @@ export function ManagedUserDialog({ userId, initialName, currentUserId, enabledA
             {!draft && !loading && loadError != null && <Typography variant="body2" color="text.secondary">Reload this user to view and edit account details.</Typography>}
             {draft && user && <>
               <MutationNotice error={mutation?.error} password={mutation?.operation === 'password'} deleting={mutation?.operation === 'delete'} onReload={() => requestAction('reload')} />
-              {notice && <Alert severity="success" onClose={() => setNotice('')}>{notice}</Alert>}
+              {notice && <Alert severity="success" onClose={() => setNotice(undefined)}><NamedMessage {...notice} /></Alert>}
               <div role="tabpanel" id="user-panel-permissions" aria-labelledby="user-tab-permissions" hidden={activeTab !== 'permissions'} className="users-permissions">
                 <div>
                   <RoleChoices administrator={draft.IsAdministrator} disabled={formDisabled} memberLocked={lastAdministrator} administratorLocked={promotionLocked} onChange={(value) => change('IsAdministrator', value)} />
@@ -478,7 +479,7 @@ export function ManagedUserDialog({ userId, initialName, currentUserId, enabledA
       </DialogActions>
     </Dialog>}
     {pendingAction && <UnsavedChangesDialog reload={pendingAction === 'reload'} onKeep={() => setPendingAction(undefined)} onDiscard={() => { if (pendingAction === 'reload') reload(); else onClose(); }} />}
-    {deletingUser && user && <DeleteUserDialog user={user} isCurrentUser={isSelf} onClose={() => setDeletingUser(false)} onReload={() => requestAction('reload')} onDeleted={(result) => { if (!result.CurrentSessionRevoked) onRemoved(user.Id, t('User {name} deleted.', { name: user.Name }), 'success'); }} onReviewRequired={(cause) => { setMutation({ operation: 'delete', error: cause }); setNotice(''); }} onBusyChange={setDeleteBusy} />}
+    {deletingUser && user && <DeleteUserDialog user={user} isCurrentUser={isSelf} onClose={() => setDeletingUser(false)} onReload={() => requestAction('reload')} onDeleted={(result) => { if (!result.CurrentSessionRevoked) onRemoved(user.Id, t('User {name} deleted.', { name: user.Name }), 'success'); }} onReviewRequired={(cause) => { setMutation({ operation: 'delete', error: cause }); setNotice(undefined); }} onBusyChange={setDeleteBusy} />}
     {editingCredentials && user && <LocalCredentialsDialog userId={user.Id} userName={user.Name} hasPassword={user.HasPassword} isCurrentUser={isSelf} onClose={() => { setEditingCredentials(false); reload(); }} onChanged={() => setReloadRevision((value) => value + 1)} onNavigationGuardChange={onNavigationGuardChange} />}
     {editingAvatar && user && <ArtworkManagerDialog target={{ kind: 'users', id: user.Id, name: user.Name }} onClose={() => setEditingAvatar(false)} onNavigationGuardChange={onNavigationGuardChange} />}
   </>;

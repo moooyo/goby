@@ -75,6 +75,8 @@ export const design3UsersChinese: Record<string, string> = {
   'This account remains disabled and cannot sign in until re-enabled.': '此账户仍为停用状态，在重新启用前无法登录。',
   'You are changing your own account. Saving signs you out immediately. Another administrator will need to manage the server.': '你正在修改自己的账户。保存后会立即退出管理端，之后需要由其他管理员管理服务器。',
   'Saved settings for {name}.': '已保存 {name} 的设置。',
+  'Made {name} an administrator.': '已将 {name} 设为管理员。',
+  'Changed {name} to a member. Their administrator logins have ended.': '已将 {name} 改为普通用户，该账户的管理端登录已失效。',
   'Unsaved changes': '有未保存的更改',
   'Administrators can access every library. The settings below are kept and apply if the account becomes a member.': '管理员始终可以访问全部媒体库。下面的选择会保留，改回普通用户后生效。',
   'No libraries are available.': '没有可用的媒体库。',
