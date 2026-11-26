@@ -30,7 +30,7 @@ is changed.
 | Setup (unchanged) | The real four-step wizard uses existing status indicators, a library/directory picker and a preview of network changes. It reports whether a scan was actually requested rather than showing the illustration's fixed success message. |
 | Collections (unchanged) | The current list submits title search, pages real results, and shows content type/lock state instead of the board's illustrative member names. Initial members are staged on selection; successful creation keeps the editor open. Existing search, membership and locking safety are retained. |
 | ApiKeys (unchanged) | The current UI includes revoked keys by default with a 50-row page and an overflow-menu filter. It shows the creation IP, not a connection channel inferred from that IP. The full key is shown once at creation; the masked list does not expose a fabricated suffix or offer another reveal action. |
-| Tasks (unchanged) | The existing cards, 24-hour history, filters, scan history and schedule editor remain. The board's extra history status filter, task-name-to-schedule shortcut, and constant backup passphrase callout are not part of this revision. Exact run links are supported from Overview and Media analysis; trigger links still open the shared schedule editor. |
+| Tasks | The existing cards, 24-hour history, scan history and schedule editor remain. Run history has an In progress filter for queued and running tasks. The task-name-to-schedule shortcut and constant backup passphrase callout are not part of this revision. Exact run links are supported from Overview and Media analysis; trigger links still open the shared schedule editor. |
 | Backups (unchanged) | The current screen uses actual storage/readiness observations and an explicit restore/rollback workflow instead of the board's fixed summary cards. The archive list distinguishes generated and imported but does not infer a manual/automatic origin. Retention remains an explicit value; the import flow selects an encrypted `.age` archive. |
 | SettingsTranscode (unchanged) | The current controls show actual hardware/codec observations and deployment/default settings; run diagnostics against a fixed sample. A `bt.2390` option and diagnostic playback simulation for a chosen item/client are not supported by the current contract and were not enabled for this revision. |
 | SettingsMetadata (unchanged) | Existing fields, server byte limits and independent provider route remain. Credential tests use saved configuration; an arbitrary common credential limit or a prototype's simulated success is not shown. |
@@ -104,12 +104,33 @@ is changed.
   title, excluded an idle client, displayed queued/offline/unsupported outcomes,
   and observed the connected client receive the message through the authenticated
   WebSocket. A separate reminder test confirmed no restart request was sent.
-- Two additional opt-in account journeys did not complete as a clean pair:
-  the deletion journey reached the stale-revision check before a locator
-  correction; a subsequent retry was blocked at sign-in by the loopback login
-  limiter. The long user-management journey reached password reset; the next
-  wrong-password check received the same limiter's HTTP 429 rather than 401.
-  The targeted account, role, credential, and active-login cases passed.
-- The task-owned services were shut down. Build scratch and disposable tools
-  were reclaimed; the shared Go caches, source snapshots, database, media
+- In the original verification, two opt-in account journeys did not complete.
+  The deletion case reached a real revision conflict before a locator fix; a
+  later attempt was blocked by the shared loopback login limiter. The management
+  case also received HTTP 429 instead of 401 after resetting a password. The
+  targeted account, role, credential, and active-login cases had passed.
+- The original task-owned services stopped and build scratch and disposable
+  tools were reclaimed. Shared Go caches, source snapshots, database, media
   fixtures, and raw evidence were retained separately.
+
+### Isolated account follow-up
+
+On November 26, 2026, both opt-in journeys passed on `test-env`, each on its
+own fresh Goby process and PostgreSQL 17.12 database with a dedicated
+administrator. The run used the production dashboard build from `12dee962` and
+updated the management test to use the account menu and its renamed-account
+label. The production login limiter was unchanged; no requests returned HTTP
+429. Each journey passed once with no Playwright retries or skips:
+
+- Account deletion: real revision conflict and explicit reload, lost response
+  recovery without replay, and temporary administrator self-deletion.
+- Account management: library access policy, password reset and old-password
+  rejection, conflict recovery, mobile editing, and cross-tab session changes
+  without replaying a stale write.
+
+An earlier PostgreSQL initialization error stopped before either browser test;
+its logs are retained separately. The follow-up did not rerun or replace the
+full-suite result above. Both task-owned Goby and PostgreSQL processes stopped
+cleanly. The disposable databases, build output, and tools were removed. The
+test source, media fixtures, and raw evidence were retained in the private task
+workspace on `test-env`.

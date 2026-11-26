@@ -436,7 +436,8 @@ test('isolated user management, library access, conflict recovery, and temporary
 
   await test.step('reject a stale management form after another tab changes administrators', async () => {
     await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill(`managed-rejected-${suffix}`);
-    await otherTab.getByRole('button', { name: 'Sign out', exact: true }).click();
+    await otherTab.getByRole('button', { name: `Account: ${originalAdministrator.Name}`, exact: true }).click();
+    await otherTab.getByRole('menuitem', { name: 'Sign out', exact: true }).click();
     await signIn(otherTab, administrator.Name, adminPassword);
     let mutations = 0;
     page.on('request', (request) => {
@@ -457,7 +458,7 @@ test('isolated user management, library access, conflict recovery, and temporary
     let self = await openUser(otherTab, administrator);
     await manageDialog(otherTab).getByRole('textbox', { name: 'Name', exact: true }).fill(`managed-self-${suffix}`);
     self = await saveUser(otherTab, self);
-    await expect(otherTab.getByRole('banner', { includeHidden: true }).getByText(self.Name, { exact: true })).toHaveText(self.Name);
+    await expect(otherTab.getByRole('button', { name: `Account: ${self.Name}`, exact: true, includeHidden: true })).toHaveAttribute('aria-haspopup', 'menu');
     await resetPassword(otherTab, self, nextAdminPassword, true);
     await expect(otherTab.getByRole('heading', { name: 'Sign in to Goby', exact: true })).toBeVisible();
     expect((await context.cookies()).some((cookie) => cookie.name === 'goby_session')).toBe(false);
