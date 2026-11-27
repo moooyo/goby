@@ -4,6 +4,7 @@ package server
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -95,18 +96,54 @@ func TestHTTPAdminRereadLocalBackdrop(t *testing.T) {
 	if strings.Contains(rejected.Body.String(), dir) || strings.Contains(rejected.Body.String(), "backdrop.jpg") {
 		t.Fatal("the failure exposed the physical directory or candidate name")
 	}
-	if err := os.Rename(bad, bad+".quarantine"); err != nil {
-		t.Fatal(err)
-	}
+	lockPath := prefix + itemID + "/images/Backdrop/local-lock"
+	expectAPIError(t, f.request(t, http.MethodPost, lockPath, nil, emby), http.StatusUnauthorized, "authentication_required", false)
+	expectAPIError(t, f.request(t, http.MethodPost, lockPath, nil, nil, cookie), http.StatusForbidden, "csrf_invalid", false)
+	expectAPIError(t, post(lockPath+"?Path=fanart.jpg", nil), http.StatusBadRequest, "invalid_input", false)
+	expectAPIError(t, post(lockPath, map[string]string{"Path": dir}), http.StatusBadRequest, "invalid_input", false)
 	var lastSeen time.Time
 	if err := f.pool.QueryRow(f.ctx, `UPDATE sessions SET last_seen_at=clock_timestamp()-interval '1 hour' WHERE user_id=$1 AND kind='admin' RETURNING last_seen_at`, adminID).Scan(&lastSeen); err != nil {
 		t.Fatal(err)
 	}
-	response := post(target, nil)
+	acquired := post(lockPath, nil)
+	expectStatus(t, acquired, http.StatusCreated)
+	lock := jsonObject(t, acquired)
+	lockID := stringValue(t, lock, "LockId")
+	expires, err := time.Parse(time.RFC3339Nano, stringValue(t, lock, "ExpiresAt"))
+	if len(lock) != 3 || lock["ItemId"] != itemID || acquired.Header().Get("Cache-Control") != "no-store" || err != nil || !expires.After(time.Now()) {
+		t.Fatalf("wrong local lock projection: %s (%v)", acquired.Body.String(), err)
+	}
+	status := f.request(t, http.MethodGet, lockPath, nil, nil, cookie)
+	expectStatus(t, status, http.StatusOK)
+	if !reflect.DeepEqual(jsonObject(t, status), lock) {
+		t.Fatalf("lock status did not match acquisition: %s", status.Body.String())
+	}
+	lockHeaders := headers.Clone()
+	lockHeaders.Set(localBackdropLockHeader, lockID)
+	badHeaders := lockHeaders.Clone()
+	badHeaders.Add(localBackdropLockHeader, lockID)
+	expectAPIError(t, f.request(t, http.MethodPost, target, nil, badHeaders, cookie), http.StatusBadRequest, "invalid_input", false)
+	expectAPIError(t, f.request(t, http.MethodDelete, lockPath, nil, headers, cookie), http.StatusBadRequest, "invalid_input", false)
+	expectAPIError(t, post(target, nil), http.StatusConflict, "local_backdrop_locked", false)
+	if err := os.Rename(bad, bad+".quarantine"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := catalog.StartScan(f.ctx, collection.ID); !errors.Is(err, library.ErrLocalBackdropLocked) {
+		t.Fatalf("scan entered while outside rename was fenced: %v", err)
+	}
+	response := f.request(t, http.MethodPost, target, nil, lockHeaders, cookie)
 	expectStatus(t, response, http.StatusOK)
 	if response.Header().Get("Cache-Control") != "no-store" || !reflect.DeepEqual(jsonObject(t, response), map[string]any{"ItemId": itemID, "Changed": true}) {
 		t.Fatalf("wrong local backdrop response: %s", response.Body)
 	}
+	expectAPIError(t, post(target, nil), http.StatusConflict, "local_backdrop_locked", false)
+	wrongLock := headers.Clone()
+	wrongLock.Set(localBackdropLockHeader, strings.Repeat("0", 32))
+	expectAPIError(t, f.request(t, http.MethodDelete, lockPath, nil, wrongLock, cookie), http.StatusConflict, "local_backdrop_lock_changed", false)
+	if released := f.request(t, http.MethodDelete, lockPath, nil, lockHeaders, cookie); released.Code != http.StatusNoContent || released.Body.Len() != 0 {
+		t.Fatalf("release lock = %d, %s", released.Code, released.Body)
+	}
+	expectAPIError(t, f.request(t, http.MethodGet, lockPath, nil, nil, cookie), http.StatusNotFound, "not_found", false)
 	expectAPIError(t, post(target, nil), http.StatusConflict, "local_backdrop_not_pending", false)
 	var seen time.Time
 	var scans int

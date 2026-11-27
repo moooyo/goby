@@ -44,6 +44,7 @@ const (
 	ScanAlreadyOwned ScanAdmissionKind = "already_owned"
 	ScanDuplicate    ScanAdmissionKind = "duplicate_active"
 	ScanQueueFull    ScanAdmissionKind = "queue_full"
+	ScanSourceHeld   ScanAdmissionKind = "source_held"
 )
 
 type ScanAdmission struct {
@@ -358,6 +359,14 @@ func (s *Store) AdmitTaskScan(ctx context.Context, childID string) (ScanAdmissio
 		}
 		if err != nil {
 			return err
+		}
+		blocked, err := s.localBackdropBlocksScan(tx, libraryID)
+		if err != nil {
+			return err
+		}
+		if blocked {
+			result.Kind = ScanSourceHeld
+			return nil
 		}
 		active, err := scanJob(tx.QueryRow("SELECT "+jobColumns+" FROM scan_jobs WHERE library_id = $1 AND status IN ('Queued', 'Running')", libraryID))
 		if err == nil {

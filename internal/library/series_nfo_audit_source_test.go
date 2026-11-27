@@ -13,7 +13,7 @@ import (
 
 func TestSeriesNFOAuditAdmissionWaitsForWorkerRetirement(t *testing.T) {
 	retired, released := make(chan struct{}), make(chan struct{})
-	releaseAfterNFOObservationRetires(retired, func() { close(released) })
+	releaseAfterSourceOperationRetires(retired, func() { close(released) })
 	select {
 	case <-released:
 		t.Fatal("audit released its admission before the worker retired")

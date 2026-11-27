@@ -15,15 +15,37 @@ func (s *Server) adminRereadLocalBackdrop(w http.ResponseWriter, r *http.Request
 	if !ok || !adminEmptyMutation(w, r) {
 		return
 	}
+	lockID, ok := localBackdropLockHeaderValue(w, r, false)
+	if !ok {
+		return
+	}
 	actor := r.Context().Value(principalKey).(identity.Principal)
-	result, err := s.library.RereadLocalBackdrop(r.Context(), actor, id)
+	var result library.LocalBackdropRereadResult
+	var err error
+	if lockID == "" {
+		result, err = s.library.RereadLocalBackdrop(r.Context(), actor, id)
+	} else {
+		result, err = s.library.RereadLockedLocalBackdrop(r.Context(), actor, id, lockID)
+	}
+	if err != nil {
+		s.localBackdropError(w, r, err)
+		return
+	}
+	jsonResponse(w, http.StatusOK, result)
+}
+
+func (s *Server) localBackdropError(w http.ResponseWriter, r *http.Request, err error) {
 	switch {
-	case err == nil:
-		jsonResponse(w, http.StatusOK, result)
 	case errors.Is(err, library.ErrForbidden):
-		apiError(w, r, http.StatusForbidden, "access_denied", "The backdrop reread is not permitted for this session.")
+		apiError(w, r, http.StatusForbidden, "access_denied", "The local backdrop operation is not permitted for this session.")
 	case errors.Is(err, library.ErrUnavailable), errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
-		apiError(w, r, http.StatusServiceUnavailable, "local_backdrop_unavailable", "Local backdrop reread is currently unavailable. Reload the artwork and check pending work before retrying.")
+		apiError(w, r, http.StatusServiceUnavailable, "local_backdrop_unavailable", "The local backdrop operation is currently unavailable. Check the lock and catalog state before retrying.")
+	case errors.Is(err, library.ErrLocalBackdropLocked):
+		apiError(w, r, http.StatusConflict, "local_backdrop_locked", "A local backdrop execution lock is already held.")
+	case errors.Is(err, library.ErrLocalBackdropLockExpired):
+		apiError(w, r, http.StatusConflict, "local_backdrop_lock_expired", "The execution window has expired. Check the artwork and release the lock explicitly.")
+	case errors.Is(err, library.ErrLocalBackdropLockChanged):
+		apiError(w, r, http.StatusConflict, "local_backdrop_lock_changed", "The execution lock does not match the request.")
 	case errors.Is(err, library.ErrBusy):
 		apiError(w, r, http.StatusConflict, "local_backdrop_busy", "The library or catalog writer is not ready for a local backdrop reread.")
 	case errors.Is(err, library.ErrSourceChanged):

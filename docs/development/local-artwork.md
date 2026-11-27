@@ -197,10 +197,52 @@ success, a repeated call without newly admitted work returns `409`.
 | `422 local_backdrop_rejected` | The selected backdrop set is empty, invalid, or unreadable. |
 | `503 local_backdrop_unavailable` | Source, authorization, or writer completion could not be established within the operation's limits. Reload the artwork and check pending work before retrying. |
 
-A live repair that would first move a recognized source file also needs a
-separately approved storage window and an execution fence honored by both the
-scanner and deferred importer. Do not use this endpoint's busy or final
-source checks as that fence. The endpoint never moves or backs up a file.
+### Execution lock for external repair
+
+Use `POST /admin/v1/items/{id}/images/Backdrop/local-lock` to acquire the
+execution lock before staging any approved external file change. The route
+uses the same native administrator session, origin and CSRF policy as reread.
+There is no body, query, path, candidate name, duration, or renewal input.
+`201` returns `ItemId`, `LockId`, and `ExpiresAt` with `Cache-Control: no-store`.
+The server verifies the pending item, latest scan, root and physical directory
+before granting the two-minute window. A competing scan or already admitted
+source operation prevents acquisition. Only one lock can be held per catalog.
+
+With the separate external storage window already established, recheck the
+files first, stage the approved change, then call `reread-local` with the
+`X-Goby-Backdrop-Lock` header set to `LockId`. Publication requires the same
+native session, unexpired window and accepted source. A held source rejects a
+normal reread without the header. The reread can finish while the deferred
+importer handles other directories in the same library. Successful reread does
+not implicitly release the lock.
+
+The automatic importer skips the exact directory and leaves its rows pending.
+A full scan that could reach that source cannot be admitted: even a queued scan
+would supersede the accepted library generation. This includes manual and
+scheduled scans through overlapping registered roots, including detected Linux
+bind-mount aliases of the target directory. Unrelated libraries remain
+available; a scheduled scan child stays waiting instead of consuming a scan
+job. The hold does not change task schedules or emit a task event. Release
+makes waiting scans eligible again and does not create a new scan or import.
+
+The committed lock survives process restart. Expiration stops new privileged
+rereads but **does not resume workers**: an interrupted operator may have moved
+a file without committing the catalog. For readback use `GET` on `local-lock`.
+After checking both disk and catalog, release with `DELETE` on `local-lock` and
+the exact `X-Goby-Backdrop-Lock` header. Release returns `204`; a native
+administrator can release an abandoned or expired lock, but not while a reread
+still owns its source operation. `409 local_backdrop_locked`,
+`local_backdrop_lock_expired`, and `local_backdrop_lock_changed` distinguish an
+existing hold, an expired window, and a mismatched release or reread. Never
+retry an unknown acquisition, publication or release without checking state.
+
+This is an application execution lock, not an SMB share lock or permission to
+move media. It covers the catalog's registered paths and detected same-device
+mount aliases. Independently mounted copies of a remote share can have different
+Linux device identities; rule them out before a live repair. Keep library/root
+configuration, mount topology and other external writers stable throughout the
+window. The endpoint never moves or backs up any file. Do not run an older
+server version against a catalog with an unresolved execution lock.
 
 ## API and access
 

@@ -213,6 +213,7 @@ type Store struct {
 	seriesNFOAuditRunning      atomic.Bool
 	localNFORereadRunning      atomic.Bool
 	localBackdropRereadRunning atomic.Bool
+	backdropExecution          localBackdropExecution
 
 	rootBindingAnchors   map[string]rootBindingAnchor
 	rootAnchorReferences map[*os.Root]*rootAnchorReference

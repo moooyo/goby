@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/systemevents"
 )
@@ -33,10 +32,19 @@ type LocalBackdropRereadResult struct {
 // RereadLocalBackdrop accepts one physical series' pending backdrop without
 // changing files, admitting a scan or signalling any downstream task.
 func (s *Store) RereadLocalBackdrop(ctx context.Context, actor identity.Principal, itemID string) (LocalBackdropRereadResult, error) {
-	return s.rereadLocalBackdrop(ctx, actor, itemID, s.observeLocalBackdrop)
+	return s.rereadLocalBackdrop(ctx, actor, itemID, "", s.observeLocalBackdrop)
 }
 
-func (s *Store) rereadLocalBackdrop(ctx context.Context, actor identity.Principal, itemID string, observe localBackdropObserver) (_ LocalBackdropRereadResult, resultErr error) {
+// RereadLockedLocalBackdrop publishes under an acknowledged maintenance hold.
+// A different session cannot borrow it, and success does not release it.
+func (s *Store) RereadLockedLocalBackdrop(ctx context.Context, actor identity.Principal, itemID, lockID string) (LocalBackdropRereadResult, error) {
+	if !validLocalBackdropLockID(lockID) {
+		return LocalBackdropRereadResult{}, ErrInvalidInput
+	}
+	return s.rereadLocalBackdrop(ctx, actor, itemID, lockID, s.observeLocalBackdrop)
+}
+
+func (s *Store) rereadLocalBackdrop(ctx context.Context, actor identity.Principal, itemID, lockID string, observe localBackdropObserver) (_ LocalBackdropRereadResult, resultErr error) {
 	if ctx == nil || !validCatalogLibraryIdentifier(itemID) {
 		return LocalBackdropRereadResult{}, ErrInvalidInput
 	}
@@ -47,36 +55,54 @@ func (s *Store) rereadLocalBackdrop(ctx context.Context, actor identity.Principa
 		return LocalBackdropRereadResult{}, ErrBusy
 	}
 	var retired <-chan struct{}
+	var releaseWork func()
 	defer func() {
-		releaseAfterNFOObservationRetires(retired, func() { s.localBackdropRereadRunning.Store(false) })
-		var sqlError *pgconn.PgError
-		if errors.As(resultErr, &sqlError) && (sqlError.Code == "57014" || sqlError.Code == "55P03") {
-			resultErr = errors.Join(ErrUnavailable, resultErr)
-		}
+		releaseAfterSourceOperationRetires(retired, func() {
+			if releaseWork != nil {
+				releaseWork()
+			}
+			s.localBackdropRereadRunning.Store(false)
+		})
+		resultErr = localBackdropWriterError(resultErr)
 	}()
 	ctx, cancel := context.WithTimeout(systemevents.WithDerived(ctx), localBackdropRereadTimeout)
 	defer cancel()
 
-	target, err := s.prepareLocalBackdropReread(ctx, actor, itemID)
+	var lock *localBackdropLock
+	if lockID != "" {
+		if err := s.finishAnalysisAdminRead(ctx, actor); err != nil {
+			return LocalBackdropRereadResult{}, err
+		}
+		var err error
+		lock, releaseWork, err = s.backdropExecution.pin(itemID, lockID, actor.SessionID)
+		if err != nil {
+			return LocalBackdropRereadResult{}, err
+		}
+		bounded, stop := context.WithTimeout(ctx, time.Until(lock.Info.ExpiresAt))
+		defer stop()
+		ctx = bounded
+	} else if held := s.backdropExecution.current(); held != nil && held.Info.ItemID == itemID {
+		if err := s.finishAnalysisAdminRead(ctx, actor); err != nil {
+			return LocalBackdropRereadResult{}, err
+		}
+		return LocalBackdropRereadResult{}, ErrLocalBackdropLocked
+	}
+	target, err := s.prepareLocalBackdropReread(ctx, actor, itemID, lock != nil)
 	if err != nil {
 		return LocalBackdropRereadResult{}, err
 	}
-	row := target.root
-	approved, err := row.validate()
-	if err != nil || row.boundAt != nil && row.boundAt.After(target.generation.finishedAt) {
-		return LocalBackdropRereadResult{}, ErrSourceChanged
-	}
-	if _, err := s.configuredRootBindingPath(row.root); err != nil {
-		return LocalBackdropRereadResult{}, err
-	}
-	plan := seriesNFOAuditRootPlan{root: row.root, revision: row.revision}
-	if approved != nil {
-		plan.fingerprint, err = approved.Fingerprint()
-		if err != nil {
+	if lock != nil {
+		if !lock.matches(target) {
 			return LocalBackdropRereadResult{}, ErrSourceChanged
 		}
+	} else {
+		var admitted bool
+		releaseWork, admitted = s.backdropExecution.beginWork(target.workScope())
+		if !admitted {
+			return LocalBackdropRereadResult{}, ErrLocalBackdropLocked
+		}
 	}
-	op, err := s.preparePrimaryRootIO(ctx, []mediaSourceRootHint{{root: row.root, bindingRevision: row.revision}})
+	plan, op, err := s.openLocalBackdropSource(ctx, target)
 	if err != nil {
 		return LocalBackdropRereadResult{}, err
 	}
@@ -96,7 +122,16 @@ func (s *Store) rereadLocalBackdrop(ctx context.Context, actor identity.Principa
 		return LocalBackdropRereadResult{}, err
 	}
 	admin := &catalogAdministrator{actor: actor, audience: identity.AdministratorNative}
-	changed, err := s.publishLocalBackdropReread(ctx, admin, target, observed, func(work context.Context) error {
+	changed, err := s.publishLocalBackdropReread(ctx, admin, target, lock, observed, func(work context.Context) error {
+		if lock != nil {
+			aliases, err := proveLocalBackdropLockDirectory(work, op, plan, target)
+			if err != nil {
+				return err
+			}
+			if !lock.sameAliases(aliases) {
+				return ErrSourceChanged
+			}
+		}
 		_, err := s.readLocalBackdropSource(work, op, plan, target, &observed)
 		return err
 	})
@@ -106,13 +141,33 @@ func (s *Store) rereadLocalBackdrop(ctx context.Context, actor identity.Principa
 	return LocalBackdropRereadResult{ItemID: itemID, Changed: changed}, nil
 }
 
-func (s *Store) prepareLocalBackdropReread(ctx context.Context, actor identity.Principal, id string) (localBackdropTarget, error) {
+func (s *Store) openLocalBackdropSource(ctx context.Context, target localBackdropTarget) (seriesNFOAuditRootPlan, *PrimaryRootIO, error) {
+	row := target.root
+	approved, err := row.validate()
+	if err != nil || row.boundAt != nil && row.boundAt.After(target.generation.finishedAt) {
+		return seriesNFOAuditRootPlan{}, nil, ErrSourceChanged
+	}
+	if _, err := s.configuredRootBindingPath(row.root); err != nil {
+		return seriesNFOAuditRootPlan{}, nil, err
+	}
+	plan := seriesNFOAuditRootPlan{root: row.root, revision: row.revision}
+	if approved != nil {
+		plan.fingerprint, err = approved.Fingerprint()
+		if err != nil {
+			return seriesNFOAuditRootPlan{}, nil, ErrSourceChanged
+		}
+	}
+	op, err := s.preparePrimaryRootIO(ctx, []mediaSourceRootHint{{root: row.root, bindingRevision: row.revision}})
+	return plan, op, err
+}
+
+func (s *Store) prepareLocalBackdropReread(ctx context.Context, actor identity.Principal, id string, scopedImporter bool) (localBackdropTarget, error) {
 	tx, err := s.beginAnalysisAdminRead(ctx, actor)
 	if err != nil {
 		return localBackdropTarget{}, err
 	}
 	defer rollback(tx)
-	target, err := readLocalBackdropTarget(ctx, tx, id, nil)
+	target, err := readLocalBackdropTarget(ctx, tx, id, nil, scopedImporter)
 	if err != nil {
 		return localBackdropTarget{}, err
 	}
@@ -120,15 +175,8 @@ func (s *Store) prepareLocalBackdropReread(ctx context.Context, actor identity.P
 }
 
 func (s *Store) publishLocalBackdropReread(ctx context.Context, admin *catalogAdministrator, target localBackdropTarget,
-	observed localBackdropObservation, prove func(context.Context) error) (_ bool, resultErr error) {
-	if !s.ownership.mu.TryLock() {
-		return false, ErrBusy
-	}
-	if !s.Available() || s.ownership.conn == nil {
-		s.ownership.mu.Unlock()
-		return false, ErrUnavailable
-	}
-	tx, err := s.beginOwnedTxLocked(ctx)
+	lock *localBackdropLock, observed localBackdropObservation, prove func(context.Context) error) (_ bool, resultErr error) {
+	tx, err := s.beginLocalBackdropWriter(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -138,19 +186,20 @@ func (s *Store) publishLocalBackdropReread(ctx context.Context, admin *catalogAd
 			resultErr = errors.Join(resultErr, rollbackSidecarTransaction(tx, resultErr))
 		}
 	}()
-	for _, statement := range []string{
-		`SET TRANSACTION ISOLATION LEVEL READ COMMITTED`,
-		`SELECT set_config('statement_timeout','3s',true), set_config('lock_timeout','750ms',true)`,
-	} {
-		if _, err := tx.Exec(ctx, statement); err != nil {
-			return false, err
-		}
-	}
 	if err := admin.check(ctx, tx, true); err != nil {
 		return false, err
 	}
+	if lock != nil {
+		current, err := readDurableLocalBackdropLock(ctx, tx)
+		if err != nil {
+			return false, err
+		}
+		if !lock.same(current) {
+			return false, ErrLocalBackdropLockChanged
+		}
+	}
 	item := target.item
-	if _, err := readLocalBackdropTarget(ctx, tx, item.id, &target); err != nil {
+	if _, err := readLocalBackdropTarget(ctx, tx, item.id, &target, lock != nil); err != nil {
 		if errors.Is(err, ErrNotFound) || errors.Is(err, ErrLocalBackdropDisabled) {
 			err = ErrSourceChanged
 		}
@@ -193,7 +242,7 @@ func (s *Store) publishLocalBackdropReread(ctx context.Context, admin *catalogAd
 	if err := admin.check(ctx, tx, false); err != nil {
 		return false, err
 	}
-	deadline, _ := tx.(*ownedTx).ctx.Deadline()
+	deadline, _ := tx.ctx.Deadline()
 	bounded, cancel := context.WithDeadline(ctx, deadline.Add(-scanReconciliationRollbackSpace))
 	defer cancel()
 	if err := prove(bounded); err != nil {
@@ -207,6 +256,9 @@ func (s *Store) publishLocalBackdropReread(ctx context.Context, admin *catalogAd
 	}
 	if !s.Available() {
 		return false, ErrUnavailable
+	}
+	if lock != nil && !time.Now().Before(lock.Info.ExpiresAt) {
+		return false, ErrLocalBackdropLockExpired
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return false, err

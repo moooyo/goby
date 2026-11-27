@@ -1,12 +1,11 @@
 # Session handoff: local metadata repairs and the remaining artwork queue
 
-**November 28, 2026. Next task: design and prove the exact-target execution
-fence before separately requesting approval for a Joy of Life pilot.** The
-single-item backdrop reread is implemented in source. No artwork pilot,
-deployment, or production mutation was performed in this follow-up. The last
-verified deployed backend in the preceding session was `04308156` (PostgreSQL
-17.12, schema 81). Do not treat this record as fresh production state or as
-authorization to connect, deploy, or write.
+**November 28, 2026. Next task: separately approve and prepare a Joy of Life
+pilot.** The single-item backdrop reread and its execution lock are implemented.
+No artwork pilot, deployment, or production mutation was performed in this
+follow-up. The last verified deployed backend in the preceding session was
+`04308156` (PostgreSQL 17.12, schema 81). Do not treat this record as fresh
+production state or as authorization to connect, deploy, or write.
 
 ## Completed work: do not replay
 
@@ -73,13 +72,12 @@ The earlier scan's generic warning has not been decomposed; do not assume these
 
 ## Single-item path and the remaining production gate
 
-The endpoint described in steps 1–3 is implemented; see the
-[local backdrop reread contract](local-artwork.md#reread-one-local-series-backdrop).
-The owned writer's active-work and generation checks protect the endpoint's
-transaction, not a preceding filesystem operation. The existing scanner and
-importer do not share an exact-target hold that an operator can acquire before
-quarantine. Step 4 remains a prerequisite to even proposing a live window;
-step 5 has not been run against the production item.
+Steps 1–3 use the [local backdrop reread contract](local-artwork.md#reread-one-local-series-backdrop).
+Step 4 now has a [durable application execution lock](local-artwork.md#execution-lock-for-external-repair).
+The lock holds the exact importer directory, and defers full scans that could
+invalidate its scan generation or touch the directory. Synthetic acceptance
+covers the window from before quarantine through commit. The real SMB window,
+production deployment and client readback have not been performed.
 
 1. **Keep the first contract narrow.** The native admin route is
    `POST /admin/v1/items/{id}/images/Backdrop/reread-local`. It requires the
@@ -110,15 +108,15 @@ step 5 has not been run against the production item.
    a missing online-image type on this target: for a Series the worker checks
    Primary, Backdrop, and Logo. The operation must not launch work or change
    scheduler settings; independently scheduled work is a separate concern.
-4. **Solve the handoff between the filesystem and the endpoint.** The production
-   gate is still open design work: prove a short exact-target fence, honored by
-   ordinary scanning and deferred import, from before quarantine through commit.
-   An SMB exclusive window addresses external writers, not the existing hourly,
-   event, or startup importer. An instant check that no run is active is not a
-   fence. Do not move the bad file until both the execution fence and a newly
-   approved SMB window are established. Re-prove two candidates, back up only
-   the empty original with its permissions, then atomically move it out of the
-   recognized names without touching `fanart.jpg` or the directory identity.
+4. **Establish both windows before touching storage.** Separately approve the
+   deployment and SMB-exclusive window. Verify stable registered roots and
+   rule out independently mounted aliases of the same share. Acquire the
+   native `local-lock` and record its ID and deadline; an idle check is not a
+   fence. Re-prove the two candidates, back up only the empty original with
+   its permissions, then atomically move it out of recognized names without
+   touching `fanart.jpg` or the directory identity. Pass the lock ID to reread
+   with the same native session. Keep the hold until the outcome is known, and
+   release it explicitly using the item and lock IDs.
 5. **Accept what the client can actually read.** Verify `Backdrop[0]` is the
    local `fanart.jpg` and can be retrieved, other image types are unchanged,
    only the target queue row is retired (expected 18 → 17), and no scan or
@@ -159,6 +157,25 @@ library scan are not equivalent to the single-item operation.
   `/var/tmp/goby-local-backdrop.W00b4p/logs`; earlier failed attempts are kept
   separately from the accepted run. Test acceptance is not permission to deploy
   or alter production files.
+
+### Execution lock verification
+
+- The [lock integration tests](../../internal/library/local_backdrop_lock_integration_test.go)
+  cover acquisition before quarantine, rejection of already-admitted work,
+  overlapping scan admission, a real deferred importer, native-session binding,
+  source/generation changes, and explicit release after a restart or expiry.
+  The [manager test](../../internal/tasks/manager_integration_test.go) confirms
+  that a held child stays waiting while a disjoint scan finishes in the same
+  run and resumes after release. The HTTP fixture retrieves the original JPEG
+  after publication without a new scan.
+- `test-env` (Linux amd64, Go 1.27.1, private PostgreSQL 17.12, XFS fixtures)
+  passed the full Go build, 299 selected race-enabled tests and subtests in
+  library, server, artwork and tasks, and the full diagnostics race suite.
+  The native bind-mount acceptance also passed separately with the test
+  database, `GOBY_TEST_BACKDROP_PRIVATE_MOUNT_NS` set to the launcher namespace,
+  and `unshare --mount --propagation private`. It is not production SMB evidence.
+  Raw run and closeout logs are retained on `test-env` under
+  `/var/tmp/goby-backdrop-lock.Gx3Z7y/logs`.
 
 ## Local evidence and delivery boundary
 

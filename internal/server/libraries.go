@@ -74,6 +74,8 @@ func libraryErrorInfo(err error) (int, string, string) {
 		return 400, "invalid_input", "Check the library name, media type, configured directories, and query parameters."
 	case errors.Is(err, library.ErrUnsupportedFilter):
 		return http.StatusNotImplemented, "unsupported_filter", "List membership cannot be evaluated for this result set."
+	case errors.Is(err, library.ErrLocalBackdropLocked):
+		return 409, "local_backdrop_locked", "An overlapping local backdrop execution lock prevents this scan."
 	case errors.Is(err, library.ErrBusy):
 		return 409, "scan_busy", "A scan or media deletion is active, or the scan queue is full."
 	case errors.Is(err, notificationjournal.ErrCapacity):

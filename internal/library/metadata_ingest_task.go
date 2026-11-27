@@ -282,10 +282,22 @@ func (s *Store) importLocalMetadataTarget(ctx context.Context, grant *internalTa
 	if !valid {
 		return false, errMetadataIngestChanged
 	}
+	directoryPath := target.directoryPath()
+	release, admitted := s.backdropExecution.beginWork(localBackdropWorkScope{
+		itemID: target.id, directory: filepath.Join(row.root.path, directoryPath), inode: target.request.directoryIdentity,
+	})
+	if !admitted {
+		// A later scheduled run can reconsider this still-pending row. Do not
+		// wait or prevent work on another directory in this run.
+		return false, nil
+	}
+	var retired <-chan struct{}
+	defer func() { releaseAfterSourceOperationRetires(retired, release) }()
 	operation, err := s.preparePrimaryRootIO(ctx, []mediaSourceRootHint{{root: row.root, bindingRevision: row.revision}})
 	if err != nil {
 		return false, err
 	}
+	retired = operation.handle.state.done
 	var lease *libraryRootLease
 	var opened *os.Root
 	defer func() {
@@ -298,7 +310,6 @@ func (s *Store) importLocalMetadataTarget(ctx context.Context, grant *internalTa
 		}
 		resultErr = errors.Join(resultErr, operation.Close())
 	}()
-	directoryPath := target.directoryPath()
 	var directoryInfo os.FileInfo
 	verify := func(work context.Context) error {
 		return verifyMetadataIngestSource(work, lease, opened, target, directoryPath, path, directoryInfo)

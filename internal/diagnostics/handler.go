@@ -546,6 +546,7 @@ cors
 /admin/
 /admin/v1/
 /emby/
+DELETE /admin/v1/items/{id}/images/Backdrop/local-lock
 DELETE /admin/v1/libraries/{id}
 DELETE /admin/v1/session
 DELETE /emby/Auth/Keys/{Key}
@@ -559,6 +560,7 @@ GET /admin/v1/api-keys
 GET /admin/v1/bootstrap
 GET /admin/v1/capabilities
 GET /admin/v1/devices
+GET /admin/v1/items/{id}/images/Backdrop/local-lock
 GET /admin/v1/items/{id}/metadata
 GET /admin/v1/jobs
 GET /admin/v1/libraries
@@ -620,6 +622,7 @@ POST /admin/v1/api-keys/{id}/revoke
 POST /admin/v1/bootstrap
 POST /admin/v1/devices/{id}/delete
 POST /admin/v1/devices/{id}/options
+POST /admin/v1/items/{id}/images/Backdrop/local-lock
 POST /admin/v1/items/{id}/images/Backdrop/reread-local
 POST /admin/v1/items/{id}/metadata/reread-local-nfo
 POST /admin/v1/jobs/{id}/cancel

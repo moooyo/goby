@@ -282,7 +282,7 @@ func TestLocalBackdropRereadRechecksAuthorityAndSourceBeforeCommit(t *testing.T)
 			notifications := catalogChangesTestListener(t, f.store)
 			want := ErrSourceChanged
 			var before string
-			got, err := f.store.rereadLocalBackdrop(f.ctx, f.actor, f.item.ID, func(ctx context.Context, op *PrimaryRootIO,
+			got, err := f.store.rereadLocalBackdrop(f.ctx, f.actor, f.item.ID, "", func(ctx context.Context, op *PrimaryRootIO,
 				plan seriesNFOAuditRootPlan, target localBackdropTarget) (localBackdropObservation, error) {
 				observed, err := f.store.observeLocalBackdrop(ctx, op, plan, target)
 				if err != nil {

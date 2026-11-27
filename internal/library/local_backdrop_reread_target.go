@@ -66,7 +66,7 @@ func readLocalBackdropItem(ctx context.Context, tx pgx.Tx, id string, lock bool)
 	return item, err
 }
 
-func readLocalBackdropGeneration(ctx context.Context, tx pgx.Tx, libraryID string, lock bool) (localBackdropGeneration, error) {
+func readLocalBackdropGeneration(ctx context.Context, tx pgx.Tx, libraryID string, lock, scopedImporter bool) (localBackdropGeneration, error) {
 	var generation localBackdropGeneration
 	var kind string
 	var enabled bool
@@ -89,12 +89,18 @@ func readLocalBackdropGeneration(ctx context.Context, tx pgx.Tx, libraryID strin
 	if !enabled {
 		return generation, ErrLocalBackdropDisabled
 	}
+	// Lock acquisition and locked rereads fence the local importer by exact
+	// source instead of rejecting an unrelated child in this library.
+	taskKeys := []string{TaskNFORecoveryKey, TaskOnlineMetadataIngestKey, TaskOnlineMetadataRefreshKey, TaskOnlineImagesKey}
+	if !scopedImporter {
+		taskKeys = append(taskKeys, TaskLocalMetadataIngestKey)
+	}
 	var busy bool
 	if err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM scan_jobs WHERE library_id=$1 AND status IN ('Queued','Running'))
 		OR (`+mediaPublicationLibraryActiveSQL+`) OR EXISTS(SELECT 1 FROM media_deletion_operations WHERE library_id=$1 AND kind='media')
 		OR EXISTS(SELECT 1 FROM task_runs run JOIN task_run_children child ON child.run_id=run.id
 			WHERE run.task_key=ANY($2::text[]) AND run.state IN ('running','stopping') AND child.state='running' AND child.library_id=$1)`,
-		libraryID, []string{TaskLocalMetadataIngestKey, TaskNFORecoveryKey, TaskOnlineMetadataIngestKey, TaskOnlineMetadataRefreshKey, TaskOnlineImagesKey}).Scan(&busy); err != nil {
+		libraryID, taskKeys).Scan(&busy); err != nil {
 		return generation, err
 	}
 	if busy {
@@ -135,7 +141,7 @@ func readLocalBackdropQueue(ctx context.Context, tx pgx.Tx, item localBackdropIt
 	return queue, err
 }
 
-func readLocalBackdropTarget(ctx context.Context, tx pgx.Tx, id string, previous *localBackdropTarget) (localBackdropTarget, error) {
+func readLocalBackdropTarget(ctx context.Context, tx pgx.Tx, id string, previous *localBackdropTarget, scopedImporter bool) (localBackdropTarget, error) {
 	var target localBackdropTarget
 	var err error
 	if previous == nil {
@@ -146,7 +152,7 @@ func readLocalBackdropTarget(ctx context.Context, tx pgx.Tx, id string, previous
 	} else {
 		target.item = previous.item
 	}
-	target.generation, err = readLocalBackdropGeneration(ctx, tx, target.item.libraryID, previous != nil)
+	target.generation, err = readLocalBackdropGeneration(ctx, tx, target.item.libraryID, previous != nil, scopedImporter)
 	if err != nil {
 		return target, err
 	}

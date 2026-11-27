@@ -39,7 +39,11 @@ func (s *Server) registerArtworkManagementRoutes(mux *http.ServeMux) {
 		mux.HandleFunc("POST "+base+"/{type}/reorder", s.requireAdmin(s.adminArtwork(kind, "reorder")))
 		mux.HandleFunc("POST "+base+"/{type}/reset", s.requireAdmin(s.adminArtwork(kind, "reset")))
 	}
-	mux.HandleFunc("POST /admin/v1/items/{id}/images/Backdrop/reread-local", s.requirePassiveAdmin(s.adminRereadLocalBackdrop))
+	const backdrop = "/admin/v1/items/{id}/images/Backdrop"
+	mux.HandleFunc("POST "+backdrop+"/reread-local", s.requirePassiveAdmin(s.adminRereadLocalBackdrop))
+	for _, method := range []string{http.MethodGet, http.MethodPost, http.MethodDelete} {
+		mux.HandleFunc(method+" "+backdrop+"/local-lock", s.requirePassiveAdmin(s.adminLocalBackdropLock))
+	}
 	mux.HandleFunc("GET /admin/v1/entities", s.requireAdmin(s.adminArtworkEntities))
 	for _, suffix := range []string{"/{Type}", "/{Type}/{Index}"} {
 		base := "/emby/Items/{Id}/Images" + suffix

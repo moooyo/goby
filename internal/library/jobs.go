@@ -59,7 +59,14 @@ func (s *Store) startScan(ctx context.Context, administrator *catalogAdministrat
 		if err := administrator.check(ctx, authorization, false); err != nil {
 			return err
 		}
-		err := tx.QueryRow("SELECT id FROM scan_jobs WHERE library_id = $1 AND status IN ('Queued', 'Running')", libraryID).Scan(&existing)
+		blocked, err := s.localBackdropBlocksScan(tx, libraryID)
+		if err != nil {
+			return err
+		}
+		if blocked {
+			return ErrLocalBackdropLocked
+		}
+		err = tx.QueryRow("SELECT id FROM scan_jobs WHERE library_id = $1 AND status IN ('Queued', 'Running')", libraryID).Scan(&existing)
 		if err == nil {
 			return ErrScanAlreadyActive
 		}

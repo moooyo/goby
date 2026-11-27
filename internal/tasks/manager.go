@@ -680,7 +680,9 @@ func (m *Manager) reconcilePass(ctx context.Context, shutdown, ownerProbed bool)
 				m.operations.Done()
 				if err == nil {
 					switch admission.Kind {
-					case library.ScanAdmitted, library.ScanAlreadyOwned, library.ScanDuplicate:
+					case library.ScanAdmitted, library.ScanAlreadyOwned, library.ScanDuplicate, library.ScanSourceHeld:
+						// A protected source leaves just this child waiting; do not
+						// stop admitting unrelated libraries in the same run.
 					case library.ScanQueueFull:
 						queueFull = true
 					default:

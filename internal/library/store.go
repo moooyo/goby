@@ -80,6 +80,9 @@ func New(pool *pgxpool.Pool, prober Prober, allowedRoots []string, options ...Op
 		return nil, err
 	}
 	s.ownership = ownership
+	if err := s.restoreLocalBackdropLock(ctx); err != nil {
+		return nil, errors.Join(fmt.Errorf("restore local backdrop execution lock: %w", err), ownership.release())
+	}
 	// The reserved owner's physical configuration remains fixed for this Store.
 	if ownership.conn.Conn().Config().StatementCacheCapacity > 0 {
 		s.scanOwnedReadMode = pgx.QueryExecModeCacheStatement

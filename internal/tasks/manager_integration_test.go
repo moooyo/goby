@@ -390,6 +390,72 @@ func TestManagerRetriesCapacityAndIndependentScansBeyondTerminalPage(t *testing.
 	}
 }
 
+func TestManagerWaitsForLocalBackdropLockWithoutBlockingAnotherLibrary(t *testing.T) {
+	f := newManagerFixture(t, library.WithDeferredLocalMetadata())
+	directory := filepath.Join(f.root, "TV", "Series", "Season 1")
+	if err := os.MkdirAll(directory, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(directory, "Show.S01E01.mp4"), []byte("held series"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	tv, err := f.catalog.CreateLibrary(f.ctx, "Held series", "tvshows", []string{filepath.Join(f.root, "TV")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	job, err := f.catalog.StartScan(f.ctx, tv.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	managerWait(t, f.ctx, "initial TV scan", func(ctx context.Context) bool {
+		current, err := f.catalog.GetJob(ctx, job.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return current.Status == "Completed"
+	})
+	var itemID string
+	if err := f.pool.QueryRow(f.ctx, `SELECT id FROM items WHERE library_id=$1 AND type='Series'`, tv.ID).Scan(&itemID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.pool.Exec(f.ctx, `UPDATE local_metadata_ingest SET import_nfo=false WHERE item_id=$1`, itemID); err != nil {
+		t.Fatal(err)
+	}
+	lock, err := f.catalog.AcquireLocalBackdropLock(f.ctx, f.actor.Principal, itemID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	other := f.addLibraries(t, 1)[0]
+	manager, scans := f.manager(t, false)
+	admission, err := manager.Start(f.ctx, f.actor, StartRequest{TaskID: f.definition.ID, RequestID: "local-backdrop-scan-hold"})
+	if err != nil || !admission.Admitted || admission.Run.TotalChildren != 2 {
+		t.Fatalf("admit task run: %+v %v", admission, err)
+	}
+	managerWait(t, f.ctx, "disjoint child completed while source child waits", func(ctx context.Context) bool {
+		var state string
+		if err := f.pool.QueryRow(ctx, `SELECT state FROM task_run_children WHERE run_id=$1 AND library_id=$2`, admission.Run.ID, other.id).Scan(&state); err != nil {
+			t.Fatal(err)
+		}
+		return state == string(ChildCompleted) && scans.count(library.ScanSourceHeld) > 0
+	})
+	var waiting bool
+	if err := f.pool.QueryRow(f.ctx, `SELECT state='waiting' AND scan_job_id IS NULL FROM task_run_children WHERE run_id=$1 AND library_id=$2`,
+		admission.Run.ID, tv.ID).Scan(&waiting); err != nil || !waiting {
+		t.Fatalf("held scan child advanced before release: %t %v", waiting, err)
+	}
+	managerWait(t, f.ctx, "release lock on the catalog owner", func(ctx context.Context) bool {
+		err := f.catalog.ReleaseLocalBackdropLock(ctx, f.actor.Principal, itemID, lock.LockID)
+		if err != nil && !errors.Is(err, library.ErrBusy) {
+			t.Fatal(err)
+		}
+		return err == nil
+	})
+	finished := managerWaitRun(t, f, admission.Run.ID, RunCompleted)
+	if finished.CompletedChildren != 2 {
+		t.Fatalf("waiting child did not resume after release: %+v", finished)
+	}
+}
+
 func TestManagerStopWaitsForOwnedWorkersAndLeavesIndependentScanAlive(t *testing.T) {
 	f := newManagerFixture(t)
 	collections := f.addLibraries(t, 2)

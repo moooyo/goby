@@ -227,6 +227,24 @@ func newPrimaryRootIOWithClaimAcquirer(ctx context.Context, runtime *primaryio.O
 	return &PrimaryRootIO{handle: &primaryRootIOHandle{state: state}}, nil
 }
 
+// A canceled caller may return before storage I/O and descriptor cleanup.
+// Keep its admission until the retained operation actually retires.
+func releaseAfterSourceOperationRetires(retired <-chan struct{}, release func()) {
+	if retired == nil {
+		release()
+		return
+	}
+	select {
+	case <-retired:
+		release()
+	default:
+		go func() {
+			<-retired
+			release()
+		}()
+	}
+}
+
 func primaryRootIOError(err error) error {
 	if err == nil {
 		return nil

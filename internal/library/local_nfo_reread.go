@@ -48,7 +48,7 @@ func (s *Store) rereadLocalNFO(ctx context.Context, actor identity.Principal, it
 	}
 	var retired <-chan struct{}
 	defer func() {
-		releaseAfterNFOObservationRetires(retired, func() { s.localNFORereadRunning.Store(false) })
+		releaseAfterSourceOperationRetires(retired, func() { s.localNFORereadRunning.Store(false) })
 		var sqlError *pgconn.PgError
 		if errors.As(resultErr, &sqlError) && (sqlError.Code == "57014" || sqlError.Code == "55P03") {
 			resultErr = errors.Join(ErrUnavailable, resultErr)

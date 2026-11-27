@@ -103,7 +103,7 @@ func (s *Store) AuditSeriesNFO(ctx context.Context, actor identity.Principal, li
 	}
 	var retired <-chan struct{}
 	defer func() {
-		releaseAfterNFOObservationRetires(retired, func() { s.seriesNFOAuditRunning.Store(false) })
+		releaseAfterSourceOperationRetires(retired, func() { s.seriesNFOAuditRunning.Store(false) })
 	}()
 	ctx, cancel := context.WithTimeout(ctx, seriesNFOAuditTimeout)
 	defer cancel()
@@ -116,24 +116,6 @@ func (s *Store) AuditSeriesNFO(ctx context.Context, actor identity.Principal, li
 		return SeriesNFOAuditReport{}, err
 	}
 	return report, nil
-}
-
-// A timed-out caller must not start another audit while the actual storage
-// observation still owns its primary I/O resources. At most one waiter exists.
-func releaseAfterNFOObservationRetires(retired <-chan struct{}, release func()) {
-	if retired == nil {
-		release()
-		return
-	}
-	select {
-	case <-retired:
-		release()
-	default:
-		go func() {
-			<-retired
-			release()
-		}()
-	}
 }
 
 func (s *Store) auditSeriesNFO(ctx context.Context, actor identity.Principal, libraryID string, retired *<-chan struct{}) (SeriesNFOAuditReport, error) {
