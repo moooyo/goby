@@ -2,9 +2,9 @@
 
 This document defines Goby's native administrator metadata API and the contract
 used by its metadata editor. Edits save a separate administrator layer in the
-catalog; they do not modify media files or write NFO files. Reads use the latest
-source snapshot already accepted by a library scan, without reading the source
-files again.
+catalog; they do not modify media files or write NFO files. Normal editor reads
+use the latest accepted source snapshot. The explicitly invoked series audit
+below also checks the sidecar currently on disk.
 
 Phase 3 adds selected music metadata controls and the linked
 [artwork management contract](../development/local-artwork.md). These source
@@ -35,6 +35,7 @@ by the native administrator session API.
 | Method and route | Request | Successful response |
 | --- | --- | --- |
 | `GET /admin/v1/libraries/{id}/items` | Library ID and the list query below | `200`, a bounded item list |
+| `POST /admin/v1/libraries/{id}/series-nfo-audit` | TV or mixed library ID; empty body; no query; native CSRF token | `200`, a read-only series NFO audit report |
 | `GET /admin/v1/items/{id}/metadata` | Item ID; no query parameters | `200`, `MetadataDetail` |
 | `PUT /admin/v1/items/{id}/metadata` | Item ID; no query parameters; `MetadataUpdate` JSON | `200`, the resulting `MetadataDetail` |
 
@@ -42,6 +43,68 @@ Path IDs must contain 1 to 256 UTF-8 bytes, with no surrounding whitespace or
 control characters. They are opaque identifiers, not paths. Invalid IDs produce
 `400 invalid_input`. A missing library or a missing/unsupported item produces
 `404 not_found`.
+
+## Series NFO audit
+
+This POST explicitly reads storage, so it uses the same native login,
+same-origin and `X-CSRF-Token` checks as management writes. It accepts no body
+or query, requires no content type, and does not refresh session activity.
+It has no scheduled run or Emby counterpart. It never scans for media, calls a
+provider, edits metadata, changes visibility, or creates recovery work.
+
+The library's latest scan must have completed and there must be no active scan
+or unresolved original-media publication or deletion. The audit covers ordinary
+physical `Series` directories and the representative backed by a registered
+single-series root. Other virtual items and pending NFO imports do not contribute. It observes the named
+`tvshow.nfo` in the registered root; a file contributes only if it parses,
+rechecks as the same file, and matches the version the catalog already accepted.
+A previously accepted declaration cannot stand in for missing, broken, changed
+or unreadable bytes. Observations are not a filesystem-wide atomic snapshot.
+
+```json
+{
+  "LibraryId": "example-library",
+  "Status": "observed",
+  "SeriesCount": 2,
+  "ObservedCount": 2,
+  "Warnings": [
+    {
+      "ItemId": "series-a",
+      "Code": "shared_declaration_disagreement",
+      "CorroboratingItemId": "series-b"
+    }
+  ]
+}
+```
+
+- `title_year_disagreement`: the directory name has a clear trailing ` (YYYY)`;
+  neither the NFO's title nor its original title matches, and its declared
+  production year differs by at least two. Missing or ambiguous information
+  does not count as disagreement, including when the declared production and
+  premiere years disagree.
+- `shared_declaration_disagreement`: the above, with another physical directory
+  in this library whose own name and year agree with its current NFO. The two
+  NFOs share a title and year and at least one comparable IMDb, TMDB or TVDB ID.
+  Comparable IDs must not conflict within or across those NFOs. The peer must
+  have different observed directory and sidecar identities. The report
+  includes one deterministic peer item ID, not the filenames or declarations.
+
+These are review hints, not decisions about identity. Valid translations or
+regional naming can still differ, and identical-looking declarations can be
+wrong. `Warnings` is always an array. Empty warnings, even if `ObservedCount`
+equals `SeriesCount`, are not verification. The counts describe the population
+examined, not the number confirmed correct.
+
+`scan_unsettled` and `local_metadata_disabled` indicate the audit did not read
+sidecars. `source_changed` indicates the catalog or its root binding could not
+be held consistent across the observation. The audit admits one request per
+server store, at most 512 physical Series in up to 32 registered roots, at most
+2 MiB per NFO and 32 MiB across read attempts. `limit_exceeded` returns no
+partial warnings. If the population cap is exceeded, `SeriesCount` is zero
+rather than an exact total; on byte-budget exhaustion it reports the planned
+population. The operation has a 20-second deadline, with a five-second bound
+for each admitted storage observation. Unavailable admission, failed cleanup,
+and timeouts return `503 series_nfo_audit_unavailable`. Responses use `no-store`.
 
 ## Library item list
 

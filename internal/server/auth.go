@@ -49,6 +49,15 @@ func (s *Server) sameOrigin(w http.ResponseWriter, r *http.Request) bool {
 }
 
 func (s *Server) requireAdmin(next http.HandlerFunc) http.HandlerFunc {
+	return s.authorizeAdmin(next, true)
+}
+
+// requirePassiveAdmin keeps the native access checks without recording activity.
+func (s *Server) requirePassiveAdmin(next http.HandlerFunc) http.HandlerFunc {
+	return s.authorizeAdmin(next, false)
+}
+
+func (s *Server) authorizeAdmin(next http.HandlerFunc, recordActivity bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(sessionCookie)
 		if err != nil || cookie.Value == "" {
@@ -73,7 +82,7 @@ func (s *Server) requireAdmin(next http.HandlerFunc) http.HandlerFunc {
 				return
 			}
 		}
-		if time.Since(principal.LastSeenAt) >= identity.ClientSessionTouchInterval {
+		if recordActivity && time.Since(principal.LastSeenAt) >= identity.ClientSessionTouchInterval {
 			if err := s.identity.TouchAdministratorActivity(r.Context(), principal); err != nil {
 				s.identityError(w, r, err)
 				return

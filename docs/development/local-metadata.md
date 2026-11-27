@@ -95,6 +95,19 @@ The task UI displays scan warnings. [Native metadata editing and field locks](..
 
 Migration `0014` initializes metadata state without rewriting existing catalog or NFO rows. It retains the original sparse projection when no administrator controls apply. Updating an unrelated source field preserves unknown extensions in unchanged fields, including existing person credits. Only effective metadata drives the current entity associations, and those changes commit with the item update. Identical file rescans compare against automatic values rather than manual display values, so an existing title or episode-number override alone does not falsely report the file as updated.
 
+## Advisory series identity audit
+
+Use the [native one-library audit](../api/admin-metadata.md#series-nfo-audit)
+for a syntactically valid `tvshow.nfo` that may describe another series. A
+folder's binding establishes where the document came from, not which show it
+describes. The audit compares current stable sidecars with their accepted
+versions, not manual names, online metadata or saved recovery copies. A second
+physical directory whose own name and year agree can strengthen a warning,
+but duplicate provider IDs, separate copies and local titles are not proof of
+identity. Warnings never change scan acceptance, playback access or recovery
+eligibility. A lack of warnings is not verification. This is separate from
+repairing malformed or empty files.
+
 ## Automatic regeneration of damaged sidecars
 
 For movie and TV libraries, the importer checks a suspicious preferred NFO with

@@ -57,11 +57,19 @@ type element struct {
 // ParseNFO reads at most 2 MiB plus one overflow byte from r. It does not close r.
 // All limits and field errors fail the entire document without partial output.
 func ParseNFO(r io.Reader) (Metadata, error) {
+	return ParseNFOWithProviderDeclarations(r, nil)
+}
+
+// ParseNFOWithProviderDeclarations uses the same acceptance rules as ParseNFO.
+// For advisory comparisons, it reports each validated provider declaration
+// after normalization, before a later value can supersede it in Metadata.
+// Declarations can be observed before a later error; discard them on error.
+func ParseNFOWithProviderDeclarations(r io.Reader, observe func(key, value string)) (Metadata, error) {
 	roots, err := readNFORoots(r, false)
 	if err != nil {
 		return Metadata{}, err
 	}
-	return extractNFO(roots[0])
+	return extractNFOWithProviderDeclarations(roots[0], observe)
 }
 
 func readNFORoots(r io.Reader, allowEpisodePair bool) ([]*element, error) {
@@ -83,7 +91,11 @@ func readNFORoots(r io.Reader, allowEpisodePair bool) ([]*element, error) {
 }
 
 func extractNFO(root *element) (Metadata, error) {
-	result, err := extract(root)
+	return extractNFOWithProviderDeclarations(root, nil)
+}
+
+func extractNFOWithProviderDeclarations(root *element, observe func(key, value string)) (Metadata, error) {
+	result, err := extract(root, observe)
 	if err != nil {
 		return Metadata{}, fmt.Errorf("NFO metadata: %w", err)
 	}
@@ -263,7 +275,7 @@ func checkDeclaration(data []byte, encoding nfoEncoding) error {
 	return nil
 }
 
-func extract(root *element) (Metadata, error) {
+func extract(root *element, observeProvider func(key, value string)) (Metadata, error) {
 	result := Metadata{Kind: strings.ToLower(root.name.Local)}
 	if root.name.Space != "" {
 		return Metadata{}, fmt.Errorf("namespaced NFO roots are not supported")
@@ -332,7 +344,7 @@ func extract(root *element) (Metadata, error) {
 				return Metadata{}, err
 			}
 		case "uniqueid", "imdbid", "tmdbid", "tvdbid":
-			if err := collectProvider(&result, child, name); err != nil {
+			if err := collectProvider(&result, child, name, observeProvider); err != nil {
 				return Metadata{}, err
 			}
 		case "actor", "director", "writer", "credits":
@@ -466,7 +478,7 @@ func appendUnique(target *[]string, value string) error {
 	return nil
 }
 
-func collectProvider(result *Metadata, node *element, name string) error {
+func collectProvider(result *Metadata, node *element, name string, observe func(key, value string)) error {
 	value, err := scalarText(node)
 	if err != nil || value == "" || value == "0" {
 		return err
@@ -498,6 +510,9 @@ func collectProvider(result *Metadata, node *element, name string) error {
 	}
 	if result.ProviderIDs == nil {
 		result.ProviderIDs = make(map[string]string)
+	}
+	if observe != nil {
+		observe(key, value)
 	}
 	// The last non-placeholder value for a normalized key wins, regardless
 	// of whether it used the legacy element or the uniqueid spelling.

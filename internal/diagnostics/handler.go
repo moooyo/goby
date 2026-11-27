@@ -623,6 +623,7 @@ POST /admin/v1/devices/{id}/options
 POST /admin/v1/jobs/{id}/cancel
 POST /admin/v1/libraries
 POST /admin/v1/libraries/{id}/scan
+POST /admin/v1/libraries/{id}/series-nfo-audit
 POST /admin/v1/session
 POST /admin/v1/sessions/{id}/revoke
 POST /admin/v1/settings/reset

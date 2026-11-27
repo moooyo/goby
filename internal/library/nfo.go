@@ -188,7 +188,9 @@ func readOpenedLocalNFO(ctx context.Context, file localNFOFile, before os.FileIn
 	if !sameLocalNFOFile(before, opened) || opened.Size() > maxLocalNFOBytes {
 		return nil, true, nil
 	}
-	data, err := io.ReadAll(io.LimitReader(subtitleContextReader{ctx: ctx, reader: file}, maxLocalNFOBytes+1))
+	// Reserve at most one byte past the stat-proved size. A growing file
+	// remains invalid, but cannot use another candidate's read budget.
+	data, err := io.ReadAll(io.LimitReader(subtitleContextReader{ctx: ctx, reader: file}, opened.Size()+1))
 	if err != nil {
 		return nil, false, fmt.Errorf("read bounded local metadata: %w", err)
 	}
@@ -201,6 +203,9 @@ func readOpenedLocalNFO(ctx context.Context, file localNFOFile, before os.FileIn
 	after, err := file.Stat()
 	if err != nil {
 		return nil, false, fmt.Errorf("stat read local metadata: %w", err)
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, false, err
 	}
 	if !sameLocalNFOFile(opened, after) || int64(len(data)) != after.Size() {
 		return nil, true, nil

@@ -9,6 +9,7 @@ import (
 	"os"
 	"reflect"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"golang.org/x/sys/unix"
@@ -275,33 +276,57 @@ func openRootTopologyRelative(ctx context.Context, anchor *os.Root, relative str
 	if len(parts) > maxRootTopologyComponents {
 		return nil, ErrRootTopologyLimit
 	}
-	current, err := anchor.OpenRoot(".")
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if relative == "." {
+		return anchor.OpenRoot(".")
+	}
+	base, err := anchor.Open(".")
 	if err != nil {
 		return nil, fmt.Errorf("open topology anchor: %w", ErrRootTopologyUnavailable)
 	}
+	defer base.Close()
+	baseFD := int(base.Fd())
+	current := baseFD
+	defer func() {
+		if current != baseFD {
+			_ = unix.Close(current)
+		}
+	}()
 	for _, component := range parts {
 		if err := ctx.Err(); err != nil {
-			_ = current.Close()
 			return nil, err
 		}
-		before, err := current.Lstat(component)
-		if err != nil || !before.IsDir() || before.Mode()&os.ModeSymlink != 0 {
-			_ = current.Close()
+		var before, after unix.Stat_t
+		if err := unix.Fstatat(current, component, &before, unix.AT_SYMLINK_NOFOLLOW); err != nil || before.Mode&unix.S_IFMT != unix.S_IFDIR {
 			return nil, fmt.Errorf("topology name is unavailable or is not a nonsymlink directory: %w", ErrRootTopologyUnavailable)
 		}
-		next, err := current.OpenRoot(component)
-		_ = current.Close()
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		// os.Root's named opens can follow a link inside their root. Anchor
+		// each literal component to a held parent and let the kernel refuse it.
+		next, err := unix.Openat(current, component, unix.O_PATH|unix.O_DIRECTORY|unix.O_NOFOLLOW|unix.O_CLOEXEC, 0)
 		if err != nil {
 			return nil, fmt.Errorf("open topology name: %w", ErrRootTopologyUnavailable)
 		}
-		after, err := next.Stat(".")
-		if err != nil || !os.SameFile(before, after) {
-			_ = next.Close()
-			return nil, ErrRootTopologyChanged
+		if current != baseFD {
+			_ = unix.Close(current)
 		}
 		current = next
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		if err := unix.Fstat(current, &after); err != nil || before.Dev != after.Dev || before.Ino != after.Ino {
+			return nil, ErrRootTopologyChanged
+		}
 	}
-	return current, nil
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	// Import the held descriptor, not the original (replaceable) pathname.
+	return os.OpenRoot("/proc/self/fd/" + strconv.Itoa(current))
 }
 
 func readRootTopologyMountInfo(ctx context.Context) ([]rootMountInfo, error) {

@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -20,6 +21,7 @@ import (
 
 func (s *Server) registerAdminMetadataRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /admin/v1/libraries/{id}/items", s.requireAdmin(s.adminMetadataItems))
+	mux.HandleFunc("POST /admin/v1/libraries/{id}/series-nfo-audit", s.requirePassiveAdmin(s.adminSeriesNFOAudit))
 	mux.HandleFunc("GET /admin/v1/items/{id}/metadata", s.requireAdmin(s.adminItemMetadata))
 	mux.HandleFunc("GET /admin/v1/items/{id}/media-info", s.requireAdmin(s.adminItemMediaInfo))
 	mux.HandleFunc("PUT /admin/v1/items/{id}/metadata", s.requireAdmin(s.updateAdminItemMetadata))
@@ -42,6 +44,36 @@ func (s *Server) adminMetadataItems(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	jsonResponse(w, http.StatusOK, nativeMetadataItems(result, query))
+}
+
+func (s *Server) adminSeriesNFOAudit(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
+	id, ok := adminMetadataID(w, r)
+	if !ok {
+		return
+	}
+	if r.URL.RawQuery != "" || r.URL.ForceQuery {
+		adminMetadataInputError(w, r, map[string]string{"Query": "This operation does not accept query parameters."})
+		return
+	}
+	if r.ContentLength != 0 || len(r.TransferEncoding) != 0 {
+		adminMetadataInputError(w, r, map[string]string{"Body": "This operation requires an empty request body."})
+		return
+	}
+
+	actor := r.Context().Value(principalKey).(identity.Principal)
+	report, err := s.library.AuditSeriesNFO(r.Context(), actor, id)
+	switch {
+	case err == nil:
+		jsonResponse(w, http.StatusOK, report)
+	case errors.Is(err, library.ErrBusy), errors.Is(err, library.ErrUnavailable),
+		errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
+		apiError(w, r, http.StatusServiceUnavailable, "series_nfo_audit_unavailable", "The series NFO audit is currently unavailable. Try again later.")
+	case errors.Is(err, library.ErrForbidden):
+		apiError(w, r, http.StatusForbidden, "access_denied", "The audit is not permitted for this session.")
+	default:
+		s.libraryError(w, r, err)
+	}
 }
 
 func nativeMetadataItems(result library.MetadataItemResult, query library.MetadataItemQuery) map[string]any {

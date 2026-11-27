@@ -49,7 +49,7 @@ func stageNFORecoveryWithWrite(ctx context.Context, dir *os.Root, data []byte, w
 			resultErr = errors.Join(resultErr, stage.close(ctx))
 		}
 	}()
-	file, err := openNFORecoveryLeaf(directory, stage.name, os.O_WRONLY|os.O_CREATE|os.O_EXCL)
+	file, err := openLiteralNFOLeaf(directory, stage.name, os.O_WRONLY|os.O_CREATE|os.O_EXCL)
 	if err != nil {
 		return nil, fmt.Errorf("create NFO recovery stage: %w", err)
 	}
@@ -83,7 +83,7 @@ func stageNFORecoveryWithWrite(ctx context.Context, dir *os.Root, data []byte, w
 	}
 	// Keep the created inode pinned across the write descriptor's close and
 	// independent read-back so a replacement cannot reuse its identity.
-	pin, err := openNFORecoveryLeaf(directory, stage.name, unix.O_PATH)
+	pin, err := openLiteralNFOLeaf(directory, stage.name, unix.O_PATH)
 	if err != nil {
 		return nil, fmt.Errorf("pin NFO recovery stage: %w", err)
 	}
@@ -186,7 +186,7 @@ func (stage *nfoRecoveryStage) verifyBytes(ctx context.Context, name string) err
 		name == stage.name && !sameLocalNFOFile(stage.info, before) {
 		return errors.Join(fmt.Errorf("NFO recovery entry %q does not match the stage: %w", name, ErrSourceChanged), err)
 	}
-	file, err := openNFORecoveryLeaf(stage.directory, name, os.O_RDONLY)
+	file, err := openLiteralNFOLeaf(stage.directory, name, os.O_RDONLY)
 	if err != nil {
 		return fmt.Errorf("reopen NFO recovery entry %q: %w", name, err)
 	}
@@ -202,7 +202,7 @@ func (stage *nfoRecoveryStage) verifyBytes(ctx context.Context, name string) err
 
 // os.Root may resolve an in-root symlink after an O_NOFOLLOW failure. Use
 // openat for a literal leaf below the already contained directory descriptor.
-func openNFORecoveryLeaf(directory *os.File, name string, flags int) (*os.File, error) {
+func openLiteralNFOLeaf(directory *os.File, name string, flags int) (*os.File, error) {
 	fd, err := unix.Openat(int(directory.Fd()), name, flags|unix.O_CLOEXEC|unix.O_NOFOLLOW|unix.O_NONBLOCK, 0o600)
 	if err != nil {
 		return nil, &os.PathError{Op: "openat", Path: name, Err: err}
