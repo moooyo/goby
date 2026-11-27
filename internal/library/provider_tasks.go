@@ -15,6 +15,9 @@ import (
 
 const providerTaskItemLimit = 10000
 
+// TaskOnlineMetadataRefreshKey identifies the scheduled provider refresh.
+const TaskOnlineMetadataRefreshKey = "metadata.refresh"
+
 // ProviderProgress reports committed work. Updated counts removed cache entries during pruning.
 type ProviderProgress struct {
 	Processed int64

@@ -449,7 +449,8 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 		requestID := hex.EncodeToString(id)
 		ctx := context.WithValue(r.Context(), requestIDKey, requestID)
 		r = r.WithContext(ctx)
-		response, completeRequest := s.beginRequestLogging(w, r)
+		loggedRequest := r
+		response, completeRequest := s.beginRequestLogging(w, loggedRequest)
 		w = response
 		defer completeRequest()
 		w.Header().Set("X-Request-Id", requestID)
@@ -464,6 +465,11 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 			return
 		}
 		defer finishPolicy()
+		if r != loggedRequest {
+			// Policy admission may clone the request. Copy only the mux pattern;
+			// normal policy cleanup cancels the clone's context after dispatch.
+			defer func() { loggedRequest.Pattern = r.Pattern }()
+		}
 		if s.embyCORS(w, r) {
 			return
 		}

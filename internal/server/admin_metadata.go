@@ -23,6 +23,7 @@ func (s *Server) registerAdminMetadataRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /admin/v1/libraries/{id}/items", s.requireAdmin(s.adminMetadataItems))
 	mux.HandleFunc("POST /admin/v1/libraries/{id}/series-nfo-audit", s.requirePassiveAdmin(s.adminSeriesNFOAudit))
 	mux.HandleFunc("GET /admin/v1/items/{id}/metadata", s.requireAdmin(s.adminItemMetadata))
+	mux.HandleFunc("POST /admin/v1/items/{id}/metadata/reread-local-nfo", s.requirePassiveAdmin(s.adminRereadLocalNFO))
 	mux.HandleFunc("GET /admin/v1/items/{id}/media-info", s.requireAdmin(s.adminItemMediaInfo))
 	mux.HandleFunc("PUT /admin/v1/items/{id}/metadata", s.requireAdmin(s.updateAdminItemMetadata))
 }

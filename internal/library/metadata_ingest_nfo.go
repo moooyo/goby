@@ -26,9 +26,18 @@ type nfoIngestProof struct {
 
 var errMetadataIngestInvalidNFO = errors.New("preferred local NFO could not be accepted")
 
-// Observe the ordered candidates using the contained parent. A returned proof
-// covers every absent higher-priority candidate and the chosen file's stamp.
 func observeMetadataIngestNFO(ctx context.Context, dir *os.Root, directoryPath string, candidates []string) (localNFOObservation, nfoIngestProof, error) {
+	return observeMetadataIngestNFOWithReader(ctx, dir, directoryPath, candidates,
+		func(ctx context.Context, dir *os.Root, name string, before os.FileInfo) ([]byte, bool, error) {
+			data, found, invalid, err := readLocalNFO(ctx, dir, name)
+			return data, invalid || !found, err
+		})
+}
+
+// The proof covers every absent higher-priority candidate and the chosen
+// file's stamp. A present but unreadable candidate never permits fallback.
+func observeMetadataIngestNFOWithReader(ctx context.Context, dir *os.Root, directoryPath string, candidates []string,
+	read func(context.Context, *os.Root, string, os.FileInfo) ([]byte, bool, error)) (localNFOObservation, nfoIngestProof, error) {
 	proof := nfoIngestProof{entries: make([]nfoIngestEntry, 0, len(candidates))}
 	for _, name := range candidates {
 		before, err := dir.Lstat(name)
@@ -45,7 +54,7 @@ func observeMetadataIngestNFO(ctx context.Context, dir *os.Root, directoryPath s
 		if !before.Mode().IsRegular() || before.Size() > maxLocalNFOBytes {
 			return localNFOObservation{invalid: true}, nfoIngestProof{}, nil
 		}
-		data, found, invalid, err := readLocalNFO(ctx, dir, name)
+		data, invalid, err := read(ctx, dir, name, before)
 		if err != nil {
 			if fatal := localNFOFatalReadError(ctx, err); fatal != nil {
 				return localNFOObservation{}, nfoIngestProof{}, fatal
@@ -53,7 +62,7 @@ func observeMetadataIngestNFO(ctx context.Context, dir *os.Root, directoryPath s
 			return localNFOObservation{invalid: true}, nfoIngestProof{}, nil
 		}
 		after, err := dir.Lstat(name)
-		if !found || invalid || err != nil || !sameLocalNFOFile(before, after) {
+		if invalid || err != nil || !sameLocalNFOFile(before, after) {
 			return localNFOObservation{invalid: true}, nfoIngestProof{}, nil
 		}
 		proof.entries = append(proof.entries, nfoIngestEntry{name: name, info: before})
@@ -195,38 +204,13 @@ func (s *Store) publishMetadataIngestNFO(ctx context.Context, operation *Primary
 	changed := !keepPrevious && (local.hash != previous.hash || local.path != previous.path || !local.pair.same(previous.pair) ||
 		!reflect.DeepEqual(local.value, previous.value) || target.kind == "Episode" && parentIndex != currentParentIndex)
 	if changed {
-		localJSON, err := encodeLocalMetadata(local)
-		if err != nil {
-			return false, err
-		}
-		before, err := readScanCatalogItem(ctx, tx, target.id)
-		if err != nil {
-			return false, err
-		}
-		auxiliary, err := readAuxiliaryChildCatalogSnapshot(ctx, tx, target.id)
-		if err != nil {
-			return false, err
-		}
-		if _, err := tx.Exec(ctx, `UPDATE items SET local_metadata=$2,local_metadata_hash=$3,local_metadata_path=$4,
-			parent_index_number=CASE WHEN type='Episode' THEN $5 ELSE parent_index_number END WHERE id=$1`,
-			target.id, localJSON, local.hash, local.path, parentIndex); err != nil {
-			return false, err
-		}
 		base := &scannedMetadataBase{Name: name, SortName: sortName, Overview: overview}
+		var parentNumber *int
 		if target.kind == "Episode" {
 			base.IndexNumber = &index
+			parentNumber = &parentIndex
 		}
-		if err := syncScannedMetadata(ctx, tx, target.id, scannedMetadataOptions{Base: base}); err != nil {
-			return false, err
-		}
-		after, err := readScanCatalogItem(ctx, tx, target.id)
-		if err != nil {
-			return false, err
-		}
-		if err := recordScanCatalogChange(tx, state.library.ID, before, after, false); err != nil {
-			return false, err
-		}
-		if err := auxiliary.record(ctx, tx, nil); err != nil {
+		if err := publishLocalNFOProjection(ctx, tx, state.library.ID, target.id, local, base, parentNumber); err != nil {
 			return false, err
 		}
 	}

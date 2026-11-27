@@ -211,6 +211,7 @@ type Store struct {
 	mediaSourceOwners mediaSourceOwnerRuntime
 
 	seriesNFOAuditRunning atomic.Bool
+	localNFORereadRunning atomic.Bool
 
 	rootBindingAnchors   map[string]rootBindingAnchor
 	rootAnchorReferences map[*os.Root]*rootAnchorReference

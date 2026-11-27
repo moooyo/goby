@@ -37,6 +37,7 @@ by the native administrator session API.
 | `GET /admin/v1/libraries/{id}/items` | Library ID and the list query below | `200`, a bounded item list |
 | `POST /admin/v1/libraries/{id}/series-nfo-audit` | TV or mixed library ID; empty body; no query; native CSRF token | `200`, a read-only series NFO audit report |
 | `GET /admin/v1/items/{id}/metadata` | Item ID; no query parameters | `200`, `MetadataDetail` |
+| `POST /admin/v1/items/{id}/metadata/reread-local-nfo` | Item ID; empty body; no query; native CSRF token | `200`, `{ "ItemId": "…", "Changed": true }` |
 | `PUT /admin/v1/items/{id}/metadata` | Item ID; no query parameters; `MetadataUpdate` JSON | `200`, the resulting `MetadataDetail` |
 
 Path IDs must contain 1 to 256 UTF-8 bytes, with no surrounding whitespace or
@@ -105,6 +106,59 @@ rather than an exact total; on byte-budget exhaustion it reports the planned
 population. The operation has a 20-second deadline, with a five-second bound
 for each admitted storage observation. Unavailable admission, failed cleanup,
 and timeouts return `503 series_nfo_audit_unavailable`. Responses use `no-store`.
+
+## Reread local NFO
+
+`POST /admin/v1/items/{id}/metadata/reread-local-nfo` uses a native
+administrator cookie, same-origin checks and `X-CSRF-Token`. It accepts an
+empty body with no query and does not refresh session activity. The response
+contains only `ItemId` and `Changed` and uses `Cache-Control: no-store`.
+`Changed: false` means the accepted local source was already current.
+`Changed: true` reports a local-source update, not a guarantee that a field
+masked by another metadata layer changed on screen. There is no Emby alias
+or automatic caller.
+
+The server resolves the existing item, registered root and preferred local
+sidecar; it accepts no supplied file or filesystem path. It supports ordinary
+physical `Movie`, `Episode`, `Season` and `Series` items in video libraries,
+including a single-series root representative with an indexed episode. It
+uses the same NFO encoding, kind, candidate precedence and bound episode-pair
+rules as local ingest. A folder uses one indexed episode directly under that
+item or one of its immediate catalog seasons. The selected media file must
+still match the catalog by identity, size and change timestamps; its contents
+are not read. This verifies a current indexed source beneath the folder, not
+its historical inode or all descendants. A completed scan is a concurrency
+checkpoint, not proof that it visited every item. Symlinks are not followed.
+A missing file, unreadable or rejected preferred candidate, empty metadata
+or conflicting season/episode number never clears or replaces the prior
+accepted metadata. A valid sidecar can change descriptive values, including
+ratings and tags inherited by descendants under the usual policies.
+
+Only the local layer of the requested item is reimported. Existing online
+layers, overrides and locks retain their precedence; an already accepted
+online ID can still mask a local ID. The item, hierarchy, media facts, playback
+state and work queues are not replaced. The normal catalog notification path
+still runs for an effective change, under the recipient's current permissions.
+The operation does not enqueue scans, local imports, recovery, artwork or
+online work. It does not contact a provider or write any media-side file. It
+does not certify work identity, clear other metadata layers, or edit other items.
+
+| Response | Meaning |
+| --- | --- |
+| `404 not_found` | The item does not exist or is not an eligible physical catalog item. |
+| `404 local_nfo_missing` | The candidate was absent. The existing local layer is retained. |
+| `409 local_nfo_disabled` | Local metadata reading is disabled for this library. |
+| `409 local_nfo_recovery_managed` | This registered root is opted in to automatic NFO writes. Use the regular import workflow to keep its recovery copies current. |
+| `409 local_nfo_busy` | A completed and settled scan is required, a competing read or writer is active, or scan-owned NFO, enrichment or recovery work still owns this item. Active online metadata and image tasks for the library also block publication. |
+| `409 local_nfo_source_changed` | The catalog or physical binding could not be verified. |
+| `422 local_nfo_rejected` | The preferred file could not be safely read or accepted. An invalid preferred movie NFO does not fall back to `movie.nfo`. |
+| `503 local_nfo_unavailable` | Admission, verification or transaction completion was unavailable. Inspect the current item before retrying an uncertain result. |
+
+One request per store may hold storage admission. The operation observes at
+most 2 MiB per read and reopens the candidate independently before commit.
+It does not hold a database snapshot across the initial file read. The final
+bounded read is a publication check, not a lock on external sidecar writers;
+coordinate a stable file version before invoking it.
 
 ## Library item list
 

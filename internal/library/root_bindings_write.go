@@ -260,20 +260,7 @@ func rootBindingUpdateRevision(input RootBindingUpdate) (int64, error) {
 }
 
 func readRootBindingForUpdate(ctx context.Context, tx pgx.Tx, libraryID, rootID string) (rootBindingRow, error) {
-	var row rootBindingRow
-	err := tx.QueryRow(ctx, `SELECT `+rootBindingMetadataColumns+`, r.storage_binding IS NOT NULL,
-		CASE WHEN octet_length(r.storage_binding::text) <= $3 THEN r.storage_binding::text END,
-		r.bound_at, CASE WHEN r.bound_by IS NULL THEN NULL WHEN octet_length(r.bound_by) <= 256 THEN r.bound_by ELSE '' END
-		FROM library_roots r WHERE r.library_id = $1 AND r.id = $2 FOR UPDATE OF r`, libraryID, rootID, storagebinding.MaxDocumentBytes).
-		Scan(&row.root.id, &row.root.libraryID, &row.root.path, &row.root.allowedPath, &row.root.relativePath,
-			&row.revision, &row.stored, &row.document, &row.boundAt, &row.boundBy)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return rootBindingRow{}, ErrNotFound
-	}
-	if err != nil {
-		return rootBindingRow{}, fmt.Errorf("lock root binding: %w", err)
-	}
-	return row, nil
+	return readRootBindingRow(ctx, tx, libraryID, rootID, true)
 }
 
 // The caller holds Store.mu. This lookup never waits for ownership or storage.

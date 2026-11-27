@@ -620,6 +620,7 @@ POST /admin/v1/api-keys/{id}/revoke
 POST /admin/v1/bootstrap
 POST /admin/v1/devices/{id}/delete
 POST /admin/v1/devices/{id}/options
+POST /admin/v1/items/{id}/metadata/reread-local-nfo
 POST /admin/v1/jobs/{id}/cancel
 POST /admin/v1/libraries
 POST /admin/v1/libraries/{id}/scan

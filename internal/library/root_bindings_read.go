@@ -210,11 +210,29 @@ func (s *Store) readRootBinding(ctx context.Context, administrator *catalogAdmin
 		return rootBindingRow{}, err
 	}
 	defer rollback(tx)
+	row, err := readRootBindingRow(ctx, tx, libraryID, rootID, false)
+	if err != nil {
+		return rootBindingRow{}, err
+	}
+	if err := administrator.check(ctx, tx, false); err != nil {
+		return rootBindingRow{}, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return rootBindingRow{}, fmt.Errorf("complete root binding read: %w", err)
+	}
+	return row, nil
+}
+
+func readRootBindingRow(ctx context.Context, tx pgx.Tx, libraryID, rootID string, lock bool) (rootBindingRow, error) {
 	var row rootBindingRow
-	err = tx.QueryRow(ctx, `SELECT `+rootBindingMetadataColumns+`, r.storage_binding IS NOT NULL,
+	query := `SELECT ` + rootBindingMetadataColumns + `, r.storage_binding IS NOT NULL,
 		CASE WHEN octet_length(r.storage_binding::text) <= $3 THEN r.storage_binding::text END,
 		r.bound_at, CASE WHEN r.bound_by IS NULL THEN NULL WHEN octet_length(r.bound_by) <= 256 THEN r.bound_by ELSE '' END
-		FROM library_roots r WHERE r.library_id = $1 AND r.id = $2`, libraryID, rootID, storagebinding.MaxDocumentBytes).
+		FROM library_roots r WHERE r.library_id = $1 AND r.id = $2`
+	if lock {
+		query += ` FOR UPDATE OF r`
+	}
+	err := tx.QueryRow(ctx, query, libraryID, rootID, storagebinding.MaxDocumentBytes).
 		Scan(&row.root.id, &row.root.libraryID, &row.root.path, &row.root.allowedPath, &row.root.relativePath,
 			&row.revision, &row.stored, &row.document, &row.boundAt, &row.boundBy)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -222,12 +240,6 @@ func (s *Store) readRootBinding(ctx context.Context, administrator *catalogAdmin
 	}
 	if err != nil {
 		return rootBindingRow{}, fmt.Errorf("read root binding: %w", err)
-	}
-	if err := administrator.check(ctx, tx, false); err != nil {
-		return rootBindingRow{}, err
-	}
-	if err := tx.Commit(ctx); err != nil {
-		return rootBindingRow{}, fmt.Errorf("complete root binding read: %w", err)
 	}
 	return row, nil
 }

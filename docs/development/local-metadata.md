@@ -95,6 +95,17 @@ The task UI displays scan warnings. [Native metadata editing and field locks](..
 
 Migration `0014` initializes metadata state without rewriting existing catalog or NFO rows. It retains the original sparse projection when no administrator controls apply. Updating an unrelated source field preserves unknown extensions in unchanged fields, including existing person credits. Only effective metadata drives the current entity associations, and those changes commit with the item update. Identical file rescans compare against automatic values rather than manual display values, so an existing title or episode-number override alone does not falsely report the file as updated.
 
+## Rereading a single existing item
+
+Use the [native local NFO reread](../api/admin-metadata.md#reread-local-nfo)
+for a deliberately selected replacement on an already indexed movie, episode,
+season or series. It does not scan, call online providers, process artwork or
+write media-side files. Unlike scanning, this operation does not interpret a
+missing NFO as an instruction to clear existing metadata, does not renumber
+items, and does not retire work that belongs to an existing scan generation.
+Review the external replacement first; this is an import command, not a check
+that a sidecar describes the right show or that ratings are harmless.
+
 ## Advisory series identity audit
 
 Use the [native one-library audit](../api/admin-metadata.md#series-nfo-audit)

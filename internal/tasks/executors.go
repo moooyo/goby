@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	MetadataRefreshKey  = "metadata.refresh"
+	MetadataRefreshKey  = library.TaskOnlineMetadataRefreshKey
 	SubtitleDownloadKey = "subtitle.download"
 	CacheMaintainKey    = "cache.maintain"
 )
