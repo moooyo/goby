@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/artwork"
@@ -140,34 +139,22 @@ func (state *scanState) refreshLocalImages(ctx context.Context, authority *image
 				return nil
 			}
 		} else {
-			entries, err := readScanDirectoryEntries(ctx, directory)
+			index, err = readImageDirectoryIndex(ctx, directory, directoryInfo)
 			if err != nil {
 				state.warnings++
 				return nil
 			}
-			names := make([]string, 0, len(entries))
-			for _, entry := range entries {
-				names = append(names, entry.Name())
-			}
-			index = newImageDirectoryIndex(names, directoryInfo)
 			if state.imageDirectories == nil {
 				state.imageDirectories = make(map[string]*imageDirectoryIndex)
 			}
 			state.imageDirectories[directoryPath] = index
 		}
-		candidates := index.candidateNames(itemType, relative, isFolder)
+		candidates := index.selectedNames(itemType, relative, isFolder)
 		for _, imageType := range scannedImageTypes {
 			if len(candidates[imageType]) != 0 {
 				noCandidates = false
-				break
 			}
-		}
-		for _, imageType := range scannedImageTypes {
-			selected := candidates[imageType]
-			if imageType != "Backdrop" && len(selected) > 1 {
-				selected = selected[:1]
-			}
-			for _, filename := range selected {
+			for _, filename := range candidates[imageType] {
 				image := inspected[filename]
 				if image == nil {
 					image, err = state.inspectLocalImageContext(ctx, directoryRoot, directoryPath, filename)
@@ -251,21 +238,11 @@ func (state *scanState) refreshLocalImages(ctx context.Context, authority *image
 	// One item's selected population is bounded to 32 backdrops and one image
 	// for each of the other five types. Prepare equal-length arrays before
 	// acquiring catalog ownership; preserved types never enter this rowset.
-	replacement := imageScanReplacement{
-		types: make([]string, rowCount), indexes: make([]int, rowCount), paths: make([]string, rowCount),
-		identities: make([]string, rowCount), hashes: make([]string, rowCount), sizes: make([]int64, rowCount),
-		modified: make([]time.Time, rowCount), widths: make([]int, rowCount), heights: make([]int, rowCount),
-		mimes: make([]string, rowCount),
-	}
+	replacement := newImageScanReplacement(rowCount)
 	position := 0
 	for _, imageType := range replaceTypes {
 		for index, source := range images[imageType] {
-			image := source.image
-			replacement.types[position], replacement.indexes[position] = imageType, index
-			replacement.paths[position] = filepath.ToSlash(filepath.Join(directoryPath, source.filename))
-			replacement.identities[position], replacement.hashes[position] = source.identity, image.Tag
-			replacement.sizes[position], replacement.modified[position] = image.Size, image.ModifiedAt
-			replacement.widths[position], replacement.heights[position], replacement.mimes[position] = image.Width, image.Height, image.MIMEType
+			replacement.set(position, imageType, index, directoryPath, source)
 			position++
 		}
 	}
@@ -342,65 +319,9 @@ func (state *scanState) refreshLocalImages(ctx context.Context, authority *image
 	} else if err := state.checkSidecarScanRootTx(tx, row); err != nil {
 		return err
 	}
-	beforeCatalog, changed, err := readImageCatalogReplacement(ctx, tx, itemID, state.library.ID, state.root.id,
-		replaceTypes, replacement)
-	if err != nil {
+	// Recheck under the writer's locks even after a read-only mismatch.
+	if _, err := publishImageCatalogReplacement(ctx, tx, itemID, state.library.ID, state.root.id, replaceTypes, replaceCounts, replacement); err != nil {
 		return err
-	}
-	// Re-read under the writer's locks even after a read-only mismatch. Its
-	// before-notification snapshot and changes belong to this transaction.
-	if changed {
-		// Candidate indexes are contiguous within each replaceable type. Keep
-		// existing keys for conditional updates, including rows from an old root.
-		deleted, err := tx.Exec(ctx, `DELETE FROM item_images im
-		USING unnest($2::text[], $3::integer[]) AS replacement(image_type, image_count)
-		WHERE im.item_id = $1 AND im.image_type = replacement.image_type
-		AND im.image_index >= replacement.image_count`, itemID, replaceTypes, replaceCounts)
-		if err != nil {
-			return err
-		}
-		changedRows := deleted.RowsAffected()
-		if rowCount != 0 {
-			written, err := tx.Exec(ctx, `INSERT INTO item_images
-			(item_id, root_id, image_type, image_index, relative_path, file_identity, source_hash,
-			 file_size, modified_at, width, height, mime_type)
-			SELECT $1,$2,replacement.image_type,replacement.image_index,replacement.relative_path,
-				replacement.file_identity,replacement.source_hash,replacement.file_size,replacement.modified_at,
-				replacement.width,replacement.height,replacement.mime_type
-			FROM unnest($3::text[],$4::integer[],$5::text[],$6::text[],$7::text[],$8::bigint[],
-				$9::timestamptz[],$10::integer[],$11::integer[],$12::text[])
-			AS replacement(image_type,image_index,relative_path,file_identity,source_hash,file_size,
-				modified_at,width,height,mime_type)
-			WHERE true
-			ON CONFLICT (item_id, image_type, image_index) DO UPDATE SET
-			root_id = EXCLUDED.root_id, relative_path = EXCLUDED.relative_path,
-			file_identity = EXCLUDED.file_identity, source_hash = EXCLUDED.source_hash,
-			file_size = EXCLUDED.file_size, modified_at = EXCLUDED.modified_at,
-			width = EXCLUDED.width, height = EXCLUDED.height, mime_type = EXCLUDED.mime_type
-			WHERE (item_images.root_id, item_images.relative_path, item_images.file_identity,
-			item_images.source_hash, item_images.file_size, item_images.modified_at,
-			item_images.width, item_images.height, item_images.mime_type)
-			IS DISTINCT FROM (EXCLUDED.root_id, EXCLUDED.relative_path, EXCLUDED.file_identity,
-			EXCLUDED.source_hash, EXCLUDED.file_size, EXCLUDED.modified_at,
-			EXCLUDED.width, EXCLUDED.height, EXCLUDED.mime_type)`,
-				itemID, state.root.id, replacement.types, replacement.indexes, replacement.paths, replacement.identities, replacement.hashes,
-				replacement.sizes, replacement.modified, replacement.widths, replacement.heights, replacement.mimes)
-			if err != nil {
-				return err
-			}
-			changedRows += written.RowsAffected()
-		}
-		if changedRows != 0 {
-			afterCatalog, err := readImageCatalogSnapshot(ctx, tx, itemID, state.library.ID, state.root.id)
-			if err != nil {
-				return err
-			}
-			if beforeCatalog.properties != afterCatalog.properties {
-				if err := recordCatalogChanges(tx, afterCatalog.owner); err != nil {
-					return err
-				}
-			}
-		}
 	}
 	proofContext := ctx
 	if authority != nil {

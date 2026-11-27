@@ -39,6 +39,7 @@ func (s *Server) registerArtworkManagementRoutes(mux *http.ServeMux) {
 		mux.HandleFunc("POST "+base+"/{type}/reorder", s.requireAdmin(s.adminArtwork(kind, "reorder")))
 		mux.HandleFunc("POST "+base+"/{type}/reset", s.requireAdmin(s.adminArtwork(kind, "reset")))
 	}
+	mux.HandleFunc("POST /admin/v1/items/{id}/images/Backdrop/reread-local", s.requirePassiveAdmin(s.adminRereadLocalBackdrop))
 	mux.HandleFunc("GET /admin/v1/entities", s.requireAdmin(s.adminArtworkEntities))
 	for _, suffix := range []string{"/{Type}", "/{Type}/{Index}"} {
 		base := "/emby/Items/{Id}/Images" + suffix

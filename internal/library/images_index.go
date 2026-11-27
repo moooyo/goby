@@ -1,6 +1,7 @@
 package library
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"slices"
@@ -14,6 +15,18 @@ type imageDirectoryIndex struct {
 	info      os.FileInfo
 	exact     map[string]string
 	backdrops map[string][]string
+}
+
+func readImageDirectoryIndex(ctx context.Context, directory *os.File, info os.FileInfo) (*imageDirectoryIndex, error) {
+	entries, err := readScanDirectoryEntries(ctx, directory)
+	if err != nil {
+		return nil, err
+	}
+	names := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		names = append(names, entry.Name())
+	}
+	return newImageDirectoryIndex(names, info), nil
 }
 
 func newImageDirectoryIndex(names []string, info os.FileInfo) *imageDirectoryIndex {
@@ -68,6 +81,17 @@ func (index *imageDirectoryIndex) candidateNames(itemType, relative string, isFo
 		names = append(names, index.backdrops[base]...)
 	}
 	return imageCandidateNames(names, itemType, relative, isFolder)
+}
+
+// selectedNames returns only the files the local importer actually inspects.
+func (index *imageDirectoryIndex) selectedNames(itemType, relative string, isFolder bool) map[string][]string {
+	names := index.candidateNames(itemType, relative, isFolder)
+	for _, imageType := range scannedImageTypes {
+		if imageType != "Backdrop" && len(names[imageType]) > 1 {
+			names[imageType] = names[imageType][:1]
+		}
+	}
+	return names
 }
 
 func imageBackdropPrefix(name string) (string, bool) {

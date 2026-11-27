@@ -149,6 +149,59 @@ Every successful media visit, including a cached media probe, checks selected im
 
 Images are decoded and validated before a short transaction replaces the stored records for each successful automatic image type. Missing candidates remove that type's old automatic records. An invalid, unreadable, or unstable candidate preserves the previous automatic images of that type and records a warning; other valid types can still update. Managed overrides remain independent. Images are not copied into the media directory or modified by scanning. Existing media counters describe media-item changes; image records are maintained separately. Per-library EnableLocalImages defaults to true; disabling it stops later directory-artwork import while preserving accepted images and manual overrides. Re-enabling requires a scan.
 
+## Reread one local series backdrop
+
+`POST /admin/v1/items/{id}/images/Backdrop/reread-local` requires the native
+administrator cookie and same-origin CSRF checks. It accepts an item ID, an
+empty request body, and no query string. It is not a managed upload, a reset,
+a filesystem operation, or an Emby-compatible image mutation.
+
+The target must be an ordinary physical `Series` in a TV or mixed library
+with local images enabled. It must already have an image-only pending import
+from the library's latest scan, which must have completed. The accepted item
+source key, directory identity, and registered root binding must still match.
+An active scan, relevant metadata or image worker, or conflicting catalog
+writer blocks the operation. This check is not a reservation across requests.
+
+All selected backdrops must decode successfully and the set must be nonempty.
+The ordinary name order and candidate limits apply. The selected `Primary`,
+`Thumb`, `Banner`, `Logo`, and `Art` must exactly match their raw accepted local
+records, including confirmed absence and the stored root and file facts. An
+existing managed Backdrop (including a deliberate deletion) or provider
+Backdrop rejects the request. Other managed and provider images are untouched.
+When online images are enabled, Primary, Backdrop, and Logo must be accounted
+for after replacement, whether locally, by a provider image, or by explicit
+management. Clearing the local queue row cannot expose a missing online type.
+
+The writer independently reproves the registered source, directory listing,
+and selected file facts immediately before commit without decoding images in
+its transaction. Only the local `Backdrop` rows and the exact matched pending
+row may change. The normal client catalog notification is emitted for an
+effective artwork change; no task event, scan, or provider request is emitted.
+A `200` response with `Cache-Control: no-store` returns
+`{ "ItemId": "…", "Changed": true }`. `Changed: false` means the matching local
+backdrop rows were already identical; the queue row was still retired. After
+success, a repeated call without newly admitted work returns `409`.
+
+| Status and code | Meaning |
+| --- | --- |
+| `400 invalid_input` | The ID, query string, or body was invalid. |
+| `404 not_found` | The ID does not resolve to an ordinary physical series. |
+| `409 local_backdrop_disabled` | This library has disabled local images. |
+| `409 local_backdrop_not_pending` | No eligible image-only pending import remains. |
+| `409 local_backdrop_busy` | Conflicting work or the catalog writer is active. |
+| `409 local_backdrop_source_changed` | The scan generation or current catalog or filesystem source no longer matches. |
+| `409 local_backdrop_other_images` | Another selected type is invalid or differs from its accepted local rows. |
+| `409 local_backdrop_shadowed` | A managed or provider Backdrop takes precedence. |
+| `409 local_backdrop_online_gap` | Retiring the row would expose a series image gap to online processing. |
+| `422 local_backdrop_rejected` | The selected backdrop set is empty, invalid, or unreadable. |
+| `503 local_backdrop_unavailable` | Source, authorization, or writer completion could not be established within the operation's limits. Reload the artwork and check pending work before retrying. |
+
+A live repair that would first move a recognized source file also needs a
+separately approved storage window and an execution fence honored by both the
+scanner and deferred importer. Do not use this endpoint's busy or final
+source checks as that fence. The endpoint never moves or backs up a file.
+
 ## API and access
 
 | Route relative to `/emby` | Behavior |

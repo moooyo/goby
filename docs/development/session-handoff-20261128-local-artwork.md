@@ -1,11 +1,12 @@
 # Session handoff: local metadata repairs and the remaining artwork queue
 
-**November 28, 2026. Next task: implement and test the single-item local
-backdrop reread, then separately seek approval for a Joy of Life pilot.** The
-artwork work stopped at design and read-only verification. This handoff changes
-no runtime code or production state. The last verified deployed backend was
-`04308156` (PostgreSQL 17.12, schema 81). Do not treat this record as fresh
-production state or as authorization to connect, deploy, or write.
+**November 28, 2026. Next task: design and prove the exact-target execution
+fence before separately requesting approval for a Joy of Life pilot.** The
+single-item backdrop reread is implemented in source. No artwork pilot,
+deployment, or production mutation was performed in this follow-up. The last
+verified deployed backend in the preceding session was `04308156` (PostgreSQL
+17.12, schema 81). Do not treat this record as fresh production state or as
+authorization to connect, deploy, or write.
 
 ## Completed work: do not replay
 
@@ -70,12 +71,20 @@ receipt does not establish uninterrupted file identity or byte continuity.
 The earlier scan's generic warning has not been decomposed; do not assume these
 18 files account for the whole warning.
 
-## Implement the single-item path before touching production files
+## Single-item path and the remaining production gate
 
-1. **Keep the first contract narrow.** Proposed native admin route:
-   `POST /admin/v1/items/{id}/images/Backdrop/reread-local`. It is not implemented.
-   Require the native same-origin cookie and CSRF contract, no body/query, and
-   resolve the ordinary physical `Series` and its registered root from the ID.
+The endpoint described in steps 1–3 is implemented; see the
+[local backdrop reread contract](local-artwork.md#reread-one-local-series-backdrop).
+The owned writer's active-work and generation checks protect the endpoint's
+transaction, not a preceding filesystem operation. The existing scanner and
+importer do not share an exact-target hold that an operator can acquire before
+quarantine. Step 4 remains a prerequisite to even proposing a live window;
+step 5 has not been run against the production item.
+
+1. **Keep the first contract narrow.** The native admin route is
+   `POST /admin/v1/items/{id}/images/Backdrop/reread-local`. It requires the
+   native same-origin cookie and CSRF contract and accepts no body or query.
+   It resolves the ordinary physical `Series` and its registered root from the ID.
    Admit an existing image-only pending row (`import_images` true, `import_nfo`
    and `enrich_online` false) with a still-current source key, directory identity,
    root binding, and latest completed scan generation. Do not create or renew
@@ -122,7 +131,7 @@ The current [managed artwork upload](local-artwork.md#current-managed-artwork-co
 can mask a visible gap, but it does not repair the local sidecar or queue and
 may emit the ordinary task signal. Reset restores already indexed automatic
 sources; it does not reread disk. The global local-metadata importer and a
-library scan are not equivalent to this proposed operation.
+library scan are not equivalent to the single-item operation.
 
 ### Code and verification starting points
 
@@ -130,14 +139,26 @@ library scan are not equivalent to this proposed operation.
 - [Observation and publication](../../internal/library/images_scan.go) and [raw row comparison](../../internal/library/image_catalog_changes.go): reuse the image inspection and differential writer, not a second scanner.
 - [Existing deferred import and completion](../../internal/library/metadata_ingest_task.go), [source-key construction](../../internal/library/scan_metadata_ingest.go), and [online admission](../../internal/library/online_images.go): verify generation and suppression separately; a completed scan alone is not a live grant.
 - [Single-item NFO authority pattern](../../internal/library/local_nfo_reread.go) and [catalog versus task notifications](../../internal/library/ownership.go): reuse bounded read/commit and authentication patterns, not the NFO route itself.
-- On synthetic fixtures, require one good `fanart.jpg` plus one empty blocker;
-  then confirm the index and exact queue change with another target still
-  pending. Also cover a bad Backdrop member, a changed non-Backdrop type, stale
-  generation/root, concurrent automatic importer, and a candidate change
-  between observation and commit. Assert scan and task-event counters as well
-  as the visible and raw artwork. Run Linux database/server checks on the
-  approved verification host after reading the [capacity policy](test-env-capacity-policy.md).
-  Test acceptance is not permission to deploy or publish production files.
+- [Store regression](../../internal/library/local_backdrop_reread_integration_test.go)
+  and [HTTP regression](../../internal/server/admin_local_backdrop_reread_integration_test.go)
+  use synthetic media. A valid `fanart.jpg` plus an empty `backdrop.jpg` first
+  rejects the whole set. After external isolation in the fixture, the original
+  JPEG is retrievable, the exact row is retired, and other images, pending work,
+  scans and task-event counters are unchanged. Rejection cases include changed
+  non-Backdrop rows, stale generation and root, a real concurrent automatic
+  importer, revoked authority, and file or candidate changes before commit.
+- `test-env` (Linux amd64, Go 1.27.1, private PostgreSQL 17.12, XFS fixtures)
+  passed `go build -p 2 ./...` and the selected race-enabled library, server,
+  artwork and tasks tests (233 tests and subtests; zero failures or skips).
+  The full diagnostics package also passed with `-race`.
+  Replay from the committed source with `GOBY_TEST_DATABASE_URL` pointed at an
+  owned test database and both temporary-directory variables set to the chosen
+  fixture filesystem. The test selector was
+  `LocalBackdropReread|RereadLocalBackdrop|LocalNFOReread|RereadLocalNFO|ScanImages|ImageCatalogChanges|LocalMetadataIngest|HTTPFastIngest|Artwork|OnlineImage|RequestLog`.
+  The raw run and closeout logs are retained on `test-env` under
+  `/var/tmp/goby-local-backdrop.W00b4p/logs`; earlier failed attempts are kept
+  separately from the accepted run. Test acceptance is not permission to deploy
+  or alter production files.
 
 ## Local evidence and delivery boundary
 

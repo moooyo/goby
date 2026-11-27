@@ -9,7 +9,8 @@ below also checks the sidecar currently on disk.
 Phase 3 adds selected music metadata controls and the linked
 [artwork management contract](../development/local-artwork.md). These source
 additions passed the selected [phase 3 scopes](../development/amd-media-phase3-20260919.md);
-historical M5b acceptance below does not cover them by itself.
+historical M5b acceptance below does not cover them by itself. The artwork
+contract also documents the later [single-series local backdrop reread](../development/local-artwork.md#reread-one-local-series-backdrop).
 
 These routes and durable field locks are a Goby-owned contract. They do not
 establish compatibility with Emby metadata mutation, refresh, or reset routes.

@@ -210,8 +210,9 @@ type Store struct {
 	// Source admission has its own lock so shutdown never waits for Store.mu.
 	mediaSourceOwners mediaSourceOwnerRuntime
 
-	seriesNFOAuditRunning atomic.Bool
-	localNFORereadRunning atomic.Bool
+	seriesNFOAuditRunning      atomic.Bool
+	localNFORereadRunning      atomic.Bool
+	localBackdropRereadRunning atomic.Bool
 
 	rootBindingAnchors   map[string]rootBindingAnchor
 	rootAnchorReferences map[*os.Root]*rootAnchorReference

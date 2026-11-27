@@ -9,18 +9,22 @@ import (
 	"github.com/moooyo/goby/internal/library"
 )
 
-func (s *Server) adminRereadLocalNFO(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Cache-Control", "no-store")
-	id, ok := adminMetadataID(w, r)
-	if !ok {
-		return
-	}
+func adminEmptyMutation(w http.ResponseWriter, r *http.Request) bool {
 	if r.URL.RawQuery != "" || r.URL.ForceQuery {
 		adminMetadataInputError(w, r, map[string]string{"Query": "This operation does not accept query parameters."})
-		return
+		return false
 	}
 	if r.ContentLength != 0 || len(r.TransferEncoding) != 0 {
 		adminMetadataInputError(w, r, map[string]string{"Body": "This operation requires an empty request body."})
+		return false
+	}
+	return true
+}
+
+func (s *Server) adminRereadLocalNFO(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
+	id, ok := adminMetadataID(w, r)
+	if !ok || !adminEmptyMutation(w, r) {
 		return
 	}
 	actor := r.Context().Value(principalKey).(identity.Principal)

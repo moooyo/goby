@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -25,6 +26,23 @@ type imageScanReplacement struct {
 	widths     []int
 	heights    []int
 	mimes      []string
+}
+
+func newImageScanReplacement(rows int) imageScanReplacement {
+	return imageScanReplacement{
+		types: make([]string, rows), indexes: make([]int, rows), paths: make([]string, rows),
+		identities: make([]string, rows), hashes: make([]string, rows), sizes: make([]int64, rows),
+		modified: make([]time.Time, rows), widths: make([]int, rows), heights: make([]int, rows), mimes: make([]string, rows),
+	}
+}
+
+func (r imageScanReplacement) set(position int, imageType string, index int, directory string, source *scannedImage) {
+	image := source.image
+	r.types[position], r.indexes[position] = imageType, index
+	r.paths[position] = filepath.ToSlash(filepath.Join(directory, source.filename))
+	r.identities[position], r.hashes[position] = source.identity, image.Tag
+	r.sizes[position], r.modified[position] = image.Size, image.ModifiedAt
+	r.widths[position], r.heights[position], r.mimes[position] = image.Width, image.Height, image.MIMEType
 }
 
 // Image listings expose names, paths, dimensions, size, type, and index. Item
@@ -148,6 +166,69 @@ func readImageCatalogReplacement(ctx context.Context, tx pgx.Tx, itemID, library
 		return imageCatalogSnapshot{}, false, fmt.Errorf("read image replacement projection: %w", err)
 	}
 	return snapshot, changed, nil
+}
+
+// publishImageCatalogReplacement changes only the requested local types. The
+// comparison, publication and notification all use the caller's owned writer.
+func publishImageCatalogReplacement(ctx context.Context, tx pgx.Tx, itemID, libraryID, rootID string,
+	replaceTypes []string, replaceCounts []int, replacement imageScanReplacement) (bool, error) {
+	before, changed, err := readImageCatalogReplacement(ctx, tx, itemID, libraryID, rootID, replaceTypes, replacement)
+	if err != nil || !changed {
+		return false, err
+	}
+	// Candidate indexes are contiguous. Keep existing keys for conditional
+	// updates, including rows from a previous root.
+	deleted, err := tx.Exec(ctx, `DELETE FROM item_images im
+		USING unnest($2::text[], $3::integer[]) AS replacement(image_type, image_count)
+		WHERE im.item_id = $1 AND im.image_type = replacement.image_type
+		AND im.image_index >= replacement.image_count`, itemID, replaceTypes, replaceCounts)
+	if err != nil {
+		return false, err
+	}
+	changedRows := deleted.RowsAffected()
+	if len(replacement.types) != 0 {
+		written, err := tx.Exec(ctx, `INSERT INTO item_images
+			(item_id, root_id, image_type, image_index, relative_path, file_identity, source_hash,
+			 file_size, modified_at, width, height, mime_type)
+			SELECT $1,$2,replacement.image_type,replacement.image_index,replacement.relative_path,
+			 replacement.file_identity,replacement.source_hash,replacement.file_size,replacement.modified_at,
+			 replacement.width,replacement.height,replacement.mime_type
+			FROM unnest($3::text[],$4::integer[],$5::text[],$6::text[],$7::text[],$8::bigint[],
+			 $9::timestamptz[],$10::integer[],$11::integer[],$12::text[])
+			AS replacement(image_type,image_index,relative_path,file_identity,source_hash,file_size,
+			 modified_at,width,height,mime_type)
+			WHERE true
+			ON CONFLICT (item_id, image_type, image_index) DO UPDATE SET
+			 root_id = EXCLUDED.root_id, relative_path = EXCLUDED.relative_path,
+			 file_identity = EXCLUDED.file_identity, source_hash = EXCLUDED.source_hash,
+			 file_size = EXCLUDED.file_size, modified_at = EXCLUDED.modified_at,
+			 width = EXCLUDED.width, height = EXCLUDED.height, mime_type = EXCLUDED.mime_type
+			WHERE (item_images.root_id, item_images.relative_path, item_images.file_identity,
+			 item_images.source_hash, item_images.file_size, item_images.modified_at,
+			 item_images.width, item_images.height, item_images.mime_type)
+			IS DISTINCT FROM (EXCLUDED.root_id, EXCLUDED.relative_path, EXCLUDED.file_identity,
+			 EXCLUDED.source_hash, EXCLUDED.file_size, EXCLUDED.modified_at,
+			 EXCLUDED.width, EXCLUDED.height, EXCLUDED.mime_type)`,
+			itemID, rootID, replacement.types, replacement.indexes, replacement.paths, replacement.identities,
+			replacement.hashes, replacement.sizes, replacement.modified, replacement.widths, replacement.heights, replacement.mimes)
+		if err != nil {
+			return false, err
+		}
+		changedRows += written.RowsAffected()
+	}
+	if changedRows == 0 {
+		return false, nil
+	}
+	after, err := readImageCatalogSnapshot(ctx, tx, itemID, libraryID, rootID)
+	if err != nil {
+		return false, err
+	}
+	if before.properties != after.properties {
+		if err := recordCatalogChanges(tx, after.owner); err != nil {
+			return false, err
+		}
+	}
+	return true, nil
 }
 
 func readImageCatalogSnapshot(ctx context.Context, tx pgx.Tx, itemID, libraryID, rootID string) (imageCatalogSnapshot, error) {
