@@ -1,0 +1,205 @@
+{
+  "reference": {
+    "version": "4.10.2.0",
+    "nfoPluginVersion": "1.0.88.0",
+    "capturedAt": "2026-11-27T07:55:17+00:00"
+  },
+  "encoding": "UTF-8 with BOM; LF; one XML declaration before first root",
+  "replayNotes": {
+    "warm": "Same selected fields and item identity as first for all cases.",
+    "targetedRefreshParameters": {
+      "Recursive": "false",
+      "MetadataRefreshMode": "FullRefresh",
+      "ImageRefreshMode": "ValidationOnly",
+      "ReplaceAllMetadata": "true",
+      "ReplaceAllImages": "false"
+    },
+    "sharedInvariants": "One Episode identity in both lists, under the physical season; one local playback source with that Episode identity and the original media path."
+  },
+  "cases": [
+    {
+      "name": "single_named",
+      "media": "Nfo Probe 01/Season 01/Nfo Probe 01 - S01E03.mp4",
+      "initialNfo": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<episodedetails>\n<title>NFO single_named 1 block 1</title>\n<plot>Plot single_named 1 block 1</plot>\n<uniqueid type=\"tmdb\">91010101</uniqueid><season>1</season><episode>3</episode>\n</episodedetails>\n",
+      "first": {
+        "Name": "NFO single_named 1 block 1",
+        "Overview": "Plot single_named 1 block 1",
+        "ProviderIds": {
+          "Tmdb": "91010101"
+        },
+        "IndexNumber": 3,
+        "ParentIndexNumber": 1
+      }
+    },
+    {
+      "name": "pair_no_sidecar",
+      "media": "Nfo Probe 02/Season 01/Nfo Probe 02 - S01E03E04.mp4",
+      "first": {
+        "Name": "Nfo Probe 02 - S01E03E04",
+        "ProviderIds": {},
+        "IndexNumber": 3,
+        "IndexNumberEnd": 4,
+        "ParentIndexNumber": 1
+      }
+    },
+    {
+      "name": "pair_one_root",
+      "media": "Nfo Probe 03/Season 01/Nfo Probe 03 - S01E03E04.mp4",
+      "initialNfo": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<episodedetails>\n<title>NFO pair_one_root 1 block 1</title>\n<plot>Plot pair_one_root 1 block 1</plot>\n<uniqueid type=\"tmdb\">91030101</uniqueid><season>1</season><episode>3</episode>\n</episodedetails>\n",
+      "first": {
+        "Name": "NFO pair_one_root 1 block 1",
+        "Overview": "Plot pair_one_root 1 block 1",
+        "ProviderIds": {
+          "Tmdb": "91030101"
+        },
+        "IndexNumber": 3,
+        "IndexNumberEnd": 4,
+        "ParentIndexNumber": 1
+      }
+    },
+    {
+      "name": "pair_ordered",
+      "media": "Nfo Probe 04/Season 01/Nfo Probe 04 - S01E03E04.mp4",
+      "initialNfo": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<episodedetails>\n<title>NFO pair_ordered 1 block 1</title>\n<plot>Plot pair_ordered 1 block 1</plot>\n<uniqueid type=\"tmdb\">91040101</uniqueid><season>1</season><episode>3</episode>\n</episodedetails>\n<episodedetails>\n<title>NFO pair_ordered 1 block 2</title>\n<plot>Plot pair_ordered 1 block 2</plot>\n<uniqueid type=\"tmdb\">91040102</uniqueid><season>1</season><episode>4</episode>\n</episodedetails>\n",
+      "warmNfo": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<episodedetails>\n<title>NFO pair_ordered 22 block 1</title>\n<plot>Plot pair_ordered 22 block 1</plot>\n<uniqueid type=\"tmdb\">91042201</uniqueid><season>1</season><episode>3</episode>\n</episodedetails>\n<episodedetails>\n<title>NFO pair_ordered 22 block 2</title>\n<plot>Plot pair_ordered 22 block 2</plot>\n<uniqueid type=\"tmdb\">91042202</uniqueid><season>1</season><episode>4</episode>\n</episodedetails>\n",
+      "first": {
+        "Name": "NFO pair_ordered 1 block 1,  NFO pair_ordered 1 block 2",
+        "Overview": "Plot pair_ordered 1 block 1\n\nPlot pair_ordered 1 block 2",
+        "ProviderIds": {
+          "Tmdb": "91040101"
+        },
+        "IndexNumber": 3,
+        "IndexNumberEnd": 4,
+        "ParentIndexNumber": 1
+      },
+      "targetedNfo": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<episodedetails>\n<title>NFO pair_ordered 33 block 1</title>\n<plot>Plot pair_ordered 33 block 1</plot>\n<uniqueid type=\"tmdb\">91043301</uniqueid><season>1</season><episode>3</episode>\n</episodedetails>\n<episodedetails>\n<title>NFO pair_ordered 33 block 2</title>\n<plot>Plot pair_ordered 33 block 2</plot>\n<uniqueid type=\"tmdb\">91043302</uniqueid><season>1</season><episode>4</episode>\n</episodedetails>\n",
+      "targeted": {
+        "Name": "NFO pair_ordered 33 block 1,  NFO pair_ordered 33 block 2",
+        "Overview": "Plot pair_ordered 33 block 1\n\nPlot pair_ordered 33 block 2",
+        "ProviderIds": {
+          "Tmdb": "91043301"
+        },
+        "IndexNumber": 3,
+        "IndexNumberEnd": 4,
+        "ParentIndexNumber": 1
+      }
+    },
+    {
+      "name": "pair_reversed",
+      "media": "Nfo Probe 05/Season 01/Nfo Probe 05 - S01E03E04.mp4",
+      "initialNfo": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<episodedetails>\n<title>NFO pair_reversed 1 block 1</title>\n<plot>Plot pair_reversed 1 block 1</plot>\n<uniqueid type=\"tmdb\">91050101</uniqueid><season>1</season><episode>4</episode>\n</episodedetails>\n<episodedetails>\n<title>NFO pair_reversed 1 block 2</title>\n<plot>Plot pair_reversed 1 block 2</plot>\n<uniqueid type=\"tmdb\">91050102</uniqueid><season>1</season><episode>3</episode>\n</episodedetails>\n",
+      "warmNfo": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<episodedetails>\n<title>NFO pair_reversed 22 block 1</title>\n<plot>Plot pair_reversed 22 block 1</plot>\n<uniqueid type=\"tmdb\">91052201</uniqueid><season>1</season><episode>4</episode>\n</episodedetails>\n<episodedetails>\n<title>NFO pair_reversed 22 block 2</title>\n<plot>Plot pair_reversed 22 block 2</plot>\n<uniqueid type=\"tmdb\">91052202</uniqueid><season>1</season><episode>3</episode>\n</episodedetails>\n",
+      "first": {
+        "Name": "NFO pair_reversed 1 block 1",
+        "Overview": "Plot pair_reversed 1 block 1",
+        "ProviderIds": {
+          "Tmdb": "91050101"
+        },
+        "IndexNumber": 4,
+        "IndexNumberEnd": 4,
+        "ParentIndexNumber": 1
+      }
+    },
+    {
+      "name": "pair_range_name",
+      "media": "Nfo Probe 06/Season 01/Nfo Probe 06 - S01E03-E04.mp4",
+      "initialNfo": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<episodedetails>\n<title>NFO pair_range_name 1 block 1</title>\n<plot>Plot pair_range_name 1 block 1</plot>\n<uniqueid type=\"tmdb\">91060101</uniqueid><season>1</season><episode>3</episode>\n</episodedetails>\n<episodedetails>\n<title>NFO pair_range_name 1 block 2</title>\n<plot>Plot pair_range_name 1 block 2</plot>\n<uniqueid type=\"tmdb\">91060102</uniqueid><season>1</season><episode>4</episode>\n</episodedetails>\n",
+      "first": {
+        "Name": "NFO pair_range_name 1 block 1,  NFO pair_range_name 1 block 2",
+        "Overview": "Plot pair_range_name 1 block 1\n\nPlot pair_range_name 1 block 2",
+        "ProviderIds": {
+          "Tmdb": "91060101"
+        },
+        "IndexNumber": 3,
+        "IndexNumberEnd": 4,
+        "ParentIndexNumber": 1
+      }
+    },
+    {
+      "name": "pair_outside_range",
+      "media": "Nfo Probe 07/Season 01/Nfo Probe 07 - S01E03E04.mp4",
+      "initialNfo": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<episodedetails>\n<title>NFO pair_outside_range 1 block 1</title>\n<plot>Plot pair_outside_range 1 block 1</plot>\n<uniqueid type=\"tmdb\">91070101</uniqueid><season>1</season><episode>3</episode>\n</episodedetails>\n<episodedetails>\n<title>NFO pair_outside_range 1 block 2</title>\n<plot>Plot pair_outside_range 1 block 2</plot>\n<uniqueid type=\"tmdb\">91070102</uniqueid><season>1</season><episode>8</episode>\n</episodedetails>\n",
+      "first": {
+        "Name": "NFO pair_outside_range 1 block 1,  NFO pair_outside_range 1 block 2",
+        "Overview": "Plot pair_outside_range 1 block 1\n\nPlot pair_outside_range 1 block 2",
+        "ProviderIds": {
+          "Tmdb": "91070101"
+        },
+        "IndexNumber": 3,
+        "IndexNumberEnd": 4,
+        "ParentIndexNumber": 1
+      }
+    },
+    {
+      "name": "pair_missing_numbers",
+      "media": "Nfo Probe 08/Season 01/Nfo Probe 08 - S01E03E04.mp4",
+      "initialNfo": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<episodedetails>\n<title>NFO pair_missing_numbers 1 block 1</title>\n<plot>Plot pair_missing_numbers 1 block 1</plot>\n<uniqueid type=\"tmdb\">91080101</uniqueid>\n</episodedetails>\n<episodedetails>\n<title>NFO pair_missing_numbers 1 block 2</title>\n<plot>Plot pair_missing_numbers 1 block 2</plot>\n<uniqueid type=\"tmdb\">91080102</uniqueid>\n</episodedetails>\n",
+      "first": {
+        "Name": "NFO pair_missing_numbers 1 block 1",
+        "Overview": "Plot pair_missing_numbers 1 block 1",
+        "ProviderIds": {
+          "Tmdb": "91080101"
+        },
+        "IndexNumber": 3,
+        "IndexNumberEnd": 4,
+        "ParentIndexNumber": 1
+      }
+    },
+    {
+      "name": "pair_duplicate_number",
+      "media": "Nfo Probe 09/Season 01/Nfo Probe 09 - S01E03E04.mp4",
+      "initialNfo": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<episodedetails>\n<title>NFO pair_duplicate_number 1 block 1</title>\n<plot>Plot pair_duplicate_number 1 block 1</plot>\n<uniqueid type=\"tmdb\">91090101</uniqueid><season>1</season><episode>3</episode>\n</episodedetails>\n<episodedetails>\n<title>NFO pair_duplicate_number 1 block 2</title>\n<plot>Plot pair_duplicate_number 1 block 2</plot>\n<uniqueid type=\"tmdb\">91090102</uniqueid><season>1</season><episode>3</episode>\n</episodedetails>\n",
+      "first": {
+        "Name": "NFO pair_duplicate_number 1 block 1",
+        "Overview": "Plot pair_duplicate_number 1 block 1",
+        "ProviderIds": {
+          "Tmdb": "91090101"
+        },
+        "IndexNumber": 3,
+        "IndexNumberEnd": 4,
+        "ParentIndexNumber": 1
+      }
+    },
+    {
+      "name": "single_two_roots",
+      "media": "Nfo Probe 10/Season 01/Nfo Probe 10 - S01E03.mp4",
+      "initialNfo": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<episodedetails>\n<title>NFO single_two_roots 1 block 1</title>\n<plot>Plot single_two_roots 1 block 1</plot>\n<uniqueid type=\"tmdb\">91100101</uniqueid><season>1</season><episode>3</episode>\n</episodedetails>\n<episodedetails>\n<title>NFO single_two_roots 1 block 2</title>\n<plot>Plot single_two_roots 1 block 2</plot>\n<uniqueid type=\"tmdb\">91100102</uniqueid><season>1</season><episode>4</episode>\n</episodedetails>\n",
+      "first": {
+        "Name": "NFO single_two_roots 1 block 1,  NFO single_two_roots 1 block 2",
+        "Overview": "Plot single_two_roots 1 block 1\n\nPlot single_two_roots 1 block 2",
+        "ProviderIds": {
+          "Tmdb": "91100101"
+        },
+        "IndexNumber": 3,
+        "ParentIndexNumber": 1
+      }
+    },
+    {
+      "name": "pair_second_broken",
+      "media": "Nfo Probe 11/Season 01/Nfo Probe 11 - S01E03E04.mp4",
+      "initialNfo": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<episodedetails>\n<title>NFO pair_second_broken 1 block 1</title>\n<plot>Plot pair_second_broken 1 block 1</plot>\n<uniqueid type=\"tmdb\">91110101</uniqueid><season>1</season><episode>3</episode>\n</episodedetails>\n<episodedetails>\n<title>NFO pair_second_broken 1 block 2</title>\n<plot>Plot pair_second_broken 1 block 2</plot>\n<uniqueid type=\"tmdb\">91110102</uniqueid><season>1</season><episode>4</episode>\n",
+      "first": {
+        "Name": "NFO pair_second_broken 1 block 1",
+        "Overview": "Plot pair_second_broken 1 block 1",
+        "ProviderIds": {
+          "Tmdb": "91110101"
+        },
+        "IndexNumber": 3,
+        "IndexNumberEnd": 4,
+        "ParentIndexNumber": 1
+      }
+    },
+    {
+      "name": "pair_wrapped",
+      "media": "Nfo Probe 12/Season 01/Nfo Probe 12 - S01E03E04.mp4",
+      "initialNfo": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<episodes>\n<episodedetails>\n<title>NFO pair_wrapped 1 block 1</title>\n<plot>Plot pair_wrapped 1 block 1</plot>\n<uniqueid type=\"tmdb\">91120101</uniqueid><season>1</season><episode>3</episode>\n</episodedetails>\n<episodedetails>\n<title>NFO pair_wrapped 1 block 2</title>\n<plot>Plot pair_wrapped 1 block 2</plot>\n<uniqueid type=\"tmdb\">91120102</uniqueid><season>1</season><episode>4</episode>\n</episodedetails>\n</episodes>\n",
+      "first": {
+        "Name": "Nfo Probe 12 - S01E03E04",
+        "ProviderIds": {},
+        "IndexNumber": 3,
+        "IndexNumberEnd": 4,
+        "ParentIndexNumber": 1
+      }
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+{
+  "observedGobyRevision": "1e337142",
+  "cases": {
+    "pair_no_sidecar": {
+      "first": {
+        "IndexNumberEnd": null,
+        "Overview": ""
+      }
+    },
+    "pair_one_root": {
+      "first": {
+        "IndexNumberEnd": null
+      }
+    },
+    "pair_ordered": {
+      "first": {
+        "IndexNumberEnd": null,
+        "Name": "Nfo Probe 04 - S01E03E04",
+        "Overview": "",
+        "ProviderIds": {}
+      }
+    },
+    "pair_reversed": {
+      "first": {
+        "IndexNumber": 3,
+        "IndexNumberEnd": null,
+        "Name": "Nfo Probe 05 - S01E03E04",
+        "Overview": "",
+        "ProviderIds": {}
+      }
+    },
+    "pair_range_name": {
+      "first": {
+        "IndexNumberEnd": null,
+        "Name": "Nfo Probe 06 - S01E03-E04",
+        "Overview": "",
+        "ProviderIds": {}
+      }
+    },
+    "pair_outside_range": {
+      "first": {
+        "IndexNumberEnd": null,
+        "Name": "Nfo Probe 07 - S01E03E04",
+        "Overview": "",
+        "ProviderIds": {}
+      }
+    },
+    "pair_missing_numbers": {
+      "first": {
+        "IndexNumberEnd": null,
+        "Name": "Nfo Probe 08 - S01E03E04",
+        "Overview": "",
+        "ProviderIds": {}
+      }
+    },
+    "pair_duplicate_number": {
+      "first": {
+        "IndexNumberEnd": null,
+        "Name": "Nfo Probe 09 - S01E03E04",
+        "Overview": "",
+        "ProviderIds": {}
+      }
+    },
+    "single_two_roots": {
+      "first": {
+        "Name": "Nfo Probe 10 - S01E03",
+        "Overview": "",
+        "ProviderIds": {}
+      }
+    },
+    "pair_second_broken": {
+      "first": {
+        "IndexNumberEnd": null,
+        "Name": "Nfo Probe 11 - S01E03E04",
+        "Overview": "",
+        "ProviderIds": {}
+      }
+    },
+    "pair_wrapped": {
+      "first": {
+        "IndexNumberEnd": null,
+        "Overview": ""
+      }
+    }
+  }
+}

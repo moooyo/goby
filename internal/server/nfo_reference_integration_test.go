@@ -125,7 +125,7 @@ func TestHTTPNFOReferenceReplay(t *testing.T) {
 					if phase == "warm" && item.Warm != nil {
 						want, delta = item.Warm, gaps.Cases[item.Name]["warm"]
 					}
-					compareNFOReferenceFields(t, detail, want, delta)
+					compareNFOReferenceFields(t, nfoReferenceFields, detail, want, delta)
 				})
 			}
 		})
@@ -212,9 +212,9 @@ func addNFOReferenceRelationships(root, kind string, detail, row map[string]any,
 	}
 }
 
-func compareNFOReferenceFields(t *testing.T, got, official, delta map[string]any) {
+func compareNFOReferenceFields(t *testing.T, fields []string, got, official, delta map[string]any) {
 	t.Helper()
-	for _, field := range nfoReferenceFields {
+	for _, field := range fields {
 		value, present := got[field]
 		reference, observed := official[field]
 		if present == observed && reflect.DeepEqual(value, reference) {
