@@ -76,7 +76,7 @@ func TestEpisodePairNFOScanAndImportKeepAccessPendingUntilVerified(t *testing.T)
 		t.Run(mode.name, func(t *testing.T) {
 			ctx, pool, store, approved, admin := libraryIntegrationStore(t, forceProbeVersionedFunc(versionedEpisodePairTestProbe))
 			root := filepath.Join(approved, "tv")
-			const relative = "Show/Season 01/Show.S01E03-E04.mp4"
+			const relative = "Show/Season 01/Show - S01E03E04 - 第 3-4 集.mp4"
 			mediaPath := libraryIntegrationFile(t, root, relative, "one physical video")
 			nfoPath := strings.TrimSuffix(mediaPath, ".mp4") + ".nfo"
 			first := pairedTestNFO(3, "First", "PG", "Family")
@@ -115,11 +115,15 @@ func TestEpisodePairNFOScanAndImportKeepAccessPendingUntilVerified(t *testing.T)
 			}
 			job := libraryIntegrationScan(t, ctx, store, collection.ID, "Completed")
 			before := read()
+			season := nfoCatalogItem(t, ctx, store, admin, collection.ID, filepath.Dir(mediaPath))
+			if season.Type != "Season" || season.IndexNumber != 1 || before.ParentID != season.ID || before.IndexNumber != 3 || before.ParentIndexNumber != 1 {
+				t.Fatalf("the labeled pair did not retain its physical season and starting number: %+v", before)
+			}
 			if mode.deferred && runEpisodePairTestImport(t, ctx, pool, store, collection) == nil {
 				t.Fatal("deferred importer accepted differing official ratings")
 			}
 			checkHidden(before, job.ID)
-			if got := read(); got.Metadata != nil || got.Name != "Show S01E03-E04" {
+			if got := read(); got.Metadata != nil || got.Name != "Show - S01E03E04 - 第 3-4 集" {
 				t.Fatalf("conflicting first visit published part of the NFO: %+v", got)
 			}
 			if end, ok := before.EpisodeEndNumber(); !ok || end != 4 {
