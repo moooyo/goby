@@ -140,6 +140,20 @@ func (s *Store) applyOnlineMetadata(ctx context.Context, actor *identity.Princip
 	if result.Type != record.itemType || (actor != nil && revision == "") || (revision != "" && revision != strconv.FormatInt(record.revision, 10)) {
 		return ItemMetadataDetail{}, ErrRevisionConflict
 	}
+	detail, err := writeOnlineMetadata(ctx, tx, record, actor, result, online)
+	if err != nil {
+		return ItemMetadataDetail{}, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return ItemMetadataDetail{}, fmt.Errorf("commit online metadata: %w", err)
+	}
+	return detail, nil
+}
+
+// writeOnlineMetadata composes normalized provider facts against the locked
+// record. The caller owns authorization, revision checks and the commit.
+func writeOnlineMetadata(ctx context.Context, tx pgx.Tx, record metadataRecord, actor *identity.Principal, result providers.Metadata, online []byte) (ItemMetadataDetail, error) {
+	itemID := record.itemID
 	var base, local, music []byte
 	if err := tx.QueryRow(ctx, `SELECT CASE WHEN ms.online_type=i.type THEN COALESCE(ms.online_base, ms.automatic) ELSE ms.automatic END, i.local_metadata, ms.music_source FROM item_metadata_state ms JOIN items i ON i.id = ms.item_id WHERE i.id=$1`, itemID).Scan(&base, &local, &music); err != nil {
 		return ItemMetadataDetail{}, err
@@ -268,14 +282,7 @@ func (s *Store) applyOnlineMetadata(ctx context.Context, actor *identity.Princip
 			return ItemMetadataDetail{}, err
 		}
 	}
-	detail, err := metadataDetail(record)
-	if err != nil {
-		return ItemMetadataDetail{}, err
-	}
-	if err := tx.Commit(ctx); err != nil {
-		return ItemMetadataDetail{}, fmt.Errorf("commit online metadata: %w", err)
-	}
-	return detail, nil
+	return metadataDetail(record)
 }
 
 func providerQuery(detail ItemMetadataDetail) providers.Query {

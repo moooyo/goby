@@ -27,8 +27,12 @@ const (
 )
 
 type storeOptions struct {
-	scanEvidence        *ScanEvidenceOptions
-	playbackControlPool *pgxpool.Pool
+	scanEvidence         *ScanEvidenceOptions
+	playbackControlPool  *pgxpool.Pool
+	basicVideoScanProbe  Prober
+	deferLocalMetadata   bool
+	enrichOnlineMetadata bool
+	deferVideoSeek       bool
 
 	libraryStorageDirectoryHook libraryStorageDirectoryObservationHook
 }

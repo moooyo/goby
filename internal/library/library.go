@@ -158,27 +158,31 @@ type scanTask struct {
 // Store runs exactly two scan workers. Administrators must be authorized by the
 // caller before using management methods; item methods enforce user policies.
 type Store struct {
-	pool                *pgxpool.Pool
-	playbackControlPool *pgxpool.Pool
-	ownership           *scanOwnership
-	scanEvidence        *scanEvidenceManager
-	prober              Prober
-	imageInspection     artwork.InspectionCache
-	roots               []approvedRoot
-	configuredRoots     []configuredStorageRoot
-	ctx                 context.Context
-	cancel              context.CancelFunc
-	mu                  sync.Mutex
-	closed              bool
-	closing             atomic.Bool
-	closeOnce           sync.Once
-	shutdownErr         error
-	active              map[string]*scanTask
-	queue               chan *scanTask
-	scanUpdates         chan struct{}
-	workers             sync.WaitGroup
-	fileDeletions       sync.WaitGroup
-	done                chan struct{}
+	pool                 *pgxpool.Pool
+	playbackControlPool  *pgxpool.Pool
+	ownership            *scanOwnership
+	scanEvidence         *scanEvidenceManager
+	prober               Prober
+	basicVideoScanProbe  Prober
+	deferLocalMetadata   bool
+	enrichOnlineMetadata bool
+	deferVideoSeek       bool
+	imageInspection      artwork.InspectionCache
+	roots                []approvedRoot
+	configuredRoots      []configuredStorageRoot
+	ctx                  context.Context
+	cancel               context.CancelFunc
+	mu                   sync.Mutex
+	closed               bool
+	closing              atomic.Bool
+	closeOnce            sync.Once
+	shutdownErr          error
+	active               map[string]*scanTask
+	queue                chan *scanTask
+	scanUpdates          chan struct{}
+	workers              sync.WaitGroup
+	fileDeletions        sync.WaitGroup
+	done                 chan struct{}
 
 	// Zero preserves the physical connection's default mode. These owner/pool read
 	// choices are fixed at construction and never cache source or presence data.

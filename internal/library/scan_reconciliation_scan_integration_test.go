@@ -125,6 +125,50 @@ func TestScanReconciliationScanRemovesMissingFilesAndDirectoriesPreservesCache(t
 	assertNoCatalogTestNotification(t, notifications)
 }
 
+func TestScanReconciliationFastIngestKeepsPhysicalAbsenceIndependentOfPendingMetadata(t *testing.T) {
+	prober := &libraryFixtureProber{}
+	ctx, pool, store, root, userID := scanReconciliationScanStore(t, prober)
+	missing := libraryIntegrationFile(t, root, "movies/Gone/Lost.mp4", "video:missing")
+	kept := libraryIntegrationFile(t, root, "movies/Kept.mp4", "video:kept")
+	libraryIntegrationFile(t, root, "movies/Kept.nfo", "invalid preferred NFO")
+	libraryIntegrationFile(t, root, "movies/Kept-poster.png", "invalid preferred poster")
+	collection := libraryIntegrationCreate(t, ctx, store, "Fast reconciled movies", "movies", filepath.Join(root, "movies"))
+	scanReconciliationAssertBound(t, ctx, pool, collection.ID)
+	store.deferLocalMetadata = true
+	if job := libraryIntegrationScan(t, ctx, store, collection.ID, "Completed"); job.Error != "" {
+		t.Fatal(job.Error)
+	}
+	lost := nfoCatalogItem(t, ctx, store, userID, collection.ID, missing)
+	folder := nfoCatalogItem(t, ctx, store, userID, collection.ID, filepath.Dir(missing))
+	keep := nfoCatalogItem(t, ctx, store, userID, collection.ID, kept)
+	userDataSeed(t, ctx, pool, userID, UserData{ItemID: keep.ID, IsFavorite: true, PlayCount: 3})
+	before := forceProbeUserDataSnapshot(t, ctx, pool, keep.ID)
+	notifications := catalogChangesTestListener(t, store)
+	if err := os.Remove(missing); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(filepath.Dir(missing)); err != nil {
+		t.Fatal(err)
+	}
+	job := libraryIntegrationScan(t, ctx, store, collection.ID, "Completed")
+	if job.Error != "" || job.Added != 0 || job.Updated != 0 {
+		t.Fatalf("physical reconciliation waited on descriptive sidecars: %+v", job)
+	}
+	var pending int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM local_metadata_ingest WHERE item_id=$1 AND scan_job_id=$2 AND import_nfo AND import_images`, keep.ID, job.ID).Scan(&pending); err != nil || pending != 1 {
+		t.Fatalf("descriptive sidecars did not remain pending: %d %v", pending, err)
+	}
+	scanReconciliationAssertItems(t, ctx, pool, false, lost.ID, folder.ID)
+	want := []string{lost.ID, folder.ID}
+	sort.Strings(want)
+	if got := scanReconciliationRemoved(t, notifications, collection.ID); !reflect.DeepEqual(got, want) {
+		t.Fatalf("fast scan produced the wrong removals: %v, want %v", got, want)
+	}
+	if len(prober.calls()) != 2 || forceProbeUserDataSnapshot(t, ctx, pool, keep.ID) != before {
+		t.Fatal("the cached survivor was reprobed or lost user history")
+	}
+}
+
 func TestScanReconciliationScanUnboundOrUnavailableRootPreservesWholeLibrary(t *testing.T) {
 	for _, scenario := range []string{"unbound", "unavailable second root"} {
 		t.Run(scenario, func(t *testing.T) {

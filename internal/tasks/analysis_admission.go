@@ -46,12 +46,15 @@ func analysisTaskKeys() []string {
 // Source-side artifact generation shares the expensive media worker slot but
 // keeps persistent queues independent of analysis cache/profile invalidation.
 func isMediaAnalysisExecution(key string) bool {
-	return isAnalysisTask(key) || key == library.TaskBackgroundPreviewGenerationKey || key == library.TaskAudioWaveformGenerationKey || key == library.TaskSubtitleTimelineGenerationKey
+	return isAnalysisTask(key) || key == library.TaskBackgroundPreviewGenerationKey || key == library.TaskAudioWaveformGenerationKey ||
+		key == library.TaskSubtitleTimelineGenerationKey || key == library.TaskVideoSeekIngestKey
 }
 
 func mediaAnalysisExecutionKeys() []string {
 	// This order is also the in-process round-robin order for the shared slot.
-	return []string{library.TaskIntroAnalysisKey, library.TaskPreviewGenerationKey, library.TaskCreditsAnalysisKey, library.TaskBackgroundPreviewGenerationKey, library.TaskAudioWaveformGenerationKey, library.TaskSubtitleTimelineGenerationKey}
+	return []string{library.TaskIntroAnalysisKey, library.TaskPreviewGenerationKey, library.TaskCreditsAnalysisKey,
+		library.TaskBackgroundPreviewGenerationKey, library.TaskAudioWaveformGenerationKey, library.TaskSubtitleTimelineGenerationKey,
+		library.TaskVideoSeekIngestKey}
 }
 
 func cloneAnalysisSelection(input *library.AnalysisSelection) *library.AnalysisSelection {

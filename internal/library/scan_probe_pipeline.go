@@ -195,7 +195,7 @@ func (window *scanProbeWindow) submit(path, kind string, current hierarchy) (res
 				work.result <- scanProbeResult{err: scanReadFailure(media.ErrProcessRetirementUnknown)}
 			}
 		}()
-		work.result <- runScanProbe(window.ctx, state.store.prober, input)
+		work.result <- runScanProbe(window.ctx, state.scanProber(work.kind, scannedRoleOrdinary), input)
 		returned = true
 	}()
 	return nil
@@ -399,12 +399,13 @@ func (state *scanState) prepareScannedMedia(path, kind string, role scannedMedia
 	probe := stored.media
 	unchanged := !state.task.job.ForceProbe && probe != nil && stored.size == info.Size() && stored.modified != nil &&
 		stored.modified.Equal(catalogModifiedTime(info)) && (stored.identity == "" || stored.identity == fileIdentity(info))
-	versioned, checksVersion := state.store.prober.(interface{ CacheVersion() int })
+	prober := state.scanProber(kind, role)
+	versioned, checksVersion := prober.(interface{ CacheVersion() int })
 	if checksVersion {
 		unchanged = unchanged && probe.ProbeVersion == versioned.CacheVersion() &&
 			probe.FileChangeTimeNs > 0 && probe.FileChangeTimeNs == media.FileChangeTime(info)
 	}
-	if versioned, ok := state.store.prober.(interface{ MusicMetadataVersion() int }); kind == "audio" && ok {
+	if versioned, ok := prober.(interface{ MusicMetadataVersion() int }); kind == "audio" && ok {
 		unchanged = unchanged && probe.EmbeddedMusic != nil && probe.EmbeddedMusic.Version == versioned.MusicMetadataVersion()
 	}
 	accepted = true

@@ -13,7 +13,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/metadata"
 )
@@ -280,17 +279,8 @@ func (state *scanState) folderLocalMetadataWithSource(relative, metadataPath, it
 	if metadataPath == "" {
 		return localMetadata{}, nil
 	}
-	var previous localMetadata
-	var raw []byte
-	err := state.store.pool.QueryRow(state.task.ctx, `SELECT local_metadata, local_metadata_hash, local_metadata_path
-		FROM items WHERE root_id = $1 AND relative_path = $2`, state.root.id, relative).Scan(&raw, &previous.hash, &previous.path)
-	if errors.Is(err, pgx.ErrNoRows) {
-		err = nil
-	}
+	previous, err := state.readPreviousFolderMetadata(state.task.ctx, relative)
 	if err != nil {
-		return localMetadata{}, err
-	}
-	if err := decodeLocalMetadata(raw, &previous); err != nil {
 		return localMetadata{}, err
 	}
 	candidates, kind := folderNFOCandidate(metadataPath, itemType)
@@ -302,7 +292,10 @@ func (state *scanState) folderLocalMetadataWithSource(relative, metadataPath, it
 	}); err != nil {
 		return localMetadata{}, scanReadFailure(err)
 	}
-	local := state.applyLocalNFO(observation, kind, previous)
+	return state.seasonNumbering(state.applyLocalNFO(observation, kind, previous), itemType, index), nil
+}
+
+func (state *scanState) seasonNumbering(local localMetadata, itemType string, index int) localMetadata {
 	if itemType == "Season" && local.value != nil && local.value.IndexNumber != nil && *local.value.IndexNumber != index {
 		state.warnings++
 		state.numberingConflicts++
@@ -310,7 +303,7 @@ func (state *scanState) folderLocalMetadataWithSource(relative, metadataPath, it
 		copy.IndexNumber = nil
 		local.value = &copy
 	}
-	return local, nil
+	return local
 }
 
 func encodeLocalMetadata(local localMetadata) ([]byte, error) {

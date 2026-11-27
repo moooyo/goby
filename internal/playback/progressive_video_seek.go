@@ -9,7 +9,16 @@ import (
 	"github.com/moooyo/goby/internal/transcode"
 )
 
-// attachProgressiveVideoSeekCandidate only selects private scan evidence. It
+// ApplyIngestedVideoSeek adds optional evidence to an already selected encode
+// plan; it never changes the chosen tracks, encoding policy, or start position.
+func ApplyIngestedVideoSeek(source Source, plan *transcode.Plan, indexes []media.VideoSeekIndex) {
+	if len(indexes) != 0 && plan != nil && plan.VideoSeekCandidate == "" {
+		source.Info.VideoSeekIndexes = indexes
+		attachProgressiveVideoSeekCandidate(source, plan)
+	}
+}
+
+// attachProgressiveVideoSeekCandidate only selects private catalog evidence. It
 // never opens a source or starts a tool, and unavailable or inconsistent evidence
 // cannot turn an otherwise playable conversion into an unsupported request.
 // Source.Info comes from the authorized catalog source. The opaque file/tool

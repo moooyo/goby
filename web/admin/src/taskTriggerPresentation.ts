@@ -15,6 +15,9 @@ const eventLabels: Record<TaskSystemEvent, string> = {
   CreditsAnalysisRequested: 'When credits detection is requested',
   SubtitleTimelineGenerationRequested: 'When subtitle timeline generation is requested',
   OnlineImagesRequested: 'When online image download is requested',
+  LocalMetadataIngestRequested: 'When local metadata import is requested',
+  OnlineMetadataIngestRequested: 'When online metadata enrichment is requested',
+  VideoSeekIngestRequested: 'When video seek indexing is requested',
 };
 
 export function taskTriggerLabel(trigger: TaskTriggerInput, t: TaskTranslator): string {

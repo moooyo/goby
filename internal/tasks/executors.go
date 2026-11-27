@@ -114,11 +114,14 @@ type Executor interface {
 }
 
 type ExecutorRegistration struct {
-	Key               string
-	Name              string
-	Description       string
-	Category          string
-	Global            bool
+	Key         string
+	Name        string
+	Description string
+	Category    string
+	Global      bool
+	// AutomaticDisabled pauses schedule dispatch without changing a saved rule
+	// or disabling manual execution. It is fixed for the server lifecycle.
+	AutomaticDisabled bool
 	Executor          Executor
 	AnalysisAdmission func(library.OwnedTx, AnalysisAdmissionRequest) (AnalysisAdmissionBinding, error)
 }
@@ -170,6 +173,17 @@ func (s *Store) executorKeys() []string {
 	// Keep scan keys first to preserve the original definition lock order.
 	sort.Strings(keys[2:])
 	return keys
+}
+
+func (s *Store) scheduledExecutorKeys() []string {
+	keys := s.executorKeys()
+	active := keys[:0]
+	for _, key := range keys {
+		if entry, found := s.executors.lookup(key); !found || !entry.AutomaticDisabled {
+			active = append(active, key)
+		}
+	}
+	return active
 }
 
 func validProgress(value Progress) bool {

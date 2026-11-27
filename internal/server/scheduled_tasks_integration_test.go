@@ -228,9 +228,9 @@ func TestHTTPScheduledTasksRequireManagementTokensAndExposeOnlyTaskInfo(t *testi
 		target string
 		count  int
 	}{
-		{"/emby/ScheduledTasks", 11},
-		{"/ScheduledTasks", 11},
-		{"/EmBy/sChEdUlEdTaSkS?iShIdDeN=false&iSeNaBlEd=true", 11},
+		{"/emby/ScheduledTasks", publishedCompatibilityTaskCount},
+		{"/ScheduledTasks", publishedCompatibilityTaskCount},
+		{"/EmBy/sChEdUlEdTaSkS?iShIdDeN=false&iSeNaBlEd=true", publishedCompatibilityTaskCount},
 		{"/ScheduledTasks?IsHidden=true", 0},
 		{"/ScheduledTasks?IsEnabled=false", 0},
 		{"/ScheduledTasks?IsHidden=false&IsEnabled=false", 0},
@@ -264,6 +264,13 @@ func TestHTTPScheduledTasksRequireManagementTokensAndExposeOnlyTaskInfo(t *testi
 			seenAnalysis := make(map[string]bool, len(expectedAnalysis))
 			for _, info := range items {
 				key, _ := info["Key"].(string)
+				if key == "GobyDownloadMissingImages" {
+					scheduledTaskHTTPAssertJSON(t, info["Triggers"], []map[string]any{
+						{"Type": "IntervalTrigger", "IntervalTicks": int64(864000000000), "MaxRuntimeTicks": int64(18000000000)},
+						{"Type": "SystemEventTrigger", "SystemEvent": string(systemevents.OnlineImagesRequested), "MaxRuntimeTicks": int64(18000000000)},
+					})
+					continue
+				}
 				name, analysis := expectedAnalysis[key]
 				if !analysis {
 					if triggers, ok := info["Triggers"].([]any); !ok || len(triggers) != 0 {

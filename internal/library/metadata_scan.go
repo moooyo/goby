@@ -11,6 +11,7 @@ import (
 
 type scannedMetadataBase struct {
 	Name, SortName, Overview string
+	IndexNumber              *int
 }
 
 type scannedMetadataOptions struct {
@@ -43,6 +44,9 @@ func syncScannedMetadata(ctx context.Context, tx pgx.Tx, itemID string, options 
 	}
 	if selected.Base != nil {
 		name, sortName, overview = selected.Base.Name, selected.Base.SortName, selected.Base.Overview
+		if selected.Base.IndexNumber != nil {
+			indexNumber = *selected.Base.IndexNumber
+		}
 	}
 	music, extracted, err := decodeAcceptedMusicSource(musicSource)
 	if err != nil {

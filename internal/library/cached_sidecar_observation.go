@@ -28,12 +28,12 @@ const (
 // observeCachedSidecarAbsence is a narrow no-payload observation. A candidate,
 // incomplete listing, or changed source leaves the ordinary sidecar scan in
 // charge of payload inspection and deletion. It never publishes catalog rows.
-func (state *scanState) observeCachedSidecarAbsence(ctx context.Context, relative, itemType string, probe *media.Info, primary os.FileInfo) (_ cachedSidecarObservation, resultErr error) {
-	return state.observeCachedSidecarAbsenceWithReader(ctx, relative, itemType, probe, primary, readScanDirectoryEntriesLimit)
+func (state *scanState) observeCachedSidecarAbsence(ctx context.Context, relative, itemType string, probe *media.Info, primary os.FileInfo, deferImages bool) (_ cachedSidecarObservation, resultErr error) {
+	return state.observeCachedSidecarAbsenceWithReader(ctx, relative, itemType, probe, primary, readScanDirectoryEntriesLimit, deferImages)
 }
 
 func (state *scanState) observeCachedSidecarAbsenceWithReader(ctx context.Context, relative, itemType string, probe *media.Info, primary os.FileInfo,
-	readEntries func(context.Context, *os.File, int, int) ([]os.DirEntry, error)) (_ cachedSidecarObservation, resultErr error) {
+	readEntries func(context.Context, *os.File, int, int) ([]os.DirEntry, error), deferImages bool) (_ cachedSidecarObservation, resultErr error) {
 	if err := ctx.Err(); err != nil {
 		return cachedSidecarObservation{}, err
 	}
@@ -76,7 +76,7 @@ func (state *scanState) observeCachedSidecarAbsenceWithReader(ctx context.Contex
 		return cachedSidecarObservation{}, nil
 	}
 	subtitles := state.subtitleDirectories[directoryPath]
-	imagesEnabled := EffectiveLibraryOptions(state.library).EnableLocalImages
+	imagesEnabled := !deferImages && EffectiveLibraryOptions(state.library).EnableLocalImages
 	images := state.imageDirectories[directoryPath]
 	if subtitles != nil && !sameSubtitleDirectoryInfo(subtitles.info, directoryInfo) ||
 		imagesEnabled && images != nil && !sameSubtitleDirectoryInfo(images.info, directoryInfo) {

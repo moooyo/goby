@@ -127,11 +127,21 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 	if app.playbackControlDB != nil {
 		catalogOptions = append(catalogOptions, library.WithPlaybackControlPool(app.playbackControlDB))
 	}
-	// Optional restart analysis belongs to scanning, independently of whether
-	// conversion is currently enabled. Unsupported analysis retains the normal
-	// probe facts; playback requests only read cached evidence.
-	catalog, err := library.New(db, media.Prober{FFprobePath: cfg.FFprobePath, FFmpegPath: cfg.FFmpegPath,
-		AnalyzeVideoSeek: true, Timeout: 30 * time.Second}, cfg.MediaRoots, catalogOptions...)
+	// Ordinary video imports need technical playback facts, not optional
+	// restart evidence. Explicit media refreshes still request the full probe.
+	basicProbe := media.Prober{FFprobePath: cfg.FFprobePath, FFmpegPath: cfg.FFmpegPath, Timeout: 30 * time.Second}
+	fullProbe := basicProbe
+	fullProbe.AnalyzeVideoSeek = true
+	if cfg.FastLibraryIngest {
+		catalogOptions = append(catalogOptions, library.WithBasicVideoScanProbe(basicProbe), library.WithDeferredLocalMetadata())
+		if cfg.FFmpegPath != "" {
+			catalogOptions = append(catalogOptions, library.WithDeferredVideoSeek())
+		}
+		if cfg.FastLibraryOnlineMetadata && cfg.OnlineProviders.Enabled {
+			catalogOptions = append(catalogOptions, library.WithIngestOnlineMetadata())
+		}
+	}
+	catalog, err := library.New(db, fullProbe, cfg.MediaRoots, catalogOptions...)
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +274,7 @@ func (s *Server) initializeSettings(ctx context.Context) error {
 }
 
 func (s *Server) initializeTasks(ctx context.Context) error {
-	executors, err := s.managementTaskExecutors()
+	executors, err := s.managementTaskExecutors(ctx)
 	if err != nil {
 		return err
 	}

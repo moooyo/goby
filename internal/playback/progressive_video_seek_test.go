@@ -68,6 +68,29 @@ func TestPlanProgressiveVideoSelectsOwnedPrivateSeekCandidate(t *testing.T) {
 	}
 }
 
+func TestApplyIngestedVideoSeekPreservesSelectedOutput(t *testing.T) {
+	source, request := progressiveVideoSeekTestSource(), progressiveVideoSeekTestRequest()
+	indexes := source.Info.VideoSeekIndexes
+	source.Info.VideoSeekIndexes = nil
+	decision := progressiveVideoTestPlan(t, source, request, conversionTestLimits())
+	before := *decision.Plan
+	ApplyIngestedVideoSeek(source, decision.Plan, indexes)
+	if decision.Plan.VideoSeekCandidate == "" || len(source.Info.VideoSeekIndexes) != 0 {
+		t.Fatal("precomputed evidence was not privately applied to the encode plan")
+	}
+	without := *decision.Plan
+	without.VideoSeekCandidate = ""
+	if without != before {
+		t.Fatal("a background index changed the selected start, tracks or other output parameters")
+	}
+	copyPlan := before
+	copyPlan.VideoCodec = "copy"
+	ApplyIngestedVideoSeek(source, &copyPlan, indexes)
+	if copyPlan.VideoSeekCandidate != "" {
+		t.Fatal("decoded restart evidence was incorrectly used to authorize stream copy")
+	}
+}
+
 func TestPlanProgressiveVideoUnusableSeekEvidenceKeepsLinearPlayback(t *testing.T) {
 	for name, change := range map[string]func(*Source){
 		"absent":           func(s *Source) { s.Info.VideoSeekIndexes = nil },

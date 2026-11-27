@@ -7,8 +7,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/artwork"
 	"github.com/moooyo/goby/internal/primaryio"
 )
@@ -37,8 +39,22 @@ func (state *scanState) scanImagesWithKnownAbsence(itemID, itemType, relative st
 	})
 }
 
-func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isFolder, knownNoLocalImages bool, completionCheck ...func() error) (resultErr error) {
-	if err := state.task.ctx.Err(); err != nil {
+// imageRefreshAuthority is owned by a separately admitted metadata task. A
+// scan uses its existing authority and unchanged-image fast path instead.
+type imageRefreshAuthority struct {
+	prepare func() (*PrimaryRootIO, rootBindingRow, error)
+	check   func(context.Context, pgx.Tx) error
+	finish  func(context.Context, pgx.Tx) error
+	prove   func(context.Context) error
+}
+
+func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isFolder, knownNoLocalImages bool, completionCheck ...func() error) error {
+	return state.refreshLocalImages(state.task.ctx, nil, itemID, itemType, relative, isFolder, knownNoLocalImages, completionCheck...)
+}
+
+func (state *scanState) refreshLocalImages(ctx context.Context, authority *imageRefreshAuthority, itemID, itemType, relative string,
+	isFolder, knownNoLocalImages bool, completionCheck ...func() error) (resultErr error) {
+	if err := ctx.Err(); err != nil {
 		return err
 	}
 	if !EffectiveLibraryOptions(state.library).EnableLocalImages {
@@ -58,11 +74,15 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 		state.warnings++
 		return nil
 	}
-	operation, row, err := state.prepareSidecarScanIO()
+	prepare := state.prepareSidecarScanIO
+	if authority != nil {
+		prepare = authority.prepare
+	}
+	operation, row, err := prepare()
 	if err != nil {
 		return scanReadFailure(err)
 	}
-	cleanupContext := operation.Context(state.task.ctx)
+	cleanupContext := operation.Context(ctx)
 	var directoryRoot *os.Root
 	var directory *os.File
 	var directoryInfo os.FileInfo
@@ -70,7 +90,9 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 	images := make(map[string][]*scannedImage)
 	preserve := make(map[string]bool)
 	inspected := make(map[string]*scannedImage)
+	var proofWorkers sync.WaitGroup
 	defer func() {
+		proofWorkers.Wait()
 		for _, image := range inspected {
 			resultErr = errors.Join(resultErr, closePrimarySidecarResource(cleanupContext, image.file))
 		}
@@ -88,8 +110,12 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 	noCandidates := true
 	var replaceTypes []string
 	ready := false
-	err = operation.Run(state.task.ctx, state.root.id, primaryio.Background, func(ctx context.Context) error {
-		if err := state.checkSidecarScanAuthority(ctx, row); err != nil {
+	err = operation.Run(ctx, state.root.id, primaryio.Background, func(ctx context.Context) error {
+		if authority != nil {
+			if err := authority.prove(ctx); err != nil {
+				return err
+			}
+		} else if err := state.checkSidecarScanAuthority(ctx, row); err != nil {
 			return err
 		}
 		directoryRoot, err = openRegisteredRoot(state.opened, directoryPath)
@@ -109,12 +135,12 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 		}
 		index := state.imageDirectories[directoryPath]
 		if index != nil {
-			if !os.SameFile(index.info, directoryInfo) || !index.info.ModTime().Equal(directoryInfo.ModTime()) {
+			if !sameSubtitleDirectoryInfo(index.info, directoryInfo) {
 				state.warnings++
 				return nil
 			}
 		} else {
-			entries, err := directory.ReadDir(-1)
+			entries, err := readScanDirectoryEntries(ctx, directory)
 			if err != nil {
 				state.warnings++
 				return nil
@@ -146,8 +172,8 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 				if image == nil {
 					image, err = state.inspectLocalImageContext(ctx, directoryRoot, directoryPath, filename)
 					if err != nil {
-						if state.task.ctx.Err() != nil {
-							return state.task.ctx.Err()
+						if fatal := localNFOFatalReadError(ctx, err); fatal != nil {
+							return fatal
 						}
 						preserve[imageType] = true
 						state.warnings++
@@ -158,7 +184,7 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 				images[imageType] = append(images[imageType], image)
 			}
 		}
-		if err := state.task.ctx.Err(); err != nil {
+		if err := ctx.Err(); err != nil {
 			return err
 		}
 		currentDirectory, err := state.opened.Lstat(directoryPath)
@@ -190,7 +216,7 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 		if len(replaceTypes) == 0 {
 			return nil
 		}
-		if !knownNoLocalImages || !noCandidates {
+		if authority == nil && (!knownNoLocalImages || !noCandidates) {
 			sourceRoot, err = state.captureScanSourceRoot(ctx, row)
 			if err != nil {
 				return err
@@ -214,7 +240,7 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 			// paths do not complete that fence and retain their normal checkpoint.
 			return completionCheck[0]()
 		}
-		return state.store.CheckOwnership(state.task.ctx)
+		return state.store.CheckOwnership(ctx)
 	}
 	replaceCounts := make([]int, len(replaceTypes))
 	rowCount := 0
@@ -245,11 +271,15 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 	}
 	// Preserve the same final source proof on both publication paths. It must
 	// follow the catalog observation, including any wait for the owner session.
-	finalSourceProof := func() error {
+	finalSourceProof := func(proofContext context.Context) error {
 		// The payload phase has retired. Its proof may only use immediately
 		// available capacity, never queue behind a held database transaction.
-		return scanReadFailure(operation.RunImmediate(state.task.ctx, state.root.id, primaryio.Background, func(proof context.Context) error {
-			if err := sourceRoot.Check(proof); err != nil {
+		check := sourceRoot.Check
+		if authority != nil {
+			check = authority.prove
+		}
+		verify := func(proof context.Context) error {
+			if err := check(proof); err != nil {
 				return err
 			}
 			current, err := state.opened.Lstat(directoryPath)
@@ -265,18 +295,26 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 					}
 				}
 			}
-			return sourceRoot.Check(proof)
+			return check(proof)
+		}
+		return scanReadFailure(operation.RunImmediate(proofContext, state.root.id, primaryio.Background, func(proof context.Context) error {
+			if authority == nil {
+				return verify(proof)
+			}
+			// Roll back the writer on deadline, but join the actual proof before
+			// the outer task closes its directory and image descriptors.
+			return runIngestSourceProof(proof, &proofWorkers, verify)
 		}))
 	}
 	// Known absence only selects the ordinary writer for newly populated sets;
 	// it never establishes equality or adds a precheck to every cold item.
-	if !knownNoLocalImages {
+	if authority == nil && !knownNoLocalImages {
 		unchanged, err := state.imageCatalogReplacementUnchanged(itemID, replaceTypes, replacement, row)
 		if err != nil {
 			return err
 		}
 		if unchanged {
-			if err := finalSourceProof(); err != nil {
+			if err := finalSourceProof(ctx); err != nil {
 				return err
 			}
 			if err := state.task.ctx.Err(); err != nil {
@@ -292,15 +330,19 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 			return state.store.checkScanOperationActive(state.task.ctx, state.task, grant)
 		}
 	}
-	tx, err := state.store.beginOwnedTx(state.task.ctx)
+	tx, err := state.store.beginOwnedTx(ctx)
 	if err != nil {
 		return err
 	}
 	defer func() { resultErr = errors.Join(resultErr, rollbackSidecarTransaction(tx, resultErr)) }()
-	if err := state.checkSidecarScanRootTx(tx, row); err != nil {
+	if authority != nil {
+		if err := authority.check(ctx, tx); err != nil {
+			return err
+		}
+	} else if err := state.checkSidecarScanRootTx(tx, row); err != nil {
 		return err
 	}
-	beforeCatalog, changed, err := readImageCatalogReplacement(state.task.ctx, tx, itemID, state.library.ID, state.root.id,
+	beforeCatalog, changed, err := readImageCatalogReplacement(ctx, tx, itemID, state.library.ID, state.root.id,
 		replaceTypes, replacement)
 	if err != nil {
 		return err
@@ -310,7 +352,7 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 	if changed {
 		// Candidate indexes are contiguous within each replaceable type. Keep
 		// existing keys for conditional updates, including rows from an old root.
-		deleted, err := tx.Exec(state.task.ctx, `DELETE FROM item_images im
+		deleted, err := tx.Exec(ctx, `DELETE FROM item_images im
 		USING unnest($2::text[], $3::integer[]) AS replacement(image_type, image_count)
 		WHERE im.item_id = $1 AND im.image_type = replacement.image_type
 		AND im.image_index >= replacement.image_count`, itemID, replaceTypes, replaceCounts)
@@ -319,7 +361,7 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 		}
 		changedRows := deleted.RowsAffected()
 		if rowCount != 0 {
-			written, err := tx.Exec(state.task.ctx, `INSERT INTO item_images
+			written, err := tx.Exec(ctx, `INSERT INTO item_images
 			(item_id, root_id, image_type, image_index, relative_path, file_identity, source_hash,
 			 file_size, modified_at, width, height, mime_type)
 			SELECT $1,$2,replacement.image_type,replacement.image_index,replacement.relative_path,
@@ -349,7 +391,7 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 			changedRows += written.RowsAffected()
 		}
 		if changedRows != 0 {
-			afterCatalog, err := readImageCatalogSnapshot(state.task.ctx, tx, itemID, state.library.ID, state.root.id)
+			afterCatalog, err := readImageCatalogSnapshot(ctx, tx, itemID, state.library.ID, state.root.id)
 			if err != nil {
 				return err
 			}
@@ -360,10 +402,22 @@ func (state *scanState) scanImagesAttempt(itemID, itemType, relative string, isF
 			}
 		}
 	}
-	if err := finalSourceProof(); err != nil {
+	proofContext := ctx
+	if authority != nil {
+		deadline, _ := tx.(*ownedTx).ctx.Deadline()
+		var cancel context.CancelFunc
+		proofContext, cancel = context.WithDeadline(ctx, deadline.Add(-scanReconciliationRollbackSpace))
+		defer cancel()
+	}
+	if err := finalSourceProof(proofContext); err != nil {
 		return err
 	}
-	return tx.Commit(state.task.ctx)
+	if authority != nil {
+		if err := authority.finish(ctx, tx); err != nil {
+			return err
+		}
+	}
+	return tx.Commit(ctx)
 }
 
 func validImageScanPath(path string) bool {
@@ -395,7 +449,7 @@ func (state *scanState) inspectLocalImageContext(ctx context.Context, root *os.R
 		}
 	}()
 	opened, err := file.Stat()
-	if err != nil || !opened.Mode().IsRegular() || !os.SameFile(before, opened) || opened.Size() > maxLocalImageBytes {
+	if err != nil || !opened.Mode().IsRegular() || !sameMediaSourceFile(before, opened) {
 		return nil, fmt.Errorf("local artwork changed while opening")
 	}
 	var info artwork.Info
@@ -424,8 +478,7 @@ func verifyScannedImage(root *os.Root, image *scannedImage) error {
 	after, err := image.file.Stat()
 	current, currentErr := root.Lstat(image.filename)
 	if err != nil || currentErr != nil || !after.Mode().IsRegular() || !current.Mode().IsRegular() ||
-		!os.SameFile(image.info, after) || !os.SameFile(image.info, current) || after.Size() != image.info.Size() ||
-		current.Size() != image.info.Size() || !after.ModTime().Equal(image.info.ModTime()) || !current.ModTime().Equal(image.info.ModTime()) {
+		!sameMediaSourceFile(image.info, after) || !sameMediaSourceFile(image.info, current) {
 		return fmt.Errorf("local artwork changed during inspection")
 	}
 	return nil

@@ -123,10 +123,11 @@ func compatibilityMigrationPhase3Defaults(t *testing.T, ctx context.Context, poo
 		AND NOT EXISTS(SELECT 1 FROM artwork_images)
 		AND NOT EXISTS(SELECT 1 FROM entity_user_data)
 		AND NOT EXISTS(SELECT 1 FROM task_triggers WHERE system_event IS NOT NULL OR last_event_sequence IS DISTINCT FROM 0)
-		AND (SELECT count(*) FROM task_system_events)=10
+		AND (SELECT count(*) FROM task_system_events)=13
 		AND NOT EXISTS(SELECT 1 FROM task_system_events WHERE name NOT IN
 			('ServerStarted','LibraryChanged','ConfigurationChanged','IntroAnalysisRequested','PreviewGenerationRequested',
-			 'BackgroundPreviewGenerationRequested','AudioWaveformGenerationRequested','CreditsAnalysisRequested','SubtitleTimelineGenerationRequested','OnlineImagesRequested')
+			 'BackgroundPreviewGenerationRequested','AudioWaveformGenerationRequested','CreditsAnalysisRequested','SubtitleTimelineGenerationRequested','OnlineImagesRequested',
+			 'LocalMetadataIngestRequested','OnlineMetadataIngestRequested','VideoSeekIngestRequested')
 			OR sequence IS DISTINCT FROM 0 OR lifecycle_key IS DISTINCT FROM '' OR occurred_at IS NULL)
 		AND NOT EXISTS(SELECT 1 FROM task_system_event_receipts)
 		AND NOT EXISTS(SELECT 1 FROM managed_settings WHERE runtime_overrides IS DISTINCT FROM
@@ -384,7 +385,7 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 				"analysis_detections", "analysis_detection_sources", "analysis_intro_decisions", "analysis_intro_audit", "analysis_preview_state", "analysis_previews",
 				"item_credits_state", "background_preview_settings", "item_background_preview_settings", "background_preview_queue", "background_preview_requests",
 				"audio_waveform_queue", "audio_waveform_requests", "analysis_credits_detections", "analysis_credits_detection_sources",
-				"subtitle_timeline_queue", "subtitle_timeline_requests", "item_bitmap_subtitles")
+				"subtitle_timeline_queue", "subtitle_timeline_requests", "item_bitmap_subtitles", "local_metadata_ingest", "video_seek_ingest")
 			currentTables = append(currentTables, strings.Fields(compatibilityMigrationAdministratorTables)...)
 			sort.Strings(currentTables)
 			var migratedSettings, migratedHistory, migratedAnalysisSettings string

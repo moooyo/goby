@@ -80,7 +80,10 @@ func (s *Store) Reconcile(ctx context.Context) error {
 		if err := s.installAnalysisSchedules(tx); err != nil {
 			return err
 		}
-		return s.installOnlineImageSchedule(tx)
+		if err := s.installOnlineImageSchedule(tx); err != nil {
+			return err
+		}
+		return s.installScanIngestSchedules(tx)
 	})
 }
 

@@ -28,6 +28,8 @@ type OnlineImageProvider interface {
 // SQL is only an admission hint; every publication rechecks the full artwork
 // revision and effective provider identity under the catalog owner.
 const onlineImageCandidateSQL = `i.type IN ('Movie','Series','Season','Episode')
+	AND NOT EXISTS (SELECT 1 FROM local_metadata_ingest pending
+		WHERE pending.item_id=i.id AND (pending.import_nfo OR pending.import_images))
 	AND (` + onlineImageKnownIdentitySQL + `)
 	AND EXISTS (SELECT 1 FROM unnest(CASE i.type
 		WHEN 'Episode' THEN ARRAY['Thumb'] WHEN 'Season' THEN ARRAY['Primary']
@@ -126,6 +128,21 @@ func readOnlineImageSnapshotWithPolicy(ctx context.Context, tx pgx.Tx, libraryID
 		return result, err
 	}
 	if !manual && (!supported || !enabled) {
+		return result, ErrNotFound
+	}
+	var pending bool
+	if err := tx.QueryRow(ctx, `WITH RECURSIVE ancestry AS (
+		SELECT id,parent_id FROM items WHERE id=$1 AND library_id=$2
+		UNION SELECT parent.id,parent.parent_id FROM items parent JOIN ancestry child ON parent.id=child.parent_id
+		WHERE parent.library_id=$2)
+		SELECT EXISTS(SELECT 1 FROM ancestry JOIN local_metadata_ingest q ON q.item_id=ancestry.id
+		WHERE q.import_nfo OR (q.item_id=$1 AND q.import_images))`, itemID, libraryID).Scan(&pending); err != nil {
+		return result, err
+	}
+	if pending {
+		if manual {
+			return result, ErrRevisionConflict
+		}
 		return result, ErrNotFound
 	}
 	record, err := readMetadataRecord(ctx, tx, itemID, lock)

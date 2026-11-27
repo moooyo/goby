@@ -30,6 +30,15 @@ func (s *Store) nextAnalysisRun(ctx context.Context, previousKey string) (string
 }
 
 func (s *Store) snapshotChildren(tx library.OwnedTx, runID, key string) (int64, error) {
+	if key == library.TaskLocalMetadataIngestKey {
+		return library.SnapshotLocalMetadataIngestChildren(tx, runID)
+	}
+	if key == library.TaskOnlineMetadataIngestKey {
+		return library.SnapshotOnlineMetadataIngestChildren(tx, runID)
+	}
+	if key == library.TaskVideoSeekIngestKey {
+		return library.SnapshotVideoSeekIngestChildren(tx, runID)
+	}
 	if key == library.TaskOnlineImagesKey {
 		return library.SnapshotOnlineImageTaskChildren(tx, runID)
 	}

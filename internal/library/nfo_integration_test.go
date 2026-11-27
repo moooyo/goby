@@ -35,6 +35,12 @@ func nfoCatalogItem(t *testing.T, ctx context.Context, store *Store, userID, lib
 
 func nfoAssertMetadata(t *testing.T, item Item, expected *metadata.Metadata) {
 	t.Helper()
+	if item.Type == "Series" && expected.DisplayOrder == "" {
+		// The catalog supplies the series display order when the NFO omits it.
+		values := *expected
+		values.DisplayOrder = "Aired"
+		expected = &values
+	}
 	if item.Metadata == nil || !reflect.DeepEqual(item.Metadata, expected) {
 		t.Fatalf("persisted local metadata = %+v, want %+v", item.Metadata, expected)
 	}

@@ -142,7 +142,7 @@ func deviceLegacyTableSnapshot(t *testing.T, ctx context.Context, pool *pgxpool.
 
 func assertDeviceLegacyTablesPreserved(t *testing.T, ctx context.Context, pool *pgxpool.Pool, tables []deviceLegacyTable) {
 	t.Helper()
-	var expandedArtworkOptions, introAutomation, previewAutomation, backgroundAutomation, waveformAutomation, creditsAutomation, subtitleTimelineAutomation, onlineImagesAutomation bool
+	var expandedArtworkOptions, introAutomation, previewAutomation, backgroundAutomation, waveformAutomation, creditsAutomation, subtitleTimelineAutomation, onlineImagesAutomation, fastIngestAutomation bool
 	if err := pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version=49),
 		EXISTS(SELECT 1 FROM schema_migrations WHERE version=51),
 		EXISTS(SELECT 1 FROM schema_migrations WHERE version=52),
@@ -150,7 +150,8 @@ func assertDeviceLegacyTablesPreserved(t *testing.T, ctx context.Context, pool *
 		EXISTS(SELECT 1 FROM schema_migrations WHERE version=58),
 		EXISTS(SELECT 1 FROM schema_migrations WHERE version=59),
 		EXISTS(SELECT 1 FROM schema_migrations WHERE version=60),
-		EXISTS(SELECT 1 FROM schema_migrations WHERE version=75)`).Scan(&expandedArtworkOptions, &introAutomation, &previewAutomation, &backgroundAutomation, &waveformAutomation, &creditsAutomation, &subtitleTimelineAutomation, &onlineImagesAutomation); err != nil {
+		EXISTS(SELECT 1 FROM schema_migrations WHERE version=75),
+		EXISTS(SELECT 1 FROM schema_migrations WHERE version=79)`).Scan(&expandedArtworkOptions, &introAutomation, &previewAutomation, &backgroundAutomation, &waveformAutomation, &creditsAutomation, &subtitleTimelineAutomation, &onlineImagesAutomation, &fastIngestAutomation); err != nil {
 		t.Fatal("read the selected library-option migration boundary")
 	}
 	for _, table := range tables {
@@ -170,7 +171,13 @@ func assertDeviceLegacyTablesPreserved(t *testing.T, ctx context.Context, pool *
 			for _, addition := range []struct {
 				applied bool
 				name    string
-			}{{introAutomation, "IntroAnalysisRequested"}, {previewAutomation, "PreviewGenerationRequested"}, {backgroundAutomation, "BackgroundPreviewGenerationRequested"}, {waveformAutomation, "AudioWaveformGenerationRequested"}, {creditsAutomation, "CreditsAnalysisRequested"}, {subtitleTimelineAutomation, "SubtitleTimelineGenerationRequested"}, {onlineImagesAutomation, "OnlineImagesRequested"}} {
+			}{
+				{introAutomation, "IntroAnalysisRequested"}, {previewAutomation, "PreviewGenerationRequested"},
+				{backgroundAutomation, "BackgroundPreviewGenerationRequested"}, {waveformAutomation, "AudioWaveformGenerationRequested"},
+				{creditsAutomation, "CreditsAnalysisRequested"}, {subtitleTimelineAutomation, "SubtitleTimelineGenerationRequested"},
+				{onlineImagesAutomation, "OnlineImagesRequested"}, {fastIngestAutomation, "LocalMetadataIngestRequested"},
+				{fastIngestAutomation, "OnlineMetadataIngestRequested"}, {fastIngestAutomation, "VideoSeekIngestRequested"},
+			} {
 				if !addition.applied {
 					continue
 				}

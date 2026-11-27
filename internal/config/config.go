@@ -42,6 +42,9 @@ type Config struct {
 	Updates               UpdateConfig              `json:"-"`
 	OnlineProviders       OnlineProvidersConfig     `json:"-"`
 	DynamicSources        []DynamicSourceDefinition `json:"-"`
+
+	FastLibraryIngest         bool
+	FastLibraryOnlineMetadata bool
 }
 
 func Load() (Config, error) {
@@ -68,6 +71,14 @@ func Load() (Config, error) {
 			return Config{}, fmt.Errorf("GOBY_TRUSTED_PROXIES must contain comma-separated IP CIDRs")
 		}
 		c.TrustedProxies = append(c.TrustedProxies, prefix.Masked())
+	}
+	c.FastLibraryIngest, err = strconv.ParseBool(env("GOBY_FAST_LIBRARY_INGEST", "false"))
+	if err != nil {
+		return Config{}, fmt.Errorf("GOBY_FAST_LIBRARY_INGEST must be a boolean")
+	}
+	c.FastLibraryOnlineMetadata, err = strconv.ParseBool(env("GOBY_FAST_LIBRARY_ONLINE_METADATA", "false"))
+	if err != nil {
+		return Config{}, fmt.Errorf("GOBY_FAST_LIBRARY_ONLINE_METADATA must be a boolean")
 	}
 	c.CookieSecure, err = strconv.ParseBool(env("GOBY_COOKIE_SECURE", "true"))
 	if err != nil {
@@ -174,6 +185,9 @@ func (c Config) Validate() error {
 	}
 	if err := c.validateScanEvidence(); err != nil {
 		return err
+	}
+	if c.FastLibraryOnlineMetadata && (!c.FastLibraryIngest || !c.OnlineProviders.Enabled) {
+		return fmt.Errorf("GOBY_FAST_LIBRARY_ONLINE_METADATA requires fast library ingest and online providers")
 	}
 	if err := c.OnlineProviders.Validate(); err != nil {
 		return err

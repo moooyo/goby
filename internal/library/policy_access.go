@@ -126,6 +126,14 @@ func (access libraryAccess) itemPolicySQLWithParameters(alias string, parameters
 		WHERE NOT parent.id=ANY(child.visited)
 	) `
 	ancestorConditions := []string{}
+	const noPendingRatingOrTags = `NOT EXISTS (SELECT 1 FROM policy_ancestors ancestor
+		JOIN local_metadata_ingest pending ON pending.item_id=ancestor.id WHERE pending.import_nfo)`
+	// Pending local metadata is not evidence that a source or its ancestors
+	// are unrated or untagged. An unrelated unrated category does not hide it.
+	pendingMatchesAll := policy.MaxParentalRating != nil || len(policy.BlockedTags) != 0 || len(policy.IncludeTags) != 0
+	if pendingMatchesAll {
+		ancestorConditions = append(ancestorConditions, noPendingRatingOrTags)
+	}
 	if len(policy.ExcludedSubFolders) != 0 {
 		excluded := parameters.array("excluded", policy.ExcludedSubFolders)
 		ancestorConditions = append(ancestorConditions, "NOT EXISTS (SELECT 1 FROM policy_ancestors WHERE id=ANY("+excluded+") OR path=ANY("+excluded+"))")
@@ -171,7 +179,11 @@ func (access libraryAccess) itemPolicySQLWithParameters(alias string, parameters
 		category := "CASE WHEN " + alias + `.type='Movie' THEN 'Movie' WHEN ` + alias + `.type IN ('Series','Season','Episode') THEN 'Series'
 			WHEN ` + alias + `.type IN ('Audio','MusicAlbum','MusicArtist','MusicVideo') THEN 'Music'
 			WHEN EXISTS (SELECT 1 FROM item_extra_resources extra WHERE extra.resource_item_id=` + alias + `.id AND extra.active AND extra.kind='trailer') THEN 'Trailer' ELSE 'Other' END`
-		ratingConditions = append(ratingConditions, "(("+rating+" IS NOT NULL AND "+rating+" NOT IN ('UR','NR','UNRATED','NOT RATED')) OR NOT ("+category+")=ANY("+parameters.array("unrated", policy.BlockUnratedItems)+"))")
+		unratedCategory := "(" + category + ")=ANY(" + parameters.array("unrated", policy.BlockUnratedItems) + ")"
+		if !pendingMatchesAll {
+			ancestorConditions = append(ancestorConditions, "(NOT "+unratedCategory+" OR "+noPendingRatingOrTags+")")
+		}
+		ratingConditions = append(ratingConditions, "(("+rating+" IS NOT NULL AND "+rating+" NOT IN ('UR','NR','UNRATED','NOT RATED')) OR NOT "+unratedCategory+")")
 	}
 	content := strings.Join(ratingConditions, " AND ")
 	if len(allowTags) != 0 {

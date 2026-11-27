@@ -19,6 +19,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/moooyo/goby/internal/database"
 	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/metadata"
 )
 
 func metadataMigrationLegacyPool(t *testing.T) (context.Context, *pgxpool.Pool) {
@@ -209,7 +210,8 @@ func metadataMigrationPhase3Defaults(t *testing.T, ctx context.Context, pool *pg
 	if err := pool.QueryRow(ctx, `WITH event_defaults AS (
 		SELECT count(*) AS total, count(*) FILTER (WHERE name IN
 			('ServerStarted','LibraryChanged','ConfigurationChanged','IntroAnalysisRequested','PreviewGenerationRequested',
-			 'BackgroundPreviewGenerationRequested','AudioWaveformGenerationRequested','CreditsAnalysisRequested','SubtitleTimelineGenerationRequested')
+			 'BackgroundPreviewGenerationRequested','AudioWaveformGenerationRequested','CreditsAnalysisRequested','SubtitleTimelineGenerationRequested',
+			 'OnlineImagesRequested','LocalMetadataIngestRequested','OnlineMetadataIngestRequested','VideoSeekIngestRequested')
 			AND sequence=0 AND lifecycle_key='' AND occurred_at IS NOT NULL) AS initialized
 		FROM task_system_events
 	) SELECT
@@ -225,7 +227,7 @@ func metadataMigrationPhase3Defaults(t *testing.T, ctx context.Context, pool *pg
 		AND NOT EXISTS(SELECT 1 FROM artwork_images)
 		AND NOT EXISTS(SELECT 1 FROM entity_user_data)
 		AND NOT EXISTS(SELECT 1 FROM task_triggers WHERE system_event IS NOT NULL OR last_event_sequence IS DISTINCT FROM 0)
-		AND (SELECT total=9 AND initialized=9 FROM event_defaults)
+		AND (SELECT total=13 AND initialized=13 FROM event_defaults)
 		AND NOT EXISTS(SELECT 1 FROM task_system_event_receipts),
 		(SELECT total FROM event_defaults), (SELECT initialized FROM event_defaults)`).Scan(&valid, &totalEvents, &initializedEvents); err != nil || !valid {
 		t.Fatalf("metadata migration inferred phase 3 library, preference, artwork, or event state: valid=%t total_events=%d initialized_events=%d error=%v",
@@ -293,9 +295,8 @@ func metadataMigrationItem(t *testing.T, ctx context.Context, pool *pgxpool.Pool
 		// values are absent; retain typed slots for the current Item decoder.
 		columns = strings.Replace(columns, itemIntroColumn, "NULL::jsonb", 1)
 		columns = strings.Replace(columns, itemCreditsColumn, "NULL::jsonb", 1)
-		columns = strings.Replace(columns,
-			"COALESCE((SELECT ms.effective FROM item_metadata_state ms WHERE ms.item_id = i.id), i.local_metadata)",
-			"i.local_metadata", 1)
+		columns = strings.ReplaceAll(columns, itemProjectedMetadataColumn, "i.local_metadata")
+		columns = strings.ReplaceAll(columns, itemMetadataColumn, "i.local_metadata")
 		// Schema 13 has only legacy associations. Keep the current scan shape
 		// while supplying their known group-zero semantics without reading the
 		// column introduced by migration 25.
@@ -474,7 +475,17 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 	}
 	assertOldTables()
 	for _, id := range projectionIDs {
-		if item := metadataMigrationItem(t, ctx, pool, id, false); !reflect.DeepEqual(item, projections[id]) {
+		want := projections[id]
+		if want.Type == "Series" && want.IsFolder {
+			// Schema 73 deliberately adds the default to the public projection.
+			var values metadata.Metadata
+			if want.Metadata != nil {
+				values = *want.Metadata
+			}
+			values.DisplayOrder = "Aired"
+			want.Metadata = &values
+		}
+		if item := metadataMigrationItem(t, ctx, pool, id, false); !reflect.DeepEqual(item, want) {
 			t.Errorf("metadata migration changed the legacy catalog projection for %s", id)
 		}
 	}
@@ -532,6 +543,9 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 		"subtitle_timeline_queue", "subtitle_timeline_requests"}
 	expectedAdditions = append(expectedAdditions, "background_preview_settings")
 	expectedAdditions = append(expectedAdditions, derivedTables...)
+	expectedAdditions = append(expectedAdditions, "local_metadata_ingest", "video_seek_ingest", "backup_policy", "backup_policy_runs", "backup_publication_receipts",
+		"admin_notification_destinations", "admin_notification_deliveries", "provider_configuration", "server_policy_settings",
+		"series_display_orders", "series_display_order_entries", "user_activity")
 	sort.Strings(expectedAdditions)
 	if !reflect.DeepEqual(additions, expectedAdditions) {
 		t.Errorf("metadata migration created unexpected tables: %+v", additions)

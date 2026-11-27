@@ -36,6 +36,9 @@ func analysisAutomation(key string) analysisAutomationPolicy {
 
 func (s *Store) installAnalysisSchedules(tx library.OwnedTx) error {
 	for _, key := range mediaAnalysisExecutionKeys() {
+		if key == library.TaskVideoSeekIngestKey {
+			continue // Fast-ingest work has its own recovery and runtime limits.
+		}
 		if err := s.installAnalysisSchedule(tx, key); err != nil {
 			return err
 		}

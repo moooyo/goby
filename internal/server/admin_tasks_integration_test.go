@@ -30,10 +30,19 @@ func adminTaskHTTPFixtureForKey(t *testing.T, key string) (*serverFixture, *http
 	expectStatus(t, response, http.StatusOK)
 	page := jsonObject(t, response)
 	items, ok := page["Items"].([]any)
-	if !ok || len(items) != 11 || page["TotalRecordCount"] != float64(11) {
-		t.Fatal("task startup did not register the eleven task executors")
+	expected := map[string]string{
+		tasks.LibraryScanKey: "Scan media library", tasks.LibraryRefreshMediaKey: "Refresh media details",
+		tasks.MetadataRefreshKey: "Refresh online metadata", tasks.SubtitleDownloadKey: "Download missing subtitles",
+		tasks.CacheMaintainKey: "Maintain provider cache", library.TaskOnlineImagesKey: "Download missing images",
+		library.TaskLocalMetadataIngestKey: "Import local metadata", library.TaskIntroAnalysisKey: "Analyze episode introductions",
+		library.TaskOnlineMetadataIngestKey: "Enrich newly scanned metadata", library.TaskVideoSeekIngestKey: "Index video seek points",
+		library.TaskCreditsAnalysisKey: "Analyze credits", library.TaskPreviewGenerationKey: "Generate seek previews",
+		library.TaskBackgroundPreviewGenerationKey: "Generate background clips", library.TaskAudioWaveformGenerationKey: "Generate audio waveforms",
+		library.TaskSubtitleTimelineGenerationKey: "Generate subtitle timelines",
 	}
-	expected := map[string]string{tasks.LibraryScanKey: "Scan media library", tasks.LibraryRefreshMediaKey: "Refresh media details", tasks.MetadataRefreshKey: "Refresh online metadata", tasks.SubtitleDownloadKey: "Download missing subtitles", tasks.CacheMaintainKey: "Maintain provider cache", library.TaskIntroAnalysisKey: "Analyze episode introductions", library.TaskCreditsAnalysisKey: "Analyze credits", library.TaskPreviewGenerationKey: "Generate seek previews", library.TaskBackgroundPreviewGenerationKey: "Generate background clips", library.TaskAudioWaveformGenerationKey: "Generate audio waveforms", library.TaskSubtitleTimelineGenerationKey: "Generate subtitle timelines"}
+	if !ok || len(items) != len(expected) || page["TotalRecordCount"] != float64(len(expected)) {
+		t.Fatalf("task startup registered %d definitions, want %d", len(items), len(expected))
+	}
 	analysisEvents := map[string]systemevents.Event{
 		library.TaskIntroAnalysisKey:               systemevents.IntroAnalysisRequested,
 		library.TaskCreditsAnalysisKey:             systemevents.CreditsAnalysisRequested,
@@ -52,15 +61,16 @@ func adminTaskHTTPFixtureForKey(t *testing.T, key string) (*serverFixture, *http
 		definitionKey := stringValue(t, definition, "Key")
 		name, known := expected[definitionKey]
 		event, analysis := analysisEvents[definitionKey]
-		revision := "1"
-		if analysis {
-			revision = "2"
+		onlineImages := definitionKey == library.TaskOnlineImagesKey
+		revision, triggerCount := "1", 0
+		if analysis || onlineImages {
+			revision, triggerCount = "2", 2
 		}
 		if !known || definitions[definitionKey] != nil || definition["Name"] != name || definition["Enabled"] != true || definition["Revision"] != revision {
 			t.Fatal("native task definition lost its stable public metadata")
 		}
 		triggers, ok := definition["Triggers"].([]any)
-		if !ok || !analysis && len(triggers) != 0 || analysis && len(triggers) != 2 {
+		if !ok || len(triggers) != triggerCount {
 			t.Fatal("native task definition lost its initial trigger set")
 		}
 		if analysis {
@@ -277,8 +287,8 @@ func TestHTTPAdminTaskShutdownFencesAdmissionBeforeCatalogClose(t *testing.T) {
 	response := f.request(t, http.MethodPost, "/admin/v1/tasks/"+taskID+"/runs", map[string]any{}, http.Header{"X-CSRF-Token": {csrf}}, cookie)
 	expectStatus(t, response, http.StatusServiceUnavailable)
 	var count int
-	if err := f.pool.QueryRow(f.ctx, "SELECT count(*) FROM task_runs").Scan(&count); err != nil || count != 0 {
-		t.Fatal("shutdown admitted a task run")
+	if err := f.pool.QueryRow(f.ctx, "SELECT count(*) FROM task_runs WHERE task_id=$1 AND source='manual'", taskID).Scan(&count); err != nil || count != 0 {
+		t.Fatal("shutdown admitted a manual scan run")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

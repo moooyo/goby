@@ -504,7 +504,7 @@ export interface JobResponse {
 export type TaskRunState = "pending" | "running" | "stopping" | "completed" | "failed" | "cancelled" | "interrupted";
 export type TaskChildState = "waiting" | "queued" | "running" | "completed" | "failed" | "cancelled" | "unavailable" | "interrupted";
 export type TaskTriggerKind = "interval" | "daily" | "weekly" | "startup" | "system_event";
-export type TaskSystemEvent = "ServerStarted" | "LibraryChanged" | "ConfigurationChanged" | "IntroAnalysisRequested" | "PreviewGenerationRequested" | "BackgroundPreviewGenerationRequested" | "AudioWaveformGenerationRequested" | "CreditsAnalysisRequested" | "SubtitleTimelineGenerationRequested" | "OnlineImagesRequested";
+export type TaskSystemEvent = "ServerStarted" | "LibraryChanged" | "ConfigurationChanged" | "IntroAnalysisRequested" | "PreviewGenerationRequested" | "BackgroundPreviewGenerationRequested" | "AudioWaveformGenerationRequested" | "CreditsAnalysisRequested" | "SubtitleTimelineGenerationRequested" | "OnlineImagesRequested" | "LocalMetadataIngestRequested" | "OnlineMetadataIngestRequested" | "VideoSeekIngestRequested";
 
 export interface TaskTriggerInput {
   Kind: TaskTriggerKind;
@@ -1346,7 +1346,7 @@ function validTaskDefinition(value: unknown): value is TaskDefinition {
   return value.Triggers.every((trigger: unknown) => {
     if (!isRecord(trigger) || !nonemptyString(trigger.Id) || ids.has(trigger.Id as string)
       || typeof trigger.Kind !== "string" || !["interval", "daily", "weekly", "startup", "system_event"].includes(trigger.Kind)
-      || (trigger.Kind === "system_event" ? !["ServerStarted", "LibraryChanged", "ConfigurationChanged", "IntroAnalysisRequested", "PreviewGenerationRequested", "BackgroundPreviewGenerationRequested", "AudioWaveformGenerationRequested", "CreditsAnalysisRequested", "SubtitleTimelineGenerationRequested", "OnlineImagesRequested"].includes(String(trigger.SystemEvent)) : trigger.SystemEvent != null)
+      || (trigger.Kind === "system_event" ? !["ServerStarted", "LibraryChanged", "ConfigurationChanged", "IntroAnalysisRequested", "PreviewGenerationRequested", "BackgroundPreviewGenerationRequested", "AudioWaveformGenerationRequested", "CreditsAnalysisRequested", "SubtitleTimelineGenerationRequested", "OnlineImagesRequested", "LocalMetadataIngestRequested", "OnlineMetadataIngestRequested", "VideoSeekIngestRequested"].includes(String(trigger.SystemEvent)) : trigger.SystemEvent != null)
       || ![trigger.IntervalTicks, trigger.TimeOfDayTicks, trigger.MaxRuntimeTicks].every(validTaskTicks)
       || (trigger.DayOfWeek !== null && (!Number.isInteger(trigger.DayOfWeek) || (trigger.DayOfWeek as number) < 0 || (trigger.DayOfWeek as number) > 6))
       || !validTaskTimestamp(trigger.NextFireAt) || typeof trigger.CalculationError !== "string") return false;

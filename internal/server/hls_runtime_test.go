@@ -12,6 +12,7 @@ import (
 
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
+	"github.com/moooyo/goby/internal/playback"
 	"github.com/moooyo/goby/internal/transcode"
 )
 
@@ -100,6 +101,34 @@ func hlsRuntimeTestFixture(t *testing.T) (*hlsRuntime, *hlsRuntimeTestJobs) {
 	h := &hlsRuntime{manager: jobs, ctx: ctx, cancel: cancel, sessions: make(map[string]*hlsSession), byKey: make(map[hlsKey]*hlsSession), done: make(chan struct{})}
 	t.Cleanup(func() { cancel(); jobs.releaseAll() })
 	return h, jobs
+}
+
+func TestProgressiveRegistrationPinsPlanAcrossSeekCacheChanges(t *testing.T) {
+	for _, firstCandidate := range []string{"", "ready-private-evidence"} {
+		h, _ := hlsRuntimeTestFixture(t)
+		principal := identity.Principal{User: identity.User{ID: "viewer", Policy: []byte(`{}`)}, SessionID: "auth", Kind: "emby", PeerIP: "127.0.0.1",
+			Client: identity.Client{DeviceID: "device"}}
+		source := library.MediaFile{Item: library.Item{ID: "movie"}, SourceID: "source", ETag: "stamp"}
+		plan := transcode.Plan{Container: "mp4", OutputMode: "progressive", VideoCodec: "h264", AudioStreamIndex: -1,
+			StartTicks: 10_000_000, DurationTicks: 30_000_000, SourceFormatStartKnown: true, VideoSeekCandidate: firstCandidate}
+		first, created, err := h.registerWithStatus(principal, source, "play", playback.ConversionDecision{Plan: &plan}, plan.StartTicks)
+		if err != nil || !created {
+			t.Fatalf("register fixture output: %v", err)
+		}
+		if firstCandidate == "" {
+			plan.VideoSeekCandidate = "ready-private-evidence"
+		} else {
+			plan.VideoSeekCandidate = ""
+		}
+		second, duplicate, err := h.registerWithStatus(principal, source, "play", playback.ConversionDecision{Plan: &plan}, plan.StartTicks)
+		if err != nil || duplicate || second != first || second.key.plan.VideoSeekCandidate != firstCandidate {
+			t.Fatalf("a newly published index or a cache miss changed an existing output plan: %v", err)
+		}
+		h.retire(first)
+		if len(h.byKey) != 0 {
+			t.Fatal("retiring the pinned plan left its normalized registration behind")
+		}
+	}
 }
 
 func hlsRuntimeTestSession(t *testing.T, h *hlsRuntime, id string, active bool) *hlsSession {

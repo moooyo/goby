@@ -100,27 +100,9 @@ func (s *Store) refreshProviderTaskItem(ctx context.Context, client *providers.C
 	if err != nil {
 		return false, err
 	}
-	selection := providers.Selection{Provider: provider, Type: query.Type, Language: query.Language}
-	selection.ID = providers.MetadataID(provider, query.Type, query.ProviderIDs)
-	if selection.ID == "" {
-		if strings.TrimSpace(query.Name) == "" {
-			return false, nil
-		}
-		matches, err := client.Search(ctx, provider, query)
-		if err != nil {
-			return false, err
-		}
-		candidates := 0
-		for _, match := range matches {
-			if match.Provider != provider || match.Type != query.Type || !strings.EqualFold(strings.TrimSpace(match.Name), strings.TrimSpace(query.Name)) || (query.Year > 0 && match.Year != query.Year) {
-				continue
-			}
-			selection = match.Selection
-			candidates++
-		}
-		if candidates != 1 {
-			return false, nil
-		}
+	selection, found, err := selectProviderTaskMetadata(ctx, client, provider, query)
+	if err != nil || !found {
+		return false, err
 	}
 	if err := ctx.Err(); err != nil {
 		return false, err
@@ -136,6 +118,39 @@ func (s *Store) refreshProviderTaskItem(ctx context.Context, client *providers.C
 		return false, err
 	}
 	return true, nil
+}
+
+// selectProviderTaskMetadata uses a known identity or exactly one title match
+// (and the same year, when known). Relevance scores never resolve ambiguity.
+func selectProviderTaskMetadata(ctx context.Context, client OnlineMetadataIngestProvider, provider string, query providers.Query) (providers.Selection, bool, error) {
+	if err := ctx.Err(); err != nil {
+		return providers.Selection{}, false, err
+	}
+	if id := providers.MetadataID(provider, query.Type, query.ProviderIDs); id != "" {
+		return providers.Selection{Provider: provider, Type: query.Type, Language: query.Language, ID: id}, true, nil
+	}
+	name := strings.TrimSpace(query.Name)
+	if name == "" {
+		return providers.Selection{}, false, nil
+	}
+	matches, err := client.Search(ctx, provider, query)
+	if err != nil {
+		return providers.Selection{}, false, err
+	}
+	var selection providers.Selection
+	for _, match := range matches {
+		if match.Provider != provider || match.Type != query.Type || !strings.EqualFold(strings.TrimSpace(match.Name), name) || (query.Year > 0 && match.Year != query.Year) {
+			continue
+		}
+		if !metadataIdentifier(match.ID) {
+			return providers.Selection{}, false, providers.ErrInvalidInput
+		}
+		if selection.ID != "" {
+			return providers.Selection{}, false, nil
+		}
+		selection = match.Selection
+	}
+	return selection, selection.ID != "", nil
 }
 
 // DownloadOnlineSubtitles never chooses between multiple candidates for a requested language.

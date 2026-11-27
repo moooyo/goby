@@ -55,12 +55,12 @@ func (s *Store) InitializeSchedules(ctx context.Context, startupAt time.Time) er
         JOIN task_definitions d ON d.id = t.task_id
         WHERE d.key = ANY($1::text[]) AND d.enabled AND t.retired_at IS NULL
             AND t.calculation_error = '' AND t.created_at <= $2
-        ORDER BY d.key, t.position, t.id LIMIT $3`, s.executorKeys(), startupAt, len(s.executorKeys())*MaxTriggers)
+        ORDER BY d.key, t.position, t.id LIMIT $3`, s.scheduledExecutorKeys(), startupAt, len(s.scheduledExecutorKeys())*MaxTriggers)
 	if err != nil {
 		return fmt.Errorf("list startup task rules: %w", err)
 	}
 	type startupRule struct{ id, key, taskID, kind string }
-	rules := make([]startupRule, 0, len(s.executorKeys())*MaxTriggers)
+	rules := make([]startupRule, 0, len(s.scheduledExecutorKeys())*MaxTriggers)
 	for rows.Next() {
 		var rule startupRule
 		if err := rows.Scan(&rule.id, &rule.key, &rule.taskID, &rule.kind); err != nil {
@@ -198,7 +198,7 @@ func (s *Store) dispatchOneSchedule(ctx context.Context, excluded ...string) (bo
             AND NOT (t.task_id = ANY(COALESCE($2::text[], '{}'::text[])))
             AND t.retired_at IS NULL AND t.calculation_error = ''
             AND t.kind <> 'startup' AND t.next_fire_at <= statement_timestamp())`,
-		s.executorKeys(), excluded).Scan(&available); err != nil {
+		s.scheduledExecutorKeys(), excluded).Scan(&available); err != nil {
 		return false, fmt.Errorf("check due task schedules: %w", err)
 	}
 	if !available {
@@ -211,7 +211,7 @@ func (s *Store) dispatchOneSchedule(ctx context.Context, excluded ...string) (bo
 		// prevents one definition from starving the other when limit is one.
 		definitions := make(map[string]Definition, 2)
 		ids := make([]string, 0, 2)
-		for _, key := range s.executorKeys() {
+		for _, key := range s.scheduledExecutorKeys() {
 			definition, err := s.lockScheduledDefinition(tx, key)
 			if errors.Is(err, ErrNotFound) {
 				continue
@@ -276,7 +276,7 @@ func (s *Store) NextDue(ctx context.Context) (*time.Time, error) {
 	if err := s.pool.QueryRow(ctx, `SELECT min(t.next_fire_at) FROM task_triggers t
         JOIN task_definitions d ON d.id = t.task_id
         WHERE d.key = ANY($1::text[]) AND d.enabled AND t.retired_at IS NULL
-            AND t.calculation_error = '' AND t.kind <> 'startup'`, s.executorKeys()).Scan(&next); err != nil {
+            AND t.calculation_error = '' AND t.kind <> 'startup'`, s.scheduledExecutorKeys()).Scan(&next); err != nil {
 		return nil, fmt.Errorf("read next task occurrence: %w", err)
 	}
 	utcPointer(&next)
@@ -285,7 +285,7 @@ func (s *Store) NextDue(ctx context.Context) (*time.Time, error) {
 
 func (s *Store) lockScheduledDefinition(tx library.OwnedTx, key string) (Definition, error) {
 	if _, supported := library.TaskScanOptions(key); !supported {
-		if _, exists := s.executors.lookup(key); !exists {
+		if entry, exists := s.executors.lookup(key); !exists || entry.AutomaticDisabled {
 			return Definition{}, ErrNotFound
 		}
 	}
@@ -445,7 +445,8 @@ func (s *Store) admitScheduledOccurrence(tx library.OwnedTx, definition Definiti
 		return scheduledOccurrenceReceipt{}, fmt.Errorf("read overlapping scheduled run: %w", err)
 	}
 	disposition := "overlap"
-	if runID != "" && (isMediaAnalysisExecution(definition.Key) || definition.Key == library.TaskOnlineImagesKey) && source == "system_event" {
+	if runID != "" && (isMediaAnalysisExecution(definition.Key) || definition.Key == library.TaskOnlineImagesKey ||
+		definition.Key == library.TaskLocalMetadataIngestKey || definition.Key == library.TaskOnlineMetadataIngestKey) && source == "system_event" {
 		// Keep the event unconsumed until a fresh child snapshot can include
 		// late requests, including a library absent from the active run.
 		return scheduledOccurrenceReceipt{}, &analysisAdmissionDeferred{AnalysisDeferral: AnalysisDeferral{TaskID: definition.ID, TaskKey: definition.Key, TriggerID: trigger.ID, Source: source}}

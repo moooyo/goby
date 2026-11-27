@@ -22,11 +22,21 @@ const (
 	CreditsAnalysisRequested             Event = "CreditsAnalysisRequested"
 	SubtitleTimelineGenerationRequested  Event = "SubtitleTimelineGenerationRequested"
 	OnlineImagesRequested                Event = "OnlineImagesRequested"
+	LocalMetadataIngestRequested         Event = "LocalMetadataIngestRequested"
+	OnlineMetadataIngestRequested        Event = "OnlineMetadataIngestRequested"
+	VideoSeekIngestRequested             Event = "VideoSeekIngestRequested"
 )
 
 func Valid(event Event) bool {
-	return event == ServerStarted || event == LibraryChanged || event == ConfigurationChanged ||
-		event == IntroAnalysisRequested || event == PreviewGenerationRequested || event == BackgroundPreviewGenerationRequested || event == AudioWaveformGenerationRequested || event == CreditsAnalysisRequested || event == SubtitleTimelineGenerationRequested || event == OnlineImagesRequested
+	switch event {
+	case ServerStarted, LibraryChanged, ConfigurationChanged, IntroAnalysisRequested, PreviewGenerationRequested,
+		BackgroundPreviewGenerationRequested, AudioWaveformGenerationRequested, CreditsAnalysisRequested,
+		SubtitleTimelineGenerationRequested, OnlineImagesRequested, LocalMetadataIngestRequested,
+		OnlineMetadataIngestRequested, VideoSeekIngestRequested:
+		return true
+	default:
+		return false
+	}
 }
 
 type Exec func(string, ...any) (pgconn.CommandTag, error)

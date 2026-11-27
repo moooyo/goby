@@ -280,6 +280,9 @@ func (s *Store) finishTask(task *scanTask, status, message string) error {
 		if err := copyTaskScanSnapshot(tx, relation.child, finished); err != nil {
 			return err
 		}
+		if err := s.finishScanIngestWork(tx, finished); err != nil {
+			return err
+		}
 		if finished.Status == "Completed" {
 			if _, err := tx.Exec("UPDATE libraries SET last_scan_at = clock_timestamp() WHERE id = $1", finished.LibraryID); err != nil {
 				return err

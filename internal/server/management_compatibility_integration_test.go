@@ -9,10 +9,12 @@ import (
 	"github.com/moooyo/goby/internal/tasks"
 )
 
+const publishedCompatibilityTaskCount = 12
+
 func assertPublishedTaskCollection(t *testing.T, f *scheduledTaskHTTPFixture, items []map[string]any) {
 	t.Helper()
-	if len(items) != 11 {
-		t.Fatalf("expected eleven implemented task capabilities, got %d", len(items))
+	if len(items) != publishedCompatibilityTaskCount {
+		t.Fatalf("expected %d implemented task capabilities, got %d", publishedCompatibilityTaskCount, len(items))
 	}
 	seen := make(map[string]bool)
 	for _, item := range items {

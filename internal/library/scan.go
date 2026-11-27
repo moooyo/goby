@@ -32,30 +32,31 @@ type hierarchy struct {
 }
 
 type scanState struct {
-	store               *Store
-	task                *scanTask
-	library             Library
-	root                libraryRoot
-	opened              *os.Root
-	warnings            int
-	numberingConflicts  int
-	directoryIdentities map[string]os.FileInfo
-	imageDirectories    map[string]*imageDirectoryIndex
-	imageInspection     *artwork.InspectionCache
-	subtitleDirectories map[string]*subtitleDirectoryIndex
-	musicParents        map[string]bool
-	virtualFolders      map[string]scannedVirtualFolder
-	themes              *themeScan
-	themeLibrary        *themeLibraryScan
-	extras              *extraScan
-	reconciliation      *scanReconciliationEvidence
-	reconciliationPass  *scanReconciliationPass
-	sourceRoot          *scanSourceRootWitness
-	walkIO              *PrimaryRootIO
-	walkRow             rootBindingRow
-	primaryReadMu       sync.Mutex
-	primaryReadErr      error
-	primaryReadParent   *scanState
+	store                *Store
+	task                 *scanTask
+	library              Library
+	root                 libraryRoot
+	opened               *os.Root
+	warnings             int
+	numberingConflicts   int
+	directoryIdentities  map[string]os.FileInfo
+	imageDirectories     map[string]*imageDirectoryIndex
+	imageInspection      *artwork.InspectionCache
+	recheckLocalMetadata bool
+	subtitleDirectories  map[string]*subtitleDirectoryIndex
+	musicParents         map[string]bool
+	virtualFolders       map[string]scannedVirtualFolder
+	themes               *themeScan
+	themeLibrary         *themeLibraryScan
+	extras               *extraScan
+	reconciliation       *scanReconciliationEvidence
+	reconciliationPass   *scanReconciliationPass
+	sourceRoot           *scanSourceRootWitness
+	walkIO               *PrimaryRootIO
+	walkRow              rootBindingRow
+	primaryReadMu        sync.Mutex
+	primaryReadErr       error
+	primaryReadParent    *scanState
 }
 
 type storedFile struct {
@@ -111,6 +112,10 @@ func (s *Store) scanLibrary(task *scanTask) (message string, resultErr error) {
 			}
 		}
 	}()
+	recheckLocalMetadata, err := s.recheckLocalMetadataOnScan(task.ctx, library, task.job)
+	if err != nil {
+		return "Pending local metadata could not be checked", err
+	}
 	warnings, failedRoots, numberingConflicts := 0, 0, 0
 	themeOwners := &themeLibraryScan{roots: make(map[string]*scanState), expected: roots,
 		claimed: make(map[string]string), issues: make(map[string]int)}
@@ -135,7 +140,7 @@ func (s *Store) scanLibrary(task *scanTask) (message string, resultErr error) {
 		}
 		state := &scanState{store: s, task: task, library: library, root: root, opened: opened, sourceRoot: sourceRoot,
 			themeLibrary: themeOwners, reconciliation: reconciliation.collector(), reconciliationPass: reconciliation,
-			imageInspection: imageInspection}
+			imageInspection: imageInspection, recheckLocalMetadata: recheckLocalMetadata}
 		err = state.startThemeScan()
 		if err == nil {
 			err = state.startExtraScan()
@@ -190,6 +195,9 @@ func (s *Store) scanLibrary(task *scanTask) (message string, resultErr error) {
 			musicParents[parentID] = true
 		}
 	}
+	// Pending descriptions and artwork are not evidence about media pathname
+	// membership. Reconciliation still requires complete rooted observations
+	// and revalidates physical absence before retiring any catalog item.
 	reconciliationMessage, err := reconciliation.finish(s, task, library, failedRoots == 0 && warnings == 0, musicParents)
 	if err != nil {
 		return "Missing catalog records could not be reconciled safely", err
@@ -521,6 +529,9 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 		}
 	}
 	candidates, nfoKind := fileNFOCandidates(path, itemType)
+	deferred := state.metadataImport(path, itemType, false)
+	deferred.index, deferred.parentIndex, deferred.parentDefined = indexNumber, parentIndex, parentNumberDefined
+	seek := state.defersVideoSeek(itemType, probe)
 	// Sidecar absence is authoritative only while this media pathname still
 	// names the opened file. A concurrent directory move is not NFO deletion.
 	var nfoObservation localNFOObservation
@@ -529,13 +540,18 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 	var pathErr error
 	if err := input.primary.runPublicationMetadata(input.primary.publicationIO, func(ctx context.Context) error {
 		var err error
-		nfoObservation, err = state.observeLocalNFO(ctx, candidates, nfoKind)
-		if err != nil {
-			return err
+		if deferred.nfo {
+			// Pending is not absence. Keep the last accepted same-kind source.
+			nfoObservation.disabled = true
+		} else {
+			nfoObservation, err = state.observeLocalNFO(ctx, candidates, nfoKind)
+			if err != nil {
+				return err
+			}
 		}
 		currentInfo, pathErr = state.opened.Lstat(path)
-		if unchanged && stored.id != "" && !stored.hasLocalImages && pathErr == nil && sameMediaSourceFile(info, currentInfo) {
-			sidecarObservation, err = state.observeCachedSidecarAbsence(ctx, path, itemType, probe, currentInfo)
+		if unchanged && stored.id != "" && (deferred.images || !stored.hasLocalImages) && pathErr == nil && sameMediaSourceFile(info, currentInfo) {
+			sidecarObservation, err = state.observeCachedSidecarAbsence(ctx, path, itemType, probe, currentInfo, deferred.images)
 			if err != nil {
 				return err
 			}
@@ -608,6 +624,9 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 		stored.local.hash != local.hash || stored.local.path != local.path || !reflect.DeepEqual(stored.local.value, local.value)
 	if stored.id != "" && !changed {
 		completionRequired = state.task.job.TaskChildID != ""
+		if err := state.queueCachedIngestWork(stored, path, input.primary, deferred, seek); err != nil {
+			return err
+		}
 		sidecarsUnchanged := false
 		if sidecarObservation.absent {
 			state.retainCachedSidecarObservation(sidecarObservation)
@@ -623,9 +642,9 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 				return err
 			}
 		}
-		combineCompletion := state.task.job.TaskChildID != "" && !stored.hasLocalImages &&
+		combineCompletion := !deferred.images && state.task.job.TaskChildID != "" && !stored.hasLocalImages &&
 			EffectiveLibraryOptions(state.library).EnableLocalImages
-		if !combineCompletion {
+		if !deferred.images && !combineCompletion {
 			if sidecarsUnchanged {
 				if EffectiveLibraryOptions(state.library).EnableLocalImages {
 					if err := state.store.CheckOwnership(state.task.ctx); err != nil {
@@ -779,6 +798,14 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 	if err := beforeAuxiliary.record(state.task.ctx, tx, nil); err != nil {
 		return err
 	}
+	if err := state.queueMetadataImport(tx, id, deferred); err != nil {
+		return err
+	}
+	if seek {
+		if err := state.queueVideoSeekIngest(tx, id); err != nil {
+			return err
+		}
+	}
 	candidateProgress := state.task.job
 	if stored.id == "" {
 		candidateProgress.Added++
@@ -862,8 +889,10 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 	// older image rows: item_images requires an existing item through its FK.
 	// Renames reuse stored.id and must retain that item's captured image state.
 	knownNoLocalImages := stored.id != "" && !stored.hasLocalImages || stored.id == "" && !beforeCatalog.present
-	if err := state.scanImagesWithKnownAbsence(id, itemType, path, false, knownNoLocalImages); err != nil {
-		return err
+	if !deferred.images {
+		if err := state.scanImagesWithKnownAbsence(id, itemType, path, false, knownNoLocalImages); err != nil {
+			return err
+		}
 	}
 	if probe != nil {
 		if err := state.scanEmbeddedArtwork(id, itemType, path, input.file, *probe); err != nil {
@@ -936,7 +965,24 @@ func (state *scanState) folderAttempt(relative, path, name, itemType, parentID s
 		}
 		defer func() { resultErr = errors.Join(resultErr, source.Close()) }()
 	}
-	local, err := state.folderLocalMetadataWithSource(relative, metadataPath, itemType, indexNumber, source)
+	deferred := state.metadataImport(metadataPath, itemType, true)
+	if metadataPath == "" {
+		deferred = state.virtualMetadataImport(relative, itemType)
+	}
+	deferred.index = indexNumber
+	var local localMetadata
+	var err error
+	if deferred.nfo {
+		local, err = state.readPreviousFolderMetadata(state.task.ctx, relative)
+		if err == nil {
+			_, kind := folderNFOCandidate(metadataPath, itemType)
+			local = state.applyLocalNFO(localNFOObservation{disabled: true}, kind, local)
+			local = state.seasonNumbering(local, itemType, indexNumber)
+			err = source.readMetadata(state.task.ctx, state, func(ctx context.Context) error { return ctx.Err() })
+		}
+	} else {
+		local, err = state.folderLocalMetadataWithSource(relative, metadataPath, itemType, indexNumber, source)
+	}
 	if err != nil {
 		return "", err
 	}
@@ -1042,6 +1088,9 @@ func (state *scanState) folderAttempt(relative, path, name, itemType, parentID s
 	if err := beforeAuxiliary.record(state.task.ctx, tx, nil); err != nil {
 		return "", err
 	}
+	if err := state.queueMetadataImport(tx, id, deferred); err != nil {
+		return "", err
+	}
 	if source != nil {
 		if err := source.final(state.task.ctx, tx); err != nil {
 			return "", scanReadFailure(err)
@@ -1060,7 +1109,7 @@ func (state *scanState) folderAttempt(relative, path, name, itemType, parentID s
 	if itemType == "MusicAlbum" {
 		state.queueMusicParent(id)
 	}
-	if metadataPath != "" {
+	if metadataPath != "" && !deferred.images {
 		// Use this committed folder's exact identity. Raw image rows include
 		// obsolete roots that the public image projection may no longer expose.
 		knownNoLocalImages := !beforeCatalog.present && id == insertID ||

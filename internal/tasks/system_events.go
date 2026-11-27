@@ -37,7 +37,7 @@ func (s *Store) DispatchSystemEvents(ctx context.Context, limit int) (bool, erro
 		changed, err := s.dispatchSystemEvent(ctx, excluded...)
 		var blocked *analysisAdmissionDeferred
 		if errors.As(err, &blocked) {
-			if slices.Contains(excluded, blocked.TaskID) || len(excluded) >= len(s.executorKeys()) {
+			if slices.Contains(excluded, blocked.TaskID) || len(excluded) >= len(s.scheduledExecutorKeys()) {
 				return processed, ErrInconsistent
 			}
 			excluded = append(excluded, blocked.TaskID)
@@ -70,7 +70,7 @@ func (s *Store) dispatchSystemEvent(ctx context.Context, excluded ...string) (bo
             AND NOT (t.task_id = ANY(COALESCE($2::text[], '{}'::text[])))
             AND t.kind = 'system_event' AND t.retired_at IS NULL
             AND t.calculation_error = '' AND t.last_event_sequence < e.sequence)`,
-		s.executorKeys(), excluded).Scan(&available); err != nil {
+		s.scheduledExecutorKeys(), excluded).Scan(&available); err != nil {
 		return false, fmt.Errorf("check pending task system events: %w", err)
 	}
 	if !available {
@@ -80,7 +80,7 @@ func (s *Store) dispatchSystemEvent(ctx context.Context, excluded ...string) (bo
 	err := s.owner.WithOwnedTx(ctx, func(tx library.OwnedTx) error {
 		definitions := make(map[string]Definition)
 		ids := make([]string, 0)
-		for _, key := range s.executorKeys() {
+		for _, key := range s.scheduledExecutorKeys() {
 			definition, err := s.lockScheduledDefinition(tx, key)
 			if errors.Is(err, ErrNotFound) {
 				continue

@@ -146,6 +146,16 @@ func tmdbNumber(value string, allowZero bool, maximum int64) (int64, error) {
 	return number, nil
 }
 
+// CanonicalTMDBMetadataID validates the complete typed identity without a
+// network request. A child entity requires a series/season(/episode) address.
+func CanonicalTMDBMetadataID(itemType, id string) string {
+	target, err := (&Client{}).tmdbTarget(Selection{Provider: "tmdb", Type: itemType, ID: id})
+	if err != nil {
+		return ""
+	}
+	return target.selection.ID
+}
+
 func (client *Client) tmdbTarget(selection Selection) (tmdbTarget, error) {
 	if selection.Provider != "tmdb" {
 		return tmdbTarget{}, ErrInvalidInput

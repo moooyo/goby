@@ -13,7 +13,7 @@ type primaryMediaReadProof struct {
 	store                       *Store
 	hint                        mediaSourceRootHint
 	itemID, libraryID, sourceID string
-	etag                        string
+	etag, publicationRevision   string
 	class                       primaryio.Class
 }
 
@@ -41,7 +41,7 @@ func (s *Store) sealPrimaryMediaReadSnapshot(ctx context.Context, snapshot *inde
 	}
 	snapshot.mediaFile.primaryReadProof = &primaryMediaReadProof{store: s, hint: hint,
 		itemID: snapshot.mediaFile.Item.ID, libraryID: snapshot.mediaFile.Item.LibraryID,
-		sourceID: snapshot.mediaFile.SourceID, etag: snapshot.mediaFile.ETag}
+		sourceID: snapshot.mediaFile.SourceID, etag: snapshot.mediaFile.ETag, publicationRevision: snapshot.publicationRevision}
 	return nil
 }
 

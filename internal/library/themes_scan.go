@@ -55,7 +55,7 @@ func (state *scanState) inspectScannedMedia(path, kind string, role scannedMedia
 	}()
 	var probeErr error
 	if !input.unchanged {
-		probed, err := input.primary.probe(state.store.prober, input.file)
+		probed, err := input.primary.probe(state.scanProber(kind, role), input.file)
 		input.probe, probeErr = &probed, err
 	}
 	accepted, err = state.acceptScannedMedia(input, kind, probeErr)

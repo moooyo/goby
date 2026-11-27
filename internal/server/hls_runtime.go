@@ -40,6 +40,16 @@ type hlsKey struct {
 	remote bool
 }
 
+// A decoded seek candidate does not change the requested progressive output.
+// Pin the first registered plan for this scope and source so later cache
+// publication (or a transient miss) cannot create a second byte stream.
+func (key hlsKey) registrationKey() hlsKey {
+	if key.plan.OutputMode == "progressive" {
+		key.plan.VideoSeekCandidate = ""
+	}
+	return key
+}
+
 type hlsProducer struct {
 	id          string
 	first, last int
@@ -242,7 +252,8 @@ func (h *hlsRuntime) registerWithPlaybackOwner(principal identity.Principal, sou
 			return nil, false, err
 		}
 	}
-	if prior := h.byKey[key]; prior != nil {
+	registration := key.registrationKey()
+	if prior := h.byKey[registration]; prior != nil {
 		prior.mu.Lock()
 		closed := prior.closed
 		if !closed {
@@ -310,7 +321,7 @@ func (h *hlsRuntime) registerWithPlaybackOwner(principal identity.Principal, sou
 			session.audioTiming = &copy
 		}
 	}
-	h.sessions[session.id], h.byKey[key] = session, session
+	h.sessions[session.id], h.byKey[registration] = session, session
 	if h.byScope == nil {
 		h.byScope = make(map[transcode.Scope]map[string]*hlsSession)
 	}
@@ -372,8 +383,8 @@ func (h *hlsRuntime) retire(session *hlsSession) {
 				delete(h.byScope, session.key.scope)
 			}
 		}
-		if h.byKey[session.key] == session {
-			delete(h.byKey, session.key)
+		if registration := session.key.registrationKey(); h.byKey[registration] == session {
+			delete(h.byKey, registration)
 		}
 	}
 	session.mu.Unlock()

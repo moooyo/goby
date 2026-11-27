@@ -113,6 +113,12 @@ func (s *Server) videoStream(w http.ResponseWriter, r *http.Request) {
 		s.videoError(w, r, err)
 		return
 	}
+	plan := decision.Conversion.Plan
+	if plan.StartTicks > 0 && plan.VideoSeekCandidate == "" &&
+		transcode.VideoEncodingSupported(plan.VideoCodec) && (plan.Hardware.Decode == "" || plan.Hardware.Decode == "software") &&
+		plan.VideoFilters.Deinterlace == "" && len(input.Info.VideoSeekIndexes) == 0 {
+		playback.ApplyIngestedVideoSeek(input, plan, s.library.IngestedVideoSeekIndexes(prepare, source))
+	}
 	session, err := s.hls.registerVerified(r.Context(), principal, source, play.ID, decision.Conversion, decision.StartTicks)
 	if err != nil {
 		s.videoError(w, r, err)

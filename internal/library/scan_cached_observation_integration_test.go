@@ -640,7 +640,7 @@ func TestCachedScanObservationRetainsLateSourceReplacement(t *testing.T) {
 					injectErr = os.WriteFile(path, []byte("video:late-replacement"), 0600)
 				}
 				return entries, injectErr
-			})
+			}, false)
 		return err
 	})
 	if err != nil || injectErr != nil || reads != 1 || !observation.sourceChanged || observation.absent || nfo.path != "Film.nfo" || len(nfo.data) == 0 {
