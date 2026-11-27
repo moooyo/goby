@@ -44,18 +44,21 @@ Coalescing never replaces the original actor or upgrades a manual run to system
 authority. A conflicting scheduled occurrence remains unconsumed for a bounded
 scheduler retry rather than being attached to a different scope/profile.
 Startup, interval and system-event dispatch return typed `AnalysisDeferrals`
-diagnostics while continuing other definitions in that pass. A definition is
-skipped at most once per interval/event pass, with at most two additional
-conflict visits beyond its normal processing limit. The coordinator retries
-only the deferred startup rules at the original startup instant, after ordinary
-timed/event dispatch. Once one startup rule conflicts, remaining startup rules
-for that same definition are retained without repeating profile preparation in
-that pass. Initialization applies the same bound. The coordinator exposes
-`DeferredAnalyses()` separately from normal scheduler readiness. This snapshot
-is bounded by the number of registered analysis categories and the per-category
-startup rule limit, replaces prior diagnostics each successful pass, and is not
-a successful occurrence/run receipt. Hard scheduler errors keep their
-existing failure behavior; legacy overlap semantics are unchanged.
+for active-run conflicts or snapshot budget exhaustion. Admission writes the
+child, work, and source snapshots in bounded batches in the same transaction.
+If the budget expires, rollback leaves the run, occurrence, and cursor
+uncommitted. The coordinator backs off that analysis definition for one minute
+across automatic trigger sources; other definitions remain eligible. If the
+shorter scheduling context has also expired, the coordinator yields to the
+independent run reconciliation pass before trying more schedules. A real
+catalog ownership failure, including one reported during rollback, still
+fences the coordinator.
+
+Startup retries retain the original startup instant and run after ordinary
+timed/event dispatch once initialization is complete. The coordinator exposes
+bounded `DeferredAnalyses()` separately from scheduler readiness. A deferral
+is not a successful occurrence or run receipt. Hard scheduler errors and
+legacy overlap semantics are unchanged.
 
 `Work.AnalysisInput`, `AnalysisConfigFingerprint` and `AnalysisScopeKey` identify
 the run/child snapshot. The library executor reads its typed cohort/source data

@@ -14,6 +14,8 @@ var (
 	ErrAnalysisSourceChanged   = errors.New("media analysis source or cohort changed")
 	ErrAnalysisSuppressed      = errors.New("media analysis result suppressed")
 	ErrAnalysisPreviewDisabled = errors.New("automatic preview generation is disabled for this library")
+	// ErrAnalysisAdmissionBudget leaves time to roll back; it does not signal ownership loss.
+	ErrAnalysisAdmissionBudget = errors.New("analysis admission SQL budget exhausted")
 )
 
 type AnalysisFence func(OwnedTx) error

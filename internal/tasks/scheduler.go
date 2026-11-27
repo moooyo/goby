@@ -45,56 +45,64 @@ func (s *Store) ScheduleClock(ctx context.Context) (time.Time, error) {
 // summary. Startup rules record a distinct event keyed by that same instant.
 // Each rule commits independently; retries are safe after a partial pass.
 func (s *Store) InitializeSchedules(ctx context.Context, startupAt time.Time) error {
+	_, err := s.initializeSchedules(ctx, startupAt, analysisAdmissionBackoff{})
+	return err
+}
+
+// A false result leaves the original startup instant in use for the next pass.
+func (s *Store) initializeSchedules(ctx context.Context, startupAt time.Time, backoff analysisAdmissionBackoff) (bool, error) {
 	startupAt, err := ceilScheduleTime(startupAt)
 	if err != nil {
-		return err
+		return false, err
 	}
-	// Both fixed library executors are runnable. Each active rule set is bounded
-	// by the schema's unique positions, independently of retained history.
+	// Each active rule set is bounded by unique positions, not retained history.
+	keys := s.scheduledExecutorKeys()
 	rows, err := s.pool.Query(ctx, `SELECT t.id, d.key, t.task_id, t.kind FROM task_triggers t
         JOIN task_definitions d ON d.id = t.task_id
         WHERE d.key = ANY($1::text[]) AND d.enabled AND t.retired_at IS NULL
             AND t.calculation_error = '' AND t.created_at <= $2
-        ORDER BY d.key, t.position, t.id LIMIT $3`, s.scheduledExecutorKeys(), startupAt, len(s.scheduledExecutorKeys())*MaxTriggers)
+        ORDER BY d.key, t.position, t.id LIMIT $3`, keys, startupAt, len(keys)*MaxTriggers)
 	if err != nil {
-		return fmt.Errorf("list startup task rules: %w", err)
+		return false, fmt.Errorf("list startup task rules: %w", err)
 	}
 	type startupRule struct{ id, key, taskID, kind string }
-	rules := make([]startupRule, 0, len(s.scheduledExecutorKeys())*MaxTriggers)
+	rules := make([]startupRule, 0, len(keys)*MaxTriggers)
 	for rows.Next() {
 		var rule startupRule
 		if err := rows.Scan(&rule.id, &rule.key, &rule.taskID, &rule.kind); err != nil {
 			rows.Close()
-			return fmt.Errorf("read startup task rule: %w", err)
+			return false, fmt.Errorf("read startup task rule: %w", err)
 		}
 		rules = append(rules, rule)
 	}
 	err = rows.Err()
 	rows.Close()
 	if err != nil {
-		return fmt.Errorf("read startup task rules: %w", err)
+		return false, fmt.Errorf("read startup task rules: %w", err)
 	}
 	deferred := []AnalysisDeferral{}
-	blockedTasks := make(map[string]bool, len(analysisSelectionTaskKeys))
+	blockedTasks := backoff.blockedStartupTasks()
 	for _, rule := range rules {
-		if rule.kind == string(ScheduleStartup) && blockedTasks[rule.taskID] {
-			deferred, err = addAnalysisDeferral(deferred, AnalysisDeferral{TaskID: rule.taskID, TaskKey: rule.key, TriggerID: rule.id, Source: "startup"})
-			if err != nil {
-				return err
+		entry := AnalysisDeferral{TaskID: rule.taskID, TaskKey: rule.key, TriggerID: rule.id, Source: "startup"}
+		if budget, blocked := blockedTasks[rule.taskID]; rule.kind == string(ScheduleStartup) && blocked {
+			entry.BudgetExhausted = budget
+			deferred, err = addAnalysisDeferral(deferred, entry)
+		} else if cause := s.initializeSchedule(ctx, rule.id, rule.key, startupAt); cause != nil {
+			found, ok := scheduledAnalysisDeferral(cause)
+			if !ok {
+				return false, cause
 			}
-			continue
-		}
-		err := s.initializeSchedule(ctx, rule.id, rule.key, startupAt)
-		var blocked *analysisAdmissionDeferred
-		if errors.As(err, &blocked) {
-			blockedTasks[blocked.TaskID] = true
-			deferred, err = addAnalysisDeferral(deferred, blocked.AnalysisDeferral)
+			blockedTasks[found.TaskID] = found.BudgetExhausted
+			deferred, err = backoff.deferOccurrence(deferred, found)
+			if err == nil && yieldAfterAnalysisBudget(ctx, deferred) {
+				return false, analysisDeferralResult(deferred)
+			}
 		}
 		if err != nil {
-			return err
+			return false, err
 		}
 	}
-	return analysisDeferralResult(deferred)
+	return true, analysisDeferralResult(deferred)
 }
 
 func (s *Store) initializeSchedule(ctx context.Context, id, key string, startupAt time.Time) error {
@@ -124,7 +132,7 @@ func (s *Store) initializeSchedule(ctx context.Context, id, key string, startupA
 				return pauseSchedule(tx, trigger.ID, err)
 			}
 			if _, err := s.admitScheduledOccurrence(tx, definition, trigger, startupAt, "startup"); err != nil {
-				return err
+				return deferAnalysisBudget(err, definition, trigger, "startup")
 			}
 			_, err := tx.Exec(`UPDATE task_triggers SET last_due_at = $2, updated_at = clock_timestamp() WHERE id = $1`, trigger.ID, startupAt)
 			return err
@@ -153,39 +161,17 @@ func (s *Store) initializeSchedule(ctx context.Context, id, key string, startupA
 // processed rule, including one suspended for a calculation error; it does not
 // promise another due rule or a newly admitted run.
 func (s *Store) DispatchDue(ctx context.Context, limit int) (bool, error) {
+	return s.dispatchDue(ctx, limit, analysisAdmissionBackoff{})
+}
+
+func (s *Store) dispatchDue(ctx context.Context, limit int, backoff analysisAdmissionBackoff) (bool, error) {
 	if limit == 0 {
 		limit = DefaultPageLimit
 	}
 	if limit < 1 || limit > MaxPageLimit {
 		return false, &ValidationError{Fields: map[string]string{"Limit": "dispatch limit must be between 1 and 200"}}
 	}
-	processed := false
-	deferred := []AnalysisDeferral{}
-	excluded := []string{}
-	for handled := 0; handled < limit; {
-		changed, err := s.dispatchOneSchedule(ctx, excluded...)
-		var blocked *analysisAdmissionDeferred
-		if errors.As(err, &blocked) {
-			if slices.Contains(excluded, blocked.TaskID) || len(excluded) >= len(analysisSelectionTaskKeys) {
-				return processed, ErrInconsistent
-			}
-			excluded = append(excluded, blocked.TaskID)
-			deferred, err = addAnalysisDeferral(deferred, blocked.AnalysisDeferral)
-			if err != nil {
-				return processed, err
-			}
-			continue
-		}
-		if err != nil {
-			return processed, err
-		}
-		if !changed {
-			break
-		}
-		processed = true
-		handled++
-	}
-	return processed, analysisDeferralResult(deferred)
+	return dispatchSchedulePass(ctx, limit, len(analysisSelectionTaskKeys), backoff, s.dispatchOneSchedule)
 }
 
 func (s *Store) dispatchOneSchedule(ctx context.Context, excluded ...string) (bool, error) {
@@ -259,7 +245,7 @@ func (s *Store) dispatchOneSchedule(ctx context.Context, excluded ...string) (bo
 			}
 		}
 		if _, err := s.admitScheduledOccurrence(tx, definition, trigger, due.Last, "schedule"); err != nil {
-			return err
+			return deferAnalysisBudget(err, definition, trigger, "schedule")
 		}
 		return advanceSchedule(tx, trigger.ID, due)
 	})
@@ -272,11 +258,16 @@ func (s *Store) dispatchOneSchedule(ctx context.Context, excluded ...string) (bo
 // NextDue excludes suspended calculations while retaining their stored recovery
 // positions. Startup is an event, and can never become a timed wakeup here.
 func (s *Store) NextDue(ctx context.Context) (*time.Time, error) {
+	return s.nextEligibleDue(ctx, nil)
+}
+
+func (s *Store) nextEligibleDue(ctx context.Context, excluded []string) (*time.Time, error) {
 	var next *time.Time
 	if err := s.pool.QueryRow(ctx, `SELECT min(t.next_fire_at) FROM task_triggers t
         JOIN task_definitions d ON d.id = t.task_id
         WHERE d.key = ANY($1::text[]) AND d.enabled AND t.retired_at IS NULL
-            AND t.calculation_error = '' AND t.kind <> 'startup'`, s.scheduledExecutorKeys()).Scan(&next); err != nil {
+            AND NOT (t.task_id = ANY(COALESCE($2::text[], '{}'::text[])))
+            AND t.calculation_error = '' AND t.kind <> 'startup'`, s.scheduledExecutorKeys(), excluded).Scan(&next); err != nil {
 		return nil, fmt.Errorf("read next task occurrence: %w", err)
 	}
 	utcPointer(&next)

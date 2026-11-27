@@ -152,7 +152,7 @@ type managerFixture struct {
 	probers      []*managerTestProber
 }
 
-func newManagerFixture(t *testing.T) *managerFixture {
+func newManagerFixture(t *testing.T, options ...library.Option) *managerFixture {
 	t.Helper()
 	databaseURL := os.Getenv("GOBY_TEST_DATABASE_URL")
 	if databaseURL == "" {
@@ -200,7 +200,7 @@ func newManagerFixture(t *testing.T) *managerFixture {
 		t.Fatal(err)
 	}
 	f := &managerFixture{ctx: ctx, pool: pool, root: t.TempDir(), schema: schema, prober: newManagerTestProber()}
-	f.catalog, err = library.New(pool, f.prober, []string{f.root})
+	f.catalog, err = library.New(pool, f.prober, []string{f.root}, options...)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -17,12 +17,16 @@ import (
 	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/moooyo/goby/internal/introdetect"
 	"github.com/moooyo/goby/internal/introskipper"
 	"github.com/moooyo/goby/internal/media"
 )
 
-const analysisMaximumAdmissionSources = 100000
+const (
+	analysisMaximumAdmissionSources = 100000
+	analysisAdmissionBatchSize      = 64
+)
 
 func analysisOpaque(value string, maximum int) bool {
 	if value == "" || len(value) > maximum || !utf8.ValidString(value) || strings.TrimSpace(value) != value {
@@ -388,6 +392,12 @@ func snapshotAnalysisChildren(tx OwnedTx, runID, taskKey string, selection Analy
 		if resultErr == nil {
 			resultErr = restore()
 		}
+		// This transaction shields caller cancellation. A PostgreSQL cancellation
+		// during the bounded snapshot is retryable unless ownership was lost.
+		var sqlError *pgconn.PgError
+		if !errors.Is(resultErr, ErrUnavailable) && errors.As(resultErr, &sqlError) && sqlError.Code == "57014" {
+			resultErr = errors.Join(ErrAnalysisAdmissionBudget, resultErr)
+		}
 	}()
 	if err := refresh(); err != nil {
 		return 0, err
@@ -458,6 +468,7 @@ func snapshotAnalysisChildren(tx OwnedTx, runID, taskKey string, selection Analy
 		}
 	}
 	ordinal := int64(0)
+	batch := make([]analysisAdmissionChild, 0, analysisAdmissionBatchSize)
 	for _, key := range order {
 		population := groups[key]
 		cohort := analysisCohortHash(population)
@@ -510,34 +521,65 @@ func snapshotAnalysisChildren(tx OwnedTx, runID, taskKey string, selection Analy
 			scope := "analysis:" + hex.EncodeToString(scopeDigest[:])
 			childDigest := sha256.Sum256([]byte(runID + ":" + scope))
 			childID := hex.EncodeToString(childDigest[:16])
-			libraryID := window[0].LibraryID
-			if err := refresh(); err != nil {
-				return 0, err
-			}
-			if _, err := tx.Exec(`INSERT INTO task_run_children(id,run_id,library_id,library_name,ordinal,analysis_scope_key)
-    VALUES($1,$2,$3,(SELECT name FROM libraries WHERE id=$3),$4,$5)`, childID, runID, libraryID, ordinal, scope); err != nil {
-				return 0, err
-			}
-			if err := refresh(); err != nil {
-				return 0, err
-			}
-			if _, err := tx.Exec(`INSERT INTO analysis_work(child_id,run_id,task_key,library_id,scope_key,cohort_revision,force,reason) VALUES($1,$2,$3,$4,$5,$6,$7,$8)`, childID, runID, taskKey, libraryID, scope, cohort, selection.Force, reason); err != nil {
-				return 0, err
-			}
-			if err := refresh(); err != nil {
-				return 0, err
-			}
-			encoded, _ := json.Marshal(window)
-			if _, err := tx.Exec(`INSERT INTO analysis_work_sources(child_id,item_id,position,target,library_id,root_id,series_id,season_id,episode_key,item_type,source_revision,hierarchy_revision,duration_ticks,size,manual_revision,decision_revision,preview_revision)
- SELECT $1,v."ItemId",v."Position",v."Target",v."LibraryId",v."RootId",v."SeriesId",v."SeasonId",v."EpisodeKey",v."ItemType",v."SourceRevision",v."HierarchyRevision",v."DurationTicks",v."Size",v."ManualRevision"::bigint,v."DecisionRevision"::bigint,v."PreviewRevision"::bigint
- FROM jsonb_to_recordset($2::jsonb) v("ItemId" text,"Position" integer,"Target" boolean,"LibraryId" text,"RootId" text,"SeriesId" text,"SeasonId" text,"EpisodeKey" text,"ItemType" text,"SourceRevision" text,"HierarchyRevision" text,"DurationTicks" bigint,"Size" bigint,"ManualRevision" text,"DecisionRevision" text,"PreviewRevision" text)`, childID, encoded); err != nil {
-				return 0, err
+			batch = append(batch, analysisAdmissionChild{
+				ID: childID, LibraryID: window[0].LibraryID, Ordinal: ordinal, Scope: scope,
+				Cohort: cohort, Reason: reason, Sources: window,
+			})
+			if len(batch) == cap(batch) {
+				if err := insertAnalysisAdmissionBatch(tx, refresh, runID, taskKey, selection.Force, batch); err != nil {
+					return 0, err
+				}
+				batch = batch[:0]
 			}
 			ordinal++
 			first = last
 		}
 	}
+	if len(batch) > 0 {
+		if err := insertAnalysisAdmissionBatch(tx, refresh, runID, taskKey, selection.Force, batch); err != nil {
+			return 0, err
+		}
+	}
 	return ordinal, nil
+}
+
+type analysisAdmissionChild struct {
+	ID, LibraryID, Scope, Cohort, Reason string
+	Ordinal                              int64
+	Sources                              []AnalysisSource
+}
+
+// Keep all batches in the admission transaction. Separate statements preserve
+// foreign-key order while bounding round trips and the size of each payload.
+func insertAnalysisAdmissionBatch(tx OwnedTx, refresh func() error, runID, taskKey string, force bool, batch []analysisAdmissionChild) error {
+	encoded, err := json.Marshal(batch)
+	if err != nil {
+		return err
+	}
+	if err := refresh(); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`INSERT INTO task_run_children(id,run_id,library_id,library_name,ordinal,analysis_scope_key)
+ SELECT c."ID",$2,c."LibraryID",(SELECT name FROM libraries WHERE id=c."LibraryID"),c."Ordinal",c."Scope"
+ FROM jsonb_to_recordset($1::jsonb) c("ID" text,"LibraryID" text,"Ordinal" integer,"Scope" text)`, encoded, runID); err != nil {
+		return err
+	}
+	if err := refresh(); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`INSERT INTO analysis_work(child_id,run_id,task_key,library_id,scope_key,cohort_revision,force,reason)
+ SELECT c."ID",$2,$3,c."LibraryID",c."Scope",c."Cohort",$4,c."Reason"
+ FROM jsonb_to_recordset($1::jsonb) c("ID" text,"LibraryID" text,"Scope" text,"Cohort" text,"Reason" text)`, encoded, runID, taskKey, force); err != nil {
+		return err
+	}
+	if err := refresh(); err != nil {
+		return err
+	}
+	_, err = tx.Exec(`INSERT INTO analysis_work_sources(child_id,item_id,position,target,library_id,root_id,series_id,season_id,episode_key,item_type,source_revision,hierarchy_revision,duration_ticks,size,manual_revision,decision_revision,preview_revision)
+ SELECT c."ID",v."ItemId",v."Position",v."Target",v."LibraryId",v."RootId",v."SeriesId",v."SeasonId",v."EpisodeKey",v."ItemType",v."SourceRevision",v."HierarchyRevision",v."DurationTicks",v."Size",v."ManualRevision"::bigint,v."DecisionRevision"::bigint,v."PreviewRevision"::bigint
+ FROM jsonb_to_recordset($1::jsonb) c("ID" text,"Sources" jsonb)
+ CROSS JOIN LATERAL jsonb_to_recordset(c."Sources") v("ItemId" text,"Position" integer,"Target" boolean,"LibraryId" text,"RootId" text,"SeriesId" text,"SeasonId" text,"EpisodeKey" text,"ItemType" text,"SourceRevision" text,"HierarchyRevision" text,"DurationTicks" bigint,"Size" bigint,"ManualRevision" text,"DecisionRevision" text,"PreviewRevision" text)`, encoded)
+	return err
 }
 
 // Preserve rollback time on the reserved owner connection. Recalculate at every
@@ -557,7 +599,7 @@ func analysisAdmissionSQLBudget(tx OwnedTx) (func() error, func() error, error) 
 			budget = min(budget, time.Until(deadline)-2*time.Second)
 		}
 		if budget < time.Millisecond {
-			return fmt.Errorf("%w: analysis admission SQL budget exhausted", ErrUnavailable)
+			return ErrAnalysisAdmissionBudget
 		}
 		_, err := tx.Exec(`SELECT set_config('statement_timeout',CASE WHEN setting::bigint=0 OR setting::bigint>$1::bigint THEN $2 ELSE current_setting('statement_timeout') END,true) FROM pg_settings WHERE name='statement_timeout'`, budget.Milliseconds(), strconv.FormatInt(budget.Milliseconds(), 10)+"ms")
 		return err

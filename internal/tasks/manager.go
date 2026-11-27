@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"sync"
 	"time"
 
@@ -16,7 +17,40 @@ const (
 	managerCycleTimeout      = 5 * time.Second
 	managerScheduleBatch     = 32
 	minimumScheduleRetry     = 100 * time.Millisecond
+	analysisBudgetRetryDelay = time.Minute
 )
+
+type analysisBudgetRetry struct {
+	deferral AnalysisDeferral
+	until    time.Time
+}
+
+func (m *Manager) analysisAdmissionBackoff() analysisAdmissionBackoff {
+	// Keep the starting exclusion set stable across one pass; new failures
+	// extend it immediately, but expiry never re-admits work mid-pass.
+	now := time.Now()
+	return analysisAdmissionBackoff{
+		excluded: func() []string {
+			var ids []string
+			for id, retry := range m.analysisBudgetRetries {
+				if now.Before(retry.until) {
+					ids = append(ids, id)
+				} else {
+					delete(m.analysisBudgetRetries, id)
+				}
+			}
+			slices.Sort(ids)
+			return ids
+		},
+		onBudget: func(deferral AnalysisDeferral) {
+			if m.analysisBudgetRetries == nil {
+				m.analysisBudgetRetries = make(map[string]analysisBudgetRetry, len(analysisSelectionTaskKeys))
+			}
+			m.analysisBudgetRetries[deferral.TaskID] = analysisBudgetRetry{deferral, time.Now().Add(analysisBudgetRetryDelay)}
+			m.options.Logger.Warn("Analysis admission exceeded its SQL budget; retry deferred", "task_id", deferral.TaskID, "trigger_id", deferral.TriggerID)
+		},
+	}
+}
 
 // ScanExecutor exposes only task-owned scan operations. The manager never
 // cancels a job by library ID or adopts an independent scan returned as busy.
@@ -71,6 +105,7 @@ type Manager struct {
 	executions              map[string]*workerExecution
 	lastAnalysisTaskKey     string
 	pendingAnalysisStartups []AnalysisDeferral
+	analysisBudgetRetries   map[string]analysisBudgetRetry
 }
 
 func NewManager(store *Store, scans ScanExecutor, options ManagerOptions) (*Manager, error) {
@@ -331,6 +366,10 @@ func (m *Manager) schedulePass(ctx context.Context) (ownerProbed bool, err error
 		return false, nil
 	}
 	deferred := []AnalysisDeferral{}
+	backoff := m.analysisAdmissionBackoff()
+	for _, id := range backoff.exclusions() {
+		deferred = append(deferred, m.analysisBudgetRetries[id].deferral)
+	}
 	defer func() {
 		m.nextScheduleAttempt = time.Now().Add(minimumScheduleRetry)
 		if err != nil {
@@ -357,69 +396,72 @@ func (m *Manager) schedulePass(ctx context.Context) (ownerProbed bool, err error
 			return ownerProbed, err
 		}
 	}
+	collectDeferrals := func(values []AnalysisDeferral) error {
+		for _, value := range values {
+			var addErr error
+			deferred, addErr = addAnalysisDeferral(deferred, value)
+			if addErr != nil {
+				return addErr
+			}
+		}
+		return nil
+	}
 	initializedThisPass := !m.schedulesInitialized
 	if initializedThisPass {
 		if !m.enter() {
 			return ownerProbed, context.Canceled
 		}
-		var pending []AnalysisDeferral
-		err = m.store.InitializeSystemEvents(ctx, m.startupAt)
-		if err == nil {
-			pending, err = splitAnalysisDeferrals(m.store.InitializeSchedules(ctx, m.startupAt))
+		var complete bool
+		if err = m.store.InitializeSystemEvents(ctx, m.startupAt); err == nil {
+			complete, err = m.store.initializeSchedules(ctx, m.startupAt, backoff)
 		}
 		m.operations.Done()
+		pending, err := splitAnalysisDeferrals(err)
 		if err != nil {
 			return ownerProbed, err
+		}
+		if !complete {
+			return ownerProbed, collectDeferrals(pending)
 		}
 		m.pendingAnalysisStartups = pending
 		m.schedulesInitialized = true
 	}
-	collectDeferrals := func(cause error) error {
-		values, err := splitAnalysisDeferrals(cause)
-		if err != nil {
-			return err
-		}
-		for _, value := range values {
-			deferred, err = addAnalysisDeferral(deferred, value)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	}
 	// Initialization itself can admit startup runs. A second admission fence
 	// prevents a concurrent BeginClose from allowing subsequent due dispatch.
-	if !m.enter() {
-		return ownerProbed, context.Canceled
+	for _, dispatch := range []func(context.Context, int, analysisAdmissionBackoff) (bool, error){m.store.dispatchDue, m.store.dispatchSystemEvents} {
+		if !m.enter() {
+			return ownerProbed, context.Canceled
+		}
+		_, cause := dispatch(ctx, managerScheduleBatch, backoff)
+		m.operations.Done()
+		entries, err := splitAnalysisDeferrals(cause)
+		if err != nil {
+			return ownerProbed, err
+		}
+		if err = collectDeferrals(entries); err != nil {
+			return ownerProbed, err
+		}
+		if yieldAfterAnalysisBudget(ctx, entries) {
+			return ownerProbed, collectDeferrals(m.pendingAnalysisStartups)
+		}
 	}
-	_, dueErr := m.store.DispatchDue(ctx, managerScheduleBatch)
-	err = collectDeferrals(dueErr)
-	if err == nil {
-		_, eventErr := m.store.DispatchSystemEvents(ctx, managerScheduleBatch)
-		err = collectDeferrals(eventErr)
-	}
-	m.operations.Done()
-	if err != nil {
-		return ownerProbed, err
-	}
-	// A backlog of deferred startup rules must not consume the next pass's
-	// budget before ordinary timed and event providers receive their turn.
+	// Retry startup backlog only after ordinary timed and event providers.
 	if !initializedThisPass && len(m.pendingAnalysisStartups) > 0 {
 		if !m.enter() {
 			return ownerProbed, context.Canceled
 		}
-		var pending []AnalysisDeferral
-		pending, err = splitAnalysisDeferrals(m.store.retryAnalysisStartups(ctx, m.startupAt, m.pendingAnalysisStartups))
+		cause := m.store.retryAnalysisStartups(ctx, m.startupAt, m.pendingAnalysisStartups, backoff)
 		m.operations.Done()
+		pending, err := splitAnalysisDeferrals(cause)
 		if err != nil {
 			return ownerProbed, err
 		}
 		m.pendingAnalysisStartups = pending
 	}
-	if err = collectDeferrals(analysisDeferralResult(m.pendingAnalysisStartups)); err != nil {
+	if err = collectDeferrals(m.pendingAnalysisStartups); err != nil || yieldAfterAnalysisBudget(ctx, deferred) {
 		return ownerProbed, err
 	}
-	m.nextDue, err = m.store.NextDue(ctx)
+	m.nextDue, err = m.store.nextEligibleDue(ctx, backoff.exclusions())
 	return ownerProbed, err
 }
 

@@ -9,6 +9,18 @@ import (
 	"testing"
 )
 
+func TestAnalysisAdmissionDeferralLogsOnlyTaskAndTriggerIdentity(t *testing.T) {
+	var output bytes.Buffer
+	logger := slog.New(NewHandler(nil, slog.NewJSONHandler(&output, nil)))
+	taskID, triggerID := strings.Repeat("a", 32), strings.Repeat("b", 32)
+	logger.Warn("Analysis admission exceeded its SQL budget; retry deferred", "task_id", taskID, "trigger_id", triggerID,
+		"error", &fs.PathError{Op: "open", Path: "private-secret-path", Err: context.DeadlineExceeded})
+	record := diagnosticJSON(t, output.Bytes())
+	if record["event"] != "task.analysis_admission.deferred" || record["task_id"] != taskID || record["trigger_id"] != triggerID || record["error_class"] != nil || strings.Contains(output.String(), "private-secret") {
+		t.Fatalf("budget deferral lost its safe diagnostic identity: %#v", record)
+	}
+}
+
 func TestTaskRetryDiagnosticsRetainSafeFailureIdentity(t *testing.T) {
 	for _, test := range []struct{ message, event string }{
 		{"Task scheduling will retry; scheduler readiness is unavailable", "task.scheduling.retry"},

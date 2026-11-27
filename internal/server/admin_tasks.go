@@ -403,7 +403,7 @@ func (s *Server) taskError(w http.ResponseWriter, r *http.Request, err error) {
 		apiError(w, r, http.StatusConflict, "revision_conflict", "The task changed. Refresh it before trying again.")
 	case errors.Is(err, tasks.ErrDisabled):
 		apiError(w, r, http.StatusConflict, "task_disabled", "This task is disabled.")
-	case errors.Is(err, tasks.ErrUnavailable), errors.Is(err, library.ErrUnavailable), errors.Is(err, context.DeadlineExceeded):
+	case errors.Is(err, tasks.ErrUnavailable), errors.Is(err, library.ErrUnavailable), errors.Is(err, library.ErrAnalysisAdmissionBudget), errors.Is(err, context.DeadlineExceeded):
 		apiError(w, r, http.StatusServiceUnavailable, "task_unavailable", "Task execution is currently unavailable.")
 	case errors.Is(err, context.Canceled) && r.Context().Err() != nil:
 		return

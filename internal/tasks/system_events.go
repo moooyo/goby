@@ -27,36 +27,14 @@ func (s *Store) InitializeSystemEvents(ctx context.Context, startupAt time.Time)
 // is never deleted: independent rules have independent durable cursors. A
 // callback loss, process crash, or retry cannot lose or execute a range twice.
 func (s *Store) DispatchSystemEvents(ctx context.Context, limit int) (bool, error) {
+	return s.dispatchSystemEvents(ctx, limit, analysisAdmissionBackoff{})
+}
+
+func (s *Store) dispatchSystemEvents(ctx context.Context, limit int, backoff analysisAdmissionBackoff) (bool, error) {
 	if limit < 1 || limit > MaxPageLimit {
 		return false, ErrInvalidInput
 	}
-	processed := false
-	deferred := []AnalysisDeferral{}
-	excluded := []string{}
-	for handled := 0; handled < limit; {
-		changed, err := s.dispatchSystemEvent(ctx, excluded...)
-		var blocked *analysisAdmissionDeferred
-		if errors.As(err, &blocked) {
-			if slices.Contains(excluded, blocked.TaskID) || len(excluded) >= maxSystemEventDeferrals {
-				return processed, ErrInconsistent
-			}
-			excluded = append(excluded, blocked.TaskID)
-			deferred, err = addAnalysisDeferral(deferred, blocked.AnalysisDeferral)
-			if err != nil {
-				return processed, err
-			}
-			continue
-		}
-		if err != nil {
-			return processed, err
-		}
-		if !changed {
-			break
-		}
-		processed = true
-		handled++
-	}
-	return processed, analysisDeferralResult(deferred)
+	return dispatchSchedulePass(ctx, limit, maxSystemEventDeferrals, backoff, s.dispatchSystemEvent)
 }
 
 func (s *Store) dispatchSystemEvent(ctx context.Context, excluded ...string) (bool, error) {
@@ -129,7 +107,7 @@ func (s *Store) dispatchSystemEvent(ctx context.Context, excluded ...string) (bo
 		}
 		receipt, err := s.admitScheduledOccurrence(tx, definitions[trigger.TaskID], trigger, due, "system_event")
 		if err != nil {
-			return err
+			return deferAnalysisBudget(err, definitions[trigger.TaskID], trigger, "system_event")
 		}
 		if receipt.RunID == nil || (receipt.Disposition != "admitted" && receipt.Disposition != "overlap") {
 			return ErrInconsistent

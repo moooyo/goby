@@ -505,6 +505,7 @@ var diagnosticEvents = func() map[string]diagnosticEvent {
 	add("activity.retention.retry", "activity retention will retry", "error_class")
 	add("task.scheduling.retry", "Task scheduling will retry; scheduler readiness is unavailable", "error_class")
 	add("task.coordination.retry", "Task coordination will retry", "error_class")
+	add("task.analysis_admission.deferred", "Analysis admission exceeded its SQL budget; retry deferred", "task_id", "trigger_id")
 	add("administrator.setup.completed", "administrator setup completed", "user_id")
 	add("user.created", "user created", "actor_id", "user_id", "administrator")
 	add("administrator.device.updated", "administrator device options updated", "actor_id", "device_id")
