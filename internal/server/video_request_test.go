@@ -84,6 +84,53 @@ func TestVideoRequestPreservesUnconstrainedAndStaticOriginalDelivery(t *testing.
 	}
 }
 
+func TestVideoRequestDolbyVisionEnrichmentOnlyForNewConversion(t *testing.T) {
+	source := videoRequestTestSource()
+	source.Info.ProbeVersion = media.CurrentProbeVersion
+	video := &source.Info.Streams[1]
+	video.Codec, video.BitDepth, video.PixelFormat, video.Profile = "hevc", 10, "yuv420p10le", "Main 10"
+	video.VideoRange = "DOVI"
+	video.DolbyVision = &media.DolbyVisionMetadata{Profile: 8, Level: 6, RPUPresent: true, BLPresent: true,
+		CompatibilityID: 1, MetadataCompression: "none"}
+	limits := videoRequestTestLimits()
+	limits.Hardware = transcode.Hardware{Decode: "software", Encode: "software", Device: "/dev/dri/renderD128"}
+	reads := 0
+	enrich := func() media.Info {
+		reads++
+		return media.ApplyDolbyVisionRPUEvidence(source.Info, []media.DolbyVisionRPUEvidence{{
+			StreamIndex: video.Index, Verified: true, Profile: 8, ResidualDisabled: true, FrameCount: 48,
+		}})
+	}
+	for _, values := range []map[string]string{nil, {"Static": "true", "VideoCodec": "hevc"}} {
+		if result, err := videoRequestDecisionWithPlanningInfo(source, values, "mkv", limits, enrich); err != nil || !result.Original {
+			t.Fatalf("original delivery changed: %+v, %v", result, err)
+		}
+	}
+	if result, err := videoRequestDecisionWithPlanningInfo(source, map[string]string{"Static": "true"}, "mp4", limits, enrich); !errors.Is(err, errVideoRequestUnsupported) || result.Original {
+		t.Fatalf("mismatched original container changed: %+v, %v", result, err)
+	}
+	if reads != 0 {
+		t.Fatal("an original request looked up Dolby Vision evidence")
+	}
+	for _, outputRange := range []string{"SDR", "HDR10"} {
+		values := map[string]string{"VideoCodec": "hevc", "VideoRange": outputRange}
+		if result, err := videoRequestDecision(source, values, "mp4", limits); !errors.Is(err, errVideoRequestUnsupported) || result.Conversion.Plan != nil {
+			t.Fatalf("pending Dolby Vision was advertised as %s: %+v, %v", outputRange, result, err)
+		}
+		result, err := videoRequestDecisionWithPlanningInfo(source, values, "mp4", limits, enrich)
+		plan := result.Conversion.Plan
+		if err != nil || result.Original || plan == nil || plan.VideoCodec != "hevc" || plan.VideoFilters.ToneMap != "dolbyvision" || plan.VideoFilters.DVProfile != 8 {
+			t.Fatalf("verified Dolby Vision did not use a strict %s encode: %+v, %v", outputRange, plan, err)
+		}
+		if output := result.Conversion.OutputSource.Info.Streams[0]; output.VideoRange != outputRange || output.DolbyVision != nil {
+			t.Fatal("encoded output retained source Dolby Vision facts or changed its requested range")
+		}
+	}
+	if reads != 2 || video.VideoRange != "DOVI" || video.DolbyVision.RPUVerified {
+		t.Fatal("enrichment was repeated or changed the original source facts")
+	}
+}
+
 func TestVideoRequestExactTargetsAndIndependentCeilings(t *testing.T) {
 	values := map[string]string{
 		"Static": "false", "VideoCodec": "h264", "AudioCodec": "aac", "Width": "640", "Height": "360",

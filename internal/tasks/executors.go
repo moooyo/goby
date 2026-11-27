@@ -43,6 +43,8 @@ func CompatibilityKey(key string) string {
 		return "GobyGenerateAudioWaveforms"
 	case library.TaskSubtitleTimelineGenerationKey:
 		return "GobyGenerateSubtitleTimelines"
+	case library.TaskDolbyVisionVerificationKey:
+		return "GobyVerifyDolbyVision"
 	default:
 		return ""
 	}

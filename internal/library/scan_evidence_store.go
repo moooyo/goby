@@ -33,6 +33,7 @@ type storeOptions struct {
 	deferLocalMetadata   bool
 	enrichOnlineMetadata bool
 	deferVideoSeek       bool
+	dolbyVisionVerifier  dolbyVisionVerifier
 
 	libraryStorageDirectoryHook libraryStorageDirectoryObservationHook
 }

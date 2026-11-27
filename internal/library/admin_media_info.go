@@ -99,17 +99,18 @@ type AdminMediaChapter struct {
 }
 
 type AdminMediaInfo struct {
-	ID                string `json:"Id"`
-	LibraryID         string `json:"LibraryId"`
-	Summary           AdminMediaSummary
-	ProbeVersion      *int
-	UpdatedAt         time.Time
-	Streams           []AdminMediaStream
-	Chapters          []AdminMediaChapter
-	StreamCount       int
-	ChapterCount      int
-	StreamsTruncated  bool
-	ChaptersTruncated bool
+	ID                      string `json:"Id"`
+	LibraryID               string `json:"LibraryId"`
+	Summary                 AdminMediaSummary
+	ProbeVersion            *int
+	UpdatedAt               time.Time
+	Streams                 []AdminMediaStream
+	Chapters                []AdminMediaChapter
+	StreamCount             int
+	ChapterCount            int
+	StreamsTruncated        bool
+	ChaptersTruncated       bool
+	DolbyVisionVerification []AdminDolbyVisionVerification `json:",omitempty"`
 }
 
 // GetAdminMediaInfo is read-only and uses indexed database data exclusively.
@@ -130,6 +131,10 @@ func (s *Store) GetAdminMediaInfo(ctx context.Context, actor identity.Principal,
 	result, exists := items[itemID]
 	if !exists {
 		return AdminMediaInfo{}, ErrNotFound
+	}
+	result.DolbyVisionVerification, err = s.readAdminDolbyVisionVerification(ctx, tx, result)
+	if err != nil {
+		return AdminMediaInfo{}, fmt.Errorf("read administrator Dolby Vision status: %w", err)
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return AdminMediaInfo{}, fmt.Errorf("commit administrator media read: %w", err)

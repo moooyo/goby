@@ -9,7 +9,7 @@ import (
 	"github.com/moooyo/goby/internal/tasks"
 )
 
-const publishedCompatibilityTaskCount = 12
+const publishedCompatibilityTaskCount = 13
 
 func assertPublishedTaskCollection(t *testing.T, f *scheduledTaskHTTPFixture, items []map[string]any) {
 	t.Helper()

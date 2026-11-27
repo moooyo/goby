@@ -11,6 +11,9 @@ const CurrentProbeVersion = 8
 type Prober struct {
 	FFprobePath string
 	FFmpegPath  string
+	// SkipDolbyVisionRPU preserves declared Dolby Vision metadata but omits
+	// the complete RPU scan so an authorized ingest task can verify it later.
+	SkipDolbyVisionRPU bool
 	// AnalyzeVideoSeek enables optional, bounded seek indexing during scanning.
 	AnalyzeVideoSeek bool
 	Timeout          time.Duration

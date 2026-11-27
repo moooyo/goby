@@ -57,6 +57,14 @@ export interface MediaChapterInfo {
   EndTicks: string | null;
 }
 
+const dolbyVisionVerificationStates = ['verified', 'pending', 'retrying', 'unsupported', 'failed', 'unknown'] as const;
+
+export interface DolbyVisionVerification {
+  StreamIndex: number;
+  State: typeof dolbyVisionVerificationStates[number];
+  VerifiedAt?: string;
+}
+
 export interface MediaInfoResponse {
   Id: string;
   LibraryId: string;
@@ -64,6 +72,7 @@ export interface MediaInfoResponse {
   ProbeVersion: number | null;
   UpdatedAt: string;
   Streams: MediaStreamInfo[];
+  DolbyVisionVerification?: DolbyVisionVerification[];
   Chapters: MediaChapterInfo[];
   StreamCount: number;
   ChapterCount: number;
@@ -97,6 +106,14 @@ function stream(value: unknown): value is MediaStreamInfo {
     && ['IsDefault', 'IsForced', 'IsExternal', 'IsAttachedPicture', 'IsHearingImpaired'].every((key) => typeof value[key] === 'boolean');
 }
 
+function validDolbyVisionVerification(value: unknown, streams: MediaStreamInfo[]): boolean {
+  if (!Array.isArray(value) || value.length > streams.length) return false;
+  const indices = new Set(streams.filter((stream) => stream.Type === 'video' && !stream.IsExternal && !stream.IsAttachedPicture).map((stream) => stream.Index));
+  return value.every((entry) => record(entry) && count(entry.StreamIndex) && indices.delete(entry.StreamIndex)
+    && dolbyVisionVerificationStates.some((state) => state === entry.State)
+    && (entry.VerifiedAt === undefined || (text(entry.VerifiedAt) && Number.isFinite(Date.parse(entry.VerifiedAt)))));
+}
+
 function indexedAnalysis(value: unknown): value is IndexedMediaAnalysis {
   return record(value) && count(value.PreviewCount)
     && ['Intro', 'Credits', 'BackgroundPreview', 'AudioWaveform', 'SubtitleTimeline'].every((key) => optionalStatus(value[key]));
@@ -125,6 +142,7 @@ export const mediaSummaryApi = {
       || !optionalCount(result.ProbeVersion) || typeof result.UpdatedAt !== 'string' || !Number.isFinite(Date.parse(result.UpdatedAt))
       || !Array.isArray(result.Streams) || result.Streams.length > 256 || !result.Streams.every(stream)
       || new Set(result.Streams.map((entry) => entry.Index)).size !== result.Streams.length
+      || (result.DolbyVisionVerification !== undefined && !validDolbyVisionVerification(result.DolbyVisionVerification, result.Streams))
       || !Array.isArray(result.Chapters) || result.Chapters.length > 4096
       || !result.Chapters.every((chapter) => record(chapter) && count(chapter.Index) && text(chapter.Name) && decimal(chapter.StartTicks)
         && optionalDecimal(chapter.EndTicks) && (chapter.EndTicks === null || BigInt(chapter.EndTicks) >= BigInt(chapter.StartTicks)))

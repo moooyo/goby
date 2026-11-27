@@ -41,7 +41,7 @@ export function ScheduleRuleFields({ value, timezone, disabled, showKind = true,
       <TextField size="small" label="Time of day" value={value.time} disabled={disabled} onChange={(event) => onChange({ ...value, time: event.target.value })} helperText={t('24-hour time in {timezone}. Seconds and up to seven decimal places are supported.', { timezone })} slotProps={{ htmlInput: { autoComplete: 'off', spellCheck: false } }} />
     </Box>}
     {value.kind === 'startup' && <Typography variant="body2" color="text.secondary">Runs once after each server startup.</Typography>}
-    {value.kind === 'system_event' && <TextField size="small" select label="System event" value={value.systemEvent} disabled={disabled} onChange={(event) => onChange({ ...value, systemEvent: event.target.value as TriggerDraft['systemEvent'] })} helperText="Runs for new server events after this schedule is saved. Overlapping work is combined into the active run.">
+    {value.kind === 'system_event' && <TextField size="small" select label="System event" value={value.systemEvent} disabled={disabled} onChange={(event) => onChange({ ...value, systemEvent: event.target.value as TriggerDraft['systemEvent'] })} helperText={t('Runs for new matching server events.')}>
       {systemEvents.map((event) => <MenuItem key={event.value} value={event.value}>{taskTriggerLabel({ Kind: 'system_event', SystemEvent: event.value }, t)}</MenuItem>)}
     </TextField>}
     <details className="system-schedule-runtime" open={value.limitRuntime || undefined}>

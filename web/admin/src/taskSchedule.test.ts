@@ -90,3 +90,20 @@ test('subtitle timeline requests retain every existing task event during schedul
   assert.equal(trigger.SystemEvent, 'SubtitleTimelineGenerationRequested');
   assert.deepEqual(previous.map((event) => event.SystemEvent), existingEvents);
 });
+
+test('Dolby Vision request, startup and periodic rules survive schedule editing', () => {
+  const runtime = '12000000000';
+  const event: TaskTrigger = { Id: 'dolby-vision-request', Kind: 'system_event', SystemEvent: 'DolbyVisionVerificationRequested',
+    IntervalTicks: null, TimeOfDayTicks: null, DayOfWeek: null, MaxRuntimeTicks: runtime, NextFireAt: null, CalculationError: '' };
+  const startup: TaskTrigger = { ...event, Id: 'dolby-vision-startup', Kind: 'startup', SystemEvent: null };
+  const interval: TaskTrigger = { ...startup, Id: 'dolby-vision-interval', Kind: 'interval', IntervalTicks: '9000000000' };
+  assert.equal(systemEvents.find(({ value }) => value === event.SystemEvent)?.label, 'Dolby Vision verification requested');
+  assert.equal(describeTrigger(event), 'When Dolby Vision verification is requested');
+  assert.deepEqual(scheduleInput(scheduleFromTask('UTC', [event, startup, interval])), {
+    ScheduleTimezone: 'UTC', Triggers: [
+      { Kind: 'system_event', SystemEvent: 'DolbyVisionVerificationRequested', MaxRuntimeTicks: runtime },
+      { Kind: 'startup', MaxRuntimeTicks: runtime },
+      { Kind: 'interval', IntervalTicks: '9000000000', MaxRuntimeTicks: runtime },
+    ],
+  });
+});

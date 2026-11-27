@@ -184,6 +184,9 @@ func (s *Server) resolveHLS(ctx context.Context, r *http.Request, values map[str
 	input := playback.Source{ItemID: source.Item.ID, MediaSourceID: source.SourceID,
 		Path: source.Item.Path, ItemType: source.Item.Type, Info: playbackMediaInfo(source.Item)}
 	limits := hlsPrincipalLimits(planning, principal)
+	if limits.AllowVideoTranscode {
+		input.Info = s.withIngestedDolbyVision(ctx, source, input.Info)
+	}
 	decision, err := hlsRequestConversion(values, input, limits)
 	if err == nil && decision.Plan != nil && !principalPlanBitrateAllowed(principal, source, *decision.Plan) {
 		decision, err = hlsRequestConversion(remoteBitrateEncodingValues(values), input, limits)

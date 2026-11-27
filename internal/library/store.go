@@ -43,6 +43,7 @@ func New(pool *pgxpool.Pool, prober Prober, allowedRoots []string, options ...Op
 	s.deferLocalMetadata = settings.deferLocalMetadata
 	s.enrichOnlineMetadata = settings.enrichOnlineMetadata
 	s.deferVideoSeek = settings.deferVideoSeek
+	s.dolbyVisionVerifier = settings.dolbyVisionVerifier
 	s.libraryStorageDirectoryHook = settings.libraryStorageDirectoryHook
 	seen := make(map[string]bool)
 	for _, path := range allowedRoots {

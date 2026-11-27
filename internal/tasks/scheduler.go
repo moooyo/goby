@@ -75,7 +75,7 @@ func (s *Store) InitializeSchedules(ctx context.Context, startupAt time.Time) er
 		return fmt.Errorf("read startup task rules: %w", err)
 	}
 	deferred := []AnalysisDeferral{}
-	blockedTasks := make(map[string]bool, len(analysisTaskKeys()))
+	blockedTasks := make(map[string]bool, len(analysisSelectionTaskKeys))
 	for _, rule := range rules {
 		if rule.kind == string(ScheduleStartup) && blockedTasks[rule.taskID] {
 			deferred, err = addAnalysisDeferral(deferred, AnalysisDeferral{TaskID: rule.taskID, TaskKey: rule.key, TriggerID: rule.id, Source: "startup"})
@@ -166,7 +166,7 @@ func (s *Store) DispatchDue(ctx context.Context, limit int) (bool, error) {
 		changed, err := s.dispatchOneSchedule(ctx, excluded...)
 		var blocked *analysisAdmissionDeferred
 		if errors.As(err, &blocked) {
-			if slices.Contains(excluded, blocked.TaskID) || len(excluded) >= len(analysisTaskKeys()) {
+			if slices.Contains(excluded, blocked.TaskID) || len(excluded) >= len(analysisSelectionTaskKeys) {
 				return processed, ErrInconsistent
 			}
 			excluded = append(excluded, blocked.TaskID)
@@ -445,8 +445,7 @@ func (s *Store) admitScheduledOccurrence(tx library.OwnedTx, definition Definiti
 		return scheduledOccurrenceReceipt{}, fmt.Errorf("read overlapping scheduled run: %w", err)
 	}
 	disposition := "overlap"
-	if runID != "" && (isMediaAnalysisExecution(definition.Key) || definition.Key == library.TaskOnlineImagesKey ||
-		definition.Key == library.TaskLocalMetadataIngestKey || definition.Key == library.TaskOnlineMetadataIngestKey) && source == "system_event" {
+	if runID != "" && source == "system_event" && preservesOverlappingSystemEvent(definition.Key) {
 		// Keep the event unconsumed until a fresh child snapshot can include
 		// late requests, including a library absent from the active run.
 		return scheduledOccurrenceReceipt{}, &analysisAdmissionDeferred{AnalysisDeferral: AnalysisDeferral{TaskID: definition.ID, TaskKey: definition.Key, TriggerID: trigger.ID, Source: source}}

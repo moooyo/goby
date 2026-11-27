@@ -123,11 +123,11 @@ func compatibilityMigrationPhase3Defaults(t *testing.T, ctx context.Context, poo
 		AND NOT EXISTS(SELECT 1 FROM artwork_images)
 		AND NOT EXISTS(SELECT 1 FROM entity_user_data)
 		AND NOT EXISTS(SELECT 1 FROM task_triggers WHERE system_event IS NOT NULL OR last_event_sequence IS DISTINCT FROM 0)
-		AND (SELECT count(*) FROM task_system_events)=13
+		AND (SELECT count(*) FROM task_system_events)=14
 		AND NOT EXISTS(SELECT 1 FROM task_system_events WHERE name NOT IN
 			('ServerStarted','LibraryChanged','ConfigurationChanged','IntroAnalysisRequested','PreviewGenerationRequested',
 			 'BackgroundPreviewGenerationRequested','AudioWaveformGenerationRequested','CreditsAnalysisRequested','SubtitleTimelineGenerationRequested','OnlineImagesRequested',
-			 'LocalMetadataIngestRequested','OnlineMetadataIngestRequested','VideoSeekIngestRequested')
+			 'LocalMetadataIngestRequested','OnlineMetadataIngestRequested','VideoSeekIngestRequested','DolbyVisionVerificationRequested')
 			OR sequence IS DISTINCT FROM 0 OR lifecycle_key IS DISTINCT FROM '' OR occurred_at IS NULL)
 		AND NOT EXISTS(SELECT 1 FROM task_system_event_receipts)
 		AND NOT EXISTS(SELECT 1 FROM managed_settings WHERE runtime_overrides IS DISTINCT FROM

@@ -167,6 +167,7 @@ type Store struct {
 	deferLocalMetadata   bool
 	enrichOnlineMetadata bool
 	deferVideoSeek       bool
+	dolbyVisionVerifier  dolbyVisionVerifier
 	imageInspection      artwork.InspectionCache
 	roots                []approvedRoot
 	configuredRoots      []configuredStorageRoot

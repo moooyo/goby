@@ -7,10 +7,12 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
+	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/playback"
 	"github.com/moooyo/goby/internal/transcode"
 )
@@ -69,9 +71,13 @@ func (s *Server) videoStream(w http.ResponseWriter, r *http.Request) {
 		Path: source.Item.Path, ItemType: source.Item.Type, Info: playbackMediaInfo(source.Item)}
 	planning := s.requestPlanningConfig(r)
 	limits := hlsPrincipalLimits(planning, principal)
-	decision, err := videoRequestDecision(input, values, container, limits)
+	// A bitrate-policy fallback must use the same evidence as the first plan.
+	planningInfo := sync.OnceValue(func() media.Info {
+		return s.withIngestedDolbyVision(prepare, source, input.Info)
+	})
+	decision, err := videoRequestDecisionWithPlanningInfo(input, values, container, limits, planningInfo)
 	if err == nil && !decision.Original && decision.Conversion.Plan != nil && !principalPlanBitrateAllowed(principal, source, *decision.Conversion.Plan) {
-		decision, err = videoRequestDecision(input, remoteBitrateEncodingValues(values), container, limits)
+		decision, err = videoRequestDecisionWithPlanningInfo(input, remoteBitrateEncodingValues(values), container, limits, planningInfo)
 	}
 	if err != nil {
 		s.videoError(w, r, err)

@@ -103,6 +103,7 @@ var publishedMigrations = [...]publishedMigration{
 	{77, "0077_managed_transcoding_options.sql", "6bc704aed4d6385da9dd821425fbc96c2660f7d312ce03f5d1421b560e6fbaa6"},
 	{78, "0078_managed_transcoding_controls.sql", "352ac2837596565caf430b12530e5de29aa16df6eab4a8e814ae2a6f3078c67c"},
 	{79, "0079_local_metadata_ingest.sql", "1e537597c663713c02176bade1f87d89aab33cc65a8f3acf126a73f7b86d23d4"},
+	{80, "0080_dolby_vision_verification.sql", "72c5d258be1875d65f172061b3f6907f9a09a871e6a97488c04608589f46e8c4"},
 }
 
 func validatePublishedMigrations(available []migration) error {

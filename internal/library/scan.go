@@ -554,6 +554,7 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 	deferred := state.metadataImport(path, itemType, false)
 	deferred.index, deferred.parentIndex, deferred.parentDefined = indexNumber, parentIndex, parentNumberDefined
 	seek := state.defersVideoSeek(itemType, probe)
+	dolbyVision := state.pendingDolbyVision(itemType, probe)
 	// Sidecar absence is authoritative only while this media pathname still
 	// names the opened file. A concurrent directory move is not NFO deletion.
 	var nfoObservation localNFOObservation
@@ -646,7 +647,7 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 		stored.local.hash != local.hash || stored.local.path != local.path || !reflect.DeepEqual(stored.local.value, local.value)
 	if stored.id != "" && !changed {
 		completionRequired = state.task.job.TaskChildID != ""
-		if err := state.queueCachedIngestWork(stored, path, input.primary, deferred, seek); err != nil {
+		if err := state.queueCachedIngestWork(stored, path, input.primary, deferred, seek, dolbyVision); err != nil {
 			return err
 		}
 		sidecarsUnchanged := false
@@ -827,6 +828,9 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 		if err := state.queueVideoSeekIngest(tx, id); err != nil {
 			return err
 		}
+	}
+	if err := state.queueDolbyVisionVerification(tx, id, dolbyVision); err != nil {
+		return err
 	}
 	candidateProgress := state.task.job
 	if stored.id == "" {

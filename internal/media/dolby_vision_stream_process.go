@@ -2,6 +2,7 @@ package media
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -65,21 +66,15 @@ func runLimitedFilesStreamOutput(ctx context.Context, timeout time.Duration, max
 	cmd.Stdout, cmd.Stderr = stdout, stderr
 	cmd.WaitDelay = time.Second
 	process, err := startMediaProcess(processContext, cmd)
-	if err == nil {
-		defer process.Close()
-		err = process.Wait()
+	if process != nil {
+		if err == nil {
+			err = process.Wait()
+		}
+		// A non-nil Start owner must be joined before inspecting its writers.
+		err = errors.Join(err, process.Close())
 	}
-	if stdout.exceeded || stderr.exceeded {
-		return mediaProcessOutput{}, fmt.Errorf("%s: %w", filepath.Base(executable), ErrOutputLimit)
-	}
-	if ctx.Err() != nil {
-		return mediaProcessOutput{}, fmt.Errorf("%s: %w", filepath.Base(executable), ctx.Err())
-	}
-	if stdout.err != nil {
-		return mediaProcessOutput{}, fmt.Errorf("%s: %w", filepath.Base(executable), stdout.err)
-	}
-	if processContext.Err() != nil {
-		return mediaProcessOutput{}, fmt.Errorf("%s: %w", filepath.Base(executable), processContext.Err())
+	if failure := dolbyVisionStreamProcessFailure(ctx, processContext, stdout, stderr, err); failure != nil {
+		return mediaProcessOutput{}, fmt.Errorf("%s: %w", filepath.Base(executable), failure)
 	}
 	if err != nil {
 		detail := stderr.buffer.String()
@@ -93,4 +88,21 @@ func runLimitedFilesStreamOutput(ctx context.Context, timeout time.Duration, max
 		return mediaProcessOutput{}, fmt.Errorf("execute %s: %w", filepath.Base(executable), err)
 	}
 	return mediaProcessOutput{stderr: stderr.buffer.Bytes()}, nil
+}
+
+func dolbyVisionStreamProcessFailure(ctx, processContext context.Context, stdout *limitedStreamOutput, stderr *limitedOutput, processErr error) error {
+	// An unproved join also means the copier may still own the output state.
+	if errors.Is(processErr, ErrProcessRetirementUnknown) {
+		return errors.Join(ctx.Err(), processErr)
+	}
+	switch {
+	case stdout.exceeded || stderr.exceeded:
+		return ErrOutputLimit
+	case ctx.Err() != nil:
+		return ctx.Err()
+	case stdout.err != nil:
+		return stdout.err
+	default:
+		return processContext.Err()
+	}
 }

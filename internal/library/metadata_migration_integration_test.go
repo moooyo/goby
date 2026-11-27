@@ -211,7 +211,7 @@ func metadataMigrationPhase3Defaults(t *testing.T, ctx context.Context, pool *pg
 		SELECT count(*) AS total, count(*) FILTER (WHERE name IN
 			('ServerStarted','LibraryChanged','ConfigurationChanged','IntroAnalysisRequested','PreviewGenerationRequested',
 			 'BackgroundPreviewGenerationRequested','AudioWaveformGenerationRequested','CreditsAnalysisRequested','SubtitleTimelineGenerationRequested',
-			 'OnlineImagesRequested','LocalMetadataIngestRequested','OnlineMetadataIngestRequested','VideoSeekIngestRequested')
+			 'OnlineImagesRequested','LocalMetadataIngestRequested','OnlineMetadataIngestRequested','VideoSeekIngestRequested','DolbyVisionVerificationRequested')
 			AND sequence=0 AND lifecycle_key='' AND occurred_at IS NOT NULL) AS initialized
 		FROM task_system_events
 	) SELECT
@@ -227,7 +227,7 @@ func metadataMigrationPhase3Defaults(t *testing.T, ctx context.Context, pool *pg
 		AND NOT EXISTS(SELECT 1 FROM artwork_images)
 		AND NOT EXISTS(SELECT 1 FROM entity_user_data)
 		AND NOT EXISTS(SELECT 1 FROM task_triggers WHERE system_event IS NOT NULL OR last_event_sequence IS DISTINCT FROM 0)
-		AND (SELECT total=13 AND initialized=13 FROM event_defaults)
+		AND (SELECT total=14 AND initialized=14 FROM event_defaults)
 		AND NOT EXISTS(SELECT 1 FROM task_system_event_receipts),
 		(SELECT total FROM event_defaults), (SELECT initialized FROM event_defaults)`).Scan(&valid, &totalEvents, &initializedEvents); err != nil || !valid {
 		t.Fatalf("metadata migration inferred phase 3 library, preference, artwork, or event state: valid=%t total_events=%d initialized_events=%d error=%v",
@@ -540,7 +540,7 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 	expectedAdditions = append(expectedAdditions, analysisTables...)
 	derivedTables := []string{"item_credits_state", "item_bitmap_subtitles", "item_background_preview_settings",
 		"background_preview_queue", "background_preview_requests", "audio_waveform_queue", "audio_waveform_requests",
-		"subtitle_timeline_queue", "subtitle_timeline_requests"}
+		"subtitle_timeline_queue", "subtitle_timeline_requests", "dolby_vision_verifications"}
 	expectedAdditions = append(expectedAdditions, "background_preview_settings")
 	expectedAdditions = append(expectedAdditions, derivedTables...)
 	expectedAdditions = append(expectedAdditions, "local_metadata_ingest", "video_seek_ingest", "backup_policy", "backup_policy_runs", "backup_publication_receipts",

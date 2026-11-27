@@ -79,10 +79,15 @@ func videoUnsupportedTransforms(source playback.Source, values map[string]string
 	return nil
 }
 
-// videoRequestDecision maps declared output settings to a concrete MP4 plan.
-// Legacy unconstrained requests and Static=true retain original-file delivery;
-// original positions are client-side seeks rather than guessed byte offsets.
 func videoRequestDecision(source playback.Source, values map[string]string, suffix string, limits playback.ConversionLimits) (videoRequestResult, error) {
+	return videoRequestDecisionWithPlanningInfo(source, values, suffix, limits, nil)
+}
+
+// videoRequestDecisionWithPlanningInfo maps declared output settings to a
+// concrete MP4 plan. Legacy unconstrained requests and Static=true retain
+// original-file delivery and never request enrichment. Only the facts used to
+// plan an encode can be enriched; the caller retains its authorized source.
+func videoRequestDecisionWithPlanningInfo(source playback.Source, values map[string]string, suffix string, limits playback.ConversionLimits, planningInfo func() media.Info) (videoRequestResult, error) {
 	var result videoRequestResult
 	values, err := hlsQueryValues(values)
 	if err != nil {
@@ -280,6 +285,14 @@ func videoRequestDecision(source playback.Source, values map[string]string, suff
 	}
 	if !hasAudio && values["audiocodec"] == "" {
 		audioCodecs = []string{""}
+	}
+	if planningInfo != nil && limits.AllowVideoTranscode {
+		for _, video := range videoCodecs {
+			if transcode.VideoEncodingSupported(video) {
+				source.Info = planningInfo()
+				break
+			}
+		}
 	}
 	for _, video := range videoCodecs {
 		if !transcode.VideoEncodingSupported(video) && video != "copy" {

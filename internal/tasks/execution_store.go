@@ -39,6 +39,9 @@ func (s *Store) snapshotChildren(tx library.OwnedTx, runID, key string) (int64, 
 	if key == library.TaskVideoSeekIngestKey {
 		return library.SnapshotVideoSeekIngestChildren(tx, runID)
 	}
+	if key == library.TaskDolbyVisionVerificationKey {
+		return library.SnapshotDolbyVisionVerificationChildren(tx, runID)
+	}
 	if key == library.TaskOnlineImagesKey {
 		return library.SnapshotOnlineImageTaskChildren(tx, runID)
 	}

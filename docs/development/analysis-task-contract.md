@@ -52,8 +52,9 @@ timed/event dispatch. Once one startup rule conflicts, remaining startup rules
 for that same definition are retained without repeating profile preparation in
 that pass. Initialization applies the same bound. The coordinator exposes
 `DeferredAnalyses()` separately from normal scheduler readiness. This snapshot
-is limited to 68 entries, replaces prior diagnostics each successful pass, and
-is not a successful occurrence/run receipt. Hard scheduler errors keep their
+is bounded by the number of registered analysis categories and the per-category
+startup rule limit, replaces prior diagnostics each successful pass, and is not
+a successful occurrence/run receipt. Hard scheduler errors keep their
 existing failure behavior; legacy overlap semantics are unchanged.
 
 `Work.AnalysisInput`, `AnalysisConfigFingerprint` and `AnalysisScopeKey` identify

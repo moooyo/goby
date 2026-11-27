@@ -36,6 +36,7 @@ func adminTaskHTTPFixtureForKey(t *testing.T, key string) (*serverFixture, *http
 		tasks.CacheMaintainKey: "Maintain provider cache", library.TaskOnlineImagesKey: "Download missing images",
 		library.TaskLocalMetadataIngestKey: "Import local metadata", library.TaskIntroAnalysisKey: "Analyze episode introductions",
 		library.TaskOnlineMetadataIngestKey: "Enrich newly scanned metadata", library.TaskVideoSeekIngestKey: "Index video seek points",
+		library.TaskDolbyVisionVerificationKey: "Verify Dolby Vision",
 		library.TaskCreditsAnalysisKey: "Analyze credits", library.TaskPreviewGenerationKey: "Generate seek previews",
 		library.TaskBackgroundPreviewGenerationKey: "Generate background clips", library.TaskAudioWaveformGenerationKey: "Generate audio waveforms",
 		library.TaskSubtitleTimelineGenerationKey: "Generate subtitle timelines",

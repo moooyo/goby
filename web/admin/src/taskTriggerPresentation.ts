@@ -18,6 +18,7 @@ const eventLabels: Record<TaskSystemEvent, string> = {
   LocalMetadataIngestRequested: 'When local metadata import is requested',
   OnlineMetadataIngestRequested: 'When online metadata enrichment is requested',
   VideoSeekIngestRequested: 'When video seek indexing is requested',
+  DolbyVisionVerificationRequested: 'When Dolby Vision verification is requested',
 };
 
 export function taskTriggerLabel(trigger: TaskTriggerInput, t: TaskTranslator): string {

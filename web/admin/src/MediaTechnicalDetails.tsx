@@ -3,7 +3,7 @@ import { Alert, Button, Skeleton } from './ui';
 import { ErrorNotice } from './components';
 import { useTranslation } from './i18n';
 import { mediaBitrate, mediaDuration, mediaSize, mediaSummaryApi } from './mediaSummaryApi';
-import type { IndexedMediaAnalysis, MediaInfoResponse, MediaStreamInfo, MediaTechnicalSummary } from './mediaSummaryApi';
+import type { DolbyVisionVerification, IndexedMediaAnalysis, MediaInfoResponse, MediaStreamInfo, MediaTechnicalSummary } from './mediaSummaryApi';
 import './media-summary.css';
 
 const analysisFields: { field: keyof Omit<IndexedMediaAnalysis, 'PreviewCount'>; label: string }[] = [
@@ -92,7 +92,11 @@ function IndexedAnalysisDetails({ summary }: { summary: MediaTechnicalSummary })
   </section>;
 }
 
-function StreamDetails({ stream }: { stream: MediaStreamInfo }) {
+const verificationLabels: Record<DolbyVisionVerification['State'], string> = {
+  verified: 'Verified', pending: 'Pending', retrying: 'Retrying', unsupported: 'Unsupported', failed: 'Failed', unknown: 'Unknown',
+};
+
+function StreamDetails({ stream, verification }: { stream: MediaStreamInfo; verification?: DolbyVisionVerification }) {
   const { t, locale } = useTranslation();
   const values: [string, string | number | null][] = [
     ['Codec', stream.Codec || null], ['Codec profile', stream.Profile || null], ['Level', stream.Level],
@@ -106,9 +110,13 @@ function StreamDetails({ stream }: { stream: MediaStreamInfo }) {
   ];
   const flags = [[stream.IsDefault, 'Default'], [stream.IsForced, 'Forced'], [stream.IsExternal, 'External'], [stream.IsAttachedPicture, 'Embedded cover'], [stream.IsHearingImpaired, 'Hearing impaired']] as const;
   return <details className="media-stream-details">
-    <summary><span className="media-mono">#{stream.Index}</span><span>{t(({ video: 'Video', audio: 'Audio', subtitle: 'Subtitle', attachment: 'Attachment', data: 'Data' } as Record<string, string>)[stream.Type] ?? stream.Type)}</span><strong className="media-mono" translate="no">{stream.Codec || t('Unknown')}</strong>{stream.Title && <span className="media-stream-title" translate="no">{stream.Title}</span>}</summary>
+    <summary><span className="media-mono">#{stream.Index}</span><span>{t(({ video: 'Video', audio: 'Audio', subtitle: 'Subtitle', attachment: 'Attachment', data: 'Data' } as Record<string, string>)[stream.Type] ?? stream.Type)}</span><strong className="media-mono" translate="no">{stream.Codec || t('Unknown')}</strong>{stream.Title && <span className="media-stream-title" translate="no">{stream.Title}</span>}
+      {verification && <span className="editor-badge">{t('Dolby Vision verification: {status}', { status: t(verificationLabels[verification.State]) })}</span>}
+    </summary>
     <div><div className="media-stream-flags">{flags.filter(([enabled]) => enabled).map(([, label]) => <span key={label} className="editor-badge">{t(label)}</span>)}</div>
-      <dl className="media-stream-facts">{values.filter(([, value]) => value !== null).map(([label, value]) => <div key={label}><dt>{t(label)}</dt><dd className="media-mono" translate="no">{value}</dd></div>)}</dl>
+      <dl className="media-stream-facts">{values.filter(([, value]) => value !== null).map(([label, value]) => <div key={label}><dt>{t(label)}</dt><dd className="media-mono" translate="no">{value}</dd></div>)}
+        {verification?.VerifiedAt && <div><dt>{t('Verified at')}</dt><dd><time dateTime={verification.VerifiedAt}>{new Date(verification.VerifiedAt).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' })}</time></dd></div>}
+      </dl>
     </div>
   </details>;
 }
@@ -117,6 +125,7 @@ export function MediaTechnicalDetails({ itemId, onProcessing, processingDisabled
   const { t, locale } = useTranslation();
   const resource = useMediaInfo(itemId);
   const data = resource.data;
+  const verificationByStream = new Map(data?.DolbyVisionVerification?.map((entry) => [entry.StreamIndex, entry] as const));
   return <div className="media-technical-details" aria-busy={resource.loading}>
     <MediaReadFeedback resource={resource} />
     {data && <>
@@ -131,7 +140,7 @@ export function MediaTechnicalDetails({ itemId, onProcessing, processingDisabled
           </dl><p className="editor-note">{t('Media details are from the last scan. Refresh this library after changing files.')}</p></section>
           {data.Summary.State === 'available' && <section className="editor-detail-section"><h3>{t('Media streams')} <span className="editor-inline-note">{new Intl.NumberFormat(locale).format(data.StreamCount)}</span></h3>
             {data.Streams.length === 0 && <p className="editor-note">{t('No streams are recorded for this source.')}</p>}
-            <div className="media-stream-list">{data.Streams.map((entry) => <StreamDetails key={entry.Index} stream={entry} />)}</div>
+            <div className="media-stream-list">{data.Streams.map((entry) => <StreamDetails key={entry.Index} stream={entry} verification={verificationByStream.get(entry.Index)} />)}</div>
             {data.StreamsTruncated && <Alert severity="info">{t('Showing the first {count} recorded streams.', { count: data.Streams.length })}</Alert>}
             {onProcessing && <div className="editor-inline-actions"><Button type="button" variant="outlined" disabled={processingDisabled} onClick={onProcessing}>Media processing</Button></div>}
           </section>}

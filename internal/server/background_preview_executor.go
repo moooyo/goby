@@ -3,8 +3,11 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/moooyo/goby/internal/library"
@@ -41,6 +44,11 @@ func newBackgroundPreviewRuntime(ctx context.Context, s *Server) (*backgroundPre
 }
 
 type backgroundPreviewTaskExecutor struct{ server *Server }
+
+var (
+	errBackgroundPreviewDolbyVisionWaiting = errors.New("background preview waits for Dolby Vision verification")
+	errBackgroundPreviewDolbyVisionLookup  = errors.New("background preview Dolby Vision evidence lookup failed")
+)
 
 func (e backgroundPreviewTaskExecutor) Available() bool {
 	return e.server != nil && e.server.backgroundPreviews != nil && e.server.backgroundPreviews.available && e.server.library != nil && e.server.library.Available()
@@ -103,17 +111,32 @@ func (e backgroundPreviewTaskExecutor) Execute(ctx context.Context, work tasks.W
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
-			result := library.BackgroundPreviewResult{Reused: artifact.Reused, ErrorCode: backgroundPreviewErrorCode(generationErr)}
-			if err := store.CompleteBackgroundPreview(ctx, work.Fence, *job, result); err != nil {
-				return err
-			}
-			if generationErr != nil {
-				failed = true
-				if e.server.log != nil {
-					e.server.log.Warn("background clip generation failed", "item_id", job.ItemID, "code", result.ErrorCode)
+			lookupFailed := errors.Is(generationErr, errBackgroundPreviewDolbyVisionLookup)
+			if !errors.Is(generationErr, media.ErrProcessRetirementUnknown) &&
+				(lookupFailed || errors.Is(generationErr, errBackgroundPreviewDolbyVisionWaiting)) {
+				// Neither a pending RPU check nor a failed evidence read finishes
+				// this request. The durable claim can be picked up on a later turn.
+				if err := store.DeferBackgroundPreview(ctx, work.Fence, *job); err != nil {
+					return err
 				}
-			} else if !artifact.Reused {
-				progress.Updated++
+				if lookupFailed {
+					// No immediate continuation: a persistent metadata read
+					// failure must not keep scheduling the same request.
+					return generationErr
+				}
+			} else {
+				result := library.BackgroundPreviewResult{Reused: artifact.Reused, ErrorCode: backgroundPreviewErrorCode(generationErr)}
+				if err := store.CompleteBackgroundPreview(ctx, work.Fence, *job, result); err != nil {
+					return err
+				}
+				if generationErr != nil {
+					failed = true
+					if e.server.log != nil {
+						e.server.log.Warn("background clip generation failed", "item_id", job.ItemID, "code", result.ErrorCode)
+					}
+				} else if !artifact.Reused {
+					progress.Updated++
+				}
 			}
 		}
 		progress.Processed++
@@ -143,32 +166,43 @@ func (e backgroundPreviewTaskExecutor) encode(ctx context.Context, file *os.File
 	if source.Item.Media == nil {
 		return media.BackgroundClipSummary{}, library.ErrUnavailable
 	}
-	index := -1
-	for _, stream := range source.Item.Media.Streams {
-		if stream.CodecType == "video" && !stream.IsAttachedPicture && !stream.IsExternal {
-			index = stream.Index
-			break
-		}
-	}
-	if index < 0 {
+	info := *source.Item.Media
+	videoPosition := slices.IndexFunc(info.Streams, func(stream media.Stream) bool {
+		return stream.CodecType == "video" && !stream.IsAttachedPicture && !stream.IsExternal
+	})
+	if videoPosition < 0 || info.Streams[videoPosition].Index < 0 {
 		return media.BackgroundClipSummary{}, media.ErrBackgroundClipUnsupported
+	}
+	video := &info.Streams[videoPosition]
+	options := media.BackgroundClipOptions{MaxWidth: job.Profile.MaxWidth, VideoBitrate: job.Profile.VideoBitrate}
+	if video.DolbyVision != nil || strings.EqualFold(video.VideoRange, "DOVI") {
+		if video.DolbyVision != nil && !video.DolbyVision.RPUVerified {
+			// The callback runs after authorized source opening and existing
+			// artifact reuse. Read waiting state and evidence in one snapshot.
+			evidence, waiting, err := e.server.library.IngestedDolbyVisionPlanning(ctx, source, video.Index)
+			if err != nil {
+				return media.BackgroundClipSummary{}, fmt.Errorf("%w: %w", errBackgroundPreviewDolbyVisionLookup, err)
+			}
+			if slices.Contains(waiting, video.Index) {
+				return media.BackgroundClipSummary{}, errBackgroundPreviewDolbyVisionWaiting
+			}
+			info = media.ApplyDolbyVisionRPUEvidence(info, evidence)
+			video = &info.Streams[videoPosition]
+		}
+		if !media.DolbyVisionConversionSupported(*video) {
+			return media.BackgroundClipSummary{}, media.ErrBackgroundClipUnsupported
+		}
+		var err error
+		options.DolbyVision, err = e.server.backgroundDolbyVisionOptions(ctx)
+		if err != nil {
+			return media.BackgroundClipSummary{}, err
+		}
+		options.ValidateHardware = e.server.backgroundClipDeviceCheck(options.DolbyVision.Device)
 	}
 	extractor := e.server.backgroundPreviews.extractor
 	extractor.Limits.Timeout = time.Duration(job.Profile.MaxItemRuntimeSeconds) * time.Second
 	extractor.Limits.MaxOutputBytes = media.MaxBackgroundClipBytes
 	extractor.Limits.MaxStderrBytes = 1 << 20
-	options := media.BackgroundClipOptions{MaxWidth: job.Profile.MaxWidth, VideoBitrate: job.Profile.VideoBitrate}
-	for _, stream := range source.Item.Media.Streams {
-		if stream.Index == index && (stream.DolbyVision != nil || stream.VideoRange == "DOVI") {
-			var err error
-			options.DolbyVision, err = e.server.backgroundDolbyVisionOptions(ctx)
-			if err != nil {
-				return media.BackgroundClipSummary{}, err
-			}
-			options.ValidateHardware = e.server.backgroundClipDeviceCheck(options.DolbyVision.Device)
-			break
-		}
-	}
-	return extractor.GenerateBackgroundClipWithOptions(ctx, file, *source.Item.Media, index, job.StartTicks, job.DurationTicks,
+	return extractor.GenerateBackgroundClipWithOptions(ctx, file, info, video.Index, job.StartTicks, job.DurationTicks,
 		options, output)
 }

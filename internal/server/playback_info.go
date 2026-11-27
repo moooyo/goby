@@ -207,7 +207,11 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 	}
 	var conversion playback.ConversionDecision
 	if s.hls != nil && request.DeviceProfile != nil && len(request.DeviceProfile.TranscodingProfiles) > 0 {
-		conversion, err = principalConversionDecision(principal, source, input, request, limits)
+		conversionInput := input
+		if limits.AllowVideoTranscode && (request.EnableTranscoding == nil || *request.EnableTranscoding) {
+			conversionInput.Info = s.withIngestedDolbyVision(ctx, source, input.Info)
+		}
+		conversion, err = principalConversionDecision(principal, source, conversionInput, request, limits)
 		if err != nil {
 			apiError(w, r, http.StatusBadRequest, "invalid_playback_request", "The requested conversion profile cannot be evaluated.")
 			return

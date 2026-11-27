@@ -10,21 +10,23 @@ import (
 
 func (s *Store) installScanIngestSchedules(tx library.OwnedTx) error {
 	for _, policy := range []struct {
-		key   string
-		event systemevents.Event
+		key                  string
+		event                systemevents.Event
+		interval, maxRuntime time.Duration
 	}{
-		{library.TaskLocalMetadataIngestKey, systemevents.LocalMetadataIngestRequested},
-		{library.TaskOnlineMetadataIngestKey, systemevents.OnlineMetadataIngestRequested},
-		{library.TaskVideoSeekIngestKey, systemevents.VideoSeekIngestRequested},
+		{library.TaskLocalMetadataIngestKey, systemevents.LocalMetadataIngestRequested, time.Hour, time.Hour},
+		{library.TaskOnlineMetadataIngestKey, systemevents.OnlineMetadataIngestRequested, time.Hour, time.Hour},
+		{library.TaskVideoSeekIngestKey, systemevents.VideoSeekIngestRequested, time.Hour, time.Hour},
+		{library.TaskDolbyVisionVerificationKey, systemevents.DolbyVisionVerificationRequested, 15 * time.Minute, 20 * time.Minute},
 	} {
-		if err := s.installScanIngestSchedule(tx, policy.key, policy.event); err != nil {
+		if err := s.installScanIngestSchedule(tx, policy.key, policy.event, policy.interval, policy.maxRuntime); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (s *Store) installScanIngestSchedule(tx library.OwnedTx, key string, event systemevents.Event) error {
+func (s *Store) installScanIngestSchedule(tx library.OwnedTx, key string, event systemevents.Event, interval, maxRuntime time.Duration) error {
 	if entry, present := s.executors.lookup(key); !present || entry.AutomaticDisabled {
 		return nil
 	}
@@ -54,8 +56,8 @@ func (s *Store) installScanIngestSchedule(tx library.OwnedTx, key string, event 
 		return err
 	}
 	// Startup discovers pending work after interruption, even if the previous
-	// process consumed the event before it stopped importing.
-	const runtimeTicks = 60 * 60 * ScheduleTicksPerSecond
+	// process consumed the event before it stopped processing the backlog.
+	runtimeTicks := int64(maxRuntime / scheduleNanosecondsPerTick)
 	if _, err := tx.Exec(`INSERT INTO task_triggers
 		(id,task_id,schedule_revision,position,kind,system_event,last_event_sequence,max_runtime_ticks,created_at,updated_at)
 		VALUES($1,$2,$3,0,'system_event',$4,0,$5,$6,$6),($7,$2,$3,1,'startup',NULL,0,$5,$6,$6)`,
@@ -66,9 +68,10 @@ func (s *Store) installScanIngestSchedule(tx library.OwnedTx, key string, event 
 	if err != nil {
 		return err
 	}
+	intervalTicks := int64(interval / scheduleNanosecondsPerTick)
 	_, err = tx.Exec(`INSERT INTO task_triggers
 		(id,task_id,schedule_revision,position,kind,interval_ticks,anchor_at,next_fire_at,max_runtime_ticks,created_at,updated_at)
 		VALUES($1,$2,$3,2,'interval',$4,$5,$6,$7,$5,$5)`, intervalID, definition.ID, definition.Revision+1,
-		runtimeTicks, now, now.Add(time.Hour), runtimeTicks)
+		intervalTicks, now, now.Add(interval), runtimeTicks)
 	return err
 }

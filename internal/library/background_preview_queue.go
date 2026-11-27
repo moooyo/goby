@@ -150,7 +150,7 @@ func (s *Store) RequestBackgroundPreviewContinuation(ctx context.Context, fence 
 		var pending bool
 		if err := tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM background_preview_queue q JOIN items i ON i.id=q.item_id
    JOIN libraries l ON l.id=i.library_id WHERE i.library_id=$1 AND q.requested_revision>q.completed_revision
-    AND (q.manual OR l.options->'EnableBackgroundPreviewGeneration'='true'::jsonb))`, libraryID).Scan(&pending); err != nil {
+    AND (q.manual OR l.options->'EnableBackgroundPreviewGeneration'='true'::jsonb) AND `+s.backgroundPreviewDolbyVisionCondition()+`)`, libraryID).Scan(&pending); err != nil {
 			return err
 		}
 		if pending {
@@ -183,7 +183,7 @@ func (s *Store) ClaimBackgroundPreview(ctx context.Context, fence AnalysisFence,
    FROM background_preview_queue q JOIN items i ON i.id=q.item_id JOIN libraries l ON l.id=i.library_id
    LEFT JOIN item_background_preview_settings settings ON settings.item_id=i.id
    WHERE i.library_id=$1 AND q.requested_revision>q.completed_revision
-    AND (q.manual OR l.options->'EnableBackgroundPreviewGeneration'='true'::jsonb)
+    AND (q.manual OR l.options->'EnableBackgroundPreviewGeneration'='true'::jsonb) AND `+s.backgroundPreviewDolbyVisionCondition()+`
     AND (q.state<>'running' OR NOT EXISTS(SELECT 1 FROM task_run_children c JOIN task_runs r ON r.id=c.run_id
       WHERE c.id=q.child_id AND c.state='running' AND r.state IN ('pending','running','stopping')))
    ORDER BY q.requested_at,q.item_id LIMIT 1 FOR UPDATE OF q`, libraryID).Scan(&value.ItemID, &value.Revision, &value.OperationID, &value.Force, &value.Name, &value.ManualStartTicks, &value.ActorUserID, &value.ActorSessionID)

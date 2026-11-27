@@ -45,9 +45,6 @@ func runDolbyVisionRPUProbe(ctx context.Context, executable string, file *os.Fil
 	if err := ctx.Err(); err != nil {
 		return Info{}, err
 	}
-	if executable == "" {
-		executable = "ffmpeg"
-	}
 	timeout := dolbyVisionRPUScanTimeout(size)
 	scanContext, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -57,83 +54,106 @@ func runDolbyVisionRPUProbe(ctx context.Context, executable string, file *os.Fil
 		if stream.CodecType != "video" || stream.DolbyVision == nil {
 			continue
 		}
-		metadata := *stream.DolbyVision
-		metadata.RPUVerified, metadata.ResidualDisabled, metadata.RPUFrameCount = false, false, 0
-		metadata.RPUProfile, metadata.RPUResidualMixed = 0, false
-		metadata.RPUValidationReason = dolbyVisionRPUUnsupported
-		metadata.InBandParameterSets = false
-		stream.DolbyVision = &metadata
-		if stream.Codec != "hevc" || !metadata.RPUPresent || !metadata.BLPresent ||
-			(metadata.Profile != 5 && metadata.Profile != 7 && metadata.Profile != 8) ||
-			(metadata.MetadataCompression != "none" && metadata.MetadataCompression != "limited" && metadata.MetadataCompression != "extended") ||
-			metadata.Profile < 8 && metadata.MetadataCompression != "none" {
-			continue
-		}
-		parser := newDolbyVisionRPUStream(scanContext, metadata.MetadataCompression)
-		output, runErr := runLimitedFilesStreamOutput(scanContext, timeout, maxDolbyVisionProbeOutput, executable, []*os.File{file}, parser,
-			dolbyVisionRPUProbeArgs(stream.Index)...)
-		if err := ctx.Err(); err != nil {
+		evidence, err := scanDolbyVisionRPUStream(ctx, scanContext, timeout, executable, file, *stream)
+		if err != nil {
 			return Info{}, err
 		}
-		evidence := dolbyVisionRPUEvidence{}
-		switch {
-		case errors.Is(runErr, ErrOutputLimit):
-			evidence.reason = dolbyVisionRPUOutputLimit
-		case errors.Is(runErr, context.DeadlineExceeded) || errors.Is(scanContext.Err(), context.DeadlineExceeded):
-			evidence.reason = dolbyVisionRPUTimeout
-		case runErr != nil:
-			evidence.reason = dolbyVisionRPUScanFailed
-		case len(output.stderr) != 0:
-			evidence.reason = dolbyVisionRPUDecoderError
-		default:
-			var parseErr error
-			evidence, parseErr = parser.finish()
-			if err := ctx.Err(); err != nil {
-				return Info{}, err
-			}
-			if errors.Is(parseErr, context.DeadlineExceeded) {
-				evidence = dolbyVisionRPUEvidence{reason: dolbyVisionRPUTimeout}
-			} else if parseErr != nil {
-				evidence = dolbyVisionRPUEvidence{reason: dolbyVisionRPUScanFailed}
-			}
-		}
-		if evidence.verified {
-			// The envelope parser identifies every access unit's residual flag.
-			// Force each packet down to AUD+RPU before the native dovi_rpu BSF,
-			// which otherwise only parses a packet's last NAL. The BSF parses
-			// every full mapping without pixel decoding or stale decoder frame
-			// attachments. CRC and configuration consistency were checked above.
-			validation, validationErr := runLimitedFilesOutput(scanContext, timeout, maxProbeOutput, executable, []*os.File{file},
-				dolbyVisionRPUValidationArgs(stream.Index)...)
-			if err := ctx.Err(); err != nil {
-				return Info{}, err
-			}
-			switch {
-			case errors.Is(validationErr, ErrOutputLimit):
-				evidence = dolbyVisionRPUEvidence{reason: dolbyVisionRPUOutputLimit}
-			case errors.Is(validationErr, context.DeadlineExceeded) || errors.Is(scanContext.Err(), context.DeadlineExceeded):
-				evidence = dolbyVisionRPUEvidence{reason: dolbyVisionRPUTimeout}
-			case validationErr != nil:
-				evidence = dolbyVisionRPUEvidence{reason: dolbyVisionRPUScanFailed}
-			case !dolbyVisionRPUValidationStderrAllowed(validation.stderr):
-				evidence = dolbyVisionRPUEvidence{reason: dolbyVisionRPUDecoderError}
-			case len(validation.stdout) != 0:
-				evidence = dolbyVisionRPUEvidence{reason: dolbyVisionRPUInvalidScan}
-			default:
-				// The sole accepted nonempty diagnostic identifies an empty
-				// hvcC parameter-set array. Capture it only after both complete
-				// scans succeed; failed or older evidence must not retain it.
-				metadata.InBandParameterSets = len(validation.stderr) != 0
-			}
-		}
-		metadata.RPUVerified, metadata.ResidualDisabled = evidence.verified, evidence.residualDisabled
-		metadata.RPUProfile, metadata.RPUResidualMixed = evidence.profile, evidence.residualMixed
-		metadata.RPUFrameCount, metadata.RPUValidationReason = evidence.frameCount, evidence.reason
+		stream.DolbyVision = evidence.applyTo(stream.DolbyVision)
 	}
 	if err := ctx.Err(); err != nil {
 		return Info{}, err
 	}
 	return info, nil
+}
+
+// DolbyVisionRPUVerificationSupported checks whether the declaration can be
+// verified. It asserts neither physical RPU evidence nor conversion support.
+func DolbyVisionRPUVerificationSupported(stream Stream) bool {
+	dv := stream.DolbyVision
+	return stream.CodecType == "video" && stream.Codec == "hevc" && dv != nil && dv.RPUPresent && dv.BLPresent &&
+		(dv.Profile == 5 || dv.Profile == 7 || dv.Profile == 8) &&
+		(dv.MetadataCompression == "none" || dv.Profile == 8 && (dv.MetadataCompression == "limited" || dv.MetadataCompression == "extended"))
+}
+
+// scanDolbyVisionRPUStream shares the exact complete-source validation passes
+// between synchronous probing and verification of an indexed stream.
+func scanDolbyVisionRPUStream(ctx, scanContext context.Context, timeout time.Duration, executable string, file *os.File, stream Stream) (DolbyVisionRPUEvidence, error) {
+	result := DolbyVisionRPUEvidence{StreamIndex: stream.Index}
+	if !DolbyVisionRPUVerificationSupported(stream) {
+		result.Reason = dolbyVisionRPUUnsupported
+		return result, nil
+	}
+	if executable == "" {
+		executable = "ffmpeg"
+	}
+	files := []*os.File{file}
+	parser := newDolbyVisionRPUStream(scanContext, stream.DolbyVision.MetadataCompression)
+	output, runErr := runLimitedFilesStreamOutput(scanContext, timeout, maxDolbyVisionProbeOutput, executable, files, parser, dolbyVisionRPUProbeArgs(stream.Index)...)
+	if reason, err := dolbyVisionRPUProcessFailure(ctx, scanContext, runErr); reason != "" || err != nil {
+		result.Reason = reason
+		return result, err
+	}
+	if len(output.stderr) != 0 {
+		result.Reason = dolbyVisionRPUDecoderError
+		return result, nil
+	}
+	parsed, parseErr := parser.finish()
+	if err := ctx.Err(); err != nil {
+		return result, err
+	}
+	if errors.Is(parseErr, context.DeadlineExceeded) {
+		result.Reason = dolbyVisionRPUTimeout
+		return result, nil
+	}
+	if parseErr != nil {
+		result.Reason = dolbyVisionRPUScanFailed
+		return result, nil
+	}
+	if !parsed.verified {
+		result.Reason = parsed.reason
+		return result, nil
+	}
+
+	// The envelope parser identifies every access unit's residual flag. Force
+	// each packet down to AUD+RPU before the native dovi_rpu BSF, which otherwise
+	// only parses a packet's last NAL. The BSF checks every full mapping without
+	// pixel decoding. CRC and configuration consistency were checked above.
+	validation, validationErr := runLimitedFilesOutput(scanContext, timeout, maxProbeOutput, executable, files, dolbyVisionRPUValidationArgs(stream.Index)...)
+	if reason, err := dolbyVisionRPUProcessFailure(ctx, scanContext, validationErr); reason != "" || err != nil {
+		result.Reason = reason
+		return result, err
+	}
+	switch {
+	case !dolbyVisionRPUValidationStderrAllowed(validation.stderr):
+		result.Reason = dolbyVisionRPUDecoderError
+	case len(validation.stdout) != 0:
+		result.Reason = dolbyVisionRPUInvalidScan
+	default:
+		result.Verified, result.Profile, result.FrameCount = true, parsed.profile, parsed.frameCount
+		result.ResidualMixed, result.ResidualDisabled, result.Reason = parsed.residualMixed, parsed.residualDisabled, parsed.reason
+		// The sole allowed diagnostic identifies an empty hvcC parameter-set
+		// array. It is evidence only after both complete passes succeed.
+		result.InBandParameterSets = len(validation.stderr) != 0
+	}
+	return result, nil
+}
+
+func dolbyVisionRPUProcessFailure(ctx, scanContext context.Context, runErr error) (string, error) {
+	if errors.Is(runErr, ErrProcessRetirementUnknown) {
+		return "", errors.Join(ctx.Err(), runErr)
+	}
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	switch {
+	case errors.Is(runErr, ErrOutputLimit):
+		return dolbyVisionRPUOutputLimit, nil
+	case errors.Is(runErr, context.DeadlineExceeded) || errors.Is(scanContext.Err(), context.DeadlineExceeded):
+		return dolbyVisionRPUTimeout, nil
+	case runErr != nil:
+		return dolbyVisionRPUScanFailed, nil
+	}
+	return "", nil
 }
 
 func dolbyVisionRPUScanTimeout(size int64) time.Duration {

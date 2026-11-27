@@ -172,9 +172,9 @@ func (state *scanState) queueFolderMetadataImport(tx pgx.Tx, itemID, previousTyp
 	return state.queueMetadataImport(tx, itemID, request)
 }
 
-func (state *scanState) queueCachedIngestWork(stored storedFile, path string, input *primaryScanRead, request scanMetadataImport, seek bool) (resultErr error) {
+func (state *scanState) queueCachedIngestWork(stored storedFile, path string, input *primaryScanRead, request scanMetadataImport, seek bool, dolbyVision []int) (resultErr error) {
 	itemID := stored.id
-	if !request.needed() && !seek {
+	if !request.needed() && !seek && len(dolbyVision) == 0 {
 		return nil
 	}
 	tx, err := state.store.beginOwnedTx(state.task.ctx)
@@ -215,6 +215,9 @@ func (state *scanState) queueCachedIngestWork(stored storedFile, path string, in
 			return err
 		}
 	}
+	if err := state.queueDolbyVisionVerification(tx, itemID, dolbyVision); err != nil {
+		return err
+	}
 	if err := input.revalidatePublicationSource(tx); err != nil {
 		return err
 	}
@@ -234,11 +237,12 @@ func (s *Store) finishScanIngestWork(tx OwnedTx, job Job) error {
 		// NFO markers until a successful rescan, including for content policy.
 		return nil
 	}
-	var local, online, seek bool
+	var local, online, seek, dolbyVision bool
 	if err := tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM local_metadata_ingest WHERE scan_job_id=$1 AND (import_nfo OR import_images)),
 		EXISTS(SELECT 1 FROM local_metadata_ingest WHERE scan_job_id=$1 AND enrich_online AND NOT import_nfo AND NOT import_images),
-		EXISTS(SELECT 1 FROM video_seek_ingest WHERE scan_job_id=$1 AND indexes IS NULL AND retry_at<=clock_timestamp())`, job.ID).
-		Scan(&local, &online, &seek); err != nil {
+		EXISTS(SELECT 1 FROM video_seek_ingest WHERE scan_job_id=$1 AND indexes IS NULL AND retry_at<=clock_timestamp()),
+		EXISTS(SELECT 1 FROM dolby_vision_verifications WHERE scan_job_id=$1 AND evidence IS NULL AND retry_at<=clock_timestamp())`, job.ID).
+		Scan(&local, &online, &seek, &dolbyVision); err != nil {
 		return err
 	}
 	for _, signal := range []struct {
@@ -248,6 +252,7 @@ func (s *Store) finishScanIngestWork(tx OwnedTx, job Job) error {
 		{local, systemevents.LocalMetadataIngestRequested},
 		{online && s.enrichOnlineMetadata, systemevents.OnlineMetadataIngestRequested},
 		{seek && s.deferVideoSeek, systemevents.VideoSeekIngestRequested},
+		{dolbyVision && s.DolbyVisionVerificationConfigured(), systemevents.DolbyVisionVerificationRequested},
 	} {
 		if signal.pending {
 			if err := systemevents.Record(tx.Exec, signal.event); err != nil {

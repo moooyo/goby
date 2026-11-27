@@ -36,10 +36,11 @@ func analysisAutomation(key string) analysisAutomationPolicy {
 
 func (s *Store) installAnalysisSchedules(tx library.OwnedTx) error {
 	for _, key := range mediaAnalysisExecutionKeys() {
-		if key == library.TaskVideoSeekIngestKey {
-			continue // Fast-ingest work has its own recovery and runtime limits.
+		policy := analysisAutomation(key)
+		if policy.event == "" {
+			continue // Sharing the lane does not imply the default analysis schedule.
 		}
-		if err := s.installAnalysisSchedule(tx, key); err != nil {
+		if err := s.installAnalysisSchedule(tx, key, policy.event); err != nil {
 			return err
 		}
 	}
@@ -48,7 +49,7 @@ func (s *Store) installAnalysisSchedules(tx library.OwnedTx) error {
 
 // Definition revision and retained trigger history distinguish an untouched
 // definition from a schedule the administrator replaced or deliberately cleared.
-func (s *Store) installAnalysisSchedule(tx library.OwnedTx, key string) error {
+func (s *Store) installAnalysisSchedule(tx library.OwnedTx, key string, event systemevents.Event) error {
 	if _, present := s.executors.lookup(key); !present {
 		return nil
 	}
@@ -89,7 +90,7 @@ func (s *Store) installAnalysisSchedule(tx library.OwnedTx, key string) error {
 	_, err = tx.Exec(`INSERT INTO task_triggers
 		(id,task_id,schedule_revision,position,kind,system_event,last_event_sequence,created_at,updated_at)
 		VALUES($1,$2,$3,1,'system_event',$4,0,$5,$5)`, eventID, definition.ID, definition.Revision+1,
-		string(analysisAutomation(key).event), now)
+		string(event), now)
 	if err != nil {
 		return fmt.Errorf("install default analysis event for %s: %w", key, err)
 	}

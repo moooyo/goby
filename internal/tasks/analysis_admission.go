@@ -35,27 +35,27 @@ type AnalysisAdmissionBinding struct {
 	emptyTargets             bool
 }
 
+var analysisSelectionTaskKeys = [...]string{
+	library.TaskIntroAnalysisKey, library.TaskPreviewGenerationKey, library.TaskCreditsAnalysisKey,
+}
+
 func isAnalysisTask(key string) bool {
-	return key == library.TaskIntroAnalysisKey || key == library.TaskPreviewGenerationKey || key == library.TaskCreditsAnalysisKey
+	return slices.Contains(analysisSelectionTaskKeys[:], key)
 }
 
-func analysisTaskKeys() []string {
-	return []string{library.TaskIntroAnalysisKey, library.TaskPreviewGenerationKey, library.TaskCreditsAnalysisKey}
+// This is the round-robin order for the shared worker slot. Artifact and ingest
+// queues share that slot without adopting the analysis selection/profile API.
+var mediaAnalysisTaskRotation = [...]string{
+	library.TaskIntroAnalysisKey, library.TaskPreviewGenerationKey, library.TaskCreditsAnalysisKey,
+	library.TaskBackgroundPreviewGenerationKey, library.TaskAudioWaveformGenerationKey, library.TaskSubtitleTimelineGenerationKey,
+	library.TaskVideoSeekIngestKey, library.TaskDolbyVisionVerificationKey,
 }
 
-// Source-side artifact generation shares the expensive media worker slot but
-// keeps persistent queues independent of analysis cache/profile invalidation.
 func isMediaAnalysisExecution(key string) bool {
-	return isAnalysisTask(key) || key == library.TaskBackgroundPreviewGenerationKey || key == library.TaskAudioWaveformGenerationKey ||
-		key == library.TaskSubtitleTimelineGenerationKey || key == library.TaskVideoSeekIngestKey
+	return slices.Contains(mediaAnalysisExecutionKeys(), key)
 }
 
-func mediaAnalysisExecutionKeys() []string {
-	// This order is also the in-process round-robin order for the shared slot.
-	return []string{library.TaskIntroAnalysisKey, library.TaskPreviewGenerationKey, library.TaskCreditsAnalysisKey,
-		library.TaskBackgroundPreviewGenerationKey, library.TaskAudioWaveformGenerationKey, library.TaskSubtitleTimelineGenerationKey,
-		library.TaskVideoSeekIngestKey}
-}
+func mediaAnalysisExecutionKeys() []string { return mediaAnalysisTaskRotation[:] }
 
 func cloneAnalysisSelection(input *library.AnalysisSelection) *library.AnalysisSelection {
 	if input == nil {

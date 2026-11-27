@@ -103,8 +103,12 @@ func (p Prober) ProbeFile(ctx context.Context, file *os.File) (Info, error) {
 	if err != nil {
 		return Info{}, err
 	}
-	info, err = runDolbyVisionRPUProbe(ctx, p.FFmpegPath, file, stat.Size(), info)
-	if err != nil {
+	if !p.SkipDolbyVisionRPU {
+		info, err = runDolbyVisionRPUProbe(ctx, p.FFmpegPath, file, stat.Size(), info)
+		if err != nil {
+			return Info{}, err
+		}
+	} else if err := ctx.Err(); err != nil {
 		return Info{}, err
 	}
 	if audioOnly, reason := audioTimingSupport(info); audioOnly {

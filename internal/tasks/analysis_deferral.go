@@ -3,12 +3,25 @@ package tasks
 import (
 	"context"
 	"errors"
+	"slices"
 	"time"
+
+	"github.com/moooyo/goby/internal/library"
 )
 
-// At most six media definitions have 32 startup rules each, plus one
-// interval and one event conflict per definition in a bounded dispatch pass.
-const MaxAnalysisDeferrals = 6*MaxTriggers + 12
+var otherSystemEventDeferralKeys = [...]string{
+	library.TaskOnlineImagesKey, library.TaskLocalMetadataIngestKey, library.TaskOnlineMetadataIngestKey,
+}
+
+const maxSystemEventDeferrals = len(mediaAnalysisTaskRotation) + len(otherSystemEventDeferralKeys)
+
+// Selectable analysis tasks may defer every startup rule and one timed rule in
+// a pass. Event dispatch defers at most one rule per eligible task in that pass.
+const MaxAnalysisDeferrals = len(analysisSelectionTaskKeys)*(MaxTriggers+1) + maxSystemEventDeferrals
+
+func preservesOverlappingSystemEvent(key string) bool {
+	return isMediaAnalysisExecution(key) || slices.Contains(otherSystemEventDeferralKeys[:], key)
+}
 
 type AnalysisDeferral struct {
 	TaskID    string
@@ -64,11 +77,11 @@ func splitAnalysisDeferrals(err error) ([]AnalysisDeferral, error) {
 // Retry only the previously deferred startup rules. Already consumed startup
 // occurrences and unrelated schedule timestamps are not rewritten each tick.
 func (s *Store) retryAnalysisStartups(ctx context.Context, startupAt time.Time, pending []AnalysisDeferral) error {
-	if len(pending) > len(analysisTaskKeys())*MaxTriggers {
+	if len(pending) > len(analysisSelectionTaskKeys)*MaxTriggers {
 		return ErrInconsistent
 	}
 	deferred := []AnalysisDeferral{}
-	blockedTasks := make(map[string]bool, len(analysisTaskKeys()))
+	blockedTasks := make(map[string]bool, len(analysisSelectionTaskKeys))
 	for _, entry := range pending {
 		if entry.Source != "startup" || !isAnalysisTask(entry.TaskKey) {
 			return ErrInconsistent

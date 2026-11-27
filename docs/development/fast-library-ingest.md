@@ -35,11 +35,36 @@ identifies series and seasons.
    AV1/AAC joint seek evidence, or new nonzero copy-only plans. Use the explicit
    complete refresh for the original full probe evidence.
 
-The default task rules include scan-derived signals, startup recovery, and
-hourly retry opportunities. Administrator cancellation suppresses automatic
-retry of the affected scan generations; a fresh successful scan or a manual
-start can retry them. An interrupted or cancelled scan cannot authorize its
-queued work. Removing the fast-ingest setting stops new deferred work; pending
-local imports can still finish, and a synchronous rescan can reauthorize them
-without bypassing the final source proof. No code writes sidecars to the media
-filesystem in this feature.
+5. **Verify Dolby Vision** keeps the declared Dolby Vision profile, color and
+   original stream indexes in the initial catalog, but verifies full RPU
+   coverage, CRC and syntax in a separate task. It performs the same two
+   read-only passes as the complete probe, so this moves I/O off the scan's
+   critical path rather than reducing total reads. The task uses the shared
+   background analysis slot and yields between streams. Its defaults include a
+   successful scan signal, startup recovery, and a check every 15 minutes,
+   with a 20-minute automatic run limit. Temporary verification failures back
+   off for 15 and 30 minutes; a third failure needs a deliberate retry.
+   A warm scan of an unchanged source does not reset its retry budget.
+
+Dolby Vision verification is private, tied to the indexed source revision,
+stream, verification version, and installed FFmpeg. Keep FFmpeg and its runtime
+libraries unchanged while Goby is running. After a replacement and restart, a
+successful fast rescan can enqueue new checks for previously settled sources.
+Original playback and client-supported direct play need no result. New
+conversion and background clip plans use applicable proof only after authorizing
+the source; a request does not run the verifier. Unproved Dolby Vision is not
+treated as ordinary HDR or SDR, and an existing HLS plan is not replaced. The
+administrator's media details show verification status per
+stream. `verified` means both physical checks completed, not that every
+conversion is supported. `pending` or `retrying` is not proof; an unfinished
+scan may need a successful rescan before this work can run. `unsupported`,
+`failed`, and `unknown` do not authorize conversion.
+
+The other fast-ingest tasks have hourly default retry opportunities.
+Administrator cancellation of an ingest task suppresses automatic retry of the
+affected scan generations; a fresh successful scan or a manual start can retry
+them. An interrupted or cancelled scan cannot authorize its queued work.
+Removing the fast-ingest setting stops new deferred work. Pending local imports
+can still finish, and a synchronous rescan can reauthorize them without bypassing
+the final source proof. No code writes sidecars to the media filesystem in this
+feature.

@@ -42,7 +42,7 @@ func TestIntroSkipperMigrationPreservesHistoricalPublicationAuthority(t *testing
 				'cache',(SELECT jsonb_agg(jsonb_build_object('row',to_jsonb(c),'xmin',c.xmin::text)) FROM analysis_feature_cache c),
 				'events',(SELECT jsonb_agg(jsonb_build_object('row',to_jsonb(e),'xmin',e.xmin::text) ORDER BY name) FROM task_system_events e
 					WHERE name NOT IN ('BackgroundPreviewGenerationRequested','AudioWaveformGenerationRequested','CreditsAnalysisRequested','SubtitleTimelineGenerationRequested','OnlineImagesRequested',
-					'LocalMetadataIngestRequested','OnlineMetadataIngestRequested','VideoSeekIngestRequested')))::text`
+					'LocalMetadataIngestRequested','OnlineMetadataIngestRequested','VideoSeekIngestRequested','DolbyVisionVerificationRequested')))::text`
 			var before, after string
 			if err := pool.QueryRow(ctx, retainedQuery).Scan(&before); err != nil {
 				t.Fatal(err)

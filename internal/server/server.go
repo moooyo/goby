@@ -127,16 +127,22 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 	if app.playbackControlDB != nil {
 		catalogOptions = append(catalogOptions, library.WithPlaybackControlPool(app.playbackControlDB))
 	}
-	// Ordinary video imports need technical playback facts, not optional
-	// restart evidence. Explicit media refreshes still request the full probe.
+	// Keep declaration probing in the fast path. Optional whole-file evidence
+	// belongs to a separate source operation after a successful scan.
 	basicProbe := media.Prober{FFprobePath: cfg.FFprobePath, FFmpegPath: cfg.FFmpegPath, Timeout: 30 * time.Second}
 	fullProbe := basicProbe
 	fullProbe.AnalyzeVideoSeek = true
+	if cfg.FFmpegPath != "" {
+		if option, ok := library.WithDolbyVisionVerifier(cfg.FFmpegPath, cfg.FastLibraryIngest); ok {
+			catalogOptions = append(catalogOptions, option)
+			basicProbe.SkipDolbyVisionRPU = cfg.FastLibraryIngest
+		}
+	}
 	if cfg.FastLibraryIngest {
-		catalogOptions = append(catalogOptions, library.WithBasicVideoScanProbe(basicProbe), library.WithDeferredLocalMetadata())
 		if cfg.FFmpegPath != "" {
 			catalogOptions = append(catalogOptions, library.WithDeferredVideoSeek())
 		}
+		catalogOptions = append(catalogOptions, library.WithBasicVideoScanProbe(basicProbe), library.WithDeferredLocalMetadata())
 		if cfg.FastLibraryOnlineMetadata && cfg.OnlineProviders.Enabled {
 			catalogOptions = append(catalogOptions, library.WithIngestOnlineMetadata())
 		}
