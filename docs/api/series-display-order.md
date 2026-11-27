@@ -21,6 +21,10 @@ decimal strings, including values above JavaScript's safe integer range. The
 server refetches an alternate group and verifies its digest before committing.
 A changed group produces a conflict instead of applying an unreviewed mapping.
 
+`ProviderSeriesId` is the current canonical numeric TMDB series identifier, or
+an empty string if the effective metadata does not provide a usable identifier.
+An opaque NFO value can still be read in the item's `ProviderIds`.
+
 The provider group must belong to the series' TMDB group list. A group for a
 different show cannot be imported by supplying its identifier. Multiple groups
 with the same order remain distinct choices; the first result is never selected

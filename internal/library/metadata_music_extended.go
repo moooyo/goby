@@ -145,14 +145,14 @@ func mergeExtendedMusicFields(local map[string]json.RawMessage, source musicMeta
 			known := make(map[string]string)
 			for key, value := range original {
 				canonical := key
-				switch strings.ToLower(key) {
-				case "musicbrainzrecording":
+				switch {
+				case metadata.ProviderKeyEqual(key, "musicbrainzrecording"):
 					canonical = "MusicBrainzRecording"
-				case "musicbrainzrelease":
+				case metadata.ProviderKeyEqual(key, "musicbrainzrelease"):
 					canonical = "MusicBrainzRelease"
-				case "musicbrainzreleasegroup":
+				case metadata.ProviderKeyEqual(key, "musicbrainzreleasegroup"):
 					canonical = "MusicBrainzReleaseGroup"
-				case "musicbrainzartist":
+				case metadata.ProviderKeyEqual(key, "musicbrainzartist"):
 					canonical = "MusicBrainzArtist"
 				}
 				if previous, exists := known[canonical]; exists && previous != value {

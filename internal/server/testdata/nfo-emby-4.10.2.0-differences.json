@@ -1,117 +1,12 @@
 {
   "observedGobyRevision": "bd9e8812",
   "cases": {
-    "alias": {
-      "first": {
-        "Name": "Film F02 (2024)",
-        "Overview": "",
-        "ProviderIds": {}
-      }
-    },
-    "type_space": {
-      "first": {
-        "Name": "Film F04 (2024)",
-        "Overview": "",
-        "ProviderIds": {}
-      }
-    },
-    "type_hyphen": {
-      "first": {
-        "Name": "Film F05 (2024)",
-        "Overview": "",
-        "ProviderIds": {}
-      }
-    },
-    "type_unicode": {
-      "first": {
-        "Name": "Film F06 (2024)",
-        "Overview": "",
-        "ProviderIds": {}
-      }
-    },
-    "website": {
-      "first": {
-        "Name": "Film F07 (2024)",
-        "Overview": "",
-        "ProviderIds": {}
-      }
-    },
-    "eidr": {
-      "first": {
-        "Name": "Film F08 (2024)",
-        "Overview": "",
-        "ProviderIds": {}
-      }
-    },
-    "known_id_url": {
-      "first": {
-        "Name": "Film F09 (2024)",
-        "Overview": "",
-        "ProviderIds": {}
-      }
-    },
-    "zero_id": {
-      "first": {
-        "ProviderIds": {
-          "Imdb": "tt90001011",
-          "Tmdb": "0"
-        }
-      }
-    },
-    "absent_type": {
-      "first": {
-        "Name": "Film F11 (2024)",
-        "Overview": "",
-        "ProviderIds": {}
-      }
-    },
-    "default_type": {
-      "first": {
-        "ProviderIds": {
-          "Imdb": "tt90001015",
-          "default": "tt90001014"
-        }
-      }
-    },
-    "legacy_last": {
-      "first": {
-        "Name": "Film F15 (2024)",
-        "Overview": "",
-        "ProviderIds": {}
-      }
-    },
-    "uniqueid_last": {
-      "first": {
-        "Name": "Film F16 (2024)",
-        "Overview": "",
-        "ProviderIds": {}
-      }
-    },
-    "typed_duplicate": {
-      "first": {
-        "Name": "Film F17 (2024)",
-        "Overview": "",
-        "ProviderIds": {}
-      }
-    },
     "invalid_optional": {
       "first": {
         "CommunityRating": null,
         "Name": "Film F18 (2024)",
         "Overview": "",
         "ProviderIds": {}
-      }
-    },
-    "utf16_le": {
-      "first": {
-        "Name": "Film X03 (2024)",
-        "Overview": ""
-      }
-    },
-    "utf16_be": {
-      "first": {
-        "Name": "Film X04 (2024)",
-        "Overview": ""
       }
     },
     "latin1": {
@@ -170,16 +65,6 @@
         "Overview": ""
       }
     },
-    "refresh_bad_id": {
-      "warm": {
-        "Name": "NFO before-bad-id",
-        "Overview": "Plot before-bad-id",
-        "ProviderIds": {
-          "Imdb": "tt90001030",
-          "Tmdb": "90001031"
-        }
-      }
-    },
     "refresh_deleted_id": {
       "warm": {
         "ProviderIds": {
@@ -220,27 +105,6 @@
     "episode_zero_numbers": {
       "first": {
         "ParentIndexNumber": 1
-      }
-    },
-    "series_minus_one": {
-      "first": {
-        "Name": "Show T02 (2024)",
-        "Overview": "",
-        "ProviderIds": {}
-      }
-    },
-    "combined_series": {
-      "first": {
-        "Name": "Show T03 (2024)",
-        "Overview": "",
-        "ProviderIds": {}
-      }
-    },
-    "series_unused_numbers": {
-      "first": {
-        "Name": "Show T04 (2024)",
-        "Overview": "",
-        "ProviderIds": {}
       }
     }
   }

@@ -59,15 +59,17 @@ track NFO files.
 | `rating` | Finite decimal community rating from 0 through 10 |
 | `mpaa` | Descriptive official rating; this does not add parental-policy enforcement |
 | Repeated `genre`, `tag`, `studio` | Ordered unique strings |
-| `uniqueid type="..."`, `imdbid`, `tmdbid`, `tvdbid` | Provider identifiers; known keys normalize to `Imdb`, `Tmdb`, `Tvdb` |
+| `uniqueid type="..."`, `imdbid`, `tmdbid`, `tvdbid` | Provider identifiers; known keys normalize to `Imdb`, `Tmdb`, `Tvdb`, including `TMDB-TV` as `Tmdb` |
 | `actor` with `name`, `role`, `order` | Actor credits with optional role and zero-based sort order |
 | `director`, `writer`, `credits` | Director or writer credits |
 | `episode` in `episodedetails` | Episode number, including explicit zero |
 | `season` in `episodedetails` or `season` | Parent season number or season number, subject to hierarchy checks |
 
-Provider identifiers are values rather than URLs. Unknown providers require bounded ASCII alphanumeric keys; identifiers permit ASCII alphanumerics plus `.`, `_`, `:`, and `-`. Conflicting duplicate scalar values or provider identifiers reject the document. Unknown elements are ignored after XML structure and size checks. Recognized scalar fields must contain text rather than child markup; use XML escaping or CDATA for a plot.
+Local provider keys and values are opaque UTF-8 text, bounded to 64 and 256 bytes respectively after trimming, without embedded control characters. Unknown keys keep their spelling. An ID can contain slashes or resemble a URL; importing it does not make it a request target or a valid lookup ID. Online adapters validate their own identifiers. Empty or missing types, `type="default"`, blank IDs, and the literal `0` are ignored. For a repeated normalized key, the last non-placeholder ID wins in document order; `default="true"` does not affect priority. A metadata lock can freeze these accepted values without changing them. Manual overrides and online provider inputs keep their own validation.
 
-An episode's NFO may change its episode number. It cannot assign a different season than the physical hierarchy already establishes. A conflicting season number is ignored with a scan warning, while the remaining valid descriptive values are retained. The same rule prevents `season.nfo` from renumbering its physical season directory. Item IDs, probe data, and media paths remain under scanner control.
+Conflicting duplicate values in other recognized scalar fields still reject the document. Unknown or inapplicable elements are ignored after XML structure and size checks. Used scalar fields must contain text rather than child markup; use XML escaping or CDATA for a plot.
+
+Number fields are read only for the levels that use them. Series `tvshow.nfo` does not validate unused `season` and `episode` placeholders, including `-1`. Actual season and episode numbering keeps the nonnegative range; `0` remains distinct from an unset number. An episode's NFO may change its episode number, but cannot assign a different season than the physical hierarchy already establishes. A conflicting season number is ignored with a scan warning while other valid descriptive values are retained. The same rule prevents `season.nfo` from renumbering its physical season directory. Item IDs, probe data, and media paths remain under scanner control.
 
 Date-only input currently denotes midnight UTC in Goby. The reference capture on an Emby host configured for `Asia/Shanghai` converted `2024-01-02` to `2024-01-01T16:00:00Z`, indicating a host-timezone interpretation for that sample. This is a recorded compatibility difference; timezone policy is not inferred from a single capture. Explicit RFC3339 offsets are normalized to UTC by Goby's parser.
 
@@ -111,7 +113,9 @@ Item queries support `GenreIds`, `TagIds`, `StudioIds`, `PersonIds`, `Genres`, `
 
 Sidecars are opened through the configured library root, checked as regular files, and read through the same file handle. Final symlinks and special files are rejected; Linux nonblocking opens prevent a replaced FIFO from indefinitely blocking the scanner. Identity, size, and modification checks detect changes during a read.
 
-The parser accepts UTF-8, an optional UTF-8 BOM, and an optional XML 1.0 declaration. It rejects DOCTYPE, directives, unsupported processing instructions, external entities, namespaced roots, invalid numeric/date values, and partial documents. Limits are 2 MiB per document, 64 nesting levels, 16,384 elements, 64 attributes per element, 64 KiB per field, and 1,024 entries per collection. Display and sort names have a stricter 1,024-byte UTF-8 limit so accepted metadata fits the catalog's PostgreSQL sort index; album/artist fallback names follow the same bound. It returns no partially parsed metadata on failure.
+The parser accepts UTF-8 (with or without a BOM) and UTF-16 LE or BE with a BOM. An optional XML 1.0 encoding declaration must agree with the input bytes. It does not guess encodings or replace invalid byte sequences with replacement characters. It rejects DOCTYPE, directives, unsupported processing instructions, external entities, namespaced roots, invalid values in used numeric/date fields, and partial documents. Limits are 2 MiB of raw input (including any BOM), 64 nesting levels, 16,384 elements, 64 attributes per element, 64 KiB of decoded UTF-8 per XML field, and 1,024 entries per collection. Display and sort names have a stricter 1,024-byte UTF-8 limit so accepted metadata fits the catalog's PostgreSQL sort index; album/artist fallback names follow the same bound. It returns no partially parsed metadata on failure.
+
+[The Emby 4.10.2.0 differential capture](../../tests/compatibility/fixtures/reference/emby-4.10.2.0/nfo-differential.md) records the reference behavior behind this import support. Goby still enforces item kind and physical hierarchy, preserves the previous snapshot for a rejected document, and replaces the local source fields on successful import. It does not copy the reference server's lossy decoding, old-ID retention when a key disappears from a valid document, or different movie fallback behavior.
 
 ## Example
 

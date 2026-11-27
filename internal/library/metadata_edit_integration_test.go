@@ -351,7 +351,7 @@ func TestStoreMetadataRejectsUnsafeNewAndRetainedLockSnapshotsAtomically(t *test
 		{"new oversized name", "Name", metadataEditTestRaw(t, strings.Repeat(" ", metadataValueMaxName)+"x"), false},
 		{"new oversized sort name", "SortName", metadataEditTestRaw(t, strings.Repeat("s", metadataValueMaxName+1)), false},
 		{"new invalid rating", "CommunityRating", json.RawMessage(`11`), false},
-		{"new unsafe provider", "ProviderIds", json.RawMessage(`{"Imdb":"unsafe/id"}`), false},
+		{"new unsafe provider", "ProviderIds", json.RawMessage(`{"Imdb":"unsafe\nid"}`), false},
 		{"retained null name", "Name", json.RawMessage(`null`), true},
 		{"retained numeric sort name", "SortName", json.RawMessage(`1`), true},
 		{"retained oversized name", "Name", metadataEditTestRaw(t, strings.Repeat("n", metadataValueMaxName+1)), true},

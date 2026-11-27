@@ -240,7 +240,8 @@ func onlineIngestDependentQuery(ctx context.Context, tx pgx.Tx, record metadataR
 		query.ProviderIDs = nil
 		return nil
 	}
-	id := providers.CanonicalTMDBMetadataID(query.Type, providers.MetadataID("tmdb", query.Type, query.ProviderIDs))
+	localID := providers.MetadataID("tmdb", query.Type, query.ProviderIDs)
+	id := providers.CanonicalTMDBMetadataID(query.Type, localID)
 	if id != "" && id != snapshot.knownID {
 		// A distinct, usable child address wins. Bare child IDs in NFOs
 		// cannot be looked up by TMDB's season/episode detail endpoint.
@@ -248,6 +249,11 @@ func onlineIngestDependentQuery(ctx context.Context, tx pgx.Tx, record metadataR
 		return nil
 	}
 	query.ProviderIDs = nil
+	if localID != "" && id == "" && providers.CanonicalTMDBMetadataID("Series", localID) == "" {
+		// A bare positive child ID is not addressable, but still identifies
+		// an entity. Malformed selections must not trigger a guessed lookup.
+		return nil
+	}
 	if series.providerID == "" || query.Season < 0 || record.itemType == "Episode" && (query.Episode <= 0 || parent.kind == "Series" && query.Season == 0) {
 		return nil
 	}

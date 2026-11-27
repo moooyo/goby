@@ -9,19 +9,16 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode/utf8"
 )
 
 const (
-	maxNFOBytes    = 2 * 1024 * 1024
-	maxXMLDepth    = 64
-	maxElements    = 16_384
-	maxAttributes  = 64
-	maxFieldBytes  = 64 * 1024
-	maxNameBytes   = 1024
-	maxEntries     = 1024
-	maxProviderKey = 64
-	maxProviderID  = 256
+	maxNFOBytes   = 2 * 1024 * 1024
+	maxXMLDepth   = 64
+	maxElements   = 16_384
+	maxAttributes = 64
+	maxFieldBytes = 64 * 1024
+	maxNameBytes  = 1024
+	maxEntries    = 1024
 )
 
 // Metadata contains local descriptive values without filesystem or network data.
@@ -70,11 +67,11 @@ func ParseNFO(r io.Reader) (Metadata, error) {
 	if len(data) > maxNFOBytes {
 		return Metadata{}, fmt.Errorf("NFO input exceeds %d bytes", maxNFOBytes)
 	}
-	if !utf8.Valid(data) {
-		return Metadata{}, fmt.Errorf("NFO input must be valid UTF-8")
+	data, encoding, err := nfoUTF8Bytes(data)
+	if err != nil {
+		return Metadata{}, err
 	}
-	data = bytes.TrimPrefix(data, []byte{0xef, 0xbb, 0xbf})
-	root, err := parseXML(data)
+	root, err := parseXML(data, encoding)
 	if err != nil {
 		return Metadata{}, err
 	}
@@ -85,10 +82,19 @@ func ParseNFO(r io.Reader) (Metadata, error) {
 	return result, nil
 }
 
-func parseXML(data []byte) (*element, error) {
+func parseXML(data []byte, encoding nfoEncoding) (*element, error) {
 	decoder := xml.NewDecoder(bytes.NewReader(data))
-	// Keep Strict enabled and Entity/CharsetReader unset: only built-in XML
-	// entities and UTF-8 input are supported, with no external resolver.
+	// The bytes are already UTF-8. Only an encoding corroborated by the BOM
+	// can pass through the decoder's charset hook; it is not a text converter.
+	if encoding != nfoUTF8 {
+		decoder.CharsetReader = func(label string, input io.Reader) (io.Reader, error) {
+			if !encoding.matchesDeclaration(label) {
+				return nil, fmt.Errorf("NFO XML declaration does not match the input encoding")
+			}
+			return input, nil
+		}
+	}
+	// Keep Strict enabled and Entity unset; there is no external resolver.
 	var root *element
 	var stack []*element
 	var elements int
@@ -146,7 +152,7 @@ func parseXML(data []byte) (*element, error) {
 			if token.Target != "xml" || contentSeen || root != nil {
 				return nil, fmt.Errorf("NFO XML processing instruction is not supported here")
 			}
-			if err := checkDeclaration(token.Inst); err != nil {
+			if err := checkDeclaration(token.Inst, encoding); err != nil {
 				return nil, err
 			}
 			contentSeen = true
@@ -187,8 +193,8 @@ func checkAttributes(token xml.StartElement) error {
 }
 
 // Let encoding/xml parse declaration attributes instead of introducing a second
-// XML lexer. Declaration syntax is restricted to XML 1.0 and UTF-8.
-func checkDeclaration(data []byte) error {
+// XML lexer. The XML 1.0 declaration must agree with the detected wire encoding.
+func checkDeclaration(data []byte, encoding nfoEncoding) error {
 	if len(data) > maxFieldBytes || bytes.ContainsAny(data, "<>&") {
 		return fmt.Errorf("invalid NFO XML declaration")
 	}
@@ -211,8 +217,8 @@ func checkDeclaration(data []byte) error {
 		}
 		switch attribute.Name.Local {
 		case "encoding":
-			if standaloneSeen || !strings.EqualFold(attribute.Value, "UTF-8") {
-				return fmt.Errorf("NFO XML declaration requires UTF-8 before standalone")
+			if standaloneSeen || !encoding.matchesDeclaration(attribute.Value) {
+				return fmt.Errorf("NFO XML declaration must match the input encoding and precede standalone")
 			}
 		case "standalone":
 			if attribute.Value != "yes" && attribute.Value != "no" {
@@ -255,9 +261,17 @@ func extract(root *element) (Metadata, error) {
 		}
 		name := strings.ToLower(child.name.Local)
 		switch name {
-		case "title", "sorttitle", "originaltitle", "plot", "year", "premiered", "aired", "enddate", "season", "episode", "rating", "mpaa":
+		case "title", "sorttitle", "originaltitle", "plot", "year", "premiered", "aired", "enddate", "rating", "mpaa":
 			if err := collectScalar(fields, name, child); err != nil {
 				return Metadata{}, err
+			}
+		case "season", "episode":
+			// Emby writes -1 season/episode placeholders on a series document.
+			// Only levels that use these fields assign or validate a number.
+			if result.Kind == "episodedetails" || (result.Kind == "season" && name == "season") {
+				if err := collectScalar(fields, name, child); err != nil {
+					return Metadata{}, err
+				}
 			}
 		case "status":
 			if result.Kind == "tvshow" {
@@ -432,7 +446,7 @@ func appendUnique(target *[]string, value string) error {
 
 func collectProvider(result *Metadata, node *element, name string) error {
 	value, err := scalarText(node)
-	if err != nil || value == "" {
+	if err != nil || value == "" || value == "0" {
 		return err
 	}
 	key := strings.TrimSuffix(name, "id")
@@ -444,44 +458,29 @@ func collectProvider(result *Metadata, node *element, name string) error {
 			}
 		}
 	}
-	if len(key) == 0 || len(key) > maxProviderKey || !safeASCII(key, "") {
-		return fmt.Errorf("NFO provider key must be bounded ASCII alphanumeric text")
-	}
-	switch strings.ToLower(key) {
-	case "imdb":
+	switch {
+	case key == "" || ProviderKeyEqual(key, "default"):
+		return nil
+	case ProviderKeyEqual(key, "imdb"):
 		key = "Imdb"
-	case "tmdb":
+	case ProviderKeyEqual(key, "tmdb") || ProviderKeyEqual(key, "tmdb-tv"):
 		key = "Tmdb"
-	case "tvdb":
+	case ProviderKeyEqual(key, "tvdb"):
 		key = "Tvdb"
 	}
-	if len(value) > maxProviderID || !safeASCII(value, "._:-") {
-		return fmt.Errorf("NFO provider ID contains unsupported characters or exceeds limit")
+	if err := ValidateLocalProviderID(key, value); err != nil {
+		return err
 	}
-	if previous, exists := result.ProviderIDs[key]; exists {
-		if previous != value {
-			return fmt.Errorf("NFO provider %s has conflicting IDs", key)
-		}
-		return nil
-	}
-	if len(result.ProviderIDs) >= maxEntries {
+	if _, exists := result.ProviderIDs[key]; !exists && len(result.ProviderIDs) >= maxEntries {
 		return fmt.Errorf("NFO providers exceed collection limit")
 	}
 	if result.ProviderIDs == nil {
 		result.ProviderIDs = make(map[string]string)
 	}
+	// The last non-placeholder value for a normalized key wins, regardless
+	// of whether it used the legacy element or the uniqueid spelling.
 	result.ProviderIDs[key] = value
 	return nil
-}
-
-func safeASCII(value, extra string) bool {
-	for _, character := range value {
-		if character >= 'a' && character <= 'z' || character >= 'A' && character <= 'Z' || character >= '0' && character <= '9' || strings.ContainsRune(extra, character) {
-			continue
-		}
-		return false
-	}
-	return true
 }
 
 func parsePerson(node *element, name string) (Person, error) {

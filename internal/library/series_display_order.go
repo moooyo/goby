@@ -150,7 +150,11 @@ func readSeriesDisplayOrder(ctx context.Context, tx pgx.Tx, seriesID string) (Se
 	if err != nil {
 		return detail, err
 	}
-	detail.ProviderSeriesID = metadata.Effective.ProviderIDs["Tmdb"]
+	// The order endpoint exposes a usable TMDB series identity, not the
+	// opaque NFO value, which remains available through item metadata.
+	if id := metadata.Effective.ProviderIDs["Tmdb"]; id != "" && providers.CanonicalTMDBMetadataID("Series", id) == id {
+		detail.ProviderSeriesID = id
+	}
 	var savedProviderSeries string
 	err = tx.QueryRow(ctx, `SELECT revision::text,display_order,provider_series_id,provider_group_id,group_name,mapping_sha256,fetched_at,updated_at
 		FROM series_display_orders WHERE series_id=$1`, seriesID).

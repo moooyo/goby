@@ -100,7 +100,9 @@ func TestParseNFOIndexMapping(t *testing.T) {
 		want  Metadata
 	}{
 		{"movie", "<movie><season>1</season><episode>2</episode></movie>", Metadata{Kind: "movie"}},
-		{"season", "<season><title>Specials</title><season>0</season></season>", Metadata{Kind: "season", Name: "Specials", IndexNumber: nfoInt(0)}},
+		{"series placeholders", "<tvshow><title>Imported</title><season>-1</season><episode>-1</episode><tmdbid>12</tmdbid></tvshow>", Metadata{Kind: "tvshow", Name: "Imported", ProviderIDs: map[string]string{"Tmdb": "12"}}},
+		{"series unused duplicate fields", "<tvshow><season>unknown</season><season>2</season><episode><value>unused</value></episode></tvshow>", Metadata{Kind: "tvshow"}},
+		{"season", "<season><title>Specials</title><season>0</season><episode>-1</episode></season>", Metadata{Kind: "season", Name: "Specials", IndexNumber: nfoInt(0)}},
 		{"episode", "<episodedetails><season>0</season><episode>0</episode></episodedetails>", Metadata{Kind: "episodedetails", IndexNumber: nfoInt(0), ParentIndexNumber: nfoInt(0)}},
 		{"maximum episode", "<episodedetails><season>2147483647</season><episode>2147483647</episode></episodedetails>", Metadata{Kind: "episodedetails", IndexNumber: nfoInt(2147483647), ParentIndexNumber: nfoInt(2147483647)}},
 		{"empty episode", "<episodedetails><season> </season><episode/></episodedetails>", Metadata{Kind: "episodedetails"}},
@@ -209,25 +211,55 @@ func TestParseNFOProviderIDs(t *testing.T) {
 		want := Metadata{Kind: "movie", ProviderIDs: map[string]string{"Imdb": "tt123", "Tmdb": "456", "Tvdb": "789", "Vendor42": "abc-123._:v2"}}
 		assertNFOMetadata(t, parseNFOString(t, input), want)
 	})
-	t.Run("conflicting duplicate", func(t *testing.T) {
-		assertNFOError(t, `<movie><imdbid>tt123</imdbid><uniqueid type="imdb">tt456</uniqueid></movie>`)
-		assertNFOError(t, `<movie><uniqueid type="Vendor42">first</uniqueid><uniqueid type="Vendor42">second</uniqueid></movie>`)
+	t.Run("last non-placeholder value wins", func(t *testing.T) {
+		input := `<movie><imdbid>tt123</imdbid><uniqueid type="imdb" default="true">tt456</uniqueid><imdbid>tt789</imdbid><uniqueid type="imdb">0</uniqueid><uniqueid type="TMDB-TV">12</uniqueid><uniqueid type="Tmdb">24</uniqueid><uniqueid type="Vendor42">first</uniqueid><uniqueid type="Vendor42">second</uniqueid></movie>`
+		want := Metadata{Kind: "movie", ProviderIDs: map[string]string{"Imdb": "tt789", "Tmdb": "24", "Vendor42": "second"}}
+		assertNFOMetadata(t, parseNFOString(t, input), want)
 	})
-	for _, provider := range []string{"unsafe-key", "unsafe.key", "a/b", "a:b", "white space", "Müsic"} {
-		t.Run("invalid key "+provider, func(t *testing.T) {
-			assertNFOError(t, `<movie><uniqueid type="`+provider+`">123</uniqueid></movie>`)
+	t.Run("opaque values and ignored placeholders", func(t *testing.T) {
+		input := `<tvshow><title>Imported series</title>
+			<uniqueid type="official website"> https://example.invalid/shows/42?a=b&amp;c=d </uniqueid>
+			<uniqueid type="eidr">10.5240/ABCD</uniqueid><uniqueid type=" 資料-庫 ">other id</uniqueid>
+			<uniqueid type="İmdb">external id</uniqueid><imdbid>tt42</imdbid>
+			<uniqueid type="DEFAULT">ignored</uniqueid><uniqueid>ignored</uniqueid><uniqueid type=" ">ignored</uniqueid>
+			<uniqueid type="the empty one"> </uniqueid><uniqueid type="custom-zero">0</uniqueid><tvdbid>0</tvdbid>
+		</tvshow>`
+		want := Metadata{Kind: "tvshow", Name: "Imported series", ProviderIDs: map[string]string{
+			"official website": "https://example.invalid/shows/42?a=b&c=d", "eidr": "10.5240/ABCD", "資料-庫": "other id",
+			"İmdb": "external id", "Imdb": "tt42",
+		}}
+		assertNFOMetadata(t, parseNFOString(t, input), want)
+	})
+	t.Run("nested markup is not a scalar", func(t *testing.T) {
+		assertNFOError(t, `<movie><uniqueid type="imdb"><id>tt123</id></uniqueid></movie>`)
+	})
+	for _, key := range []string{"left&#9;right", "left&#x85;right", strings.Repeat("é", 32) + "x"} {
+		t.Run(fmt.Sprintf("invalid key %q", key), func(t *testing.T) {
+			assertNFOError(t, `<movie><uniqueid type="`+key+`">123</uniqueid></movie>`)
 		})
 	}
-	for _, value := range []string{"https://example.com/id", "two words", "a\nb", "a\tb", "id?query", strings.Repeat("a", 257)} {
+	for _, value := range []string{"a\nb", "a\tb", "a&#x85;b", strings.Repeat("é", 128) + "x"} {
 		t.Run(fmt.Sprintf("invalid value %q", value), func(t *testing.T) {
 			assertNFOError(t, `<movie><uniqueid type="imdb">`+value+`</uniqueid></movie>`)
 		})
 	}
-	t.Run("maximum value length", func(t *testing.T) {
-		value := strings.Repeat("a", 256)
-		got := parseNFOString(t, `<movie><uniqueid type="Vendor42">`+value+`</uniqueid></movie>`)
-		if got.ProviderIDs["Vendor42"] != value {
-			t.Fatalf("provider value was not preserved")
+	t.Run("maximum key and value lengths in bytes", func(t *testing.T) {
+		key, value := strings.Repeat("é", 32), strings.Repeat("界", 85)+"x"
+		got := parseNFOString(t, `<movie><uniqueid type="`+key+`">`+value+`</uniqueid></movie>`)
+		if got.ProviderIDs[key] != value {
+			t.Fatal("provider key or value was not preserved")
+		}
+	})
+	t.Run("duplicate does not consume another slot", func(t *testing.T) {
+		var input strings.Builder
+		input.WriteString("<movie>")
+		for i := 0; i < maxEntries; i++ {
+			fmt.Fprintf(&input, `<uniqueid type="Vendor%d">old</uniqueid>`, i)
+		}
+		input.WriteString(`<uniqueid type="Vendor0">new</uniqueid></movie>`)
+		got := parseNFOString(t, input.String())
+		if len(got.ProviderIDs) != maxEntries || got.ProviderIDs["Vendor0"] != "new" {
+			t.Fatal("provider overwrite changed the collection size or lost the later value")
 		}
 	})
 }

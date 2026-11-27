@@ -9,6 +9,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/moooyo/goby/internal/metadata"
 	"golang.org/x/text/language"
 )
 
@@ -201,11 +202,11 @@ func (client *Client) openSubtitlesSearchParams(query SubtitleQuery) (url.Values
 	}
 	for key, value := range query.ProviderIDs {
 		var parameter string
-		switch strings.ToLower(key) {
-		case "imdb":
+		switch {
+		case metadata.ProviderKeyEqual(key, "imdb"):
 			parameter = "imdb_id"
 			value = strings.TrimPrefix(strings.ToLower(strings.TrimSpace(value)), "tt")
-		case "tmdb":
+		case metadata.ProviderKeyEqual(key, "tmdb"):
 			parameter = "tmdb_id"
 			if strings.Contains(value, ":") {
 				parts := strings.Split(value, ":")

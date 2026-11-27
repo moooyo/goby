@@ -173,8 +173,11 @@ func readOnlineImageSnapshotWithPolicy(ctx context.Context, tx pgx.Tx, libraryID
 		if err != nil {
 			return result, err
 		}
+		id := providers.MetadataID("tmdb", query.Type, query.ProviderIDs)
+		// Local metadata can contain an opaque ID that makes no valid TMDB
+		// request. Treat that item as unmatched without interrupting its library.
 		result.selection = providers.Selection{Provider: "tmdb", Type: query.Type,
-			ID: providers.MetadataID("tmdb", query.Type, query.ProviderIDs), Language: query.Language}
+			ID: providers.CanonicalTMDBMetadataID(query.Type, id), Language: query.Language}
 	}
 	if !manual && result.selection.ID == "" {
 		return result, ErrNotFound

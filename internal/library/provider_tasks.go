@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/moooyo/goby/internal/metadata"
 	"github.com/moooyo/goby/internal/providers"
 	"golang.org/x/text/language"
 )
@@ -127,6 +128,11 @@ func selectProviderTaskMetadata(ctx context.Context, client OnlineMetadataIngest
 		return providers.Selection{}, false, err
 	}
 	if id := providers.MetadataID(provider, query.Type, query.ProviderIDs); id != "" {
+		if !providers.ValidMetadataLookupID(provider, query.Type, id) {
+			// An opaque selection is neither a usable address nor permission
+			// to fall back to a title search. Do not stop the rest of the task.
+			return providers.Selection{}, false, nil
+		}
 		return providers.Selection{Provider: provider, Type: query.Type, Language: query.Language, ID: id}, true, nil
 	}
 	name := strings.TrimSpace(query.Name)
@@ -223,7 +229,7 @@ func (s *Store) downloadProviderTaskItem(ctx context.Context, client *providers.
 	}
 	ids := make(map[string]string)
 	for key, value := range query.ProviderIDs {
-		if strings.EqualFold(key, "Imdb") || strings.EqualFold(key, "Tmdb") {
+		if metadata.ProviderKeyEqual(key, "Imdb") || metadata.ProviderKeyEqual(key, "Tmdb") {
 			if strings.TrimSpace(value) != "" {
 				ids[key] = value
 			}
@@ -258,6 +264,10 @@ func (s *Store) downloadProviderTaskItem(ctx context.Context, client *providers.
 			continue
 		}
 		matches, err := client.SearchSubtitles(ctx, providers.SubtitleQuery{Query: query, Languages: []string{language}})
+		if errors.Is(err, providers.ErrInvalidInput) {
+			// A local ID that the subtitle adapter cannot use is not a match.
+			return ctx.Err()
+		}
 		if err != nil {
 			return err
 		}

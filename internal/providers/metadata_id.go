@@ -1,6 +1,10 @@
 package providers
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/moooyo/goby/internal/metadata"
+)
 
 // MetadataID selects the identifier for the item's provider entity. A typed
 // MusicBrainz ID takes precedence over the legacy generic MusicBrainz value;
@@ -22,6 +26,20 @@ func MetadataID(provider, itemType string, ids map[string]string) string {
 	return ""
 }
 
+// ValidMetadataLookupID distinguishes a requestable identity from an opaque
+// imported value, without consulting provider configuration or using HTTP.
+func ValidMetadataLookupID(provider, itemType, id string) bool {
+	switch provider {
+	case "tmdb":
+		return CanonicalTMDBMetadataID(itemType, id) != ""
+	case "musicbrainz":
+		_, _, supported := musicBrainzEntityType(itemType)
+		return supported && musicBrainzID(id)
+	default:
+		return false
+	}
+}
+
 func metadataIDValue(ids map[string]string, key string) string {
 	if value := strings.TrimSpace(ids[key]); value != "" {
 		return value
@@ -30,7 +48,7 @@ func metadataIDValue(ids map[string]string, key string) string {
 	// if a legacy record contains more than one case variant.
 	var matched, value string
 	for name, candidate := range ids {
-		if strings.EqualFold(name, key) && strings.TrimSpace(candidate) != "" && (matched == "" || name < matched) {
+		if metadata.ProviderKeyEqual(name, key) && strings.TrimSpace(candidate) != "" && (matched == "" || name < matched) {
 			matched, value = name, strings.TrimSpace(candidate)
 		}
 	}

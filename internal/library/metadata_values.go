@@ -529,11 +529,25 @@ func normalizeMetadataValue(field string, raw json.RawMessage) (json.RawMessage,
 	return encoded, nil
 }
 
-// Accepted source names may contain significant surrounding whitespace, or
-// consist entirely of whitespace. A lock freezes those values without applying
-// the normalization required for a new manual name. Keep the same type, UTF-8,
-// NUL, and byte limits; all other fields retain their existing domain checks.
+// Locks freeze accepted source values, not new manual edits. Preserve exact
+// names, credits and opaque provider IDs, with their type and size checks.
 func normalizeMetadataLockValue(field string, raw json.RawMessage) (json.RawMessage, error) {
+	if field == "ProviderIds" {
+		object, err := metadataJSONObject(raw)
+		if err != nil || len(object) > metadataValueMaxEntries {
+			return nil, fmt.Errorf("Must be an object with at most %d provider IDs.", metadataValueMaxEntries)
+		}
+		for key, encoded := range object {
+			var value string
+			if err := json.Unmarshal(encoded, &value); err != nil {
+				return nil, fmt.Errorf("Provider IDs must be strings.")
+			}
+			if err := metadata.ValidateLocalProviderID(key, value); err != nil {
+				return nil, err
+			}
+		}
+		return json.Marshal(object)
+	}
 	if field == "Artists" || field == "AlbumArtists" {
 		values, err := acceptedMusicStrings(raw)
 		if err != nil {

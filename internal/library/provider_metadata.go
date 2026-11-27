@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/activity"
 	"github.com/moooyo/goby/internal/identity"
+	"github.com/moooyo/goby/internal/metadata"
 	"github.com/moooyo/goby/internal/providers"
 )
 
@@ -388,7 +388,7 @@ func onlineProviderForType(itemType string) string {
 
 func providerIDFor(values MetadataValues, provider string) string {
 	for key, value := range values.ProviderIDs {
-		if strings.EqualFold(key, provider) {
+		if metadata.ProviderKeyEqual(key, provider) {
 			return value
 		}
 	}
