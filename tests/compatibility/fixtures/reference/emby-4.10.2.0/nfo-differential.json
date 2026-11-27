@@ -1,0 +1,876 @@
+{
+  "reference": {
+    "version": "4.10.2.0",
+    "nfoPluginVersion": "1.0.88.0",
+    "capturedAt": "2026-11-27T07:06:25+00:00"
+  },
+  "libraries": [
+    {
+      "name": "NFO Flat Films",
+      "type": "movies",
+      "path": "flat"
+    },
+    {
+      "name": "NFO Folder Films",
+      "type": "movies",
+      "path": "folders"
+    },
+    {
+      "name": "NFO Shows",
+      "type": "tvshows",
+      "path": "tv"
+    }
+  ],
+  "sidecars": {
+    "flat/Film F01 (2024).nfo": {
+      "text": "<movie><title>NFO known_ids</title><plot>Plot known_ids</plot><uniqueid type=\"imdb\" default=\"true\">tt90001001</uniqueid><tmdbid>90001002</tmdbid><tvdbid>90001003</tvdbid></movie>"
+    },
+    "flat/Film F02 (2024).nfo": {
+      "text": "<movie><title>NFO alias</title><plot>Plot alias</plot><uniqueid type=\"TMDB-TV\">90001004</uniqueid></movie>"
+    },
+    "flat/Film F03 (2024).nfo": {
+      "text": "<movie><title>NFO custom_id</title><plot>Plot custom_id</plot><uniqueid type=\"CustomDb\">fixture:7-v1_a</uniqueid></movie>"
+    },
+    "flat/Film F04 (2024).nfo": {
+      "text": "<movie><title>NFO type_space</title><plot>Plot type_space</plot><uniqueid type=\"video db\">90001005</uniqueid></movie>"
+    },
+    "flat/Film F05 (2024).nfo": {
+      "text": "<movie><title>NFO type_hyphen</title><plot>Plot type_hyphen</plot><uniqueid type=\"video-db\">90001006</uniqueid></movie>"
+    },
+    "flat/Film F06 (2024).nfo": {
+      "text": "<movie><title>NFO type_unicode</title><plot>Plot type_unicode</plot><uniqueid type=\"資料庫\">90001007</uniqueid></movie>"
+    },
+    "flat/Film F07 (2024).nfo": {
+      "text": "<movie><title>NFO website</title><plot>Plot website</plot><uniqueid type=\"official website\">https://example.invalid/film/7</uniqueid><imdbid>tt90001008</imdbid></movie>"
+    },
+    "flat/Film F08 (2024).nfo": {
+      "text": "<movie><title>NFO eidr</title><plot>Plot eidr</plot><uniqueid type=\"eidr\">10.5240/1234-ABCD-0000-0000-0000-X</uniqueid><imdbid>tt90001009</imdbid></movie>"
+    },
+    "flat/Film F09 (2024).nfo": {
+      "text": "<movie><title>NFO known_id_url</title><plot>Plot known_id_url</plot><uniqueid type=\"tmdb\">https://example.invalid/movie/90001010</uniqueid><imdbid>tt90001010</imdbid></movie>"
+    },
+    "flat/Film F10 (2024).nfo": {
+      "text": "<movie><title>NFO zero_id</title><plot>Plot zero_id</plot><uniqueid type=\"TmDb\">0</uniqueid><imdbid>tt90001011</imdbid></movie>"
+    },
+    "flat/Film F11 (2024).nfo": {
+      "text": "<movie><title>NFO absent_type</title><plot>Plot absent_type</plot><uniqueid>90001012</uniqueid><imdbid>tt90001012</imdbid></movie>"
+    },
+    "flat/Film F12 (2024).nfo": {
+      "text": "<movie><title>NFO blank_value</title><plot>Plot blank_value</plot><uniqueid type=\"bad name\">  </uniqueid><imdbid>tt90001013</imdbid></movie>"
+    },
+    "flat/Film F13 (2024).nfo": {
+      "text": "<movie><title>NFO default_type</title><plot>Plot default_type</plot><uniqueid type=\"default\">tt90001014</uniqueid><imdbid>tt90001015</imdbid></movie>"
+    },
+    "flat/Film F14 (2024).nfo": {
+      "text": "<movie><title>NFO same_duplicate</title><plot>Plot same_duplicate</plot><uniqueid type=\"imdb\">tt90001016</uniqueid><imdbid>tt90001016</imdbid></movie>"
+    },
+    "flat/Film F15 (2024).nfo": {
+      "text": "<movie><title>NFO legacy_last</title><plot>Plot legacy_last</plot><uniqueid type=\"imdb\" default=\"true\">tt90001017</uniqueid><imdbid>tt90001018</imdbid></movie>"
+    },
+    "flat/Film F16 (2024).nfo": {
+      "text": "<movie><title>NFO uniqueid_last</title><plot>Plot uniqueid_last</plot><imdbid>tt90001018</imdbid><uniqueid type=\"imdb\" default=\"true\">tt90001017</uniqueid></movie>"
+    },
+    "flat/Film F17 (2024).nfo": {
+      "text": "<movie><title>NFO typed_duplicate</title><plot>Plot typed_duplicate</plot><uniqueid type=\"tmdb\" default=\"true\">90001021</uniqueid><uniqueid type=\"TMDB\">90001022</uniqueid></movie>"
+    },
+    "flat/Film F18 (2024).nfo": {
+      "text": "<movie><title>NFO invalid_optional</title><plot>Plot invalid_optional</plot><year>-1</year><rating>11</rating><imdbid>tt90001020</imdbid></movie>"
+    },
+    "flat/Film X01 (2024).nfo": {
+      "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><movie><title>NFO utf8_escaped</title><plot>Café &amp; Trees</plot></movie>"
+    },
+    "flat/Film X02 (2024).nfo": {
+      "text": "﻿<movie><title>NFO utf8_bom</title><plot>Café &amp; Trees</plot></movie>"
+    },
+    "flat/Film X03 (2024).nfo": {
+      "base64": "//48AD8AeABtAGwAIAB2AGUAcgBzAGkAbwBuAD0AIgAxAC4AMAAiACAAZQBuAGMAbwBkAGkAbgBnAD0AIgBVAFQARgAtADEANgAiAD8APgA8AG0AbwB2AGkAZQA+ADwAdABpAHQAbABlAD4ATgBGAE8AIAB1AHQAZgAxADYAXwBsAGUAPAAvAHQAaQB0AGwAZQA+ADwAcABsAG8AdAA+AEMAYQBmAOkAIAAmAGEAbQBwADsAIABUAHIAZQBlAHMAPAAvAHAAbABvAHQAPgA8AC8AbQBvAHYAaQBlAD4A"
+    },
+    "flat/Film X04 (2024).nfo": {
+      "base64": "/v8APAA/AHgAbQBsACAAdgBlAHIAcwBpAG8AbgA9ACIAMQAuADAAIgAgAGUAbgBjAG8AZABpAG4AZwA9ACIAVQBUAEYALQAxADYAIgA/AD4APABtAG8AdgBpAGUAPgA8AHQAaQB0AGwAZQA+AE4ARgBPACAAdQB0AGYAMQA2AF8AYgBlADwALwB0AGkAdABsAGUAPgA8AHAAbABvAHQAPgBDAGEAZgDpACAAJgBhAG0AcAA7ACAAVAByAGUAZQBzADwALwBwAGwAbwB0AD4APAAvAG0AbwB2AGkAZQA+"
+    },
+    "flat/Film X05 (2024).nfo": {
+      "base64": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iSVNPLTg4NTktMSI/Pjxtb3ZpZT48dGl0bGU+TkZPIGxhdGluMTwvdGl0bGU+PHBsb3Q+Q2Fm6SAmYW1wOyBUcmVlczwvcGxvdD48L21vdmllPg=="
+    },
+    "flat/Film X06 (2024).nfo": {
+      "base64": "PG1vdmllPjx0aXRsZT5ORk8gaW52YWxpZF91dGY4PC90aXRsZT48cGxvdD5pbnZhbGlkLf88L3Bsb3Q+PC9tb3ZpZT4="
+    },
+    "flat/Film X07 (2024).nfo": {
+      "text": "<?xml version=\"1.0\" encoding=\"UTF-16\"?><movie><title>NFO decl_mismatch</title><plot>Café &amp; Trees</plot></movie>"
+    },
+    "flat/Film X08 (2024).nfo": {
+      "text": "<movie><plot>Invalid & unfinished</plot><title>NFO xml_bare_ampersand</title></movie>"
+    },
+    "flat/Film X09 (2024).nfo": {
+      "text": "<movie><title>NFO xml_truncated</title><plot>Never completed"
+    },
+    "flat/Film X10 (2024).nfo": {
+      "text": "<tvshow><title>NFO wrong_root</title><plot>Plot wrong_root</plot></tvshow>"
+    },
+    "flat/movie.nfo": {
+      "text": "<movie><title>NFO flat-generic</title><plot>Plot flat-generic</plot></movie>"
+    },
+    "folders/Folder M02 (2024)/movie.nfo": {
+      "text": "<movie><title>NFO folder-generic</title><plot>Plot folder-generic</plot></movie>"
+    },
+    "folders/Folder M03 (2024)/Film M03 (2024).nfo": {
+      "text": "<movie><title>NFO named-wins</title><plot>Plot named-wins</plot></movie>"
+    },
+    "folders/Folder M03 (2024)/movie.nfo": {
+      "text": "<movie><title>NFO generic-loses</title><plot>Plot generic-loses</plot></movie>"
+    },
+    "folders/Folder M04 (2024)/Film M04 (2024).nfo": {
+      "text": "<movie><title>NFO broken"
+    },
+    "folders/Folder M04 (2024)/movie.nfo": {
+      "text": "<movie><title>NFO generic-fallback</title><plot>Plot generic-fallback</plot></movie>"
+    },
+    "folders/Folder M05 (2024)/Film M05 (2024).nfo": {
+      "text": "<movie><title>NFO before-bad-id</title><plot>Plot before-bad-id</plot><imdbid>tt90001030</imdbid><tmdbid>90001031</tmdbid></movie>"
+    },
+    "folders/Folder M06 (2024)/Film M06 (2024).nfo": {
+      "text": "<movie><title>NFO before-delete-id</title><plot>Plot before-delete-id</plot><imdbid>tt90001040</imdbid><tmdbid>90001041</tmdbid></movie>"
+    },
+    "folders/Folder M07 (2024)/Film M07 (2024).nfo": {
+      "text": "<movie><title>NFO before-broken</title><plot>Plot before-broken</plot><tmdbid>90001051</tmdbid></movie>"
+    },
+    "tv/Show T01 (2024)/Season 00/Show T01 S00E01.nfo": {
+      "text": "<episodedetails><title>NFO season0_episode</title><plot>Plot season0_episode</plot><season>0</season><episode>1</episode></episodedetails>"
+    },
+    "tv/Show T01 (2024)/Season 01/season.nfo": {
+      "text": "<season><title>NFO season_number_field</title><plot>Plot season_number_field</plot><seasonnumber>8</seasonnumber><season>1</season></season>"
+    },
+    "tv/Show T01 (2024)/Season 01/Show T01 S01E01.nfo": {
+      "text": "<episodedetails><title>NFO episode_clean</title><plot>Plot episode_clean</plot><season>1</season><episode>1</episode></episodedetails>"
+    },
+    "tv/Show T01 (2024)/Season 01/Show T01 S01E02.nfo": {
+      "text": "<episodedetails><title>NFO episode_negative</title><plot>Plot episode_negative</plot><season>-1</season><episode>-1</episode></episodedetails>"
+    },
+    "tv/Show T01 (2024)/Season 01/Show T01 S01E03.nfo": {
+      "text": "<episodedetails><title>NFO episode_conflict</title><plot>Plot episode_conflict</plot><season>8</season><episode>30</episode></episodedetails>"
+    },
+    "tv/Show T01 (2024)/Season 01/Show T01 S01E04.nfo": {
+      "text": "<episodedetails><title>NFO episode_absent_numbers</title><plot>Plot episode_absent_numbers</plot></episodedetails>"
+    },
+    "tv/Show T01 (2024)/Season 01/Show T01 S01E05.nfo": {
+      "text": "<episodedetails><title>NFO episode_zero_numbers</title><plot>Plot episode_zero_numbers</plot><season>0</season><episode>0</episode></episodedetails>"
+    },
+    "tv/Show T01 (2024)/Season 02/season.nfo": {
+      "text": "<season><title>NFO season_negative</title><plot>Plot season_negative</plot><seasonnumber>-1</seasonnumber><season>-1</season></season>"
+    },
+    "tv/Show T01 (2024)/Season 02/Show T01 S02E01.nfo": {
+      "text": "<episodedetails><title>NFO season2_episode</title><plot>Plot season2_episode</plot><season>2</season><episode>1</episode></episodedetails>"
+    },
+    "tv/Show T01 (2024)/tvshow.nfo": {
+      "text": "<tvshow><title>NFO series_clean</title><plot>Plot series_clean</plot><uniqueid type=\"imdb\">tt90001101</uniqueid></tvshow>"
+    },
+    "tv/Show T02 (2024)/Season 01/Show T02 S01E01.nfo": {
+      "text": "<episodedetails><title>NFO companion_2</title><plot>Plot companion_2</plot><season>1</season><episode>1</episode></episodedetails>"
+    },
+    "tv/Show T02 (2024)/tvshow.nfo": {
+      "text": "<tvshow><title>NFO series_minus_one</title><plot>Plot series_minus_one</plot><season>-1</season><episode>-1</episode><uniqueid type=\"imdb\">tt90001102</uniqueid></tvshow>"
+    },
+    "tv/Show T03 (2024)/Season 01/Show T03 S01E01.nfo": {
+      "text": "<episodedetails><title>NFO companion_3</title><plot>Plot companion_3</plot><season>1</season><episode>1</episode></episodedetails>"
+    },
+    "tv/Show T03 (2024)/tvshow.nfo": {
+      "text": "<tvshow><title>NFO combined_series</title><plot>Plot combined_series</plot><uniqueid type=\"eidr\">10.5240/1234-ABCD-0000-0000-0000-X</uniqueid><uniqueid type=\"official website\">https://example.invalid/show/7</uniqueid><season>-1</season><episode>-1</episode><uniqueid type=\"imdb\">tt90001103</uniqueid><uniqueid type=\"tmdb\">90001104</uniqueid><tvdbid>90001105</tvdbid></tvshow>"
+    },
+    "tv/Show T04 (2024)/Season 01/Show T04 S01E01.nfo": {
+      "text": "<episodedetails><title>NFO companion_4</title><plot>Plot companion_4</plot><season>1</season><episode>1</episode></episodedetails>"
+    },
+    "tv/Show T04 (2024)/tvshow.nfo": {
+      "text": "<tvshow><title>NFO series_unused_numbers</title><plot>Plot series_unused_numbers</plot><season>not-a-number</season><episode>not-a-number</episode><imdbid>tt90001106</imdbid></tvshow>"
+    }
+  },
+  "warmSidecars": {
+    "folders/Folder M05 (2024)/Film M05 (2024).nfo": "<movie><title>NFO after-bad-id</title><plot>Plot after-bad-id</plot><uniqueid type=\"tmdb\">https://example.invalid/movie/7</uniqueid><imdbid>tt90001032</imdbid></movie>",
+    "folders/Folder M06 (2024)/Film M06 (2024).nfo": "<movie><title>NFO after-delete-id</title><plot>Plot after-delete-id</plot><imdbid>tt90001042</imdbid></movie>",
+    "folders/Folder M07 (2024)/Film M07 (2024).nfo": "<movie><title>NFO after-broken</title><plot>never closed"
+  },
+  "targetedSidecars": {
+    "folders/Folder M05 (2024)/Film M05 (2024).nfo": "<movie><title>NFO targeted-bad-id</title><plot>Plot targeted-bad-id</plot><imdbid>tt90001033</imdbid><uniqueid type=\"tmdb\">https://example.invalid/movie/8</uniqueid></movie>",
+    "folders/Folder M06 (2024)/Film M06 (2024).nfo": "<movie><title>NFO targeted-delete-id</title><plot>Plot targeted-delete-id</plot><imdbid>tt90001043</imdbid></movie>",
+    "folders/Folder M07 (2024)/Film M07 (2024).nfo": "<movie><title>NFO targeted-broken</title><plot>still not closed"
+  },
+  "cases": [
+    {
+      "name": "known_ids",
+      "type": "Movie",
+      "path": "flat/Film F01 (2024).mp4",
+      "first": {
+        "Name": "NFO known_ids",
+        "Overview": "Plot known_ids",
+        "ProviderIds": {
+          "Imdb": "tt90001001",
+          "Tmdb": "90001002",
+          "Tvdb": "90001003"
+        }
+      }
+    },
+    {
+      "name": "alias",
+      "type": "Movie",
+      "path": "flat/Film F02 (2024).mp4",
+      "first": {
+        "Name": "NFO alias",
+        "Overview": "Plot alias",
+        "ProviderIds": {
+          "Tmdb": "90001004"
+        }
+      }
+    },
+    {
+      "name": "custom_id",
+      "type": "Movie",
+      "path": "flat/Film F03 (2024).mp4",
+      "first": {
+        "Name": "NFO custom_id",
+        "Overview": "Plot custom_id",
+        "ProviderIds": {
+          "CustomDb": "fixture:7-v1_a"
+        }
+      }
+    },
+    {
+      "name": "type_space",
+      "type": "Movie",
+      "path": "flat/Film F04 (2024).mp4",
+      "first": {
+        "Name": "NFO type_space",
+        "Overview": "Plot type_space",
+        "ProviderIds": {
+          "video db": "90001005"
+        }
+      }
+    },
+    {
+      "name": "type_hyphen",
+      "type": "Movie",
+      "path": "flat/Film F05 (2024).mp4",
+      "first": {
+        "Name": "NFO type_hyphen",
+        "Overview": "Plot type_hyphen",
+        "ProviderIds": {
+          "video-db": "90001006"
+        }
+      }
+    },
+    {
+      "name": "type_unicode",
+      "type": "Movie",
+      "path": "flat/Film F06 (2024).mp4",
+      "first": {
+        "Name": "NFO type_unicode",
+        "Overview": "Plot type_unicode",
+        "ProviderIds": {
+          "資料庫": "90001007"
+        }
+      }
+    },
+    {
+      "name": "website",
+      "type": "Movie",
+      "path": "flat/Film F07 (2024).mp4",
+      "first": {
+        "Name": "NFO website",
+        "Overview": "Plot website",
+        "ProviderIds": {
+          "official website": "https://example.invalid/film/7",
+          "Imdb": "tt90001008"
+        }
+      }
+    },
+    {
+      "name": "eidr",
+      "type": "Movie",
+      "path": "flat/Film F08 (2024).mp4",
+      "first": {
+        "Name": "NFO eidr",
+        "Overview": "Plot eidr",
+        "ProviderIds": {
+          "eidr": "10.5240/1234-ABCD-0000-0000-0000-X",
+          "Imdb": "tt90001009"
+        }
+      }
+    },
+    {
+      "name": "known_id_url",
+      "type": "Movie",
+      "path": "flat/Film F09 (2024).mp4",
+      "first": {
+        "Name": "NFO known_id_url",
+        "Overview": "Plot known_id_url",
+        "ProviderIds": {
+          "Tmdb": "https://example.invalid/movie/90001010",
+          "Imdb": "tt90001010"
+        }
+      }
+    },
+    {
+      "name": "zero_id",
+      "type": "Movie",
+      "path": "flat/Film F10 (2024).mp4",
+      "first": {
+        "Name": "NFO zero_id",
+        "Overview": "Plot zero_id",
+        "ProviderIds": {
+          "Imdb": "tt90001011"
+        }
+      }
+    },
+    {
+      "name": "absent_type",
+      "type": "Movie",
+      "path": "flat/Film F11 (2024).mp4",
+      "first": {
+        "Name": "NFO absent_type",
+        "Overview": "Plot absent_type",
+        "ProviderIds": {
+          "Imdb": "tt90001012"
+        }
+      }
+    },
+    {
+      "name": "blank_value",
+      "type": "Movie",
+      "path": "flat/Film F12 (2024).mp4",
+      "first": {
+        "Name": "NFO blank_value",
+        "Overview": "Plot blank_value",
+        "ProviderIds": {
+          "Imdb": "tt90001013"
+        }
+      }
+    },
+    {
+      "name": "default_type",
+      "type": "Movie",
+      "path": "flat/Film F13 (2024).mp4",
+      "first": {
+        "Name": "NFO default_type",
+        "Overview": "Plot default_type",
+        "ProviderIds": {
+          "Imdb": "tt90001015"
+        }
+      }
+    },
+    {
+      "name": "same_duplicate",
+      "type": "Movie",
+      "path": "flat/Film F14 (2024).mp4",
+      "first": {
+        "Name": "NFO same_duplicate",
+        "Overview": "Plot same_duplicate",
+        "ProviderIds": {
+          "Imdb": "tt90001016"
+        }
+      }
+    },
+    {
+      "name": "legacy_last",
+      "type": "Movie",
+      "path": "flat/Film F15 (2024).mp4",
+      "first": {
+        "Name": "NFO legacy_last",
+        "Overview": "Plot legacy_last",
+        "ProviderIds": {
+          "Imdb": "tt90001018"
+        }
+      }
+    },
+    {
+      "name": "uniqueid_last",
+      "type": "Movie",
+      "path": "flat/Film F16 (2024).mp4",
+      "first": {
+        "Name": "NFO uniqueid_last",
+        "Overview": "Plot uniqueid_last",
+        "ProviderIds": {
+          "Imdb": "tt90001017"
+        }
+      }
+    },
+    {
+      "name": "typed_duplicate",
+      "type": "Movie",
+      "path": "flat/Film F17 (2024).mp4",
+      "first": {
+        "Name": "NFO typed_duplicate",
+        "Overview": "Plot typed_duplicate",
+        "ProviderIds": {
+          "Tmdb": "90001022"
+        }
+      }
+    },
+    {
+      "name": "invalid_optional",
+      "type": "Movie",
+      "path": "flat/Film F18 (2024).mp4",
+      "first": {
+        "Name": "NFO invalid_optional",
+        "Overview": "Plot invalid_optional",
+        "ProviderIds": {
+          "Imdb": "tt90001020"
+        },
+        "CommunityRating": 11
+      }
+    },
+    {
+      "name": "utf8_escaped",
+      "type": "Movie",
+      "path": "flat/Film X01 (2024).mp4",
+      "first": {
+        "Name": "NFO utf8_escaped",
+        "Overview": "Café & Trees",
+        "ProviderIds": {}
+      }
+    },
+    {
+      "name": "utf8_bom",
+      "type": "Movie",
+      "path": "flat/Film X02 (2024).mp4",
+      "first": {
+        "Name": "NFO utf8_bom",
+        "Overview": "Café & Trees",
+        "ProviderIds": {}
+      }
+    },
+    {
+      "name": "utf16_le",
+      "type": "Movie",
+      "path": "flat/Film X03 (2024).mp4",
+      "first": {
+        "Name": "NFO utf16_le",
+        "Overview": "Café & Trees",
+        "ProviderIds": {}
+      }
+    },
+    {
+      "name": "utf16_be",
+      "type": "Movie",
+      "path": "flat/Film X04 (2024).mp4",
+      "first": {
+        "Name": "NFO utf16_be",
+        "Overview": "Café & Trees",
+        "ProviderIds": {}
+      }
+    },
+    {
+      "name": "latin1",
+      "type": "Movie",
+      "path": "flat/Film X05 (2024).mp4",
+      "first": {
+        "Name": "NFO latin1",
+        "Overview": "Caf� & Trees",
+        "ProviderIds": {}
+      }
+    },
+    {
+      "name": "invalid_utf8",
+      "type": "Movie",
+      "path": "flat/Film X06 (2024).mp4",
+      "first": {
+        "Name": "NFO invalid_utf8",
+        "Overview": "invalid-�",
+        "ProviderIds": {}
+      }
+    },
+    {
+      "name": "decl_mismatch",
+      "type": "Movie",
+      "path": "flat/Film X07 (2024).mp4",
+      "first": {
+        "Name": "NFO decl_mismatch",
+        "Overview": "Café & Trees",
+        "ProviderIds": {}
+      }
+    },
+    {
+      "name": "xml_bare_ampersand",
+      "type": "Movie",
+      "path": "flat/Film X08 (2024).mp4",
+      "first": {
+        "Name": "Film X08",
+        "ProviderIds": {}
+      }
+    },
+    {
+      "name": "xml_truncated",
+      "type": "Movie",
+      "path": "flat/Film X09 (2024).mp4",
+      "first": {
+        "Name": "Film X09",
+        "ProviderIds": {}
+      }
+    },
+    {
+      "name": "wrong_root",
+      "type": "Movie",
+      "path": "flat/Film X10 (2024).mp4",
+      "first": {
+        "Name": "NFO wrong_root",
+        "Overview": "Plot wrong_root",
+        "ProviderIds": {}
+      }
+    },
+    {
+      "name": "flat_generic",
+      "type": "Movie",
+      "path": "flat/Film Flat Generic (2024).mp4",
+      "first": {
+        "Name": "Film Flat Generic",
+        "ProviderIds": {},
+        "ProductionYear": 2024
+      }
+    },
+    {
+      "name": "no_nfo",
+      "type": "Movie",
+      "path": "folders/Folder M01 (2024)/Film M01 (2024).mp4",
+      "first": {
+        "Name": "Folder M01",
+        "ProviderIds": {},
+        "ProductionYear": 2024
+      }
+    },
+    {
+      "name": "folder_generic",
+      "type": "Movie",
+      "path": "folders/Folder M02 (2024)/Film M02 (2024).mp4",
+      "first": {
+        "Name": "NFO folder-generic",
+        "Overview": "Plot folder-generic",
+        "ProviderIds": {}
+      }
+    },
+    {
+      "name": "both_present",
+      "type": "Movie",
+      "path": "folders/Folder M03 (2024)/Film M03 (2024).mp4",
+      "first": {
+        "Name": "NFO named-wins",
+        "Overview": "Plot named-wins",
+        "ProviderIds": {}
+      }
+    },
+    {
+      "name": "malformed_preferred",
+      "type": "Movie",
+      "path": "folders/Folder M04 (2024)/Film M04 (2024).mp4",
+      "first": {
+        "Name": "Folder M04",
+        "ProviderIds": {}
+      }
+    },
+    {
+      "name": "refresh_bad_id",
+      "type": "Movie",
+      "path": "folders/Folder M05 (2024)/Film M05 (2024).mp4",
+      "first": {
+        "Name": "NFO before-bad-id",
+        "Overview": "Plot before-bad-id",
+        "ProviderIds": {
+          "Imdb": "tt90001030",
+          "Tmdb": "90001031"
+        }
+      },
+      "warm": {
+        "Name": "NFO after-bad-id",
+        "Overview": "Plot after-bad-id",
+        "ProviderIds": {
+          "Imdb": "tt90001032",
+          "Tmdb": "https://example.invalid/movie/7"
+        }
+      },
+      "targeted": {
+        "Name": "NFO targeted-bad-id",
+        "Overview": "Plot targeted-bad-id",
+        "ProviderIds": {
+          "Imdb": "tt90001033",
+          "Tmdb": "https://example.invalid/movie/8"
+        }
+      }
+    },
+    {
+      "name": "refresh_deleted_id",
+      "type": "Movie",
+      "path": "folders/Folder M06 (2024)/Film M06 (2024).mp4",
+      "first": {
+        "Name": "NFO before-delete-id",
+        "Overview": "Plot before-delete-id",
+        "ProviderIds": {
+          "Imdb": "tt90001040",
+          "Tmdb": "90001041"
+        }
+      },
+      "warm": {
+        "Name": "NFO after-delete-id",
+        "Overview": "Plot after-delete-id",
+        "ProviderIds": {
+          "Imdb": "tt90001042",
+          "Tmdb": "90001041"
+        }
+      },
+      "targeted": {
+        "Name": "NFO targeted-delete-id",
+        "Overview": "Plot targeted-delete-id",
+        "ProviderIds": {
+          "Imdb": "tt90001043",
+          "Tmdb": "90001041"
+        }
+      }
+    },
+    {
+      "name": "refresh_broken_document",
+      "type": "Movie",
+      "path": "folders/Folder M07 (2024)/Film M07 (2024).mp4",
+      "first": {
+        "Name": "NFO before-broken",
+        "Overview": "Plot before-broken",
+        "ProviderIds": {
+          "Tmdb": "90001051"
+        }
+      },
+      "warm": {
+        "Name": "NFO before-broken",
+        "ProviderIds": {
+          "Tmdb": "90001051"
+        }
+      },
+      "targeted": {
+        "Name": "NFO before-broken",
+        "ProviderIds": {
+          "Tmdb": "90001051"
+        }
+      }
+    },
+    {
+      "name": "series_clean",
+      "type": "Series",
+      "path": "tv/Show T01 (2024)",
+      "first": {
+        "Name": "NFO series_clean",
+        "Overview": "Plot series_clean",
+        "ProviderIds": {
+          "Imdb": "tt90001101"
+        }
+      }
+    },
+    {
+      "name": "season_number_field",
+      "type": "Season",
+      "path": "tv/Show T01 (2024)/Season 01",
+      "first": {
+        "Name": "NFO season_number_field",
+        "Overview": "Plot season_number_field",
+        "ProviderIds": {},
+        "IndexNumber": 8,
+        "ParentPath": "tv/Show T01 (2024)",
+        "SeriesPath": "tv/Show T01 (2024)"
+      }
+    },
+    {
+      "name": "season_negative",
+      "type": "Season",
+      "path": "tv/Show T01 (2024)/Season 02",
+      "first": {
+        "Name": "NFO season_negative",
+        "Overview": "Plot season_negative",
+        "ProviderIds": {},
+        "IndexNumber": -1,
+        "ParentPath": "tv/Show T01 (2024)",
+        "SeriesPath": "tv/Show T01 (2024)"
+      }
+    },
+    {
+      "name": "season2_episode",
+      "type": "Episode",
+      "path": "tv/Show T01 (2024)/Season 02/Show T01 S02E01.mp4",
+      "first": {
+        "Name": "NFO season2_episode",
+        "Overview": "Plot season2_episode",
+        "ProviderIds": {},
+        "IndexNumber": 1,
+        "ParentIndexNumber": 2,
+        "ParentPath": "tv/Show T01 (2024)/Season 02",
+        "SeriesPath": "tv/Show T01 (2024)",
+        "SeasonPath": "tv/Show T01 (2024)/Season 02"
+      }
+    },
+    {
+      "name": "season0_episode",
+      "type": "Episode",
+      "path": "tv/Show T01 (2024)/Season 00/Show T01 S00E01.mp4",
+      "first": {
+        "Name": "NFO season0_episode",
+        "Overview": "Plot season0_episode",
+        "ProviderIds": {},
+        "IndexNumber": 1,
+        "ParentIndexNumber": 0,
+        "ParentPath": "tv/Show T01 (2024)/Season 00",
+        "SeriesPath": "tv/Show T01 (2024)",
+        "SeasonPath": "tv/Show T01 (2024)/Season 00"
+      }
+    },
+    {
+      "name": "episode_clean",
+      "type": "Episode",
+      "path": "tv/Show T01 (2024)/Season 01/Show T01 S01E01.mp4",
+      "first": {
+        "Name": "NFO episode_clean",
+        "Overview": "Plot episode_clean",
+        "ProviderIds": {},
+        "IndexNumber": 1,
+        "ParentIndexNumber": 1,
+        "ParentPath": "tv/Show T01 (2024)/Season 01",
+        "SeriesPath": "tv/Show T01 (2024)",
+        "SeasonPath": "tv/Show T01 (2024)/Season 01"
+      }
+    },
+    {
+      "name": "episode_negative",
+      "type": "Episode",
+      "path": "tv/Show T01 (2024)/Season 01/Show T01 S01E02.mp4",
+      "first": {
+        "Name": "NFO episode_negative",
+        "Overview": "Plot episode_negative",
+        "ProviderIds": {},
+        "IndexNumber": -1,
+        "ParentIndexNumber": -1,
+        "ParentPath": "tv/Show T01 (2024)/Season 01",
+        "SeriesPath": "tv/Show T01 (2024)",
+        "SeasonPath": "tv/Show T01 (2024)/Season 01"
+      }
+    },
+    {
+      "name": "episode_conflict",
+      "type": "Episode",
+      "path": "tv/Show T01 (2024)/Season 01/Show T01 S01E03.mp4",
+      "first": {
+        "Name": "NFO episode_conflict",
+        "Overview": "Plot episode_conflict",
+        "ProviderIds": {},
+        "IndexNumber": 30,
+        "ParentIndexNumber": 8,
+        "ParentPath": "tv/Show T01 (2024)/Season 01",
+        "SeriesPath": "tv/Show T01 (2024)",
+        "SeasonPath": "tv/Show T01 (2024)/Season 01"
+      }
+    },
+    {
+      "name": "episode_absent_numbers",
+      "type": "Episode",
+      "path": "tv/Show T01 (2024)/Season 01/Show T01 S01E04.mp4",
+      "first": {
+        "Name": "NFO episode_absent_numbers",
+        "Overview": "Plot episode_absent_numbers",
+        "ProviderIds": {},
+        "IndexNumber": 4,
+        "ParentIndexNumber": 1,
+        "ParentPath": "tv/Show T01 (2024)/Season 01",
+        "SeriesPath": "tv/Show T01 (2024)",
+        "SeasonPath": "tv/Show T01 (2024)/Season 01"
+      }
+    },
+    {
+      "name": "episode_zero_numbers",
+      "type": "Episode",
+      "path": "tv/Show T01 (2024)/Season 01/Show T01 S01E05.mp4",
+      "first": {
+        "Name": "NFO episode_zero_numbers",
+        "Overview": "Plot episode_zero_numbers",
+        "ProviderIds": {},
+        "IndexNumber": 0,
+        "ParentIndexNumber": 0,
+        "ParentPath": "tv/Show T01 (2024)/Season 01",
+        "SeriesPath": "tv/Show T01 (2024)",
+        "SeasonPath": "tv/Show T01 (2024)/Season 01"
+      }
+    },
+    {
+      "name": "series_minus_one",
+      "type": "Series",
+      "path": "tv/Show T02 (2024)",
+      "first": {
+        "Name": "NFO series_minus_one",
+        "Overview": "Plot series_minus_one",
+        "ProviderIds": {
+          "Imdb": "tt90001102"
+        }
+      }
+    },
+    {
+      "name": "companion_2",
+      "type": "Episode",
+      "path": "tv/Show T02 (2024)/Season 01/Show T02 S01E01.mp4",
+      "first": {
+        "Name": "NFO companion_2",
+        "Overview": "Plot companion_2",
+        "ProviderIds": {},
+        "IndexNumber": 1,
+        "ParentIndexNumber": 1,
+        "ParentPath": "tv/Show T02 (2024)/Season 01",
+        "SeriesPath": "tv/Show T02 (2024)",
+        "SeasonPath": "tv/Show T02 (2024)/Season 01"
+      }
+    },
+    {
+      "name": "combined_series",
+      "type": "Series",
+      "path": "tv/Show T03 (2024)",
+      "first": {
+        "Name": "NFO combined_series",
+        "Overview": "Plot combined_series",
+        "ProviderIds": {
+          "eidr": "10.5240/1234-ABCD-0000-0000-0000-X",
+          "official website": "https://example.invalid/show/7",
+          "Imdb": "tt90001103",
+          "Tmdb": "90001104",
+          "Tvdb": "90001105"
+        }
+      }
+    },
+    {
+      "name": "companion_3",
+      "type": "Episode",
+      "path": "tv/Show T03 (2024)/Season 01/Show T03 S01E01.mp4",
+      "first": {
+        "Name": "NFO companion_3",
+        "Overview": "Plot companion_3",
+        "ProviderIds": {},
+        "IndexNumber": 1,
+        "ParentIndexNumber": 1,
+        "ParentPath": "tv/Show T03 (2024)/Season 01",
+        "SeriesPath": "tv/Show T03 (2024)",
+        "SeasonPath": "tv/Show T03 (2024)/Season 01"
+      }
+    },
+    {
+      "name": "series_unused_numbers",
+      "type": "Series",
+      "path": "tv/Show T04 (2024)",
+      "first": {
+        "Name": "NFO series_unused_numbers",
+        "Overview": "Plot series_unused_numbers",
+        "ProviderIds": {
+          "Imdb": "tt90001106"
+        }
+      }
+    },
+    {
+      "name": "companion_4",
+      "type": "Episode",
+      "path": "tv/Show T04 (2024)/Season 01/Show T04 S01E01.mp4",
+      "first": {
+        "Name": "NFO companion_4",
+        "Overview": "Plot companion_4",
+        "ProviderIds": {},
+        "IndexNumber": 1,
+        "ParentIndexNumber": 1,
+        "ParentPath": "tv/Show T04 (2024)/Season 01",
+        "SeriesPath": "tv/Show T04 (2024)",
+        "SeasonPath": "tv/Show T04 (2024)/Season 01"
+      }
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+# NFO differential observation: Emby Server 4.10.2.0
+
+[`nfo-differential.json`](nfo-differential.json) preserves the synthetic inputs and selected item-detail observations captured on 2026-11-27. The official Linux amd64 RPM was extracted without installing it; `/emby/System/Info/Public` reported `4.10.2.0` and `/emby/Plugins` reported `Nfo Metadata` `1.0.88.0`. This capture concerns that version and those inputs, not every possible NFO, a new protocol baseline, or support for running older servers.
+
+## Capture and replay
+
+- The same read-only fixture tree was presented to Emby and Goby `bd9e8812` in separate private network namespaces. Three libraries represented flat movies, per-movie folders, and television. NFO was Emby's only available local reader. Online providers, background refresh, local metadata writes and embedded titles were disabled. The 52 targets included 36 movies, four series, two seasons and ten episodes.
+- Initial and warm scans completed on both servers. Before the warm scan, three NFOs were replaced. The official targeted refresh replaced those same sidecars again with distinct inputs, then called `/emby/Items/{Id}/Refresh` with `Recursive=false`, `MetadataRefreshMode=FullRefresh`, `ImageRefreshMode=ValidationOnly`, `ReplaceAllMetadata=true`, and `ReplaceAllImages=false`. New markers demonstrated the successful refreshes; the unchanged result for the truncated document does not by itself prove when it was parsed.
+- Values are selected from authenticated item detail after the scan or refresh, not inferred from a successful HTTP status. Physical links are rebased to synthetic paths and asserted separately from the item's displayed numbering. Missing properties stay missing; an empty string, an empty provider map, zero, and a negative number are distinct. `sidecars` contains the initial bytes, using plain UTF-8 `text` where possible and `base64` for the byte-encoding cases. `warmSidecars` and `targetedSidecars` contain replacement inputs. A case without `warm` had unchanged selected output. `targeted` is official evidence only; the offline replay does not emulate Emby's per-item refresh endpoint.
+- The input intentionally covers meaningful disagreements, not just happy paths: ID aliases, whitespace, Unicode, URLs, zero and duplicate values; ignored series numbers versus physical season links; BOMs, malformed XML and replacement characters; movie sidecar precedence; and the distinction between an omitted ID and a damaged document on refresh. The observations do not establish that URL-valued IDs can be used for provider requests, that reparenting is safe, or that lossy decoding should be repeated by Goby.
+
+Run the offline replay on Linux with a disposable PostgreSQL 17 database via the normal `GOBY_TEST_DATABASE_URL` integration setup:
+
+```sh
+go test ./internal/server -run '^TestHTTPNFOReferenceReplay$' -count=1 -v
+```
+
+The test uses Goby's real scanner and compatibility readback, synthetic probe facts, and a disposable test schema. It does not fetch or launch Emby. [`nfo-emby-4.10.2.0-differences.json`](../../../../../internal/server/testdata/nfo-emby-4.10.2.0-differences.json) records only Goby's previously observed field-level differences, with `null` meaning an omitted property. The test reports an exact known difference without claiming parity, and rejects unrecorded outcomes. Convergence to the official observation is allowed. Remove the corresponding difference when a compatibility change lands; do not rewrite the fixed official observation to match Goby. A deliberately retained difference should be documented as a native behavior, not upstream compatibility.
