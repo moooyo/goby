@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/moooyo/goby/internal/database"
 	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/primaryio"
 	"github.com/moooyo/goby/internal/systemevents"
@@ -41,9 +42,10 @@ func SnapshotLocalMetadataIngestChildren(tx OwnedTx, runID string) (int64, error
 	tag, err := tx.Exec(`INSERT INTO task_run_children(id,run_id,library_id,library_name,ordinal)
 		SELECT md5($1||':'||l.id),$1,l.id,l.name,(row_number() OVER (ORDER BY l.id)-1)::integer
 		FROM task_runs run CROSS JOIN libraries l WHERE run.id=$1 AND EXISTS(
-		SELECT 1 FROM scan_jobs j JOIN local_metadata_ingest q ON q.scan_job_id=j.id
-		WHERE j.library_id=l.id AND j.status='Completed' AND j.finished_at<=run.created_at
-		AND (q.import_nfo OR q.import_images) AND `+scanIngestAutomaticGenerationSQL+`)`, runID)
+		SELECT 1 FROM scan_jobs j JOIN local_metadata_ingest q ON q.scan_job_id=j.id JOIN items i ON i.id=q.item_id
+		WHERE j.library_id=l.id AND i.library_id=l.id AND j.status='Completed' AND j.finished_at<=run.created_at
+		AND (q.import_nfo OR q.import_images) AND `+database.CatalogPathVisibleSQL("i")+`
+		AND `+scanIngestAutomaticGenerationSQL+`)`, runID)
 	return tag.RowsAffected(), err
 }
 
@@ -74,7 +76,8 @@ var metadataIngestTargetBase = metadataIngestTargetSQL + ordinaryItemSQL("i") + 
 		q.directory_identity,q.index_number,q.parent_index_number,q.parent_number_defined,q.import_nfo,q.import_images,q.enrich_online
 		FROM local_metadata_ingest q JOIN scan_jobs j ON j.id=q.scan_job_id JOIN items i ON i.id=q.item_id
 		JOIN library_roots r ON r.id=i.root_id AND r.library_id=i.library_id
-		WHERE i.library_id=$1 AND j.library_id=$1 AND j.status='Completed' AND (q.import_nfo OR q.import_images)`
+		WHERE i.library_id=$1 AND j.library_id=$1 AND j.status='Completed' AND (q.import_nfo OR q.import_images)
+		AND ` + database.CatalogPathVisibleSQL("i")
 
 var (
 	metadataIngestTargetReadOne = metadataIngestTargetBase + ` AND i.id=$2 AND q.scan_job_id=$3`
@@ -109,7 +112,7 @@ func (target metadataIngestTarget) sourcePath(root libraryRoot) (string, bool) {
 	if target.publishing || !target.ordinary || !target.sourceCurrent || target.rootID != root.id {
 		return "", false
 	}
-	if target.kind == "Series" && target.folder && target.relative == "//series/root" && target.itemPath == "" {
+	if target.kind == "Series" && target.folder && target.relative == tvRootSeriesPath && target.itemPath == "" {
 		return ".", true
 	}
 	if target.folder && target.kind != "Series" && target.kind != "Season" && target.kind != "Folder" ||
@@ -255,7 +258,7 @@ type metadataIngestImageListing struct {
 }
 
 func (target metadataIngestTarget) directoryPath() string {
-	if target.relative == "//series/root" {
+	if target.relative == tvRootSeriesPath {
 		return "."
 	}
 	path := filepath.FromSlash(target.relative)

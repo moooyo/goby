@@ -43,8 +43,8 @@ func TestQueryItemsMoviePageProjectsOnlySelectedRows(t *testing.T) {
 		{name: "global visibility", query: Query{StartIndex: 200, Limit: 20}, total: 225, ids: moviePageIDs(201, 220), global: true},
 		{name: "descending fallback", query: Query{SortOrder: "DESC", Limit: 3}, total: 225, ids: []string{"movie-b", "page-0224", "page-0223"}, fallback: true},
 		{name: "explicit ID fallback", query: Query{Ids: []string{"page-0201", "page-0203"}, Limit: 20}, total: 2, ids: []string{"page-0201", "page-0203"}, fallback: true},
-		{name: "mixed fallback", query: Query{IncludeItemTypes: []string{"Movie", "Episode"}, Limit: 3}, total: 227,
-			ids: []string{"episode-b1", "page-0001", "page-0002"}, fallback: true},
+		{name: "mixed movie and episode page", query: Query{IncludeItemTypes: []string{"Movie", "Episode"}, Limit: 3}, total: 227,
+			ids: []string{"episode-b1", "page-0001", "page-0002"}},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			query := test.query
@@ -206,7 +206,6 @@ func assertMoviePageProjectionLoops(t *testing.T, ctx context.Context, tx pgx.Tx
 	}
 	type node struct {
 		Relation string  `json:"Relation Name"`
-		Alias    string  `json:"Alias"`
 		Loops    float64 `json:"Actual Loops"`
 		Plans    []node  `json:"Plans"`
 	}
@@ -218,7 +217,9 @@ func assertMoviePageProjectionLoops(t *testing.T, ctx context.Context, tx pgx.Tx
 	var loops float64
 	var visit func(node)
 	visit = func(current node) {
-		if current.Relation == "item_metadata_state" && current.Alias == "ms" {
+		// The Series branch of the metadata CASE uses the same table, but
+		// is not executed for Movies. PostgreSQL can number the aliases.
+		if current.Relation == "item_metadata_state" && current.Loops > 0 {
 			matches++
 			loops += current.Loops
 		}
@@ -232,7 +233,7 @@ func assertMoviePageProjectionLoops(t *testing.T, ctx context.Context, tx pgx.Tx
 	}
 }
 
-func TestItemPageQueryFallsBackOutsideMovieSortNameProof(t *testing.T) {
+func TestItemPageQueryFallsBackOutsideMediaSortNameProof(t *testing.T) {
 	base := Query{IncludeItemTypes: []string{"Movie"}, SortBy: "SortName", SortOrder: "ASC"}
 	for _, test := range []struct {
 		name       string
@@ -241,7 +242,7 @@ func TestItemPageQueryFallsBackOutsideMovieSortNameProof(t *testing.T) {
 		order      string
 	}{
 		{name: "unknown types", change: func(query *Query) { query.IncludeItemTypes = nil }},
-		{name: "mixed types", change: func(query *Query) { query.IncludeItemTypes = []string{"Movie", "Audio"} }},
+		{name: "mixed media and folders", change: func(query *Query) { query.IncludeItemTypes = []string{"Movie", "Series"} }},
 		{name: "expected population", change: func(query *Query) { query.expectedEpisodePopulation = true }},
 		{name: "resume", change: func(query *Query) { query.Resumable = true }},
 		{name: "explicit IDs", change: func(query *Query) { query.Ids = []string{"movie"} }},

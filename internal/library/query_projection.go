@@ -52,15 +52,15 @@ func projectBrowseMediaSQL(statement string, projection QueryProjection) string 
 	return strings.Replace(statement, "i.created_at, i.media,", "i.created_at, "+browseItemMediaColumn+",", 1)
 }
 
-// itemPageQuerySQL keeps result-only subqueries behind the pagination boundary.
-// The selector retains every existing visibility/filter clause and the exact
-// ordering. A primary-key join in the same statement snapshot preserves each
-// selected row while avoiding wide projections for rows discarded by OFFSET.
+// itemPageQuerySQL keeps result-only subqueries behind the pagination boundary
+// for explicit movie, episode, and audio pages. The candidate query retains all
+// visibility and filter clauses with the exact ordering. A primary-key join in
+// the same snapshot avoids projecting skipped rows, including nested TV and
+// album fields on mixed pages.
 func itemPageQuerySQL(query Query, prefix, population, columns, filter, order, pagination string) string {
-	const movieOrder = "lower(i.sort_name) ASC NULLS LAST, i.id ASC"
+	const nameOrder = "lower(i.sort_name) ASC NULLS LAST, i.id ASC"
 	if population != "items" || query.expectedEpisodePopulation || query.Resumable || len(query.Ids) != 0 ||
-		len(query.IncludeItemTypes) != 1 || query.IncludeItemTypes[0] != "Movie" ||
-		query.SortBy != "SortName" || query.SortOrder != "ASC" || order != movieOrder {
+		!pagedMediaItemTypes(query.IncludeItemTypes) || query.SortBy != "SortName" || query.SortOrder != "ASC" || order != nameOrder {
 		return prefix + "SELECT " + columns + " FROM " + population + " i WHERE " + filter +
 			" ORDER BY " + order + pagination
 	}
@@ -70,4 +70,18 @@ func itemPageQuerySQL(query Query, prefix, population, columns, filter, order, p
 	return appendItemQueryCTE(prefix, selected) + "SELECT " + columns +
 		" FROM selected_page page JOIN items i ON i.id = page.id" +
 		" ORDER BY page.page_sort ASC NULLS LAST, page.id ASC"
+}
+
+func pagedMediaItemTypes(itemTypes []string) bool {
+	if len(itemTypes) == 0 {
+		return false
+	}
+	for _, itemType := range itemTypes {
+		switch itemType {
+		case "Movie", "Episode", "Audio":
+		default:
+			return false
+		}
+	}
+	return true
 }

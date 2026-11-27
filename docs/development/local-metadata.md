@@ -23,7 +23,30 @@ They do not add artist/track NFO discovery or remote URL following.
 
 Names are case-sensitive on Linux. For example, `Film (2026).mkv` uses `Film (2026).nfo` before `movie.nfo`. The fallback is shared by movies in the same directory, so use a matching basename for each movie when several movies share a directory. An invalid preferred file does not fall through to a less specific candidate.
 
-Folders and media types are established by the scanner's existing movie, television, and music hierarchy. NFO files describe those records; they do not create a different hierarchy. The parser also recognizes an `artist` document, but artist NFO ingestion is not implemented by this increment. Current artist catalog endpoints use the music relationship contract above. Individual audio tracks do not yet read track NFO files.
+The scanner establishes the hierarchy without moving files. Television libraries
+recurse through grouping folders and use local evidence to recognize a show: a
+`tvshow.nfo` marker even when metadata import is disabled, directly named
+`SxxExx` videos from one show, a populated immediate `Season N`/`Specials`
+directory (including one `Disc N`, `Disk N`, or `CD N` level), or loose videos
+in a leaf directory. An episode in a physical season belongs to that season
+unless its filename explicitly names a different one. A flat folder of episodes
+from multiple named shows is grouped by filename unless it has an explicit local
+show marker or season structure. Evidence deeper in a grouping folder does not
+make that folder a show. The NFO import still validates the document; it cannot
+move a season or replace a file's identity. A directory can be a show regardless
+of its name, including `All`.
+
+Scans skip the directory subtrees named exactly `#recycle`, `@eaDir`, and
+`$RECYCLE.BIN`. Earlier catalog records under these paths and their attached
+media are hidden from catalog reads without deleting records, user data, or
+media files. File names and virtual show names are not directory components.
+An ordinary rescan can correct a grouping folder previously classified as a
+show without changing its registered root or the IDs of items at unchanged paths.
+
+The parser also recognizes an `artist` document, but artist NFO ingestion is
+not implemented by this increment. Current artist catalog endpoints use the
+music relationship contract above. Individual audio tracks do not yet read
+track NFO files.
 
 ## Values
 

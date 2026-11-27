@@ -2,8 +2,8 @@ package library
 
 import "github.com/moooyo/goby/internal/database"
 
-// Ordinary enumeration excludes all permanent attachment roles and reserved
-// paths, including inactive history. Keep this shared with current-schema checks.
+// Ordinary enumeration excludes attachment roles, reserved paths, and items
+// previously indexed inside system directories now excluded from scans.
 func ordinaryItemSQL(alias string) string {
 	return database.CatalogOrdinaryItemSQL(alias)
 }

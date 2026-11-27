@@ -421,40 +421,65 @@ func (state *scanState) recordScanSeen(id string) error {
 	return nil
 }
 
+const (
+	maxScanDirectoryEntries = 262144
+	maxScanDirectoryBytes   = 64 << 20
+)
+
+func scanDirectoryEntryCharge(name string) int { return 512 + 2*len(name) }
+
 // The scanner needs complete membership for auxiliary classification and album
 // boundaries. Bound that original allocation as well as the retained evidence;
 // an excessive directory fails the root instead of truncating its membership.
 func readScanDirectoryEntries(ctx context.Context, directory *os.File) ([]os.DirEntry, error) {
-	return readScanDirectoryEntriesLimit(ctx, directory, 262144, 64<<20)
+	return readScanDirectoryEntriesLimit(ctx, directory, maxScanDirectoryEntries, maxScanDirectoryBytes)
 }
 
 func readScanDirectoryEntriesLimit(ctx context.Context, directory *os.File, maxEntries, maxBytes int) ([]os.DirEntry, error) {
-	if maxEntries < 0 || maxBytes < 0 {
-		return nil, errScanReconciliationEvidenceBudget
-	}
 	var entries []os.DirEntry
-	used := 0
+	if err := visitScanDirectoryEntries(ctx, directory, maxEntries, maxBytes, func(entry os.DirEntry) bool {
+		entries = append(entries, entry)
+		return false
+	}); err != nil {
+		return nil, err
+	}
+	return entries, nil
+}
+
+// A visitor can stop on positive classification evidence. A caller that needs
+// complete membership must visit every entry and may not use a partial listing.
+func visitScanDirectoryEntries(ctx context.Context, directory *os.File, maxEntries, maxBytes int, stop func(os.DirEntry) bool) error {
+	if maxEntries < 0 || maxBytes < 0 {
+		return errScanReconciliationEvidenceBudget
+	}
+	count, used := 0, 0
 	for {
 		if err := ctx.Err(); err != nil {
-			return nil, err
+			return err
 		}
 		batch, err := directory.ReadDir(64)
 		for _, entry := range batch {
-			charge := 512 + 2*len(entry.Name())
-			if len(entries) >= maxEntries || charge > maxBytes-used {
-				return nil, errScanReconciliationEvidenceBudget
+			charge := scanDirectoryEntryCharge(entry.Name())
+			if count >= maxEntries || charge > maxBytes-used {
+				return errScanReconciliationEvidenceBudget
 			}
+			count++
 			used += charge
-			entries = append(entries, entry)
+			if stop(entry) {
+				if err != nil && !errors.Is(err, io.EOF) {
+					return err
+				}
+				return ctx.Err()
+			}
 		}
 		if err != nil {
 			if errors.Is(err, io.EOF) {
-				return entries, nil
+				return nil
 			}
-			return nil, err
+			return err
 		}
 		if len(batch) == 0 {
-			return nil, errScanReconciliationEvidenceUnavailable
+			return errScanReconciliationEvidenceUnavailable
 		}
 	}
 }

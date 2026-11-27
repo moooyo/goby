@@ -98,7 +98,7 @@ func (s *Store) publishMetadataIngestNFO(ctx context.Context, operation *Primary
 		local = state.seasonNumbering(local, target.kind, index)
 	}
 	base := filepath.Base(filepath.FromSlash(target.relative))
-	if target.relative == "//series/root" {
+	if target.relative == tvRootSeriesPath {
 		base = filepath.Base(state.root.path)
 	} else if !target.folder {
 		base = strings.TrimSuffix(base, filepath.Ext(base))

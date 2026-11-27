@@ -229,7 +229,8 @@ func readExtraActiveResources(ctx context.Context, source themeRowQuerier, owner
 	if err := source.QueryRow(ctx, `SELECT COALESCE(jsonb_agg(jsonb_build_object('id',id,'root',root_id,
 		'path',relative_path,'kind',kind) ORDER BY id),'[]'::jsonb) FROM (
 		SELECT i.id,i.root_id,i.relative_path,r.kind FROM item_extra_resources r JOIN items i ON i.id=r.resource_item_id
-		WHERE r.owner_item_id=$1 AND r.active ORDER BY i.id LIMIT $2) active`, ownerID, MaxExtraResourcesPerOwner+1).Scan(&raw); err != nil {
+		WHERE r.owner_item_id=$1 AND r.active AND `+database.CatalogPathVisibleSQL("i")+`
+		ORDER BY i.id LIMIT $2) active`, ownerID, MaxExtraResourcesPerOwner+1).Scan(&raw); err != nil {
 		return nil, err
 	}
 	var resources []themeActiveResource
@@ -361,7 +362,7 @@ func (state *scanState) publishExtraOwnerAttempt(ownerID string, files []*prepar
 	}
 	var invalidBefore int
 	if err := tx.QueryRow(state.task.ctx, `SELECT count(*) FROM item_extra_resources r JOIN items i ON i.id=r.resource_item_id
-		WHERE r.owner_item_id=$1 AND r.active AND NOT `+database.ExtraResourceItemSQL("i", true), ownerID).Scan(&invalidBefore); err != nil {
+		WHERE r.owner_item_id=$1 AND r.active AND `+database.CatalogPathVisibleSQL("i")+` AND NOT `+database.ExtraResourceItemSQL("i", true), ownerID).Scan(&invalidBefore); err != nil {
 		return extraTransactionFailure(err)
 	}
 	if invalidBefore != 0 {
@@ -401,7 +402,8 @@ func (state *scanState) publishExtraOwnerAttempt(ownerID string, files []*prepar
 	}
 	var count, invalid int
 	if err := tx.QueryRow(state.task.ctx, `SELECT count(*),count(*) FILTER(WHERE NOT `+database.ExtraResourceItemSQL("i", true)+`)
-		FROM item_extra_resources r JOIN items i ON i.id=r.resource_item_id WHERE r.owner_item_id=$1 AND r.active`, ownerID).Scan(&count, &invalid); err != nil {
+		FROM item_extra_resources r JOIN items i ON i.id=r.resource_item_id
+		WHERE r.owner_item_id=$1 AND r.active AND `+database.CatalogPathVisibleSQL("i"), ownerID).Scan(&count, &invalid); err != nil {
 		return extraTransactionFailure(err)
 	}
 	if count != len(expected) || invalid != 0 {
@@ -492,7 +494,8 @@ func (state *scanState) finishExtraScan() error {
 		}
 	}
 	rows, err := state.store.pool.Query(state.task.ctx, `SELECT DISTINCT r.owner_item_id FROM item_extra_resources r
-		JOIN items i ON i.id=r.resource_item_id WHERE i.root_id=$1 AND r.active`, state.root.id)
+		JOIN items i ON i.id=r.resource_item_id JOIN items owner ON owner.id=r.owner_item_id
+		WHERE i.root_id=$1 AND r.active AND `+database.CatalogPathVisibleSQL("i")+` AND `+database.CatalogPathVisibleSQL("owner"), state.root.id)
 	if err != nil {
 		return err
 	}

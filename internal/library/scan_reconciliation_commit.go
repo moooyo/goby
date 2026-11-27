@@ -741,7 +741,7 @@ func validateScanReconciliationPhysical(item scanReconciliationItem, libraryID s
 		return scanReconciliationUnavailable("deletion member has an unproven scope or role")
 	}
 	relative, valid := scanReconciliationRelative(item.relative, false)
-	if !valid || relative != item.relative || item.relative == "." ||
+	if !valid || relative != item.relative || item.relative == "." || database.CatalogPathExcluded(relative, item.isFolder) ||
 		filepath.Join(roots[item.rootID].row.root.path, filepath.FromSlash(relative)) != item.path {
 		return scanReconciliationUnavailable("deletion member has no exact physical path")
 	}

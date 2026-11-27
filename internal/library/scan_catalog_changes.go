@@ -12,6 +12,7 @@ type scanCatalogSnapshot struct {
 	present        bool
 	change         CatalogChange
 	properties     string
+	folderItemType string
 	hasLocalImages bool
 }
 
@@ -33,12 +34,13 @@ func readScanCatalogItem(ctx context.Context, tx pgx.Tx, id string) (scanCatalog
 }
 
 func readScanCatalogFolder(ctx context.Context, tx pgx.Tx, rootID, relative string) (scanCatalogSnapshot, error) {
+	var itemType string
 	var hasLocalImages bool
-	snapshot, err := scanCatalogSnapshotRow(tx.QueryRow(ctx, "SELECT "+scanCatalogSnapshotColumns+`,
+	snapshot, err := scanCatalogSnapshotRow(tx.QueryRow(ctx, "SELECT "+scanCatalogSnapshotColumns+`, i.type,
 		EXISTS(SELECT 1 FROM item_images im WHERE im.item_id=i.id)
 		FROM items i LEFT JOIN item_metadata_state ms ON ms.item_id = i.id
-		WHERE i.root_id = $1 AND i.relative_path = $2 FOR UPDATE OF i`, rootID, relative), &hasLocalImages)
-	snapshot.hasLocalImages = hasLocalImages
+		WHERE i.root_id = $1 AND i.relative_path = $2 FOR UPDATE OF i`, rootID, relative), &itemType, &hasLocalImages)
+	snapshot.folderItemType, snapshot.hasLocalImages = itemType, hasLocalImages
 	return snapshot, err
 }
 

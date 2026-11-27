@@ -91,6 +91,11 @@ func TestHTTPThemeVisibilityOverviewCountsOnlyOrdinaryItems(t *testing.T) {
 		t.Fatal(err)
 	}
 	assertCount(3)
+	if _, err := f.pool.Exec(f.ctx, `UPDATE items SET path='/media/http-theme/#recycle/new.mp4',
+		relative_path='#recycle/new.mp4' WHERE id='http-theme-new-ordinary'`); err != nil {
+		t.Fatal(err)
+	}
+	assertCount(2)
 }
 
 func TestHTTPThemeVisibilitySessionsKeepActiveThemesAndHideInvalidResources(t *testing.T) {

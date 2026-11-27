@@ -40,10 +40,10 @@ func ThemeDirectItemSQL(alias string) string {
 // even after its owner moves to another root or ceases to be ordinary. Those
 // owner eligibility checks remain mandatory for every active association.
 func themeResourceItemSQL(alias string, activeOnly bool) string {
-	return themeResourceItemSQLWithSemantics(alias, activeOnly, false)
+	return themeResourceItemSQLWithSemantics(alias, activeOnly, false, ThemeOrdinaryItemSQL)
 }
 
-func themeResourceItemSQLWithSemantics(alias string, activeOnly, combined bool) string {
+func themeResourceItemSQLWithSemantics(alias string, activeOnly, combined bool, ownerOrdinarySQL func(string) string) string {
 	item := pgx.Identifier{alias}.Sanitize()
 	link := pgx.Identifier{alias + "_theme_link"}.Sanitize()
 	ownerAlias, rootAlias := alias+"_theme_owner", alias+"_theme_root"
@@ -52,10 +52,9 @@ func themeResourceItemSQLWithSemantics(alias string, activeOnly, combined bool) 
 	if activeOnly {
 		active = ` AND ` + link + `.active`
 	}
-	ordinary := ThemeOrdinaryItemSQL(ownerAlias)
+	ordinary := ownerOrdinarySQL(ownerAlias)
 	exclusive := ""
 	if combined {
-		ordinary = CatalogOrdinaryItemSQL(ownerAlias)
 		extra := pgx.Identifier{alias + "_theme_extra_conflict"}.Sanitize()
 		exclusive = ` AND NOT EXISTS (SELECT 1 FROM item_extra_resources AS ` + extra +
 			` WHERE ` + extra + `.resource_item_id = ` + item + `.id)`

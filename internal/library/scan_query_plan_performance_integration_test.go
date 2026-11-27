@@ -18,6 +18,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/moooyo/goby/internal/database"
 )
 
 const scanQueryPlanRecordCapacity = 8192
@@ -211,7 +212,7 @@ func scanQueryPlanFamily(sql string) string {
 		return "bitmap"
 	case strings.HasPrefix(sql, "SELECT i.file_identity, i.file_size, i.modified_at, i.media,") && strings.HasSuffix(sql, "AND NOT i.is_folder AND i.media IS NOT NULL"):
 		return "media"
-	case sql == "SELECT "+storedFileColumns+", ("+ordinaryItemSQL("items")+") FROM items WHERE root_id = $1 AND relative_path = $2":
+	case sql == "SELECT "+storedFileColumns+", ("+database.OrdinaryItemRoleSQL("items")+") FROM items WHERE root_id = $1 AND relative_path = $2":
 		return "lookup"
 	case strings.Contains(sql, imageCatalogSnapshotProjection):
 		return "images"

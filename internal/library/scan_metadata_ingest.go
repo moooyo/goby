@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/moooyo/goby/internal/database"
 	"github.com/moooyo/goby/internal/systemevents"
 )
 
@@ -57,7 +58,7 @@ func (s *Store) recheckLocalMetadataOnScan(ctx context.Context, library Library,
 	}
 	var pending bool
 	err := s.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM local_metadata_ingest q JOIN items i ON i.id=q.item_id
-		WHERE i.library_id=$1)`, library.ID).Scan(&pending)
+		WHERE i.library_id=$1 AND `+database.CatalogPathVisibleSQL("i")+`)`, library.ID).Scan(&pending)
 	return pending, err
 }
 
@@ -150,6 +151,25 @@ func (state *scanState) queueMetadataImport(tx pgx.Tx, itemID string, request sc
 	_, err := tx.Exec(state.task.ctx, queueScanMetadataImportSQL, itemID, state.task.job.ID, request.directoryIdentity,
 		request.index, request.parentIndex, request.parentDefined, request.nfo, request.images, request.online)
 	return err
+}
+
+// A grouping folder has neither a folder NFO nor an online metadata match.
+// A new request supersedes the old one by upsert. A synchronous recheck may
+// carry forward only the image phase under the now-current item and scan key.
+func (state *scanState) queueFolderMetadataImport(tx pgx.Tx, itemID, previousType, itemType string, request scanMetadataImport) error {
+	if itemType == "Folder" && previousType != "" && previousType != itemType && !request.pending() {
+		if _, err := tx.Exec(state.task.ctx, `DELETE FROM local_metadata_ingest
+			WHERE item_id=$1 AND NOT ($2 AND import_images)`, itemID, request.recheckOnly); err != nil {
+			return err
+		}
+		if request.recheckOnly {
+			if _, err := tx.Exec(state.task.ctx, `UPDATE local_metadata_ingest SET import_nfo=false,enrich_online=false
+				WHERE item_id=$1 AND (import_nfo OR enrich_online)`, itemID); err != nil {
+				return err
+			}
+		}
+	}
+	return state.queueMetadataImport(tx, itemID, request)
 }
 
 func (state *scanState) queueCachedIngestWork(stored storedFile, path string, input *primaryScanRead, request scanMetadataImport, seek bool) (resultErr error) {

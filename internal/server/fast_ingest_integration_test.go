@@ -39,9 +39,19 @@ func TestHTTPFastIngestPublishesBeforeLocalMetadataAndReopensPendingWork(t *test
 	}
 	moviePath := filepath.Join(root, "movies", "Film.mp4")
 	episodePath := filepath.Join(root, "tv", "Season 1", "Show.S01E02.mp4")
-	movieBytes, episodeBytes := []byte("synthetic movie bytes"), []byte("synthetic episode bytes")
+	groupPath := filepath.Join(root, "tv", "All")
+	showPath := filepath.Join(groupPath, "TV", "All")
+	specialsPath := filepath.Join(showPath, "Specials")
+	discPath := filepath.Join(specialsPath, "Disc 1")
+	specialPath := filepath.Join(discPath, "Untitled.mp4")
+	movieBytes, episodeBytes, specialBytes := []byte("synthetic movie bytes"), []byte("synthetic episode bytes"), []byte("synthetic special bytes")
 	writeFastIngestFile(t, moviePath, movieBytes, 0600)
 	writeFastIngestFile(t, episodePath, episodeBytes, 0600)
+	writeFastIngestFile(t, specialPath, specialBytes, 0600)
+	writeFastIngestFile(t, filepath.Join(discPath, "Untitled.nfo"), []byte(`<episodedetails><title>Accepted Special</title><season>0</season><episode>7</episode></episodedetails>`), 0600)
+	for _, relative := range []string{"#recycle", "All/TV/$RECYCLE.BIN", "All/@eaDir"} {
+		writeFastIngestFile(t, filepath.Join(root, "tv", filepath.FromSlash(relative), "Hidden.S01E01.mp4"), []byte("must not be probed"), 0600)
+	}
 	writeFastIngestFile(t, filepath.Join(root, "movies", "Film.nfo"), []byte(`<movie><title>Accepted Movie</title><plot>Movie description</plot><mpaa>PG</mpaa></movie>`), 0600)
 	writeFastIngestFile(t, filepath.Join(root, "tv", "tvshow.nfo"), []byte(`<tvshow><title>Accepted Show</title><mpaa>R</mpaa></tvshow>`), 0600)
 	writeFastIngestFile(t, filepath.Join(root, "tv", "Season 1", "Show.S01E02.nfo"), []byte(`<episodedetails><title>Accepted Episode</title><season>3</season><episode>7</episode></episodedetails>`), 0600)
@@ -70,13 +80,29 @@ func TestHTTPFastIngestPublishesBeforeLocalMetadataAndReopensPendingWork(t *test
 	if movie.Name != "Film" || episode.Name != "Show S01E02" || episode.Series == nil || episode.Season == nil || episode.IndexNumber != 2 {
 		t.Fatalf("initial structure was not published before local import: movie=%q episode=%q", movie.Name, episode.Name)
 	}
+	group := fastIngestItem(t, f, accounts.viewer.userID, television.ID, groupPath)
+	show := fastIngestItem(t, f, accounts.viewer.userID, television.ID, showPath)
+	season := fastIngestItem(t, f, accounts.viewer.userID, television.ID, specialsPath)
+	special := fastIngestItem(t, f, accounts.viewer.userID, television.ID, specialPath)
+	if group.Type != "Folder" || show.Type != "Series" || show.Name != "All" || season.Type != "Season" || season.ParentID != show.ID ||
+		special.Series == nil || special.Series.ID != show.ID || special.Season == nil || special.ParentID != season.ID ||
+		special.Name != "Untitled" || special.IndexNumber != 0 || special.ParentIndexNumber != 0 {
+		t.Fatal("the grouping and real show named All or the unnumbered disc special lost its expected hierarchy")
+	}
+	var tvEpisodes int
+	if err := f.pool.QueryRow(f.ctx, `SELECT count(*) FROM items WHERE library_id=$1 AND type='Episode'`, television.ID).Scan(&tvEpisodes); err != nil || tvEpisodes != 2 {
+		t.Fatalf("wrong persisted TV episode count: %d %v", tvEpisodes, err)
+	}
+	if fastIngestToolLog(t, probeLog) != "probe\nprobe\nprobe\n" {
+		t.Fatal("expected one probe per playable fixture and none under the excluded directories")
+	}
 	playlist := func(login clientSessionHTTPLogin, item library.Item) string {
 		return "/emby/Users/" + login.userID + "/Items/" + item.ID
 	}
 	for _, fixture := range []struct {
 		item library.Item
 		data []byte
-	}{{movie, movieBytes}, {episode, episodeBytes}} {
+	}{{movie, movieBytes}, {episode, episodeBytes}, {special, specialBytes}} {
 		item := fixture.item
 		if item.Media == nil || item.Media.ProbeVersion != media.CurrentProbeVersion || len(item.Media.VideoSeekIndexes) != 0 {
 			t.Fatal("fast scan did not publish basic playback facts")
@@ -93,7 +119,7 @@ func TestHTTPFastIngestPublishesBeforeLocalMetadataAndReopensPendingWork(t *test
 	if _, err := f.pool.Exec(f.ctx, `UPDATE users SET policy=(policy-'MaxParentalRating')||'{"BlockUnratedItems":["Music"]}'::jsonb WHERE id=$1`, accounts.other.userID); err != nil {
 		t.Fatal(err)
 	}
-	for _, item := range []library.Item{movie, episode} {
+	for _, item := range []library.Item{movie, episode, special} {
 		expectStatus(t, f.request(t, http.MethodGet, playlist(accounts.other, item), nil, accounts.other.headers), http.StatusOK)
 	}
 	if _, err := f.pool.Exec(f.ctx, `UPDATE users SET policy=(policy-'BlockUnratedItems')||'{"MaxParentalRating":5}'::jsonb WHERE id=$1`, accounts.other.userID); err != nil {
@@ -116,7 +142,7 @@ func TestHTTPFastIngestPublishesBeforeLocalMetadataAndReopensPendingWork(t *test
 	probeBefore := fastIngestToolLog(t, probeLog)
 	fastIngestReopen(t, f, cfg)
 	waitFastIngestDrain(t, f)
-	waitFastIngestSeekRows(t, f, 2)
+	waitFastIngestSeekRows(t, f, 3)
 	file, source, err := f.app.library.OpenMedia(f.ctx, accounts.viewer.userID, movie.ID, "")
 	if err != nil {
 		t.Fatal(err)
@@ -127,11 +153,16 @@ func TestHTTPFastIngestPublishesBeforeLocalMetadataAndReopensPendingWork(t *test
 		t.Fatal("accepted background seek evidence was not available independently of the media document")
 	}
 	indexBefore := fastIngestToolLog(t, indexLog)
-	if strings.Count(indexBefore, "index\n") != 2 || fastIngestToolLog(t, probeLog) != probeBefore {
+	if strings.Count(indexBefore, "index\n") != 3 || fastIngestToolLog(t, probeLog) != probeBefore {
 		t.Fatal("the background task did not make exactly one index per source without repeating ffprobe")
 	}
 	movieAfter := fastIngestItem(t, f, accounts.viewer.userID, movies.ID, moviePath)
 	episodeAfter := fastIngestItem(t, f, accounts.viewer.userID, television.ID, episodePath)
+	specialAfter := fastIngestItem(t, f, accounts.other.userID, television.ID, specialPath)
+	if specialAfter.ID != special.ID || specialAfter.ParentID != season.ID || specialAfter.Series == nil || specialAfter.Series.ID != show.ID ||
+		specialAfter.Name != "Accepted Special" || specialAfter.IndexNumber != 7 || specialAfter.ParentIndexNumber != 0 {
+		t.Fatal("the deferred NFO did not enrich the unnumbered special in its physical season")
+	}
 	if movieAfter.ID != movie.ID || movieAfter.Name != "Manual Movie" || movieAfter.Overview != "" || movieAfter.UserData == nil || !movieAfter.UserData.IsFavorite ||
 		episodeAfter.ID != episode.ID || episodeAfter.ParentID != episode.ParentID || episodeAfter.IndexNumber != 7 || episodeAfter.ParentIndexNumber != 1 ||
 		episodeAfter.Name != "Accepted Episode" || episodeAfter.Series == nil || episodeAfter.Series.Name != "Accepted Show" || fastIngestSourceStamp(t, f, movie.ID) != stamp {

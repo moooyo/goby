@@ -18,36 +18,43 @@ func ExtraReservedItemSQL(alias string) string {
 		= ` + marker + `.relative_path || '/'))))`
 }
 
-// CatalogOrdinaryItemSQL excludes all permanent auxiliary associations and
-// both reservation sets. Failed refreshes cannot expose historical resources
-// through ordinary lists or folder aggregates.
+// CatalogOrdinaryItemSQL excludes skipped paths, permanent auxiliary
+// associations, and both reservation sets from current catalog enumeration.
 func CatalogOrdinaryItemSQL(alias string) string {
+	return `(` + CatalogPathVisibleSQL(alias) + ` AND ` + OrdinaryItemRoleSQL(alias) + `)`
+}
+
+// OrdinaryItemRoleSQL checks stored attachment roles and reservations without
+// applying scan visibility. Use it for structural validation and exact lookups
+// of paths that the scanner has already admitted.
+func OrdinaryItemRoleSQL(alias string) string {
 	item, link := pgx.Identifier{alias}.Sanitize(), pgx.Identifier{alias + "_extra_membership"}.Sanitize()
 	return `(` + ThemeOrdinaryItemSQL(alias) + ` AND NOT EXISTS (SELECT 1 FROM item_extra_resources AS ` + link +
 		` WHERE ` + link + `.resource_item_id = ` + item + `.id) AND NOT ` + ExtraReservedItemSQL(alias) + `)`
 }
 
-// CatalogDirectItemSQL permits ordinary items and valid active resources.
-// Callers must separately check current subject and library authorization.
+// CatalogDirectItemSQL permits visible ordinary items and valid active
+// resources with visible owners. Callers must also authorize the subject.
 func CatalogDirectItemSQL(alias string) string {
-	return `(` + CatalogOrdinaryItemSQL(alias) + ` OR ` + ThemeResourceItemSQL(alias, true) +
-		` OR ` + ExtraResourceItemSQL(alias, true) + `)`
+	return `(` + CatalogPathVisibleSQL(alias) + ` AND (` + OrdinaryItemRoleSQL(alias) +
+		` OR ` + themeResourceItemSQLWithSemantics(alias, true, true, CatalogOrdinaryItemSQL) +
+		` OR ` + extraResourceItemSQL(alias, true, true, CatalogOrdinaryItemSQL) + `))`
 }
 
-// ThemeResourceItemSQL uses current-schema owner eligibility and permanently
-// rejects resource IDs associated with extras, including inactive history.
+// ThemeResourceItemSQL checks the stored role without applying scan visibility.
+// A resource ID cannot also be associated with extras, even as inactive history.
 func ThemeResourceItemSQL(alias string, activeOnly bool) string {
-	return themeResourceItemSQLWithSemantics(alias, activeOnly, true)
+	return themeResourceItemSQLWithSemantics(alias, activeOnly, true, OrdinaryItemRoleSQL)
 }
 
-// ExtraResourceItemSQL shares one shape between direct reads and archive
-// validation. Inactive resources retain their parent, library and reserved
-// identity while their owner may move or cease to be an ordinary Movie.
+// ExtraResourceItemSQL checks the stored role without applying scan visibility.
+// Inactive resources retain their parent, library and reserved identity while
+// their owner may move or cease to be an ordinary Movie.
 func ExtraResourceItemSQL(alias string, activeOnly bool) string {
-	return extraResourceItemSQL(alias, activeOnly, true)
+	return extraResourceItemSQL(alias, activeOnly, true, OrdinaryItemRoleSQL)
 }
 
-func extraResourceItemSQL(alias string, activeOnly, linuxPaths bool) string {
+func extraResourceItemSQL(alias string, activeOnly, linuxPaths bool, ownerOrdinarySQL func(string) string) string {
 	item := pgx.Identifier{alias}.Sanitize()
 	link := pgx.Identifier{alias + "_extra_link"}.Sanitize()
 	ownerAlias, rootAlias := alias+"_extra_owner", alias+"_extra_root"
@@ -72,7 +79,7 @@ func extraResourceItemSQL(alias string, activeOnly, linuxPaths bool) string {
 		AND ` + item + `.relative_path <> '' AND position(chr(92) in ` + item + `.relative_path) = 0` + legacyPath + `
 		AND NOT (string_to_array(` + item + `.relative_path, '/') && ARRAY['', '.', '..'])
 		AND (NOT ` + link + `.active OR (` + owner + `.root_id = ` + item + `.root_id
-		AND ` + owner + `.type = 'Movie' AND NOT ` + owner + `.is_folder AND ` + CatalogOrdinaryItemSQL(ownerAlias) + `))
+		AND ` + owner + `.type = 'Movie' AND NOT ` + owner + `.is_folder AND ` + ownerOrdinarySQL(ownerAlias) + `))
 		AND ` + ExtraReservedItemSQL(alias) + ` AND NOT EXISTS (SELECT 1 FROM item_theme_resources AS ` + theme +
 		` WHERE ` + theme + `.resource_item_id = ` + item + `.id)))`
 }
@@ -94,7 +101,7 @@ func ValidateExtraState(ctx context.Context, tx pgx.Tx, version int64) error {
 	// schemas accept literal colon names without introducing drive semantics.
 	statement := `SELECT NOT EXISTS (SELECT 1 FROM item_extra_resources AS resource_link
 		LEFT JOIN items AS resource_item ON resource_item.id = resource_link.resource_item_id
-		WHERE resource_item.id IS NULL OR NOT ` + extraResourceItemSQL("resource_item", false, version >= 66) + `)`
+		WHERE resource_item.id IS NULL OR NOT ` + extraResourceItemSQL("resource_item", false, version >= 66, OrdinaryItemRoleSQL) + `)`
 	if err := tx.QueryRow(ctx, statement).Scan(&valid); err != nil {
 		return fmt.Errorf("read extra semantic state: %w", err)
 	}
