@@ -268,6 +268,13 @@ func (target metadataIngestTarget) directoryPath() string {
 	return filepath.Dir(path)
 }
 
+func (target metadataIngestTarget) nfoCandidates(path string) ([]string, string) {
+	if target.folder {
+		return folderNFOCandidate(".", target.kind)
+	}
+	return fileNFOCandidates(filepath.Base(path), target.kind)
+}
+
 func (s *Store) importLocalMetadataTarget(ctx context.Context, grant *internalTaskSourceGrant, library Library,
 	target metadataIngestTarget, listing *metadataIngestImageListing) (_ bool, resultErr error) {
 	row := grant.roots[target.rootID]
@@ -300,7 +307,8 @@ func (s *Store) importLocalMetadataTarget(ctx context.Context, grant *internalTa
 	options := EffectiveLibraryOptions(library)
 	var observation localNFOObservation
 	var proof nfoIngestProof
-	var kind, pairRootIdentity string
+	var rootIdentity string
+	candidates, kind := target.nfoCandidates(path)
 	importNFO := target.request.nfo && options.EnableLocalMetadata
 	if err := operation.Run(ctx, row.root.id, primaryio.Background, func(work context.Context) (readErr error) {
 		var err error
@@ -326,22 +334,16 @@ func (s *Store) importLocalMetadataTarget(ctx context.Context, grant *internalTa
 			return err
 		}
 		if importNFO {
-			if target.kind == "Episode" {
-				if _, paired := episodeFilePair(path); paired {
-					info, err := opened.Stat(".")
-					if err != nil {
-						return errors.Join(errMetadataIngestChanged, err)
-					}
-					pairRootIdentity = fileIdentity(info)
-				}
+			info, err := opened.Stat(".")
+			if err != nil {
+				return errors.Join(errMetadataIngestChanged, err)
 			}
-			var candidates []string
-			if target.folder {
-				candidates, kind = folderNFOCandidate(".", target.kind)
+			rootIdentity = fileIdentity(info)
+			if scanIngestVideoLibrary(library) && s.nfoRecoveryWritable(row.root) {
+				observation, proof, err = observeNFORecoveryCandidate(work, dir, directoryPath, candidates, path, target.kind, target.folder)
 			} else {
-				candidates, kind = fileNFOCandidates(filepath.Base(path), target.kind)
+				observation, proof, err = observeMetadataIngestNFO(work, dir, directoryPath, candidates)
 			}
-			observation, proof, err = observeMetadataIngestNFO(work, dir, directoryPath, candidates)
 			if err != nil {
 				return err
 			}
@@ -356,14 +358,14 @@ func (s *Store) importLocalMetadataTarget(ctx context.Context, grant *internalTa
 	if importNFO && target.kind == "Episode" {
 		file := episodePairFile{Identity: target.fileIdentity, Size: target.fileSize,
 			ModifiedNS: target.modified.UnixNano(), ChangeNS: target.changeNS}
-		pairSource = newEpisodePairSource(row, path, target.parentID, pairRootIdentity, target.request, file)
+		pairSource = newEpisodePairSource(row, path, target.parentID, rootIdentity, target.request, file)
 		binding, err = pairSource.readBinding(ctx, s.pool, false)
 		if err != nil {
 			return false, err
 		}
 	}
 	check := func(work context.Context, tx pgx.Tx) error {
-		return s.checkMetadataIngestTarget(work, tx, grant, library, row, target)
+		return s.checkMetadataIngestTarget(work, tx, grant, library, row, target, true)
 	}
 	var changed bool
 	// Disabling a reader does not verify a pending NFO or allow the previous
@@ -372,10 +374,13 @@ func (s *Store) importLocalMetadataTarget(ctx context.Context, grant *internalTa
 	finish := func(work context.Context, tx pgx.Tx) error {
 		return s.completeLocalMetadataImport(work, tx, grant, library, target, !uncertainNFO, true)
 	}
+	var handedOff bool
 	if importNFO {
-		changed, err = s.publishMetadataIngestNFO(ctx, operation, check, grant, verify, lease, target, directoryPath, kind, observation, proof, state, pairSource, binding)
+		changed, err = s.publishMetadataIngestNFO(ctx, operation, check, grant, verify, lease, target, path, directoryPath,
+			kind, rootIdentity, candidates, observation, proof, state, pairSource, binding)
 		if err != nil {
-			if !scanPublicationErrorOnly(err, errMetadataIngestInvalidNFO) {
+			handedOff = scanPublicationErrorOnly(err, errMetadataIngestNFOHandedOff)
+			if !handedOff && !scanPublicationErrorOnly(err, errMetadataIngestInvalidNFO) {
 				return false, err
 			}
 			uncertainNFO = true
@@ -411,10 +416,13 @@ func (s *Store) importLocalMetadataTarget(ctx context.Context, grant *internalTa
 			return changed, err
 		}
 		*listing = metadataIngestImageListing{rootID: target.rootID, directory: directoryPath, index: state.imageDirectories[directoryPath]}
-		if state.warnings != before || uncertainNFO {
+		if state.warnings != before || uncertainNFO && !handedOff {
 			return changed, errMetadataIngestChanged
 		}
 		return true, nil
+	}
+	if handedOff {
+		return changed, nil
 	}
 	if uncertainNFO {
 		return changed, errMetadataIngestChanged
@@ -518,7 +526,7 @@ func checkTaskIngestFence(ctx context.Context, tx pgx.Tx, grant *internalTaskSou
 }
 
 func (s *Store) checkMetadataIngestTarget(ctx context.Context, tx pgx.Tx, grant *internalTaskSourceGrant,
-	library Library, row rootBindingRow, target metadataIngestTarget) error {
+	library Library, row rootBindingRow, target metadataIngestTarget, checkImages bool) error {
 	if err := checkTaskIngestFence(ctx, tx, grant); err != nil {
 		return err
 	}
@@ -545,6 +553,11 @@ func (s *Store) checkMetadataIngestTarget(ctx context.Context, tx pgx.Tx, grant 
 	}
 	if err != nil {
 		return err
+	}
+	if !checkImages {
+		// Artwork can complete independently without changing the authority
+		// to regenerate a pending NFO for the same accepted source.
+		target.request.images, current.request.images = false, false
 	}
 	if !target.matches(current) {
 		return errMetadataIngestChanged

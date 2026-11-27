@@ -26,6 +26,7 @@ const (
 	OnlineMetadataIngestRequested        Event = "OnlineMetadataIngestRequested"
 	VideoSeekIngestRequested             Event = "VideoSeekIngestRequested"
 	DolbyVisionVerificationRequested     Event = "DolbyVisionVerificationRequested"
+	NFORecoveryRequested                 Event = "NFORecoveryRequested"
 )
 
 func Valid(event Event) bool {
@@ -33,7 +34,7 @@ func Valid(event Event) bool {
 	case ServerStarted, LibraryChanged, ConfigurationChanged, IntroAnalysisRequested, PreviewGenerationRequested,
 		BackgroundPreviewGenerationRequested, AudioWaveformGenerationRequested, CreditsAnalysisRequested,
 		SubtitleTimelineGenerationRequested, OnlineImagesRequested, LocalMetadataIngestRequested,
-		OnlineMetadataIngestRequested, VideoSeekIngestRequested, DolbyVisionVerificationRequested:
+		OnlineMetadataIngestRequested, VideoSeekIngestRequested, DolbyVisionVerificationRequested, NFORecoveryRequested:
 		return true
 	default:
 		return false

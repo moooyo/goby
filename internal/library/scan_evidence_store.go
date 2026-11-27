@@ -11,8 +11,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 const (
@@ -25,21 +23,6 @@ const (
 	scanEvidenceDescriptorsPerPass = 4096 + scanReconciliationMaxRoots + 10
 	scanEvidenceMaxDescriptors     = scanEvidenceMaxPasses * scanEvidenceDescriptorsPerPass
 )
-
-type storeOptions struct {
-	scanEvidence         *ScanEvidenceOptions
-	playbackControlPool  *pgxpool.Pool
-	basicVideoScanProbe  Prober
-	deferLocalMetadata   bool
-	enrichOnlineMetadata bool
-	deferVideoSeek       bool
-	dolbyVisionVerifier  dolbyVisionVerifier
-
-	libraryStorageDirectoryHook libraryStorageDirectoryObservationHook
-}
-
-// Option attaches optional deployment resources without changing existing callers.
-type Option func(*storeOptions) error
 
 // ScanEvidenceOptions describes one separately provisioned private spool root.
 // ServerID is the persistent public identity; no connection secret is persisted.

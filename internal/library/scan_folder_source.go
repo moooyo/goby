@@ -11,8 +11,9 @@ import (
 )
 
 // A source-backed folder retains only its named anchor, registered directory,
-// and metadata-directory identity. It does not carry media probe authority or
-// require complete topology or a second NFO content read at publication.
+// and metadata-directory identity. It does not carry media probe authority.
+// When retaining accepted NFO bytes, publication also checks their path stamp
+// and the directory generation used to prove unique ownership.
 type scanFolderSource struct {
 	observation storageObservationLifetime
 	operation   *PrimaryRootIO
@@ -21,6 +22,7 @@ type scanFolderSource struct {
 	relative    string
 	expected    os.FileInfo
 	directory   *os.Root
+	nfoProof    nfoIngestProof
 }
 
 // Permission comes only from the complete startup grant. Existing physical
@@ -119,7 +121,7 @@ func (source *scanFolderSource) validate(ctx context.Context) (resultErr error) 
 	if err := checkTaskSourceAnchorName(source.row.root.allowedPath, source.sourceRoot.anchor); err != nil {
 		return errors.Join(ErrRootBindingConflict, err)
 	}
-	return ctx.Err()
+	return errors.Join(source.nfoProof.verifyRecoveryDirectory(current), ctx.Err())
 }
 
 func (source *scanFolderSource) final(ctx context.Context, tx pgx.Tx) error {
@@ -134,7 +136,21 @@ func (source *scanFolderSource) final(ctx context.Context, tx pgx.Tx) error {
 	proof, cancel := context.WithDeadline(ctx, deadline.Add(-scanReconciliationRollbackSpace))
 	defer cancel()
 	return source.operation.RunImmediate(proof, source.row.root.id, primaryio.Background, func(work context.Context) error {
-		return runStorageObservation(work, []*storageObservationLifetime{&source.observation}, source.validate)
+		return runStorageObservation(work, []*storageObservationLifetime{&source.observation}, func(check context.Context) error {
+			if err := source.validate(check); err != nil {
+				return err
+			}
+			if len(source.nfoProof.entries) == 0 {
+				return nil
+			}
+			if err := source.nfoProof.verifyAt(check, source.directory); err != nil {
+				if fatal := localNFOFatalReadError(check, err); fatal != nil {
+					return fatal
+				}
+				return errScannedEpisodeNFOChanged
+			}
+			return source.validate(check)
+		})
 	})
 }
 

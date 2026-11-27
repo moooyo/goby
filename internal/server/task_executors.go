@@ -95,23 +95,17 @@ func (executor managementTaskExecutor) Execute(ctx context.Context, work tasks.W
 	return err
 }
 
-func (s *Server) managementTaskExecutors(ctx context.Context) (*tasks.ExecutorRegistry, error) {
-	localAutomatic := s.cfg.FastLibraryIngest
-	if !localAutomatic {
-		// Turning off fast ingest does not abandon local authority markers.
-		// Fresh default-off installations need no periodic empty task runs.
-		if err := s.db.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM local_metadata_ingest WHERE import_nfo OR import_images)`).Scan(&localAutomatic); err != nil {
-			return nil, err
-		}
-	}
+func (s *Server) managementTaskExecutors() (*tasks.ExecutorRegistry, error) {
 	intro := mediaAnalysisTaskExecutor{s.mediaAnalysis, library.TaskIntroAnalysisKey}
 	credits := mediaAnalysisTaskExecutor{s.mediaAnalysis, library.TaskCreditsAnalysisKey}
 	previews := mediaAnalysisTaskExecutor{s.mediaAnalysis, library.TaskPreviewGenerationKey}
 	registrations := []tasks.ExecutorRegistration{
-		{Key: library.TaskLocalMetadataIngestKey, Name: "Import local metadata", Description: "Complete local NFO and artwork imports after a media scan.", Category: "Metadata", AutomaticDisabled: !localAutomatic, Executor: localMetadataIngestExecutor{s}},
+		// Synchronous scans can leave a pending NFO check even on read-only roots.
+		{Key: library.TaskLocalMetadataIngestKey, Name: "Import local metadata", Description: "Complete local NFO and artwork imports after a media scan.", Category: "Metadata", Executor: localMetadataIngestExecutor{s}},
 		{Key: library.TaskOnlineMetadataIngestKey, Name: "Enrich newly scanned metadata", Description: "Complete opt-in movie and TV metadata imports using a configured provider after local metadata is ready.", Category: "Metadata", AutomaticDisabled: !s.cfg.FastLibraryIngest || !s.cfg.FastLibraryOnlineMetadata || !s.cfg.OnlineProviders.Enabled, Executor: onlineMetadataIngestExecutor{s}},
 		{Key: library.TaskVideoSeekIngestKey, Name: "Index video seek points", Description: "Build optional seek evidence after fast scans without changing the cataloged media source.", Category: "Media analysis", AutomaticDisabled: !s.cfg.FastLibraryIngest || s.cfg.FFmpegPath == "", Executor: videoSeekIngestExecutor{s}},
 		{Key: library.TaskDolbyVisionVerificationKey, Name: "Verify Dolby Vision", Description: "Complete Dolby Vision RPU verification for video sources accepted by completed fast scans.", Category: "Media analysis", AutomaticDisabled: !s.library.DolbyVisionVerificationConfigured(), Executor: dolbyVisionIngestExecutor{s}},
+		{Key: library.TaskNFORecoveryKey, Name: "Regenerate local NFO sidecars", Description: "Restore previously accepted local NFO documents after confirmed damage on explicitly opted-in library roots.", Category: "Metadata", Executor: nfoRecoveryExecutor{s}},
 		tasks.ExecutorRegistration{Key: tasks.MetadataRefreshKey, Name: "Refresh online metadata", Description: "Refresh supported metadata from configured providers for each library.", Category: "Metadata", Executor: managementTaskExecutor{s, tasks.MetadataRefreshKey}},
 		tasks.ExecutorRegistration{Key: tasks.SubtitleDownloadKey, Name: "Download missing subtitles", Description: "Download configured subtitle languages for supported movies and episodes.", Category: "Subtitles", Executor: managementTaskExecutor{s, tasks.SubtitleDownloadKey}},
 		tasks.ExecutorRegistration{Key: tasks.CacheMaintainKey, Name: "Maintain provider cache", Description: "Remove expired provider cache entries and enforce the configured entry limit.", Category: "Maintenance", Global: true, Executor: managementTaskExecutor{s, tasks.CacheMaintainKey}},

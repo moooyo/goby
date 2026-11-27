@@ -36,6 +36,9 @@ func assertPhase3MigrationDefaults(t *testing.T, ctx context.Context, pool *pgxp
 			+CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=75) THEN 1 ELSE 0 END
 			+CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=79) THEN 3 ELSE 0 END
 			+CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=80) THEN 1 ELSE 0 END
+			+CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=81) THEN 1 ELSE 0 END
+		AND (SELECT count(*) FROM task_system_events WHERE name='NFORecoveryRequested'
+			AND sequence=0 AND lifecycle_key='' AND occurred_at IS NOT NULL)=CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=81) THEN 1 ELSE 0 END
 		AND (SELECT count(*) FROM task_system_events WHERE name='DolbyVisionVerificationRequested'
 			AND sequence=0 AND lifecycle_key='' AND occurred_at IS NOT NULL)=CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=80) THEN 1 ELSE 0 END
 		AND (SELECT count(*) FROM task_system_events WHERE name IN

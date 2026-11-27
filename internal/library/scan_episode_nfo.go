@@ -13,7 +13,7 @@ var errScannedEpisodeNFOChanged = errors.New("episode NFO no longer matches its 
 
 type scannedNFOProof struct {
 	directory, identity string
-	entries             nfoIngestProof
+	nfo                 nfoIngestProof
 }
 
 func (proof *scannedNFOProof) open(ctx context.Context, root *os.Root) (_ *os.Root, resultErr error) {
@@ -31,7 +31,8 @@ func (proof *scannedNFOProof) open(ctx context.Context, root *os.Root) (_ *os.Ro
 	return dir, nil
 }
 
-func (proof *scannedNFOProof) observe(ctx context.Context, root *os.Root, candidates []string) (_ localNFOObservation, resultErr error) {
+func (proof *scannedNFOProof) observe(ctx context.Context, root *os.Root, candidates []string,
+	path, itemType string, proveRecovery bool) (observation localNFOObservation, resultErr error) {
 	dir, err := proof.open(ctx, root)
 	if err != nil {
 		return localNFOObservation{}, err
@@ -41,8 +42,11 @@ func (proof *scannedNFOProof) observe(ctx context.Context, root *os.Root, candid
 	for i, candidate := range candidates {
 		names[i] = filepath.Base(candidate)
 	}
-	observation, entries, err := observeMetadataIngestNFO(ctx, dir, proof.directory, names)
-	proof.entries = entries
+	if proveRecovery {
+		observation, proof.nfo, err = observeNFORecoveryCandidate(ctx, dir, proof.directory, names, path, itemType, false)
+	} else {
+		observation, proof.nfo, err = observeMetadataIngestNFO(ctx, dir, proof.directory, names)
+	}
 	return observation, err
 }
 
@@ -52,7 +56,7 @@ func (proof *scannedNFOProof) verify(ctx context.Context, root *os.Root) (result
 		return err
 	}
 	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryRoot(ctx, dir)) }()
-	if err := proof.entries.verifyAt(ctx, dir); err != nil {
+	if err := proof.nfo.verifyAt(ctx, dir); err != nil {
 		if fatal := localNFOFatalReadError(ctx, err); fatal != nil {
 			return fatal
 		}
@@ -62,7 +66,7 @@ func (proof *scannedNFOProof) verify(ctx context.Context, root *os.Root) (result
 	if err != nil || !current.IsDir() || fileIdentity(current) != proof.identity {
 		return errors.Join(errScanProbeSourceChanged, ctx.Err())
 	}
-	return ctx.Err()
+	return errors.Join(proof.nfo.verifyRecoveryDirectory(current), ctx.Err())
 }
 
 func (input *primaryScanRead) revalidatePublicationNFO(tx pgx.Tx, proof *scannedNFOProof) error {
@@ -75,11 +79,14 @@ func (input *primaryScanRead) revalidatePublicationNFO(tx pgx.Tx, proof *scanned
 }
 
 // Verify file pairs and pending video NFOs, including after an item is renamed
-// out of a pair layout. Other local reads keep their existing scan behavior.
+// out of a pair layout. A writable recovery root also needs this proof before
+// it can retain accepted original bytes for a future independent task.
 func (state *scanState) prepareScannedEpisodeNFO(input *scannedMediaInput, path, itemType, parentID string,
 	request *scanMetadataImport) (episodePairSource, *scannedNFOProof, error) {
 	stored := input.stored
-	if stored.local.pair == nil && !stored.pendingNFO {
+	witnessRecovery := scanIngestVideoLibrary(state.library) && state.store.nfoRecoveryWritable(state.root) &&
+		(itemType == "Movie" || itemType == "Episode") && EffectiveLibraryOptions(state.library).EnableLocalMetadata
+	if !witnessRecovery && stored.local.pair == nil && !stored.pendingNFO {
 		if itemType != "Episode" {
 			return episodePairSource{}, nil, nil
 		}

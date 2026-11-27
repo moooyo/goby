@@ -298,10 +298,11 @@ func (state *scanState) folderLocalMetadata(relative, metadataPath, itemType str
 		return localMetadata{}, scanReadFailure(err)
 	}
 	defer func() { resultErr = errors.Join(resultErr, source.Close()) }()
-	return state.folderLocalMetadataWithSource(relative, metadataPath, itemType, index, source)
+	return state.folderLocalMetadataWithSource(relative, metadataPath, itemType, index, source, nil, false)
 }
 
-func (state *scanState) folderLocalMetadataWithSource(relative, metadataPath, itemType string, index int, source *scanFolderSource) (localMetadata, error) {
+func (state *scanState) folderLocalMetadataWithSource(relative, metadataPath, itemType string, index int, source *scanFolderSource,
+	request *scanMetadataImport, skipNFORecovery bool) (localMetadata, error) {
 	if metadataPath == "" {
 		return localMetadata{}, nil
 	}
@@ -310,15 +311,43 @@ func (state *scanState) folderLocalMetadataWithSource(relative, metadataPath, it
 		return localMetadata{}, err
 	}
 	candidates, kind := folderNFOCandidate(metadataPath, itemType)
+	eligible := request != nil && kind != "" && scanIngestVideoLibrary(state.library) && validImageScanPath(metadataPath)
+	writable := eligible && state.store.nfoRecoveryWritable(state.root) && EffectiveLibraryOptions(state.library).EnableLocalMetadata
 	var observation localNFOObservation
+	var proof nfoIngestProof
 	if err := source.readMetadata(state.task.ctx, state, func(ctx context.Context) error {
 		var err error
-		observation, err = state.observeLocalNFO(ctx, candidates, kind)
+		switch {
+		case eligible && request.nfoCheck == scanNFOPending:
+			observation.invalid = true
+		case writable:
+			names, _ := folderNFOCandidate(".", itemType)
+			if skipNFORecovery {
+				observation, proof, err = observeMetadataIngestNFO(ctx, source.directory, metadataPath, names)
+			} else {
+				observation, proof, err = observeNFORecoveryCandidate(ctx, source.directory, metadataPath, names, metadataPath, itemType, true)
+			}
+		default:
+			observation, err = state.observeLocalNFO(ctx, candidates, kind)
+		}
 		return err
 	}); err != nil {
 		return localMetadata{}, scanReadFailure(err)
 	}
-	return state.seasonNumbering(state.applyLocalNFO(observation, kind, previous), itemType, index), nil
+	local, rejected := state.applyScannedNFO(observation, kind, previous, nil)
+	if eligible && (writable || rejected) {
+		request.directoryIdentity = fileIdentity(source.expected)
+		if request.directoryIdentity != "" {
+			if rejected {
+				request.nfoCheck = scanNFOPending
+			} else {
+				request.nfoCheck = scanNFOVerified
+				source.nfoProof = proof
+				state.captureScannedNFORecovery(request, source.row, metadataPath, itemType, true, observation, &source.nfoProof, local, 0)
+			}
+		}
+	}
+	return state.seasonNumbering(local, itemType, index), nil
 }
 
 func (state *scanState) seasonNumbering(local localMetadata, itemType string, index int) localMetadata {

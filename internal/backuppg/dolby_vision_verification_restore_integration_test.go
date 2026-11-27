@@ -66,15 +66,15 @@ func TestPostgreSQLDolbyVisionVerificationArchiveRoundTrip(t *testing.T) {
 	if rows != 5 {
 		t.Fatalf("snapshot verification row count = %d, want 5", rows)
 	}
+	_, sequences := unchangedSourceWitness(t, ctx, source, options)
 	result, err := Restore(ctx, source, target, archive, facts, options)
 	if err != nil || result.SourceVersion != 80 || result.CurrentVersion != currentRecoveryVersion(t) || !equalJSON(result.Tables, facts.Tables) {
 		t.Fatalf("restore raw verification state: %v", err)
 	}
-	for _, table := range []string{"dolby_vision_verifications", "task_system_events", "items"} {
-		if historicalArchiveRows(t, ctx, target, table, 80) != historicalArchiveRows(t, ctx, source, table, 80) {
-			t.Errorf("restore changed the raw evidence, retry times, event counter, or source facts in %s", table)
-		}
-	}
+	targetOptions := options
+	targetOptions.SourceURL = target.Config().ConnString()
+	after, targetSequences := unchangedSourceWitness(t, ctx, target, targetOptions)
+	assertHistoricalRecoveryFacts(t, ctx, source, target, facts, after, sequences, targetSequences)
 }
 
 func TestPostgreSQLDolbyVisionVerificationSchema79ArchiveUpgradesWithoutInventingEvidence(t *testing.T) {

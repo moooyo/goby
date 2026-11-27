@@ -95,6 +95,52 @@ The task UI displays scan warnings. [Native metadata editing and field locks](..
 
 Migration `0014` initializes metadata state without rewriting existing catalog or NFO rows. It retains the original sparse projection when no administrator controls apply. Updating an unrelated source field preserves unknown extensions in unchanged fields, including existing person credits. Only effective metadata drives the current entity associations, and those changes commit with the item update. Identical file rescans compare against automatic values rather than manual display values, so an existing title or episode-number override alone does not falsely report the file as updated.
 
+## Automatic regeneration of damaged sidecars
+
+For movie and TV libraries, the importer checks a suspicious preferred NFO with
+an independent bounded read before recording damage. Zero bytes, invalid
+recognized encoding, or malformed XML can qualify. Short reads, access errors,
+unsupported encodings or fields, wrong document types, and failed episode pair
+binding are not proof of damage. The scan must already be complete before the
+import task hands off to the separate **Regenerate local NFO sidecars** task. A repeated
+observation of the same source and damaged file version does not issue another
+request or reset the three-attempt limit.
+
+Writing is off by default. On Linux, `GOBY_NFO_RECOVERY_ROOTS` lists exact
+registered root paths from the media allowlist, colon-separated. Set it only
+where the deployment can give Goby exclusive sidecar write access and the
+filesystem provides same-directory atomic replacement and synchronization. Do
+not enable it on a share written to by another media manager or uncoordinated
+client. A listed path does not grant permissions to a separately registered
+child root or override a read-only mount. If multiple registered roots cover
+one sidecar directory, Goby does not write there. NFO reading remains a separate
+per-library option.
+
+On opted-in roots Goby retains one private, bounded copy of the last accepted
+original for a uniquely owned movie or episode sidecar or a physical series or
+season. The copy follows the proven item, media, directory, and root binding,
+not just a path or matching text. Paired episodes require both accepted original
+roots. Overrides, online results, damaged fragments, backups for a different
+source, and shared `movie.nfo` are never used to regenerate a file. The copies
+are included in the private PostgreSQL backup, not item DTOs. There is no
+backfill from projected or pre-migration metadata. If a file was already bad
+when first observed, supply a trusted replacement or deliberately remove the
+sidecar; Goby does not invent titles, tags or ratings.
+
+The writer stages the saved bytes next to the damaged file, synchronizes and
+closes the temporary file, reopens it for exact read-back, then rechecks the
+candidate and source before replacement. The pending NFO gate stays in place
+until an independent local import accepts the visible file or confirms the
+applicable candidates are absent. Artwork, administrator edits and watch data
+are separate. A lost write acknowledgement is not permission to repeat a
+replacement: the next attempt re-observes the live file. After the third write
+attempt, only read-only verification may continue. It can hand an already
+repaired file back to the importer without granting a fourth write. When no
+trusted source is available, the path is not authorized for writing, or attempts
+are exhausted, the
+task leaves the NFO pending rather than accepting unknown rating or tag values.
+A subsequent external replacement can still be accepted by the normal importer.
+
 ## Persistent catalog entities
 
 Migration `0004` assigns stable catalog identities to genres, tags, studios, and people. It backfills already stored NFO documents during the database upgrade without requiring another filesystem scan. Subsequent NFO writes and entity associations commit in the same catalog transaction; an association failure also rolls back the corresponding media/metadata write.

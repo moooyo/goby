@@ -68,6 +68,11 @@ func New(pool *pgxpool.Pool, prober Prober, allowedRoots []string, options ...Op
 	}
 	// Prefer the narrowest approved root for nested configurations.
 	sort.Slice(s.roots, func(i, j int) bool { return len(s.roots[i].path) > len(s.roots[j].path) })
+	nfoRecoveryRoots, err := assignNFORecoveryRoots(settings.nfoRecoveryPaths, s.roots)
+	if err != nil {
+		return nil, err
+	}
+	s.nfoRecoveryRoots = nfoRecoveryRoots
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	ownership, err := acquireScanOwnership(ctx, pool)

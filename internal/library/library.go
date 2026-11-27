@@ -146,6 +146,22 @@ type libraryRoot struct {
 	id, libraryID, path, allowedPath, relativePath string
 }
 
+type storeOptions struct {
+	scanEvidence         *ScanEvidenceOptions
+	playbackControlPool  *pgxpool.Pool
+	basicVideoScanProbe  Prober
+	deferLocalMetadata   bool
+	enrichOnlineMetadata bool
+	deferVideoSeek       bool
+	dolbyVisionVerifier  dolbyVisionVerifier
+	nfoRecoveryPaths     []string
+
+	libraryStorageDirectoryHook libraryStorageDirectoryObservationHook
+}
+
+// Option attaches optional deployment resources without changing existing callers.
+type Option func(*storeOptions) error
+
 type scanTask struct {
 	job         Job
 	ctx         context.Context
@@ -168,6 +184,7 @@ type Store struct {
 	enrichOnlineMetadata bool
 	deferVideoSeek       bool
 	dolbyVisionVerifier  dolbyVisionVerifier
+	nfoRecoveryRoots     map[string]struct{}
 	imageInspection      artwork.InspectionCache
 	roots                []approvedRoot
 	configuredRoots      []configuredStorageRoot

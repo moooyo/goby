@@ -10,7 +10,7 @@ import (
 )
 
 var otherSystemEventDeferralKeys = [...]string{
-	library.TaskOnlineImagesKey, library.TaskLocalMetadataIngestKey, library.TaskOnlineMetadataIngestKey,
+	library.TaskOnlineImagesKey, library.TaskLocalMetadataIngestKey, library.TaskOnlineMetadataIngestKey, library.TaskNFORecoveryKey,
 }
 
 const maxSystemEventDeferrals = len(mediaAnalysisTaskRotation) + len(otherSystemEventDeferralKeys)

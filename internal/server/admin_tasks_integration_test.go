@@ -36,7 +36,7 @@ func adminTaskHTTPFixtureForKey(t *testing.T, key string) (*serverFixture, *http
 		tasks.CacheMaintainKey: "Maintain provider cache", library.TaskOnlineImagesKey: "Download missing images",
 		library.TaskLocalMetadataIngestKey: "Import local metadata", library.TaskIntroAnalysisKey: "Analyze episode introductions",
 		library.TaskOnlineMetadataIngestKey: "Enrich newly scanned metadata", library.TaskVideoSeekIngestKey: "Index video seek points",
-		library.TaskDolbyVisionVerificationKey: "Verify Dolby Vision",
+		library.TaskDolbyVisionVerificationKey: "Verify Dolby Vision", library.TaskNFORecoveryKey: "Regenerate local NFO sidecars",
 		library.TaskCreditsAnalysisKey: "Analyze credits", library.TaskPreviewGenerationKey: "Generate seek previews",
 		library.TaskBackgroundPreviewGenerationKey: "Generate background clips", library.TaskAudioWaveformGenerationKey: "Generate audio waveforms",
 		library.TaskSubtitleTimelineGenerationKey: "Generate subtitle timelines",
@@ -52,6 +52,10 @@ func adminTaskHTTPFixtureForKey(t *testing.T, key string) (*serverFixture, *http
 		library.TaskAudioWaveformGenerationKey:     systemevents.AudioWaveformGenerationRequested,
 		library.TaskSubtitleTimelineGenerationKey:  systemevents.SubtitleTimelineGenerationRequested,
 	}
+	ingestEvents := map[string]systemevents.Event{
+		library.TaskLocalMetadataIngestKey: systemevents.LocalMetadataIngestRequested,
+		library.TaskNFORecoveryKey:         systemevents.NFORecoveryRequested,
+	}
 	definitions := make(map[string]map[string]any)
 	identities := make(map[string]bool)
 	for _, raw := range items {
@@ -62,10 +66,14 @@ func adminTaskHTTPFixtureForKey(t *testing.T, key string) (*serverFixture, *http
 		definitionKey := stringValue(t, definition, "Key")
 		name, known := expected[definitionKey]
 		event, analysis := analysisEvents[definitionKey]
+		ingestEvent, ingest := ingestEvents[definitionKey]
 		onlineImages := definitionKey == library.TaskOnlineImagesKey
 		revision, triggerCount := "1", 0
-		if analysis || onlineImages {
+		switch {
+		case analysis || onlineImages:
 			revision, triggerCount = "2", 2
+		case ingest:
+			revision, triggerCount = "2", 3
 		}
 		if !known || definitions[definitionKey] != nil || definition["Name"] != name || definition["Enabled"] != true || definition["Revision"] != revision {
 			t.Fatal("native task definition lost its stable public metadata")
@@ -73,6 +81,19 @@ func adminTaskHTTPFixtureForKey(t *testing.T, key string) (*serverFixture, *http
 		triggers, ok := definition["Triggers"].([]any)
 		if !ok || len(triggers) != triggerCount {
 			t.Fatal("native task definition lost its initial trigger set")
+		}
+		if ingest {
+			signal, signalOK := triggers[0].(map[string]any)
+			startup, startupOK := triggers[1].(map[string]any)
+			interval, intervalOK := triggers[2].(map[string]any)
+			intervalTicks := "36000000000"
+			if definitionKey == library.TaskNFORecoveryKey {
+				intervalTicks = "9000000000"
+			}
+			if !signalOK || !startupOK || !intervalOK || signal["Kind"] != "system_event" || signal["SystemEvent"] != string(ingestEvent) ||
+				startup["Kind"] != "startup" || interval["Kind"] != "interval" || interval["IntervalTicks"] != intervalTicks {
+				t.Fatal("native ingest task lost its committed event, startup, or periodic schedule")
+			}
 		}
 		if analysis {
 			interval, intervalOK := triggers[0].(map[string]any)

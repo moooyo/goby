@@ -42,7 +42,7 @@ func TestIntroSkipperMigrationPreservesHistoricalPublicationAuthority(t *testing
 				'cache',(SELECT jsonb_agg(jsonb_build_object('row',to_jsonb(c),'xmin',c.xmin::text)) FROM analysis_feature_cache c),
 				'events',(SELECT jsonb_agg(jsonb_build_object('row',to_jsonb(e),'xmin',e.xmin::text) ORDER BY name) FROM task_system_events e
 					WHERE name NOT IN ('BackgroundPreviewGenerationRequested','AudioWaveformGenerationRequested','CreditsAnalysisRequested','SubtitleTimelineGenerationRequested','OnlineImagesRequested',
-					'LocalMetadataIngestRequested','OnlineMetadataIngestRequested','VideoSeekIngestRequested','DolbyVisionVerificationRequested')))::text`
+					'LocalMetadataIngestRequested','OnlineMetadataIngestRequested','VideoSeekIngestRequested','DolbyVisionVerificationRequested','NFORecoveryRequested')))::text`
 			var before, after string
 			if err := pool.QueryRow(ctx, retainedQuery).Scan(&before); err != nil {
 				t.Fatal(err)
@@ -90,6 +90,14 @@ func TestIntroSkipperMigrationPreservesHistoricalPublicationAuthority(t *testing
 				AND NOT EXISTS(SELECT 1 FROM task_system_events WHERE name='OnlineImagesRequested'
 					AND (sequence IS DISTINCT FROM 0 OR lifecycle_key IS DISTINCT FROM '' OR occurred_at IS NULL))`).Scan(&onlineImagesEvent); err != nil || !onlineImagesEvent {
 				t.Fatalf("migration did not append the exact neutral online-image event: %v", err)
+			}
+			var nfoRecoveryEvent bool
+			if err := pool.QueryRow(ctx, `SELECT
+				(SELECT count(*) FROM task_system_events WHERE name='NFORecoveryRequested')=
+					CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=81) THEN 1 ELSE 0 END
+				AND NOT EXISTS(SELECT 1 FROM task_system_events WHERE name='NFORecoveryRequested'
+					AND (sequence IS DISTINCT FROM 0 OR lifecycle_key IS DISTINCT FROM '' OR occurred_at IS NULL))`).Scan(&nfoRecoveryEvent); err != nil || !nfoRecoveryEvent {
+				t.Fatalf("migration did not append the exact neutral NFO recovery event: %v", err)
 			}
 			var retained string
 			if err := pool.QueryRow(ctx, `SELECT jsonb_agg(to_jsonb(m) ORDER BY version)::text FROM schema_migrations m WHERE version<=53`).Scan(&retained); err != nil || retained != history {

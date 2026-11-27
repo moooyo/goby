@@ -1,6 +1,6 @@
 import type { TaskDefinition, TaskSystemEvent, TaskTriggerInput } from './api';
 import type { TranslationValues } from './i18n';
-import { durationFromTicks, timeFromTicks, weekdays } from './taskSchedule';
+import { durationFromTicks, timeFromTicks, weekdays } from './taskSchedule.ts';
 
 export type TaskTranslator = (key: string, values?: TranslationValues) => string;
 
@@ -19,6 +19,7 @@ const eventLabels: Record<TaskSystemEvent, string> = {
   OnlineMetadataIngestRequested: 'When online metadata enrichment is requested',
   VideoSeekIngestRequested: 'When video seek indexing is requested',
   DolbyVisionVerificationRequested: 'When Dolby Vision verification is requested',
+  NFORecoveryRequested: 'When NFO regeneration is requested',
 };
 
 export function taskTriggerLabel(trigger: TaskTriggerInput, t: TaskTranslator): string {

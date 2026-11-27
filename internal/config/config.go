@@ -28,6 +28,7 @@ type Config struct {
 	FFprobePath           string
 	TrustedProxies        []netip.Prefix
 	MediaRoots            []string
+	NFORecoveryRoots      []string `json:"-"`
 	StartupTimeout        time.Duration
 	APIKeyMasterKeyFile   string
 	Transcoding           TranscodingConfig
@@ -58,6 +59,7 @@ func Load() (Config, error) {
 		FFmpegPath:          env("GOBY_FFMPEG", "ffmpeg"),
 		FFprobePath:         env("GOBY_FFPROBE", "ffprobe"),
 		MediaRoots:          filepath.SplitList(os.Getenv("GOBY_MEDIA_ROOTS")),
+		NFORecoveryRoots:    filepath.SplitList(os.Getenv("GOBY_NFO_RECOVERY_ROOTS")),
 		APIKeyMasterKeyFile: env("GOBY_API_KEY_MASTER_KEY_FILE", "application-key-master.key"),
 	}
 	var err error
@@ -185,6 +187,12 @@ func (c Config) Validate() error {
 	}
 	if err := c.validateScanEvidence(); err != nil {
 		return err
+	}
+	if err := ValidateNFORecoveryRootPaths(c.NFORecoveryRoots); err != nil {
+		return err
+	}
+	if len(c.NFORecoveryRoots) != 0 && len(c.MediaRoots) == 0 {
+		return fmt.Errorf("GOBY_NFO_RECOVERY_ROOTS requires an existing GOBY_MEDIA_ROOTS allowlist")
 	}
 	if c.FastLibraryOnlineMetadata && (!c.FastLibraryIngest || !c.OnlineProviders.Enabled) {
 		return fmt.Errorf("GOBY_FAST_LIBRARY_ONLINE_METADATA requires fast library ingest and online providers")

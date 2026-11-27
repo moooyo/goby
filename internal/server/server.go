@@ -127,6 +127,7 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 	if app.playbackControlDB != nil {
 		catalogOptions = append(catalogOptions, library.WithPlaybackControlPool(app.playbackControlDB))
 	}
+	catalogOptions = append(catalogOptions, library.WithNFORecoveryRoots(cfg.NFORecoveryRoots))
 	// Keep declaration probing in the fast path. Optional whole-file evidence
 	// belongs to a separate source operation after a successful scan.
 	basicProbe := media.Prober{FFprobePath: cfg.FFprobePath, FFmpegPath: cfg.FFmpegPath, Timeout: 30 * time.Second}
@@ -280,7 +281,7 @@ func (s *Server) initializeSettings(ctx context.Context) error {
 }
 
 func (s *Server) initializeTasks(ctx context.Context) error {
-	executors, err := s.managementTaskExecutors(ctx)
+	executors, err := s.managementTaskExecutors()
 	if err != nil {
 		return err
 	}

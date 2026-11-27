@@ -167,6 +167,7 @@ The systemd unit deliberately does not hide every device with `PrivateDevices=tr
 | `GOBY_TRANSCODE_CACHE` | Dedicated conversion cache, default `/var/cache/goby/transcodes` |
 | `GOBY_HW_DECODER`, `GOBY_HW_ENCODER`, `GOBY_HW_DEVICE` | Independent hardware selections; software decoding/encoding and no device by default |
 | `GOBY_MEDIA_ROOTS` | Administrator-approved media directories; colon-separated on Linux; empty by default |
+| `GOBY_NFO_RECOVERY_ROOTS` | Exact registered Linux library roots, colon-separated and empty by default. Enable only where Goby is the exclusive sidecar writer; see [automatic NFO regeneration](local-metadata.md#automatic-regeneration-of-damaged-sidecars). |
 
 Observability settings are startup-only and require a restart; the Settings
 and Observability pages do not save them. See the

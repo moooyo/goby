@@ -42,6 +42,9 @@ func (s *Store) snapshotChildren(tx library.OwnedTx, runID, key string) (int64, 
 	if key == library.TaskDolbyVisionVerificationKey {
 		return library.SnapshotDolbyVisionVerificationChildren(tx, runID)
 	}
+	if key == library.TaskNFORecoveryKey {
+		return library.SnapshotNFORecoveryChildren(tx, runID)
+	}
 	if key == library.TaskOnlineImagesKey {
 		return library.SnapshotOnlineImageTaskChildren(tx, runID)
 	}
@@ -198,6 +201,12 @@ func (s *Store) finishExecution(ctx context.Context, runID, childID, token strin
 			}
 		case errors.Is(cause, ErrUnavailable):
 			state, code, message = ChildUnavailable, "executor_unavailable", "The configured executor is currently unavailable."
+		case run.TaskKey == library.TaskNFORecoveryKey && errors.Is(cause, library.ErrNFORecoveryNoSource):
+			state, code, message = ChildFailed, "nfo_recovery_no_source", "Some damaged NFOs have no trusted original to regenerate."
+		case run.TaskKey == library.TaskNFORecoveryKey && errors.Is(cause, library.ErrNFORecoveryWriteDisabled):
+			state, code, message = ChildFailed, "nfo_recovery_write_disabled", "Some damaged NFOs are outside authorized sidecar writes."
+		case run.TaskKey == library.TaskNFORecoveryKey && errors.Is(cause, library.ErrNFORecoveryIncomplete):
+			state, code, message = ChildFailed, "nfo_recovery_incomplete", "Some damaged NFOs remain pending after an unverified recovery."
 		case cause != nil:
 			state, code, message = ChildFailed, "executor_failed", "The executor could not finish this work."
 		}

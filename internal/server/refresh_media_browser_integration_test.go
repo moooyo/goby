@@ -731,9 +731,11 @@ func TestNativeRefreshMediaAdministratorBrowser(t *testing.T) {
 	if err != nil || len(refresh.Triggers) != 0 || len(normal.Triggers) != 0 {
 		t.Fatal("browser task baseline has schedules")
 	}
+	// The installed ingest schedules can record independent empty occurrences.
+	ingestKeys := []string{library.TaskLocalMetadataIngestKey, library.TaskNFORecoveryKey}
 	var initialRuns int
-	if f.pool.QueryRow(f.ctx, "SELECT count(*) FROM task_runs").Scan(&initialRuns) != nil || initialRuns != 0 {
-		t.Fatal("browser task baseline has runs")
+	if f.pool.QueryRow(f.ctx, `SELECT count(*) FROM task_runs WHERE NOT (task_key=ANY($1::text[]) AND total_children=0)`, ingestKeys).Scan(&initialRuns) != nil || initialRuns != 0 {
+		t.Fatal("browser task baseline has runs other than empty ingest occurrences")
 	}
 	fixture := refreshBrowserManifest{Marker: "goby-refresh-task-browser-fixtures-v1", RunID: runID, Origin: origin, TaskID: refresh.ID, TaskKey: tasks.LibraryRefreshMediaKey, ScanTaskID: normal.ID, ResultPath: filepath.Join(output, "browser-result.json"), CancellationReadyPath: readyPath}
 	fixture.Administrator.ID, fixture.Administrator.Name = bootstrap.User.ID, username
@@ -956,7 +958,12 @@ func TestNativeRefreshMediaAdministratorBrowser(t *testing.T) {
 		}
 	}
 	var totalRuns, pending, activeTriggers, normalRuns, requestMappings int
-	if f.pool.QueryRow(f.ctx, `SELECT (SELECT count(*) FROM task_runs),(SELECT count(*) FROM task_runs WHERE state IN('pending','running','stopping')),(SELECT count(*) FROM task_triggers WHERE retired_at IS NULL),(SELECT count(*) FROM task_runs WHERE task_id=$1),(SELECT count(*) FROM task_run_requests WHERE task_id=$2)`, normal.ID, refresh.ID).Scan(&totalRuns, &pending, &activeTriggers, &normalRuns, &requestMappings) != nil || totalRuns != len(runIDs) || pending != 0 || activeTriggers != 0 || normalRuns != 0 || requestMappings != 2 {
+	if f.pool.QueryRow(f.ctx, `SELECT
+		(SELECT count(*) FROM task_runs WHERE NOT (task_key=ANY($3::text[]) AND total_children=0)),
+		(SELECT count(*) FROM task_runs WHERE state IN('pending','running','stopping')),
+		(SELECT count(*) FROM task_triggers t JOIN task_definitions d ON d.id=t.task_id WHERE t.retired_at IS NULL AND NOT (d.key=ANY($3::text[]))),
+		(SELECT count(*) FROM task_runs WHERE task_id=$1),(SELECT count(*) FROM task_run_requests WHERE task_id=$2)`,
+		normal.ID, refresh.ID, ingestKeys).Scan(&totalRuns, &pending, &activeTriggers, &normalRuns, &requestMappings) != nil || totalRuns != len(runIDs) || pending != 0 || activeTriggers != 0 || normalRuns != 0 || requestMappings != 2 {
 		t.Fatal("browser left extra execution, request mapping, or schedule responsibility")
 	}
 	currentNormal, err := f.app.taskStore.GetByKey(f.ctx, tasks.LibraryScanKey)

@@ -58,7 +58,7 @@ func assertHistoricalRecoveryFacts(t *testing.T, ctx context.Context, source, ta
 			if historicalArchiveRows(t, ctx, target, table.Name, expected.SchemaVersion) != migrated {
 				t.Error("migration changed historical library rows beyond the declared embedded-artwork default")
 			}
-		} else if table.Name == "task_system_events" && expected.SchemaVersion < 80 && actual.SchemaVersion >= 51 {
+		} else if table.Name == "task_system_events" && expected.SchemaVersion < 81 && actual.SchemaVersion >= 51 {
 			// Only the known migration suffix appends neutral event rows. Preserve
 			// every original field and timestamp, and reject any other addition.
 			added := []string{}
@@ -88,6 +88,9 @@ func assertHistoricalRecoveryFacts(t *testing.T, ctx context.Context, source, ta
 			}
 			if expected.SchemaVersion < 80 && actual.SchemaVersion >= 80 {
 				added = append(added, "DolbyVisionVerificationRequested")
+			}
+			if expected.SchemaVersion < 81 && actual.SchemaVersion >= 81 {
+				added = append(added, "NFORecoveryRequested")
 			}
 			before := historicalArchiveRows(t, ctx, source, table.Name, expected.SchemaVersion)
 			after := historicalArchiveRows(t, ctx, target, table.Name, expected.SchemaVersion)

@@ -211,7 +211,7 @@ func metadataMigrationPhase3Defaults(t *testing.T, ctx context.Context, pool *pg
 		SELECT count(*) AS total, count(*) FILTER (WHERE name IN
 			('ServerStarted','LibraryChanged','ConfigurationChanged','IntroAnalysisRequested','PreviewGenerationRequested',
 			 'BackgroundPreviewGenerationRequested','AudioWaveformGenerationRequested','CreditsAnalysisRequested','SubtitleTimelineGenerationRequested',
-			 'OnlineImagesRequested','LocalMetadataIngestRequested','OnlineMetadataIngestRequested','VideoSeekIngestRequested','DolbyVisionVerificationRequested')
+			 'OnlineImagesRequested','LocalMetadataIngestRequested','OnlineMetadataIngestRequested','VideoSeekIngestRequested','DolbyVisionVerificationRequested','NFORecoveryRequested')
 			AND sequence=0 AND lifecycle_key='' AND occurred_at IS NOT NULL) AS initialized
 		FROM task_system_events
 	) SELECT
@@ -227,7 +227,7 @@ func metadataMigrationPhase3Defaults(t *testing.T, ctx context.Context, pool *pg
 		AND NOT EXISTS(SELECT 1 FROM artwork_images)
 		AND NOT EXISTS(SELECT 1 FROM entity_user_data)
 		AND NOT EXISTS(SELECT 1 FROM task_triggers WHERE system_event IS NOT NULL OR last_event_sequence IS DISTINCT FROM 0)
-		AND (SELECT total=14 AND initialized=14 FROM event_defaults)
+		AND (SELECT total=15 AND initialized=15 FROM event_defaults)
 		AND NOT EXISTS(SELECT 1 FROM task_system_event_receipts),
 		(SELECT total FROM event_defaults), (SELECT initialized FROM event_defaults)`).Scan(&valid, &totalEvents, &initializedEvents); err != nil || !valid {
 		t.Fatalf("metadata migration inferred phase 3 library, preference, artwork, or event state: valid=%t total_events=%d initialized_events=%d error=%v",
@@ -545,7 +545,7 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 	expectedAdditions = append(expectedAdditions, derivedTables...)
 	expectedAdditions = append(expectedAdditions, "local_metadata_ingest", "video_seek_ingest", "backup_policy", "backup_policy_runs", "backup_publication_receipts",
 		"admin_notification_destinations", "admin_notification_deliveries", "provider_configuration", "server_policy_settings",
-		"series_display_orders", "series_display_order_entries", "user_activity")
+		"series_display_orders", "series_display_order_entries", "user_activity", "local_nfo_recovery_sources", "local_nfo_recovery_work")
 	sort.Strings(expectedAdditions)
 	if !reflect.DeepEqual(additions, expectedAdditions) {
 		t.Errorf("metadata migration created unexpected tables: %+v", additions)

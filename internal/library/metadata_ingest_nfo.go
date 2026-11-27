@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/moooyo/goby/internal/metadata"
 	"github.com/moooyo/goby/internal/primaryio"
 )
 
@@ -18,41 +19,44 @@ type nfoIngestEntry struct {
 	info os.FileInfo
 }
 
-type nfoIngestProof []nfoIngestEntry
+type nfoIngestProof struct {
+	entries           []nfoIngestEntry
+	recoveryDirectory os.FileInfo
+}
 
 var errMetadataIngestInvalidNFO = errors.New("preferred local NFO could not be accepted")
 
 // Observe the ordered candidates using the contained parent. A returned proof
 // covers every absent higher-priority candidate and the chosen file's stamp.
 func observeMetadataIngestNFO(ctx context.Context, dir *os.Root, directoryPath string, candidates []string) (localNFOObservation, nfoIngestProof, error) {
-	proof := make(nfoIngestProof, 0, len(candidates))
+	proof := nfoIngestProof{entries: make([]nfoIngestEntry, 0, len(candidates))}
 	for _, name := range candidates {
 		before, err := dir.Lstat(name)
 		if errors.Is(err, os.ErrNotExist) {
-			proof = append(proof, nfoIngestEntry{name: name})
+			proof.entries = append(proof.entries, nfoIngestEntry{name: name})
 			continue
 		}
 		if err != nil {
 			if fatal := localNFOFatalReadError(ctx, err); fatal != nil {
-				return localNFOObservation{}, nil, fatal
+				return localNFOObservation{}, nfoIngestProof{}, fatal
 			}
-			return localNFOObservation{invalid: true}, nil, nil
+			return localNFOObservation{invalid: true}, nfoIngestProof{}, nil
 		}
 		if !before.Mode().IsRegular() || before.Size() > maxLocalNFOBytes {
-			return localNFOObservation{invalid: true}, nil, nil
+			return localNFOObservation{invalid: true}, nfoIngestProof{}, nil
 		}
 		data, found, invalid, err := readLocalNFO(ctx, dir, name)
 		if err != nil {
 			if fatal := localNFOFatalReadError(ctx, err); fatal != nil {
-				return localNFOObservation{}, nil, fatal
+				return localNFOObservation{}, nfoIngestProof{}, fatal
 			}
-			return localNFOObservation{invalid: true}, nil, nil
+			return localNFOObservation{invalid: true}, nfoIngestProof{}, nil
 		}
 		after, err := dir.Lstat(name)
 		if !found || invalid || err != nil || !sameLocalNFOFile(before, after) {
-			return localNFOObservation{invalid: true}, nil, nil
+			return localNFOObservation{invalid: true}, nfoIngestProof{}, nil
 		}
-		proof = append(proof, nfoIngestEntry{name: name, info: before})
+		proof.entries = append(proof.entries, nfoIngestEntry{name: name, info: before})
 		return localNFOObservation{path: filepath.ToSlash(filepath.Join(directoryPath, name)), data: data}, proof, ctx.Err()
 	}
 	return localNFOObservation{}, proof, ctx.Err()
@@ -69,11 +73,23 @@ func (proof nfoIngestProof) verify(ctx context.Context, lease *libraryRootLease,
 		return errors.Join(errMetadataIngestChanged, err)
 	}
 	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryRoot(ctx, dir)) }()
-	return proof.verifyAt(ctx, dir)
+	if err := proof.verifyAt(ctx, dir); err != nil {
+		return err
+	}
+	if proof.recoveryDirectory != nil {
+		current, err := root.Lstat(directory)
+		if err != nil {
+			return errors.Join(errMetadataIngestChanged, err, ctx.Err())
+		}
+		if err := proof.verifyRecoveryDirectory(current); err != nil {
+			return errors.Join(errMetadataIngestChanged, err)
+		}
+	}
+	return ctx.Err()
 }
 
 func (proof nfoIngestProof) verifyAt(ctx context.Context, dir *os.Root) error {
-	for _, entry := range proof {
+	for _, entry := range proof.entries {
 		current, err := dir.Lstat(entry.name)
 		if entry.info == nil && errors.Is(err, os.ErrNotExist) || entry.info != nil && err == nil && sameLocalNFOFile(entry.info, current) {
 			continue
@@ -85,13 +101,48 @@ func (proof nfoIngestProof) verifyAt(ctx context.Context, dir *os.Root) error {
 
 func (s *Store) publishMetadataIngestNFO(ctx context.Context, operation *PrimaryRootIO,
 	check func(context.Context, pgx.Tx) error, grant *internalTaskSourceGrant, verify func(context.Context) error, lease *libraryRootLease,
-	target metadataIngestTarget, directory, kind string, observation localNFOObservation, proof nfoIngestProof, state *scanState,
-	pairSource episodePairSource, binding *episodePairBinding) (_ bool, resultErr error) {
-	// Parsing is independent of the owner transaction. On rejection, an episode
-	// may still need to retire a merge belonging to a different binding.
+	target metadataIngestTarget, path, directory, kind, rootIdentity string, candidates []string, observation localNFOObservation,
+	proof nfoIngestProof, state *scanState, pairSource episodePairSource, binding *episodePairBinding) (_ bool, resultErr error) {
+	// Parsing and the second independent read happen outside catalog ownership.
+	// Failed readings and ordinary compatibility rejections are not corruption.
 	local, parseErr := parseObservedNFO(observation, kind, binding)
-	if parseErr != nil && target.kind != "Episode" {
+	source := nfoRecoveryBinding{target.request.directoryIdentity, rootIdentity, observation.path, target.changeNS}
+	var evidence nfoRecoveryEvidence
+	if parseErr != nil && source.valid() {
+		reason := metadata.NFOIntegrityFailure(observation.data)
+		if version := nfoRecoveryVersion(observation, proof); version != "" && reason != "" {
+			err := operation.Run(ctx, target.rootID, primaryio.Background, func(work context.Context) (readErr error) {
+				if err := verify(work); err != nil {
+					return err
+				}
+				root, err := lease.Open()
+				if err != nil {
+					return err
+				}
+				defer func() { readErr = errors.Join(readErr, closeDirectoryPrimaryRoot(work, root)) }()
+				dir, err := openRegisteredRoot(root, directory)
+				if err != nil {
+					return errors.Join(errMetadataIngestChanged, err)
+				}
+				defer func() { readErr = errors.Join(readErr, closeDirectoryPrimaryRoot(work, dir)) }()
+				confirmed, err := confirmNFORecovery(work, dir, directory, candidates, observation, proof)
+				if confirmed && err == nil {
+					evidence = nfoRecoveryEvidence{source, version, reason}
+				}
+				return err
+			})
+			if err != nil {
+				return false, err
+			}
+		}
+	}
+	if parseErr != nil && evidence.version == "" && target.kind != "Episode" {
 		return false, parseErr
+	}
+	trusted := parseErr == nil && source.valid() && (target.folder || source.changeNS > 0) && proof.recoveryDirectory != nil &&
+		trustedNFORecoveryDocument(path, target.folder, target.kind, target.request, local, observation.data)
+	if !trusted {
+		proof.recoveryDirectory = nil
 	}
 	index, parentIndex := target.request.index, target.request.parentIndex
 	if target.kind == "Episode" {
@@ -134,14 +185,15 @@ func (s *Store) publishMetadataIngestNFO(ctx context.Context, operation *Primary
 	if err := decodeLocalMetadata(raw, &previous); err != nil {
 		return false, err
 	}
-	if parseErr != nil && (previous.pair == nil || previous.pair.same(binding)) {
+	keepPrevious := parseErr != nil && (previous.pair == nil || previous.pair.same(binding))
+	if keepPrevious && evidence.version == "" {
 		return false, parseErr
 	}
 	if previous.pair == nil || previous.pair.same(binding) {
 		local.raw = previous.raw
 	}
-	changed := local.hash != previous.hash || local.path != previous.path || !local.pair.same(previous.pair) ||
-		!reflect.DeepEqual(local.value, previous.value) || target.kind == "Episode" && parentIndex != currentParentIndex
+	changed := !keepPrevious && (local.hash != previous.hash || local.path != previous.path || !local.pair.same(previous.pair) ||
+		!reflect.DeepEqual(local.value, previous.value) || target.kind == "Episode" && parentIndex != currentParentIndex)
 	if changed {
 		localJSON, err := encodeLocalMetadata(local)
 		if err != nil {
@@ -179,11 +231,26 @@ func (s *Store) publishMetadataIngestNFO(ctx context.Context, operation *Primary
 		}
 	}
 	if parseErr == nil {
+		var data []byte
+		if trusted {
+			data = observation.data
+		}
+		if err := finishNFORecoveryObservation(ctx, tx, grant.roots[target.rootID], target.id, target.jobID, source, data, local.hash); err != nil {
+			return false, err
+		}
 		if err := s.completeLocalMetadataImport(ctx, tx, grant, state.library, target, true, false); err != nil {
 			return false, err
 		}
-	} else if err := checkTaskIngestFence(ctx, tx, grant); err != nil {
-		return false, err
+	} else {
+		if evidence.version != "" {
+			if err := recordNFORecovery(ctx, tx, target, evidence); err != nil {
+				return false, err
+			}
+			parseErr = errMetadataIngestNFOHandedOff
+		}
+		if err := checkTaskIngestFence(ctx, tx, grant); err != nil {
+			return false, err
+		}
 	}
 	// Prove the observed sidecar after the queue and task fences so both the
 	// description and the pending gate roll back if storage changed.

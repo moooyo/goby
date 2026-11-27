@@ -49,6 +49,32 @@ type scanMetadataImport struct {
 	recheckOnly         bool
 	nfoCheck            scanNFOCheck
 	preserveNFO         bool
+	nfoRecovery         *scannedNFORecovery
+}
+
+type scannedNFORecovery struct {
+	row    rootBindingRow
+	source nfoRecoveryBinding
+	data   []byte
+	digest string
+}
+
+func (state *scanState) captureScannedNFORecovery(request *scanMetadataImport, row rootBindingRow, path, itemType string,
+	folder bool, observation localNFOObservation, proof *nfoIngestProof, local localMetadata, changeNS int64) {
+	capture := &scannedNFORecovery{row: row}
+	request.nfoRecovery = capture
+	rootInfo := state.directoryIdentities["."]
+	if rootInfo != nil && rootInfo.IsDir() && proof.recoveryDirectory != nil && (folder || changeNS > 0) &&
+		state.store.nfoRecoveryWritable(row.root) && trustedNFORecoveryDocument(path, folder, itemType, *request, local, observation.data) {
+		capture.source = nfoRecoveryBinding{request.directoryIdentity, fileIdentity(rootInfo), observation.path, changeNS}
+		if capture.source.valid() {
+			capture.data, capture.digest = observation.data, local.hash
+			return
+		}
+	}
+	// An accepted observation with no safe backup replaces any older recovery
+	// authority, but its normal import does not depend on the recovery proof.
+	proof.recoveryDirectory = nil
 }
 
 func (s *Store) defersLocalMetadata(library Library, job Job) bool {
@@ -169,11 +195,16 @@ func (state *scanState) queueMetadataImport(tx pgx.Tx, itemID string, request sc
 
 // The synchronous observation changes only the NFO phase. A rejected sidecar
 // can establish the same policy gate as a deferred scan on its first visit.
-func (state *scanState) queueFileMetadataImport(tx pgx.Tx, itemID, parentID string, request scanMetadataImport) error {
+func (state *scanState) queueScannedNFOImport(tx pgx.Tx, itemID, parentID string, folder bool, request scanMetadataImport) error {
+	ctx := state.task.ctx
+	if saved := request.nfoRecovery; saved != nil {
+		if err := finishNFORecoveryObservation(ctx, tx, saved.row, itemID, state.task.job.ID, saved.source, saved.data, saved.digest); err != nil {
+			return err
+		}
+	}
 	if request.nfoCheck == scanNFOUnchanged {
 		return state.queueMetadataImport(tx, itemID, request)
 	}
-	ctx := state.task.ctx
 	var wasPending, images, online bool
 	err := tx.QueryRow(ctx, `SELECT import_nfo,import_images,enrich_online FROM local_metadata_ingest WHERE item_id=$1 FOR UPDATE`, itemID).
 		Scan(&wasPending, &images, &online)
@@ -194,7 +225,7 @@ func (state *scanState) queueFileMetadataImport(tx pgx.Tx, itemID, parentID stri
 		}
 	}
 	if wasPending != request.nfo {
-		changes := []CatalogChange{metadataIngestVisibilityChange(metadataIngestTarget{id: itemID, parentID: parentID}, state.library.ID)}
+		changes := []CatalogChange{metadataIngestVisibilityChange(metadataIngestTarget{id: itemID, parentID: parentID, folder: folder}, state.library.ID)}
 		if request.nfo {
 			// A viewer may no longer be allowed to receive the item's ID. Its
 			// visible parent still needs a membership refresh after a rejection.
@@ -271,7 +302,7 @@ func (state *scanState) queueCachedIngestWork(stored storedFile, path string, in
 	if err := checkPair(tx); err != nil {
 		return err
 	}
-	if err := state.queueFileMetadataImport(tx, itemID, stored.parentID, request); err != nil {
+	if err := state.queueScannedNFOImport(tx, itemID, stored.parentID, false, request); err != nil {
 		return err
 	}
 	if seek {

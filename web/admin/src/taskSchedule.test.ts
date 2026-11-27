@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { TaskTrigger } from './api.ts';
+import { design2TasksChinese } from './feature-i18n-design2-tasks.ts';
 import { describeTrigger, scheduleFromTask, scheduleInput, systemEvents } from './taskSchedule.ts';
+import { taskScheduleSummary, taskTriggerLabel } from './taskTriggerPresentation.ts';
 
 test('automatic intro requests remain readable and survive schedule editing', () => {
   const trigger: TaskTrigger = { Id: 'intro-request', Kind: 'system_event', SystemEvent: 'IntroAnalysisRequested', IntervalTicks: null, TimeOfDayTicks: null,
@@ -105,5 +107,19 @@ test('Dolby Vision request, startup and periodic rules survive schedule editing'
       { Kind: 'startup', MaxRuntimeTicks: runtime },
       { Kind: 'interval', IntervalTicks: '9000000000', MaxRuntimeTicks: runtime },
     ],
+  });
+});
+
+test('NFO regeneration requests are selectable, localized, and preserved through schedule editing', () => {
+  const trigger: TaskTrigger = { Id: 'nfo-regeneration-request', Kind: 'system_event', SystemEvent: 'NFORecoveryRequested',
+    IntervalTicks: null, TimeOfDayTicks: null, DayOfWeek: null, MaxRuntimeTicks: '12000000000', NextFireAt: null, CalculationError: '' };
+  const option = systemEvents.find(({ value }) => value === trigger.SystemEvent);
+  assert.ok(option);
+  assert.equal(option.label, 'NFO regeneration requested');
+  assert.equal(describeTrigger(trigger), 'When NFO regeneration is requested');
+  assert.equal(taskTriggerLabel({ Kind: 'system_event', SystemEvent: option.value }, (key) => key), 'When NFO regeneration is requested');
+  assert.equal(taskScheduleSummary({ Triggers: [trigger] }, (key) => design2TasksChinese[key] ?? key), '请求重新生成 NFO 时');
+  assert.deepEqual(scheduleInput(scheduleFromTask('UTC', [trigger])), {
+    ScheduleTimezone: 'UTC', Triggers: [{ Kind: 'system_event', SystemEvent: 'NFORecoveryRequested', MaxRuntimeTicks: '12000000000' }],
   });
 });

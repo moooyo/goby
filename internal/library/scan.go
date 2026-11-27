@@ -461,7 +461,7 @@ func (state *scanState) publishScannedMedia(path, kind string, current hierarchy
 	if input == nil || input.primary == nil {
 		return scanReadFailure(ErrUnavailable)
 	}
-	rejectNFO := false
+	var rejectNFO, skipNFORecovery bool
 	for {
 		warnings, numberingConflicts := state.warnings, state.numberingConflicts
 		committed := false
@@ -475,8 +475,15 @@ func (state *scanState) publishScannedMedia(path, kind string, current hierarchy
 				resultErr = errors.Join(resultErr, closeScanPublicationIO(operation))
 				input.primary.publicationIO = nil
 			}()
-			return state.publishScannedMediaAttempt(path, kind, current, input, &committed, rejectNFO)
+			return state.publishScannedMediaAttempt(path, kind, current, input, &committed, rejectNFO, skipNFORecovery)
 		}()
+		if !committed && !skipNFORecovery && scanPublicationErrorOnly(err, errNFORecoveryDirectoryChanged) {
+			// The backup lost its directory generation, not necessarily its read
+			// eligibility. Retry the ordinary observation without retaining bytes.
+			state.warnings, state.numberingConflicts = warnings, numberingConflicts
+			skipNFORecovery = true
+			continue
+		}
 		if !committed && !rejectNFO && scanPublicationErrorOnly(err, errScannedEpisodeNFOChanged) {
 			// No positive metadata or visibility change survived the stale proof.
 			// Retry once without accepting this sidecar, leaving the NFO gate set.
@@ -500,7 +507,8 @@ func (state *scanState) publishScannedMedia(path, kind string, current hierarchy
 	}
 }
 
-func (state *scanState) publishScannedMediaAttempt(path, kind string, current hierarchy, input *scannedMediaInput, committed *bool, rejectNFO bool) (resultErr error) {
+func (state *scanState) publishScannedMediaAttempt(path, kind string, current hierarchy, input *scannedMediaInput, committed *bool,
+	rejectNFO, skipNFORecovery bool) (resultErr error) {
 	completionRequired, completionChecked := false, false
 	defer func() {
 		if completionRequired && !completionChecked {
@@ -581,6 +589,7 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 	var sidecarObservation cachedSidecarObservation
 	var currentInfo os.FileInfo
 	var pathErr error
+	writableRecovery := scanIngestVideoLibrary(state.library) && state.store.nfoRecoveryWritable(state.root)
 	if err := input.primary.runPublicationMetadata(input.primary.publicationIO, func(ctx context.Context) error {
 		var err error
 		switch {
@@ -590,7 +599,7 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 		case rejectNFO:
 			nfoObservation.invalid = true
 		case nfoProof != nil:
-			nfoObservation, err = nfoProof.observe(ctx, state.opened, candidates)
+			nfoObservation, err = nfoProof.observe(ctx, state.opened, candidates, path, itemType, writableRecovery && !skipNFORecovery)
 		default:
 			nfoObservation, err = state.observeLocalNFO(ctx, candidates, nfoKind)
 		}
@@ -633,6 +642,18 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 		}
 	}
 	local, rejected := state.applyScannedNFO(nfoObservation, nfoKind, stored.local, binding)
+	if rejected && nfoKind != "" && scanIngestVideoLibrary(state.library) && nfoProof == nil && validImageScanPath(path) {
+		// A synchronous scan can detect a reject on its first ordinary visit.
+		// The completed scan authorizes the importer to independently confirm
+		// damage. This transaction asserts the directory, not the rejected bytes.
+		directory := filepath.Dir(path)
+		if info := state.directoryIdentities[directory]; info != nil && info.IsDir() {
+			deferred.directoryIdentity = fileIdentity(info)
+			if deferred.directoryIdentity != "" {
+				nfoProof = &scannedNFOProof{directory: directory, identity: deferred.directoryIdentity}
+			}
+		}
+	}
 	if nfoProof != nil && nfoKind != "" {
 		switch {
 		case deferred.nfo:
@@ -642,11 +663,14 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 		case !nfoObservation.disabled && (stored.pendingNFO || local.pair != nil || stored.local.pair != nil):
 			deferred.nfoCheck = scanNFOVerified
 		}
+		if !nfoObservation.disabled && !rejected && scanIngestVideoLibrary(state.library) && (stored.pendingNFO || writableRecovery) {
+			state.captureScannedNFORecovery(&deferred, input.primary.row, path, itemType, false, nfoObservation, &nfoProof.nfo, local, media.FileChangeTime(info))
+		}
 	}
 	if nfoProof != nil && (nfoObservation.disabled || rejected) {
 		// No candidate identity is asserted on a pending scan. The directory
 		// still has to be the one captured by the walker and queued for retry.
-		nfoProof.entries = nil
+		nfoProof.nfo = nfoIngestProof{}
 	}
 	checkPair := func(tx pgx.Tx) error {
 		return pairSource.checkBinding(state.task.ctx, tx, local.pair, errScannedEpisodeNFOChanged)
@@ -871,7 +895,7 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 		if _, err := tx.Exec(state.task.ctx, `DELETE FROM local_metadata_ingest WHERE item_id=$1`, id); err != nil {
 			return err
 		}
-	} else if err := state.queueFileMetadataImport(tx, id, parentID, deferred); err != nil {
+	} else if err := state.queueScannedNFOImport(tx, id, parentID, false, deferred); err != nil {
 		return err
 	}
 	if seek {
@@ -989,10 +1013,21 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 }
 
 func (state *scanState) folder(relative, path, name, itemType, parentID string, indexNumber int, nfoRelative ...string) (string, error) {
+	var rejectNFO, skipNFORecovery bool
 	for {
 		warnings, conflicts := state.warnings, state.numberingConflicts
 		committed := false
-		id, err := state.folderAttempt(relative, path, name, itemType, parentID, indexNumber, &committed, nfoRelative...)
+		id, err := state.folderAttempt(relative, path, name, itemType, parentID, indexNumber, &committed, rejectNFO, skipNFORecovery, nfoRelative...)
+		if !committed && !skipNFORecovery && scanPublicationErrorOnly(err, errNFORecoveryDirectoryChanged) {
+			state.warnings, state.numberingConflicts = warnings, conflicts
+			skipNFORecovery = true
+			continue
+		}
+		if !committed && !rejectNFO && scanPublicationErrorOnly(err, errScannedEpisodeNFOChanged) {
+			state.warnings, state.numberingConflicts = warnings, conflicts
+			rejectNFO = true
+			continue
+		}
 		if committed || !sidecarAdmissionRetryable(err) {
 			return id, err
 		}
@@ -1006,7 +1041,7 @@ func (state *scanState) folder(relative, path, name, itemType, parentID string, 
 }
 
 func (state *scanState) folderAttempt(relative, path, name, itemType, parentID string, indexNumber int, committed *bool,
-	nfoRelative ...string) (_ string, resultErr error) {
+	rejectNFO, skipNFORecovery bool, nfoRelative ...string) (_ string, resultErr error) {
 	if !strings.HasPrefix(relative, "//") && (state.themePathReserved(filepath.ToSlash(relative)) || state.extraPathReserved(filepath.ToSlash(relative))) {
 		return "", fmt.Errorf("%w: a permanently reserved auxiliary path cannot become an ordinary folder", ErrUnavailable)
 	}
@@ -1057,7 +1092,10 @@ func (state *scanState) folderAttempt(relative, path, name, itemType, parentID s
 			err = source.readMetadata(state.task.ctx, state, func(ctx context.Context) error { return ctx.Err() })
 		}
 	} else {
-		local, err = state.folderLocalMetadataWithSource(relative, metadataPath, itemType, indexNumber, source)
+		if rejectNFO {
+			deferred.nfoCheck = scanNFOPending
+		}
+		local, err = state.folderLocalMetadataWithSource(relative, metadataPath, itemType, indexNumber, source, &deferred, skipNFORecovery)
 	}
 	if err != nil {
 		return "", err
@@ -1164,11 +1202,18 @@ func (state *scanState) folderAttempt(relative, path, name, itemType, parentID s
 	if err := beforeAuxiliary.record(state.task.ctx, tx, nil); err != nil {
 		return "", err
 	}
-	if err := state.queueFolderMetadataImport(tx, id, beforeCatalog.folderItemType, itemType, deferred); err != nil {
+	if deferred.nfoCheck != scanNFOUnchanged {
+		if err := state.queueScannedNFOImport(tx, id, parentID, true, deferred); err != nil {
+			return "", err
+		}
+	} else if err := state.queueFolderMetadataImport(tx, id, beforeCatalog.folderItemType, itemType, deferred); err != nil {
 		return "", err
 	}
 	if source != nil {
 		if err := source.final(state.task.ctx, tx); err != nil {
+			if scanPublicationErrorOnly(err, errScannedEpisodeNFOChanged) || scanPublicationErrorOnly(err, errNFORecoveryDirectoryChanged) {
+				return "", err
+			}
 			return "", scanReadFailure(err)
 		}
 	}

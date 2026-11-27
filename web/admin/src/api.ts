@@ -509,6 +509,7 @@ const taskSystemEvents = [
   "BackgroundPreviewGenerationRequested", "AudioWaveformGenerationRequested", "CreditsAnalysisRequested",
   "SubtitleTimelineGenerationRequested", "OnlineImagesRequested", "LocalMetadataIngestRequested",
   "OnlineMetadataIngestRequested", "VideoSeekIngestRequested", "DolbyVisionVerificationRequested",
+  "NFORecoveryRequested",
 ] as const;
 export type TaskSystemEvent = typeof taskSystemEvents[number];
 const taskSystemEventSet = new Set<string>(taskSystemEvents);

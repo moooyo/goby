@@ -18,6 +18,7 @@ func (s *Store) installScanIngestSchedules(tx library.OwnedTx) error {
 		{library.TaskOnlineMetadataIngestKey, systemevents.OnlineMetadataIngestRequested, time.Hour, time.Hour},
 		{library.TaskVideoSeekIngestKey, systemevents.VideoSeekIngestRequested, time.Hour, time.Hour},
 		{library.TaskDolbyVisionVerificationKey, systemevents.DolbyVisionVerificationRequested, 15 * time.Minute, 20 * time.Minute},
+		{library.TaskNFORecoveryKey, systemevents.NFORecoveryRequested, 15 * time.Minute, 20 * time.Minute},
 	} {
 		if err := s.installScanIngestSchedule(tx, policy.key, policy.event, policy.interval, policy.maxRuntime); err != nil {
 			return err

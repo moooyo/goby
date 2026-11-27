@@ -66,5 +66,7 @@ affected scan generations; a fresh successful scan or a manual start can retry
 them. An interrupted or cancelled scan cannot authorize its queued work.
 Removing the fast-ingest setting stops new deferred work. Pending local imports
 can still finish, and a synchronous rescan can reauthorize them without bypassing
-the final source proof. No code writes sidecars to the media filesystem in this
-feature.
+the final source proof. The import itself never writes sidecars. It can request
+[automatic NFO regeneration](local-metadata.md#automatic-regeneration-of-damaged-sidecars)
+for confirmed damage, independently of fast ingest. That task needs its own
+write opt-in.
