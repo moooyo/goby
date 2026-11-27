@@ -33,12 +33,22 @@ func WithIngestOnlineMetadata() Option {
 	}
 }
 
+type scanNFOCheck uint8
+
+const (
+	scanNFOUnchanged scanNFOCheck = iota
+	scanNFOPending
+	scanNFOVerified
+)
+
 type scanMetadataImport struct {
 	directoryIdentity   string
 	index, parentIndex  int
 	parentDefined       bool
 	nfo, images, online bool
 	recheckOnly         bool
+	nfoCheck            scanNFOCheck
+	preserveNFO         bool
 }
 
 func (s *Store) defersLocalMetadata(library Library, job Job) bool {
@@ -49,9 +59,9 @@ func (s *Store) defersLocalMetadata(library Library, job Job) bool {
 	return options.EnableLocalMetadata || options.EnableLocalImages
 }
 
-// Synchronous scans also refresh an existing pending marker, but never clear
-// it without the importer's final candidate proof. This includes disabling the
-// fast path while there is still durable work from an earlier scan.
+// Synchronous scans carry existing work forward when the fast path is off.
+// A file visit with its own final NFO proof can complete that phase directly;
+// other visits leave completion to the importer.
 func (s *Store) recheckLocalMetadataOnScan(ctx context.Context, library Library, job Job) (bool, error) {
 	if !scanIngestVideoLibrary(library) || s.defersLocalMetadata(library, job) {
 		return false, nil
@@ -95,7 +105,8 @@ func (state *scanState) metadataImport(path, itemType string, folder bool) scanM
 		return scanMetadataImport{directoryIdentity: identity, recheckOnly: true}
 	}
 	return scanMetadataImport{directoryIdentity: identity, online: online,
-		nfo: deferred && kind != "" && options.EnableLocalMetadata, images: deferred && options.EnableLocalImages}
+		nfo: deferred && kind != "" && options.EnableLocalMetadata, images: deferred && options.EnableLocalImages,
+		preserveNFO: kind != "" && !options.EnableLocalMetadata}
 }
 
 // Virtual TV folders have no sidecar directory. Online matching can still use
@@ -117,7 +128,9 @@ func (request scanMetadataImport) pending() bool {
 	return request.nfo || request.images || request.online
 }
 
-func (request scanMetadataImport) needed() bool { return request.pending() || request.recheckOnly }
+func (request scanMetadataImport) needed() bool {
+	return request.pending() || request.recheckOnly || request.nfoCheck != scanNFOUnchanged
+}
 
 // Exclude descriptive metadata and user state so a manual edit neither changes
 // the accepted media source nor invalidates an already queued import.
@@ -131,8 +144,9 @@ const queueScanMetadataImportSQL = `INSERT INTO local_metadata_ingest
 	FROM items i JOIN library_roots r ON r.id=i.root_id AND r.library_id=i.library_id WHERE i.id=$1
 	ON CONFLICT(item_id) DO UPDATE SET scan_job_id=EXCLUDED.scan_job_id,directory_identity=EXCLUDED.directory_identity,
 	source_key=EXCLUDED.source_key,index_number=EXCLUDED.index_number,parent_index_number=EXCLUDED.parent_index_number,
-	parent_number_defined=EXCLUDED.parent_number_defined,import_nfo=EXCLUDED.import_nfo,import_images=EXCLUDED.import_images,
-	enrich_online=EXCLUDED.enrich_online`
+	parent_number_defined=EXCLUDED.parent_number_defined,
+	import_nfo=EXCLUDED.import_nfo OR ($10::boolean AND local_metadata_ingest.import_nfo),
+	import_images=EXCLUDED.import_images,enrich_online=EXCLUDED.enrich_online`
 
 // A request is visible to background work only after the same scan's terminal
 // checkpoint. Item writes and their request share the original scan transaction.
@@ -149,8 +163,53 @@ func (state *scanState) queueMetadataImport(tx pgx.Tx, itemID string, request sc
 		return nil
 	}
 	_, err := tx.Exec(state.task.ctx, queueScanMetadataImportSQL, itemID, state.task.job.ID, request.directoryIdentity,
-		request.index, request.parentIndex, request.parentDefined, request.nfo, request.images, request.online)
+		request.index, request.parentIndex, request.parentDefined, request.nfo, request.images, request.online, request.preserveNFO)
 	return err
+}
+
+// The synchronous observation changes only the NFO phase. A rejected sidecar
+// can establish the same policy gate as a deferred scan on its first visit.
+func (state *scanState) queueFileMetadataImport(tx pgx.Tx, itemID, parentID string, request scanMetadataImport) error {
+	if request.nfoCheck == scanNFOUnchanged {
+		return state.queueMetadataImport(tx, itemID, request)
+	}
+	ctx := state.task.ctx
+	var wasPending, images, online bool
+	err := tx.QueryRow(ctx, `SELECT import_nfo,import_images,enrich_online FROM local_metadata_ingest WHERE item_id=$1 FOR UPDATE`, itemID).
+		Scan(&wasPending, &images, &online)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return err
+	}
+	request.recheckOnly, request.preserveNFO = false, false
+	request.nfo = request.nfoCheck == scanNFOPending
+	request.images = request.images || images
+	request.online = request.online || online
+	if request.pending() {
+		if err := state.queueMetadataImport(tx, itemID, request); err != nil {
+			return err
+		}
+	} else if wasPending {
+		if _, err := tx.Exec(ctx, `DELETE FROM local_metadata_ingest WHERE item_id=$1`, itemID); err != nil {
+			return err
+		}
+	}
+	if wasPending != request.nfo {
+		changes := []CatalogChange{metadataIngestVisibilityChange(metadataIngestTarget{id: itemID, parentID: parentID}, state.library.ID)}
+		if request.nfo {
+			// A viewer may no longer be allowed to receive the item's ID. Its
+			// visible parent still needs a membership refresh after a rejection.
+			parent := CatalogChange{Kind: CatalogUpdated, ItemID: parentID, LibraryID: state.library.ID, IsFolder: true, ChildrenRemoved: true}
+			err := tx.QueryRow(ctx, `SELECT COALESCE(parent_id,''),type='CollectionFolder' FROM items WHERE id=$1 AND library_id=$2 AND is_folder`,
+				parentID, state.library.ID).Scan(&parent.ParentID, &parent.IsCollectionFolder)
+			if err == nil {
+				changes = append(changes, parent)
+			} else if !errors.Is(err, pgx.ErrNoRows) {
+				return err
+			}
+		}
+		return mergeAuxiliaryCatalogChanges(tx, changes, false)
+	}
+	return nil
 }
 
 // A grouping folder has neither a folder NFO nor an online metadata match.
@@ -172,9 +231,10 @@ func (state *scanState) queueFolderMetadataImport(tx pgx.Tx, itemID, previousTyp
 	return state.queueMetadataImport(tx, itemID, request)
 }
 
-func (state *scanState) queueCachedIngestWork(stored storedFile, path string, input *primaryScanRead, request scanMetadataImport, seek bool, dolbyVision []int) (resultErr error) {
+func (state *scanState) queueCachedIngestWork(stored storedFile, path string, input *primaryScanRead, request scanMetadataImport,
+	seek bool, dolbyVision []int, proof *scannedNFOProof, checkPair func(pgx.Tx) error) (resultErr error) {
 	itemID := stored.id
-	if !request.needed() && !seek && len(dolbyVision) == 0 {
+	if !request.needed() && !seek && len(dolbyVision) == 0 && proof == nil {
 		return nil
 	}
 	tx, err := state.store.beginOwnedTx(state.task.ctx)
@@ -196,9 +256,10 @@ func (state *scanState) queueCachedIngestWork(stored storedFile, path string, in
 		changeNS = stored.media.FileChangeTimeNs
 	}
 	if err := tx.QueryRow(state.task.ctx, `SELECT file_identity=$5 AND file_size=$6 AND modified_at IS NOT DISTINCT FROM $7
-		AND COALESCE((media->>'FileChangeTimeNs')::bigint,0)=$8
+		AND COALESCE((media->>'FileChangeTimeNs')::bigint,0)=$8 AND COALESCE(parent_id,'')=$9 AND type=$10 AND path=$11
 		FROM items WHERE id=$1 AND library_id=$2 AND root_id=$3 AND relative_path=$4 AND NOT is_folder AND `+ordinaryItemSQL("items")+` FOR UPDATE`,
-		itemID, state.library.ID, state.root.id, filepath.ToSlash(path), stored.identity, stored.size, stored.modified, changeNS).Scan(&sourceCurrent); err != nil {
+		itemID, state.library.ID, state.root.id, filepath.ToSlash(path), stored.identity, stored.size, stored.modified, changeNS,
+		stored.parentID, stored.itemType, stored.path).Scan(&sourceCurrent); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return errScanProbeSourceChanged
 		}
@@ -207,7 +268,10 @@ func (state *scanState) queueCachedIngestWork(stored storedFile, path string, in
 	if !sourceCurrent {
 		return errScanProbeSourceChanged
 	}
-	if err := state.queueMetadataImport(tx, itemID, request); err != nil {
+	if err := checkPair(tx); err != nil {
+		return err
+	}
+	if err := state.queueFileMetadataImport(tx, itemID, stored.parentID, request); err != nil {
 		return err
 	}
 	if seek {
@@ -218,7 +282,7 @@ func (state *scanState) queueCachedIngestWork(stored storedFile, path string, in
 	if err := state.queueDolbyVisionVerification(tx, itemID, dolbyVision); err != nil {
 		return err
 	}
-	if err := input.revalidatePublicationSource(tx); err != nil {
+	if err := input.revalidatePublicationNFO(tx, proof); err != nil {
 		return err
 	}
 	if err := state.task.ctx.Err(); err != nil {

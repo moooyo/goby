@@ -126,8 +126,9 @@ func (access libraryAccess) itemPolicySQLWithParameters(alias string, parameters
 		WHERE NOT parent.id=ANY(child.visited)
 	) `
 	ancestorConditions := []string{}
-	const noPendingRatingOrTags = `NOT EXISTS (SELECT 1 FROM policy_ancestors ancestor
-		JOIN local_metadata_ingest pending ON pending.item_id=ancestor.id WHERE pending.import_nfo)`
+	const noPendingRatingOrTags = `(NOT EXISTS (SELECT 1 FROM policy_ancestors ancestor
+		JOIN local_metadata_ingest pending ON pending.item_id=ancestor.id WHERE pending.import_nfo)
+		AND NOT ` + staleEpisodePairPolicySQL + `)`
 	// Pending local metadata is not evidence that a source or its ancestors
 	// are unrated or untagged. An unrelated unrated category does not hide it.
 	pendingMatchesAll := policy.MaxParentalRating != nil || len(policy.BlockedTags) != 0 || len(policy.IncludeTags) != 0

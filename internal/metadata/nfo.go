@@ -57,24 +57,32 @@ type element struct {
 // ParseNFO reads at most 2 MiB plus one overflow byte from r. It does not close r.
 // All limits and field errors fail the entire document without partial output.
 func ParseNFO(r io.Reader) (Metadata, error) {
+	roots, err := readNFORoots(r, false)
+	if err != nil {
+		return Metadata{}, err
+	}
+	return extractNFO(roots[0])
+}
+
+func readNFORoots(r io.Reader, allowEpisodePair bool) ([]*element, error) {
 	if r == nil {
-		return Metadata{}, fmt.Errorf("NFO reader is nil")
+		return nil, fmt.Errorf("NFO reader is nil")
 	}
 	data, err := io.ReadAll(io.LimitReader(r, maxNFOBytes+1))
 	if err != nil {
-		return Metadata{}, fmt.Errorf("read NFO: %w", err)
+		return nil, fmt.Errorf("read NFO: %w", err)
 	}
 	if len(data) > maxNFOBytes {
-		return Metadata{}, fmt.Errorf("NFO input exceeds %d bytes", maxNFOBytes)
+		return nil, fmt.Errorf("NFO input exceeds %d bytes", maxNFOBytes)
 	}
 	data, encoding, err := nfoUTF8Bytes(data)
 	if err != nil {
-		return Metadata{}, err
+		return nil, err
 	}
-	root, err := parseXML(data, encoding)
-	if err != nil {
-		return Metadata{}, err
-	}
+	return parseXML(data, encoding, allowEpisodePair)
+}
+
+func extractNFO(root *element) (Metadata, error) {
 	result, err := extract(root)
 	if err != nil {
 		return Metadata{}, fmt.Errorf("NFO metadata: %w", err)
@@ -82,7 +90,7 @@ func ParseNFO(r io.Reader) (Metadata, error) {
 	return result, nil
 }
 
-func parseXML(data []byte, encoding nfoEncoding) (*element, error) {
+func parseXML(data []byte, encoding nfoEncoding, allowEpisodePair bool) ([]*element, error) {
 	decoder := xml.NewDecoder(bytes.NewReader(data))
 	// The bytes are already UTF-8. Only an encoding corroborated by the BOM
 	// can pass through the decoder's charset hook; it is not a text converter.
@@ -95,11 +103,12 @@ func parseXML(data []byte, encoding nfoEncoding) (*element, error) {
 		}
 	}
 	// Keep Strict enabled and Entity unset; there is no external resolver.
-	var root *element
+	var roots []*element
 	var stack []*element
 	var elements int
-	var contentSeen bool
+	var contentSeen, invalidPairMarkup bool
 	for {
+		offset := decoder.InputOffset()
 		token, err := decoder.Token()
 		if err == io.EOF {
 			break
@@ -117,12 +126,19 @@ func parseXML(data []byte, encoding nfoEncoding) (*element, error) {
 			if err := checkAttributes(token); err != nil {
 				return nil, err
 			}
+			if allowEpisodePair {
+				for _, attr := range token.Attr {
+					// encoding/xml can resolve an illegally emptied prefix as
+					// an unqualified name. Do not accept that as pair evidence.
+					invalidPairMarkup = invalidPairMarkup || attr.Name.Space == "xmlns" && attr.Value == ""
+				}
+			}
 			node := &element{name: token.Name, attrs: token.Attr}
 			if len(stack) == 0 {
-				if root != nil {
-					return nil, fmt.Errorf("NFO XML must contain exactly one root")
+				if len(roots) != 0 && (!allowEpisodePair || len(roots) != 1 || !episodeNFORoot(roots[0]) || !episodeNFORoot(node)) {
+					return nil, fmt.Errorf("NFO XML has unexpected additional root")
 				}
-				root = node
+				roots = append(roots, node)
 			} else {
 				parent := stack[len(stack)-1]
 				parent.children = append(parent.children, node)
@@ -138,6 +154,9 @@ func parseXML(data []byte, encoding nfoEncoding) (*element, error) {
 				if !xmlWhitespace(token) {
 					return nil, fmt.Errorf("NFO XML has text outside its root")
 				}
+				// Whitespace produced by CDATA or an entity is not a valid
+				// separator or epilogue between complete episode fragments.
+				invalidPairMarkup = invalidPairMarkup || allowEpisodePair && !xmlWhitespace(data[offset:decoder.InputOffset()])
 			} else {
 				current := stack[len(stack)-1]
 				if len(token) > maxFieldBytes-current.text.Len() {
@@ -149,7 +168,7 @@ func parseXML(data []byte, encoding nfoEncoding) (*element, error) {
 		case xml.Directive:
 			return nil, fmt.Errorf("NFO XML directives and DOCTYPE are not supported")
 		case xml.ProcInst:
-			if token.Target != "xml" || contentSeen || root != nil {
+			if token.Target != "xml" || contentSeen {
 				return nil, fmt.Errorf("NFO XML processing instruction is not supported here")
 			}
 			if err := checkDeclaration(token.Inst, encoding); err != nil {
@@ -160,10 +179,13 @@ func parseXML(data []byte, encoding nfoEncoding) (*element, error) {
 			contentSeen = true
 		}
 	}
-	if root == nil || len(stack) != 0 {
+	if len(roots) == 0 || len(stack) != 0 {
 		return nil, fmt.Errorf("NFO XML has no complete root element")
 	}
-	return root, nil
+	if len(roots) == 2 && invalidPairMarkup {
+		return nil, fmt.Errorf("NFO episode pair has invalid fragment markup")
+	}
+	return roots, nil
 }
 
 func xmlWhitespace(data []byte) bool {

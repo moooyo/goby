@@ -70,7 +70,7 @@ type storedFile struct {
 	local                                                                                  localMetadata
 	automatic                                                                              *MetadataValues
 	scanSortName                                                                           *string
-	hasLocalImages                                                                         bool
+	hasLocalImages, pendingNFO                                                             bool
 }
 
 func (s *Store) scanLibrary(task *scanTask) (message string, resultErr error) {
@@ -461,8 +461,9 @@ func (state *scanState) publishScannedMedia(path, kind string, current hierarchy
 	if input == nil || input.primary == nil {
 		return scanReadFailure(ErrUnavailable)
 	}
+	rejectNFO := false
 	for {
-		warnings := state.warnings
+		warnings, numberingConflicts := state.warnings, state.numberingConflicts
 		committed := false
 		err := func() (resultErr error) {
 			operation, err := input.primary.preparePublicationIO()
@@ -474,8 +475,15 @@ func (state *scanState) publishScannedMedia(path, kind string, current hierarchy
 				resultErr = errors.Join(resultErr, closeScanPublicationIO(operation))
 				input.primary.publicationIO = nil
 			}()
-			return state.publishScannedMediaAttempt(path, kind, current, input, &committed)
+			return state.publishScannedMediaAttempt(path, kind, current, input, &committed, rejectNFO)
 		}()
+		if !committed && !rejectNFO && scanPublicationErrorOnly(err, errScannedEpisodeNFOChanged) {
+			// No positive metadata or visibility change survived the stale proof.
+			// Retry once without accepting this sidecar, leaving the NFO gate set.
+			state.warnings, state.numberingConflicts = warnings, numberingConflicts
+			rejectNFO = true
+			continue
+		}
 		if !committed && scanProbeSourceChangedOnly(err) {
 			state.warnings++
 			return state.store.persistProgress(state.task)
@@ -485,14 +493,14 @@ func (state *scanState) publishScannedMedia(path, kind string, current hierarchy
 		}
 		// The attempt has rolled back and closed its publication handle. The
 		// original bounded input remains owned until actual scan retirement.
-		state.warnings = warnings
+		state.warnings, state.numberingConflicts = warnings, numberingConflicts
 		if err := state.waitSidecarScanAdmission(); err != nil {
 			return scanReadFailure(err)
 		}
 	}
 }
 
-func (state *scanState) publishScannedMediaAttempt(path, kind string, current hierarchy, input *scannedMediaInput, committed *bool) (resultErr error) {
+func (state *scanState) publishScannedMediaAttempt(path, kind string, current hierarchy, input *scannedMediaInput, committed *bool, rejectNFO bool) (resultErr error) {
 	completionRequired, completionChecked := false, false
 	defer func() {
 		if completionRequired && !completionChecked {
@@ -553,6 +561,18 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 	candidates, nfoKind := fileNFOCandidates(path, itemType)
 	deferred := state.metadataImport(path, itemType, false)
 	deferred.index, deferred.parentIndex, deferred.parentDefined = indexNumber, parentIndex, parentNumberDefined
+	pairParent := parentID
+	if needVirtualSeason {
+		pairParent = ""
+	}
+	pairSource, nfoProof, err := state.prepareScannedEpisodeNFO(input, path, itemType, pairParent, &deferred)
+	if err != nil {
+		return err
+	}
+	binding, err := pairSource.readBinding(state.task.ctx, state.store.pool, false)
+	if err != nil {
+		return err
+	}
 	seek := state.defersVideoSeek(itemType, probe)
 	dolbyVision := state.pendingDolbyVision(itemType, probe)
 	// Sidecar absence is authoritative only while this media pathname still
@@ -563,14 +583,19 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 	var pathErr error
 	if err := input.primary.runPublicationMetadata(input.primary.publicationIO, func(ctx context.Context) error {
 		var err error
-		if deferred.nfo {
-			// Pending is not absence. Keep the last accepted same-kind source.
+		switch {
+		case deferred.nfo || !EffectiveLibraryOptions(state.library).EnableLocalMetadata:
+			// Pending or disabled is not evidence of absence.
 			nfoObservation.disabled = true
-		} else {
+		case rejectNFO:
+			nfoObservation.invalid = true
+		case nfoProof != nil:
+			nfoObservation, err = nfoProof.observe(ctx, state.opened, candidates)
+		default:
 			nfoObservation, err = state.observeLocalNFO(ctx, candidates, nfoKind)
-			if err != nil {
-				return err
-			}
+		}
+		if err != nil {
+			return err
 		}
 		currentInfo, pathErr = state.opened.Lstat(path)
 		if unchanged && stored.id != "" && (deferred.images || !stored.hasLocalImages) && pathErr == nil && sameMediaSourceFile(info, currentInfo) {
@@ -607,7 +632,25 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 			return err
 		}
 	}
-	local := state.applyLocalNFO(nfoObservation, nfoKind, stored.local)
+	local, rejected := state.applyScannedNFO(nfoObservation, nfoKind, stored.local, binding)
+	if nfoProof != nil && nfoKind != "" {
+		switch {
+		case deferred.nfo:
+			deferred.nfoCheck = scanNFOPending
+		case rejected || nfoObservation.disabled && (stored.pendingNFO || stored.local.pair != nil && local.pair == nil):
+			deferred.nfoCheck = scanNFOPending
+		case !nfoObservation.disabled && (stored.pendingNFO || local.pair != nil || stored.local.pair != nil):
+			deferred.nfoCheck = scanNFOVerified
+		}
+	}
+	if nfoProof != nil && (nfoObservation.disabled || rejected) {
+		// No candidate identity is asserted on a pending scan. The directory
+		// still has to be the one captured by the walker and queued for retry.
+		nfoProof.entries = nil
+	}
+	checkPair := func(tx pgx.Tx) error {
+		return pairSource.checkBinding(state.task.ctx, tx, local.pair, errScannedEpisodeNFOChanged)
+	}
 	if itemType == "Episode" {
 		local, indexNumber, parentIndex = state.episodeNumbering(local, indexNumber, parentIndex, parentNumberDefined)
 	}
@@ -644,10 +687,10 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 	}
 	changed := !unchanged || stored.path != fullPath || stored.parentID != parentID || previousName != name || stored.itemType != itemType ||
 		previousSort != comparisonSortName || previousOverview != overview || previousIndex != indexNumber || previousParentIndex != parentIndex ||
-		stored.local.hash != local.hash || stored.local.path != local.path || !reflect.DeepEqual(stored.local.value, local.value)
+		stored.local.hash != local.hash || stored.local.path != local.path || !stored.local.pair.same(local.pair) || !reflect.DeepEqual(stored.local.value, local.value)
 	if stored.id != "" && !changed {
 		completionRequired = state.task.job.TaskChildID != ""
-		if err := state.queueCachedIngestWork(stored, path, input.primary, deferred, seek, dolbyVision); err != nil {
+		if err := state.queueCachedIngestWork(stored, path, input.primary, deferred, seek, dolbyVision, nfoProof, checkPair); err != nil {
 			return err
 		}
 		sidecarsUnchanged := false
@@ -766,6 +809,9 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 	if beforeCatalog.present && beforeCatalog.change.LibraryID != state.library.ID {
 		return fmt.Errorf("%w: scanned item belongs to another library", ErrUnavailable)
 	}
+	if err := checkPair(tx); err != nil {
+		return err
+	}
 	beforeAuxiliary, err := readAuxiliaryChildCatalogSnapshot(state.task.ctx, tx, id)
 	if err != nil {
 		return err
@@ -821,7 +867,11 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 	if err := beforeAuxiliary.record(state.task.ctx, tx, nil); err != nil {
 		return err
 	}
-	if err := state.queueMetadataImport(tx, id, deferred); err != nil {
+	if stored.pendingNFO && nfoKind == "" {
+		if _, err := tx.Exec(state.task.ctx, `DELETE FROM local_metadata_ingest WHERE item_id=$1`, id); err != nil {
+			return err
+		}
+	} else if err := state.queueFileMetadataImport(tx, id, parentID, deferred); err != nil {
 		return err
 	}
 	if seek {
@@ -869,7 +919,7 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 		if state.store.closing.Load() {
 			return ErrUnavailable
 		}
-		if err := state.revalidateScanProbeStorage(tx, path, input); err != nil {
+		if err := state.revalidateScanProbeStorageWithNFO(tx, path, input, nfoProof); err != nil {
 			return err
 		}
 		if err := state.task.ctx.Err(); err != nil {
@@ -878,7 +928,7 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 		if state.store.closing.Load() {
 			return ErrUnavailable
 		}
-	} else if err := input.primary.revalidatePublicationSource(tx); err != nil {
+	} else if err := input.primary.revalidatePublicationNFO(tx, nfoProof); err != nil {
 		return err
 	}
 	if err := state.task.ctx.Err(); err != nil {
@@ -1162,7 +1212,8 @@ const storedFileColumns = `id, root_id, relative_path, file_identity, file_size,
 		ELSE (SELECT CASE WHEN cardinality(sort_remove_words)>0
 			THEN goby_generated_sort_name(ms.automatic->>'Name',sort_remove_words) END FROM managed_settings WHERE id=1) END)
 		FROM item_metadata_state ms WHERE ms.item_id = items.id),
-	EXISTS (SELECT 1 FROM item_images im WHERE im.item_id = items.id)`
+	EXISTS (SELECT 1 FROM item_images im WHERE im.item_id = items.id),
+	CASE WHEN type IN ('Episode','Movie') THEN EXISTS(SELECT 1 FROM local_metadata_ingest q WHERE q.item_id=items.id AND q.import_nfo) ELSE false END`
 
 func readStoredFile(row rowScanner) (storedFile, error) {
 	return readStoredFileAccepted(row, nil)
@@ -1172,7 +1223,7 @@ func readStoredFileAccepted(row rowScanner, acceptID func(string) bool) (storedF
 	var item storedFile
 	var raw, localRaw, automaticRaw []byte
 	err := row.Scan(&item.id, &item.rootID, &item.relativePath, &item.identity, &item.size, &item.modified, &raw, &item.parentID, &item.path, &item.name, &item.itemType,
-		&item.sortName, &item.overview, &item.indexNumber, &item.parentIndexNumber, &localRaw, &item.local.hash, &item.local.path, &automaticRaw, &item.hasLocalImages)
+		&item.sortName, &item.overview, &item.indexNumber, &item.parentIndexNumber, &localRaw, &item.local.hash, &item.local.path, &automaticRaw, &item.hasLocalImages, &item.pendingNFO)
 	if err != nil {
 		return storedFile{}, err
 	}

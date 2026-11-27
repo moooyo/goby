@@ -23,6 +23,7 @@ type localMetadata struct {
 	value      *metadata.Metadata
 	hash, path string
 	raw        []byte
+	pair       *episodePairBinding
 }
 
 // localNFOObservation contains only owned bytes and immutable source facts.
@@ -87,33 +88,58 @@ func localNFOFatalReadError(ctx context.Context, err error) error {
 	return nil
 }
 
-// applyLocalNFO runs on the serial scanner after its read phase has retired.
-// Invalid preferred files retain the last valid metadata. Complete absence
-// removes the local override, while a disabled importer retains its old facts.
 func (state *scanState) applyLocalNFO(observation localNFOObservation, kind string, previous localMetadata) localMetadata {
+	local, _ := state.applyScannedNFO(observation, kind, previous, nil)
+	return local
+}
+
+// A rejected or disabled read can retain a previously accepted source, but a
+// merged source may not follow an item ID to different media or ancestry.
+func (state *scanState) applyScannedNFO(observation localNFOObservation, kind string, previous localMetadata,
+	binding *episodePairBinding) (localMetadata, bool) {
 	if kind == "" {
-		return localMetadata{}
+		return localMetadata{}, false
 	}
-	if previous.value != nil && previous.value.Kind != kind {
+	if previous.value != nil && previous.value.Kind != kind || previous.pair != nil && !previous.pair.same(binding) {
 		previous = localMetadata{}
 	}
 	if observation.disabled {
-		return previous
+		return previous, false
 	}
-	if observation.invalid {
+	local, err := parseObservedNFO(observation, kind, binding)
+	if err != nil {
 		state.warnings++
-		return previous
+		return previous, true
+	}
+	local.raw = previous.raw
+	return local, false
+}
+
+func parseObservedNFO(observation localNFOObservation, kind string, binding *episodePairBinding) (localMetadata, error) {
+	if observation.invalid || kind == "" {
+		return localMetadata{}, errMetadataIngestInvalidNFO
 	}
 	if observation.path == "" {
-		return localMetadata{}
+		return localMetadata{}, nil
 	}
-	value, err := metadata.ParseNFO(bytes.NewReader(observation.data))
+	var value metadata.Metadata
+	var merged bool
+	var err error
+	r := bytes.NewReader(observation.data)
+	if binding != nil {
+		value, merged, err = metadata.ParseEpisodeNFO(r, binding.Numbers)
+	} else {
+		value, err = metadata.ParseNFO(r)
+	}
 	if err != nil || value.Kind != kind {
-		state.warnings++
-		return previous
+		return localMetadata{}, errMetadataIngestInvalidNFO
 	}
 	digest := sha256.Sum256(observation.data)
-	return localMetadata{value: &value, hash: hex.EncodeToString(digest[:]), path: observation.path, raw: previous.raw}
+	local := localMetadata{value: &value, hash: hex.EncodeToString(digest[:]), path: observation.path}
+	if merged {
+		local.pair = binding
+	}
+	return local, nil
 }
 
 func readLocalNFO(ctx context.Context, root *os.Root, path string) ([]byte, bool, bool, error) {
@@ -349,6 +375,13 @@ func encodeLocalMetadata(local localMetadata) ([]byte, error) {
 		}
 		object[field] = value
 	}
+	delete(object, episodePairBindingField)
+	if local.pair != nil {
+		object[episodePairBindingField], err = json.Marshal(local.pair)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return json.Marshal(object)
 }
 
@@ -356,7 +389,14 @@ func decodeLocalMetadata(raw []byte, local *localMetadata) error {
 	if len(raw) == 0 || string(raw) == "null" {
 		return nil
 	}
-	local.value = &metadata.Metadata{}
+	var decoded struct {
+		metadata.Metadata
+		Pair *episodePairBinding `json:"_EpisodePairBinding"`
+	}
+	if err := json.Unmarshal(raw, &decoded); err != nil {
+		return err
+	}
+	local.value, local.pair = &decoded.Metadata, decoded.Pair
 	local.raw = append([]byte(nil), raw...)
-	return json.Unmarshal(raw, local.value)
+	return nil
 }

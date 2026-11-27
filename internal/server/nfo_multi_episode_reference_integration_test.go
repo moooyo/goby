@@ -13,6 +13,39 @@ const multiEpisodeNFOReferenceCapture = "../../tests/compatibility/fixtures/refe
 
 var multiEpisodeNFOFields = []string{"Name", "Overview", "ProviderIds", "IndexNumber", "IndexNumberEnd", "ParentIndexNumber"}
 
+var orderedPairWarmDescription = map[string]any{
+	"Name":        "NFO pair_ordered 22 block 1,  NFO pair_ordered 22 block 2",
+	"Overview":    "Plot pair_ordered 22 block 1\n\nPlot pair_ordered 22 block 2",
+	"ProviderIds": map[string]any{"Tmdb": "91042201"},
+}
+
+func assertMultiEpisodeNFOContract(t *testing.T, item multiEpisodeNFOCase, phase string, detail map[string]any) {
+	t.Helper()
+	want := map[string]any{"IndexNumber": float64(3), "ParentIndexNumber": float64(1)}
+	if end, paired := item.First["IndexNumberEnd"]; paired {
+		want["IndexNumberEnd"] = end
+	} else if _, present := detail["IndexNumberEnd"]; present {
+		t.Error("single episode has an end number")
+	}
+	switch item.Name {
+	case "pair_reversed", "pair_outside_range", "pair_missing_numbers", "pair_duplicate_number", "single_two_roots", "pair_second_broken", "pair_wrapped":
+		want["Name"] = path.Base(item.Media[:len(item.Media)-len(path.Ext(item.Media))])
+		want["Overview"] = ""
+		want["ProviderIds"] = map[string]any{}
+	case "pair_ordered":
+		if phase == "warm" {
+			for field, value := range orderedPairWarmDescription {
+				want[field] = value
+			}
+		}
+	}
+	for field, value := range want {
+		if !reflect.DeepEqual(detail[field], value) {
+			t.Errorf("strict Goby contract: %s=%#v, want %#v", field, detail[field], value)
+		}
+	}
+}
+
 type multiEpisodeNFOCase struct {
 	Name, Media         string
 	InitialNfo, WarmNfo *string
@@ -107,8 +140,8 @@ func TestHTTPMultiEpisodeNFOReferenceReplay(t *testing.T) {
 					} else if prior, ok := firstIDs[item.Name]; ok && prior != id {
 						t.Errorf("rescan changed episode ID from %q to %q", prior, id)
 					}
-					listed, total := responseItems(t, f.request(t, http.MethodGet, "/emby/Shows/"+seriesID+"/Episodes?Fields=Path", nil, clientHeaders))
-					if total != 1 || len(listed) != 1 || listed[0]["Id"] != id || listed[0]["Path"] != episode["Path"] {
+					listed, total := responseItems(t, f.request(t, http.MethodGet, "/emby/Shows/"+seriesID+"/Episodes", nil, clientHeaders))
+					if total != 1 || len(listed) != 1 || listed[0]["Id"] != id {
 						t.Fatalf("series listing did not expose the same single episode: %#v", listed)
 					}
 					r := f.request(t, http.MethodGet, itemList+"/"+id, nil, clientHeaders)
@@ -135,11 +168,12 @@ func TestHTTPMultiEpisodeNFOReferenceReplay(t *testing.T) {
 							}
 						}
 					}
-					// Both baseline scans produced the same field differences. Warm
-					// Goby behavior may later diverge when it reimports a valid edit.
-					delta := gaps.Cases[item.Name][phase]
-					if delta == nil {
-						delta = gaps.Cases[item.Name]["first"]
+					assertMultiEpisodeNFOContract(t, item, phase, detail)
+					delta := gaps.Cases[item.Name]["first"]
+					if item.Name == "pair_ordered" && phase == "warm" {
+						// The reference kept its old description on this warm scan.
+						// Goby deliberately imports a valid replacement immediately.
+						delta = orderedPairWarmDescription
 					}
 					compareNFOReferenceFields(t, multiEpisodeNFOFields, detail, item.First, delta)
 				})

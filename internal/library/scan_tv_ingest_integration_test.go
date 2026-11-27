@@ -28,7 +28,7 @@ func TestLocalMetadataIngestSkipsHistoricalSystemDirectories(t *testing.T) {
 			SELECT $1,$2,id,$2,'Deleted','deleted','Series',$3,'#recycle',true FROM library_roots WHERE library_id=$2`, excluded, collection.ID, filepath.Dir(path)); err != nil {
 			return err
 		}
-		_, err := tx.Exec(queueScanMetadataImportSQL, excluded, job.ID, fileIdentity(stat), 0, 0, false, true, false, false)
+		_, err := tx.Exec(queueScanMetadataImportSQL, excluded, job.ID, fileIdentity(stat), 0, 0, false, true, false, false, false)
 		return err
 	}); err != nil {
 		t.Fatal(err)
@@ -96,7 +96,7 @@ func TestStoreTVScanRetiresIncompatibleGroupingMetadataWork(t *testing.T) {
 				if _, err := tx.Exec(`UPDATE items SET type='Series' WHERE id=$1`, group.ID); err != nil {
 					return err
 				}
-				if _, err := tx.Exec(queueScanMetadataImportSQL, group.ID, oldScan.ID, fileIdentity(stat), 0, 0, false, true, mode.oldImages, true); err != nil {
+				if _, err := tx.Exec(queueScanMetadataImportSQL, group.ID, oldScan.ID, fileIdentity(stat), 0, 0, false, true, mode.oldImages, true, false); err != nil {
 					return err
 				}
 				if _, err := tx.Exec(`UPDATE users SET policy=policy||'{"MaxParentalRating":5}'::jsonb WHERE id=$1`, restricted); err != nil {

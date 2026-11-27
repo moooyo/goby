@@ -203,6 +203,10 @@ func (input *primaryScanRead) runPublicationMetadata(operation *PrimaryRootIO, w
 }
 
 func (input *primaryScanRead) revalidatePublicationSource(tx pgx.Tx) error {
+	return input.revalidatePublicationStorage(tx, input.checkPhysicalSource)
+}
+
+func (input *primaryScanRead) revalidatePublicationStorage(tx pgx.Tx, observe func(context.Context) error) error {
 	owned, ok := tx.(*ownedTx)
 	if !ok || owned.ctx == nil || input.publicationIO == nil {
 		return scanReadFailure(ErrUnavailable)
@@ -214,7 +218,7 @@ func (input *primaryScanRead) revalidatePublicationSource(tx pgx.Tx) error {
 	ctx, cancel := context.WithDeadline(input.work, deadline.Add(-scanReconciliationRollbackSpace))
 	defer cancel()
 	return input.publicationIO.RunImmediate(ctx, input.row.root.id, primaryio.Background, func(work context.Context) error {
-		return input.observePublicationSource(work, input.checkPhysicalSource)
+		return input.observePublicationSource(work, observe)
 	})
 }
 
@@ -355,6 +359,10 @@ func (input *primaryScanRead) attach(file *os.File, path string, stamp os.FileIn
 }
 
 func (input *primaryScanRead) checkPhysicalSource(ctx context.Context) (resultErr error) {
+	return input.checkPhysicalSourceWithNFO(ctx, nil)
+}
+
+func (input *primaryScanRead) checkPhysicalSourceWithNFO(ctx context.Context, proof *scannedNFOProof) (resultErr error) {
 	if input.namedAnchor == nil || input.namedRoot == nil || input.file == nil || input.stamp == nil {
 		return scanReadFailure(ErrUnavailable)
 	}
@@ -372,8 +380,24 @@ func (input *primaryScanRead) checkPhysicalSource(ctx context.Context) (resultEr
 	if !sameMediaSourceDirectory(input.namedRoot, current) {
 		return ErrRootBindingConflict
 	}
+	if proof != nil {
+		if err := proof.verify(ctx, current); err != nil {
+			return err
+		}
+	}
 	if err := checkScanProbeFileAt(ctx, current, input.file, input.stamp, input.path); err != nil {
 		return err
+	}
+	if proof != nil {
+		// The retained descriptor can still name an unlinked or moved root.
+		named, err := openRegisteredRoot(input.namedAnchor, input.row.root.relativePath)
+		if err != nil {
+			return errors.Join(ErrRootBindingConflict, err)
+		}
+		defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryRoot(ctx, named)) }()
+		if !sameMediaSourceDirectory(current, named) {
+			return ErrRootBindingConflict
+		}
 	}
 	if err := checkTaskSourceAnchorName(input.row.root.allowedPath, input.namedAnchor); err != nil {
 		return errors.Join(ErrRootBindingConflict, err)

@@ -69,6 +69,10 @@ func (proof nfoIngestProof) verify(ctx context.Context, lease *libraryRootLease,
 		return errors.Join(errMetadataIngestChanged, err)
 	}
 	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryRoot(ctx, dir)) }()
+	return proof.verifyAt(ctx, dir)
+}
+
+func (proof nfoIngestProof) verifyAt(ctx context.Context, dir *os.Root) error {
 	for _, entry := range proof {
 		current, err := dir.Lstat(entry.name)
 		if entry.info == nil && errors.Is(err, os.ErrNotExist) || entry.info != nil && err == nil && sameLocalNFOFile(entry.info, current) {
@@ -81,15 +85,13 @@ func (proof nfoIngestProof) verify(ctx context.Context, lease *libraryRootLease,
 
 func (s *Store) publishMetadataIngestNFO(ctx context.Context, operation *PrimaryRootIO,
 	check func(context.Context, pgx.Tx) error, grant *internalTaskSourceGrant, verify func(context.Context) error, lease *libraryRootLease,
-	target metadataIngestTarget, directory, kind string, observation localNFOObservation, proof nfoIngestProof, state *scanState) (_ bool, resultErr error) {
-	if observation.invalid || kind == "" {
-		return false, errMetadataIngestInvalidNFO
-	}
-	// Parsing is independent of the owner transaction. The current accepted
-	// raw source is attached under its lock to preserve unknown source fields.
-	local := state.applyLocalNFO(observation, kind, localMetadata{})
-	if state.warnings != 0 {
-		return false, errMetadataIngestInvalidNFO
+	target metadataIngestTarget, directory, kind string, observation localNFOObservation, proof nfoIngestProof, state *scanState,
+	pairSource episodePairSource, binding *episodePairBinding) (_ bool, resultErr error) {
+	// Parsing is independent of the owner transaction. On rejection, an episode
+	// may still need to retire a merge belonging to a different binding.
+	local, parseErr := parseObservedNFO(observation, kind, binding)
+	if parseErr != nil && target.kind != "Episode" {
+		return false, parseErr
 	}
 	index, parentIndex := target.request.index, target.request.parentIndex
 	if target.kind == "Episode" {
@@ -110,8 +112,16 @@ func (s *Store) publishMetadataIngestNFO(ctx context.Context, operation *Primary
 	if err != nil {
 		return false, err
 	}
-	defer func() { resultErr = errors.Join(resultErr, rollbackSidecarTransaction(tx, resultErr)) }()
+	committed := false
+	defer func() {
+		if !committed {
+			resultErr = errors.Join(resultErr, rollbackSidecarTransaction(tx, resultErr))
+		}
+	}()
 	if err := check(ctx, tx); err != nil {
+		return false, err
+	}
+	if err := pairSource.checkBinding(ctx, tx, binding, errMetadataIngestChanged); err != nil {
 		return false, err
 	}
 	var previous localMetadata
@@ -124,9 +134,14 @@ func (s *Store) publishMetadataIngestNFO(ctx context.Context, operation *Primary
 	if err := decodeLocalMetadata(raw, &previous); err != nil {
 		return false, err
 	}
-	local.raw = previous.raw
-	changed := local.hash != previous.hash || local.path != previous.path || !reflect.DeepEqual(local.value, previous.value) ||
-		target.kind == "Episode" && parentIndex != currentParentIndex
+	if parseErr != nil && (previous.pair == nil || previous.pair.same(binding)) {
+		return false, parseErr
+	}
+	if previous.pair == nil || previous.pair.same(binding) {
+		local.raw = previous.raw
+	}
+	changed := local.hash != previous.hash || local.path != previous.path || !local.pair.same(previous.pair) ||
+		!reflect.DeepEqual(local.value, previous.value) || target.kind == "Episode" && parentIndex != currentParentIndex
 	if changed {
 		localJSON, err := encodeLocalMetadata(local)
 		if err != nil {
@@ -163,6 +178,15 @@ func (s *Store) publishMetadataIngestNFO(ctx context.Context, operation *Primary
 			return false, err
 		}
 	}
+	if parseErr == nil {
+		if err := s.completeLocalMetadataImport(ctx, tx, grant, state.library, target, true, false); err != nil {
+			return false, err
+		}
+	} else if err := checkTaskIngestFence(ctx, tx, grant); err != nil {
+		return false, err
+	}
+	// Prove the observed sidecar after the queue and task fences so both the
+	// description and the pending gate roll back if storage changed.
 	deadline, _ := tx.(*ownedTx).ctx.Deadline()
 	bounded, cancel := context.WithDeadline(ctx, deadline.Add(-scanReconciliationRollbackSpace))
 	defer cancel()
@@ -179,8 +203,9 @@ func (s *Store) publishMetadataIngestNFO(ctx context.Context, operation *Primary
 	}); err != nil {
 		return false, err
 	}
-	if err := s.completeLocalMetadataImport(ctx, tx, grant, state.library, target, true, false); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		return false, err
 	}
-	return changed, tx.Commit(ctx)
+	committed = true
+	return changed, parseErr
 }

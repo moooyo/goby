@@ -75,7 +75,11 @@ func scanInputInspectionRejectedOnly(err error, rejection *scanInputInspectionRe
 }
 
 func scanProbeSourceChangedOnly(err error) bool {
-	if err == errScanProbeSourceChanged {
+	return scanPublicationErrorOnly(err, errScanProbeSourceChanged)
+}
+
+func scanPublicationErrorOnly(err, expected error) bool {
+	if err == expected {
 		return true
 	}
 	if joined, ok := err.(interface{ Unwrap() []error }); ok {
@@ -84,14 +88,14 @@ func scanProbeSourceChangedOnly(err error) bool {
 			return false
 		}
 		for _, child := range children {
-			if child != nil && !scanProbeSourceChangedOnly(child) {
+			if child != nil && !scanPublicationErrorOnly(child, expected) {
 				return false
 			}
 		}
 		return true
 	}
 	if wrapped, ok := err.(interface{ Unwrap() error }); ok {
-		return scanProbeSourceChangedOnly(wrapped.Unwrap())
+		return scanPublicationErrorOnly(wrapped.Unwrap(), expected)
 	}
 	return false
 }
@@ -644,6 +648,10 @@ func (state *scanState) checkScanProbeAuthorityWithRelation(tx pgx.Tx, path stri
 }
 
 func (state *scanState) revalidateScanProbeStorage(tx pgx.Tx, path string, input *scannedMediaInput) error {
+	return state.revalidateScanProbeStorageWithNFO(tx, path, input, nil)
+}
+
+func (state *scanState) revalidateScanProbeStorageWithNFO(tx pgx.Tx, path string, input *scannedMediaInput, proof *scannedNFOProof) error {
 	authority := input.authority
 	if authority == nil || authority.capture == nil {
 		return ErrRootBindingConflict
@@ -670,10 +678,19 @@ func (state *scanState) revalidateScanProbeStorage(tx pgx.Tx, path string, input
 	err := input.primary.publicationIO.RunImmediate(ctx, authority.root.id, primaryio.Background, func(work context.Context) error {
 		return runStorageObservation(work, []*storageObservationLifetime{&capture.observation, &authority.observation},
 			func(observation context.Context) error {
-				if err := capture.Revalidate(observation); err != nil {
+				if proof == nil {
+					if err := capture.Revalidate(observation); err != nil {
+						return err
+					}
+					return checkScanProbeFileAt(observation, root, file, expected, path)
+				}
+				if err := proof.verify(observation, root); err != nil {
 					return err
 				}
-				return checkScanProbeFileAt(observation, root, file, expected, path)
+				if err := checkScanProbeFileAt(observation, root, file, expected, path); err != nil {
+					return err
+				}
+				return capture.Revalidate(observation)
 			})
 	})
 	if err != nil {

@@ -578,6 +578,9 @@ func (s *Server) itemDTO(item library.Item, fields []string, detail bool) map[st
 	}
 	if item.Type == "Episode" {
 		dto["ParentIndexNumber"] = item.ParentIndexNumber
+		if end, ok := item.EpisodeEndNumber(); ok {
+			dto["IndexNumberEnd"] = end
+		}
 		if detail || hasField(fields, "IsStandaloneSpecial") {
 			dto["IsStandaloneSpecial"] = item.IsStandaloneSpecial()
 		}

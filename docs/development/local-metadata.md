@@ -57,7 +57,7 @@ track NFO files.
 | `year` | Production year from 1 through 9999 |
 | `premiered`, otherwise `aired` | Premiere date; date-only or RFC3339, normalized to UTC |
 | `rating` | Finite decimal community rating from 0 through 10 |
-| `mpaa` | Descriptive official rating; this does not add parental-policy enforcement |
+| `mpaa` | Official rating used by the existing content policy |
 | Repeated `genre`, `tag`, `studio` | Ordered unique strings |
 | `uniqueid type="..."`, `imdbid`, `tmdbid`, `tvdbid` | Provider identifiers; known keys normalize to `Imdb`, `Tmdb`, `Tvdb`, including `TMDB-TV` as `Tmdb` |
 | `actor` with `name`, `role`, `order` | Actor credits with optional role and zero-based sort order |
@@ -72,6 +72,14 @@ Conflicting duplicate values in other recognized scalar fields still reject the 
 Number fields are read only for the levels that use them. Series `tvshow.nfo` does not validate unused `season` and `episode` placeholders, including `-1`. Actual season and episode numbering keeps the nonnegative range; `0` remains distinct from an unset number. An episode's NFO may change its episode number, but cannot assign a different season than the physical hierarchy already establishes. A conflicting season number is ignored with a scan warning while other valid descriptive values are retained. The same rule prevents `season.nfo` from renumbering its physical season directory. Item IDs, probe data, and media paths remain under scanner control.
 
 Date-only input currently denotes midnight UTC in Goby. The reference capture on an Emby host configured for `Asia/Shanghai` converted `2024-01-02` to `2024-01-01T16:00:00Z`, indicating a host-timezone interpretation for that sample. This is a recorded compatibility difference; timezone policy is not inferred from a single capture. Explicit RFC3339 offsets are normalized to UTC by Goby's parser.
+
+## Two episodes in one file
+
+A physical episode whose filename stem ends in two adjacent episode numbers, such as `Show.S01E03E04` or `Show.S01E03-E04`, can expose `IndexNumberEnd: 4` alongside `IndexNumber: 3`. This range comes from the catalog path, regardless of NFO presence. If the current season or starting number no longer agrees with the filename, the end number is omitted. The file still has one item ID, one source, and one playback position. This does not change missing-episode matching.
+
+Both synchronous scanning and deferred local import can merge a matching `.nfo` for a paired file immediately inside its physical season directory. The sidecar must contain exactly two complete, unwrapped `episodedetails` roots in episode order, each with one explicit `season` and `episode` matching the file and season. A single document still uses the ordinary NFO rules. Both roots share the input, structure, and collection limits. The roots must have equal official ratings and the same tags (or both omit them). Goby joins nonempty titles with a comma and two spaces, and plots with two line feeds. All other fields, including provider IDs, come from the first root.
+
+A rejected pair does not publish either root. A scan can retain the last accepted merge for the same media, root, and hierarchy, but does not retain it on a different binding. A pending NFO, or a root or hierarchy remap that has not yet been verified by a scan, keeps the item hidden from viewers whose rating or tag policy depends on that evidence. Disabling NFO reading does not retire pending verification; independent artwork work can still complete. A verified replacement or confirmed absence can clear the pending phase. These decisions intentionally differ from some [observed Emby fallbacks](../../tests/compatibility/fixtures/reference/emby-4.10.2.0/nfo-multi-episode.md).
 
 ## Refresh and failure behavior
 

@@ -1016,6 +1016,13 @@ func persistThemeFile(ctx context.Context, tx pgx.Tx, file *preparedThemeFile) e
 	if err != nil {
 		return err
 	}
+	// A retained ordinary item can become an auxiliary resource by rename.
+	// Its former local import phase no longer has a reader in this role.
+	if stored.itemType == "Episode" || stored.itemType == "Movie" {
+		if _, err := tx.Exec(ctx, `DELETE FROM local_metadata_ingest WHERE item_id=$1`, file.id); err != nil {
+			return err
+		}
+	}
 	// Preserve accepted tags of this resource and its current native controls.
 	// No directory/movie NFO or parent genre/people data enters this write.
 	if err := writeScannedMusicSource(ctx, tx, file.id, file.itemType, file.input.probe); err != nil {
