@@ -5,9 +5,11 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/moooyo/goby/internal/identity"
@@ -16,14 +18,29 @@ import (
 	"github.com/moooyo/goby/internal/transcode"
 )
 
-func (s *Server) serveGeneratedHLSSubtitle(w http.ResponseWriter, r *http.Request, session *hlsSession, input *os.File, slot int, sequence int64, view playback.HLSSubtitleView, producerIDs ...string) bool {
+// Native HLS cannot reliably retry an application-level preparation response.
+// Preserve its previous extraction wait without changing the HLS clock or
+// tying the shared worker's lifetime to the client.
+func hlsSubtitleExtractionWait(header http.Header) time.Duration {
+	for _, value := range header.Values("Prefer") {
+		for _, preference := range strings.Split(value, ",") {
+			token, _, _ := strings.Cut(preference, ";")
+			if strings.EqualFold(strings.TrimSpace(token), "respond-async") {
+				return subtitleExtractionFastWait
+			}
+		}
+	}
+	return subtitleExtractionNativeWait
+}
+
+func (s *Server) serveGeneratedHLSSubtitle(w http.ResponseWriter, r *http.Request, session *hlsSession, input *os.File, slot int, sequence int64, view playback.HLSSubtitleView, producerIDs ...string) (delivered, subtitleOnlyFailure bool) {
 	select {
 	case s.subtitleSlots <- struct{}{}:
 		defer func() { <-s.subtitleSlots }()
 	default:
 		w.Header().Set("Retry-After", "2")
 		apiError(w, r, http.StatusTooManyRequests, "subtitle_limit", "The server has reached its active subtitle request limit.")
-		return false
+		return false, true
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 45*time.Second)
 	defer cancel()
@@ -31,35 +48,37 @@ func (s *Server) serveGeneratedHLSSubtitle(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		s.logPlaybackFailure(ctx, "hls_subtitle_manifest", err)
 		s.hlsError(w, r, err)
-		return false
+		return false, false
 	}
 	principal := r.Context().Value(principalKey).(identity.Principal)
 	track, ok := transcode.HLSSubtitleTrackAt(session.key.plan, slot)
 	if !ok {
 		s.hlsError(w, r, transcode.ErrJobNotFound)
-		return false
+		return false, false
 	}
 	window, exists := windows[sequence]
 	if sequence >= 0 && !exists {
 		s.hlsError(w, r, transcode.ErrJobNotFound)
-		return false
+		return false, false
 	}
-	var cached *hlsSubtitleExtractionRead
-	if track.ExternalTag == "" && session.key.plan.SourceMode == "" {
-		cached = &hlsSubtitleExtractionRead{runtime: s.hls, session: session}
-	}
-	// The immutable rendition set already admitted extraction. Its later
-	// artifact requests may carry a newer server settings revision.
-	content, err := s.readSubtitleContentForExtraction(ctx, librarySubject(principal, principal.User.ID), session.key.scope.ItemID, session.key.scope.SourceID, track.StreamIndex, subtitle.FormatWebVTT, cached, true)
+	w.Header().Add("Vary", "Prefer")
+	content, err := s.readSubtitleContentFor(ctx, principal, session.key.scope.ItemID, session.key.scope.SourceID, track.StreamIndex, subtitle.FormatWebVTT, session, true, hlsSubtitleExtractionWait(r.Header))
 	if err != nil {
-		s.subtitleError(w, r, err)
-		return false
+		switch {
+		case permanentHLSError(err) || errors.Is(err, context.Canceled):
+			s.hlsError(w, r, err)
+		default:
+			s.subtitleError(w, r, err)
+		}
+		// Body preparation cannot fail A/V startup. An actual authorization or
+		// source failure still follows the normal HLS error path.
+		return false, !permanentHLSError(err)
 	}
 	document, err := subtitle.Parse(content.Data, subtitle.Format(content.Info.Codec))
 	if err != nil {
 		s.logPlaybackFailure(ctx, "subtitle_render", err)
 		s.subtitleError(w, r, err)
-		return false
+		return false, true
 	}
 	var result subtitle.Result
 	if sequence < 0 {
@@ -70,17 +89,14 @@ func (s *Server) serveGeneratedHLSSubtitle(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		s.logPlaybackFailure(ctx, "subtitle_render", err)
 		s.subtitleError(w, r, err)
-		return false
+		return false, true
 	}
 	if !s.revalidateGeneratedHLS(ctx, w, r, session) {
-		return false
+		return false, false
 	}
 	if err := ctx.Err(); err != nil {
 		s.hlsError(w, r, err)
-		return false
-	}
-	if cached != nil {
-		cached.publish(ctx)
+		return false, false
 	}
 	writer, err := newIdleResponseWriter(w, ctx, mediaWriteIdle)
 	if err != nil {
@@ -96,7 +112,7 @@ func (s *Server) serveGeneratedHLSSubtitle(w http.ResponseWriter, r *http.Reques
 	if ctx.Err() != nil {
 		panic(http.ErrAbortHandler)
 	}
-	return writer.err == nil && (writer.status == http.StatusOK || writer.status == http.StatusPartialContent || writer.status == http.StatusNotModified)
+	return writer.err == nil && (writer.status == http.StatusOK || writer.status == http.StatusPartialContent || writer.status == http.StatusNotModified), false
 }
 
 type hlsClockJobs interface {

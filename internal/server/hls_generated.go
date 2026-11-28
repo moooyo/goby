@@ -405,7 +405,7 @@ func (s *Server) hlsArtifact(audioOnly bool) http.HandlerFunc {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-		policyDelivered := false
+		policyDelivered, subtitleOnlyFailure := false, false
 		if r.Method != http.MethodHead {
 			policyContext, release, policyErr := s.acquireMediaPolicy(work, r.Context().Value(principalKey).(identity.Principal), session.key.scope)
 			if policyErr != nil {
@@ -417,14 +417,14 @@ func (s *Server) hlsArtifact(audioOnly bool) http.HandlerFunc {
 			defer func() {
 				if work.Err() == nil && policyDelivered {
 					s.touchMediaPolicy(work, r.Context().Value(principalKey).(identity.Principal), session.key.scope)
-				} else {
+				} else if !subtitleOnlyFailure {
 					s.failHLSMediaPolicy(work, session)
 				}
 			}()
 		}
 		if allowedSubtitle {
 			if !subtitlePlaylist {
-				policyDelivered = s.serveGeneratedHLSSubtitle(w, r.WithContext(work), session, input, slot, sequence, view, producerID)
+				policyDelivered, subtitleOnlyFailure = s.serveGeneratedHLSSubtitle(w, r.WithContext(work), session, input, slot, sequence, view, producerID)
 				return
 			}
 			proof, err := s.hls.subtitleMediaWindowProof(work, session, input, producerID)

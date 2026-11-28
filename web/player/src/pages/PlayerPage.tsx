@@ -9,6 +9,7 @@ import { api, ApiError } from '../lib/api';
 import { videoResolution } from '../lib/mediaFormat';
 import { seekThumbnailAt, seekThumbnails, seekThumbnailUrl, type SeekThumbnail } from '../lib/seekPreviews';
 import { subtitleStyles } from '../lib/subtitleStyles';
+import { loadDirectSubtitleTrack, subtitleFragmentLoader } from '../lib/subtitlePlayback';
 import { isPlayableSubtitle, loadItemPreferences, resolveItemPreferences, setItemPreferences } from '../lib/preferences';
 import type { MediaItem, PlaybackEvent, PlaybackOptions, PlaybackSession, Quality } from '../types';
 import { canSeekTo, clamp, clock, CREDITS_COUNTDOWN_SECONDS, resolveCreditsIntervals, episodeLabel, introInterval, streamLabel, TICKS_PER_SECOND } from './playerUtils';
@@ -23,6 +24,7 @@ type ActivePlayback = {
   started: boolean;
   stopped: boolean;
   queue: Promise<void>;
+  disposeSubtitles?: () => void;
 };
 
 function Glyph({ name, size = 24 }: { name: string; size?: number }) {
@@ -162,6 +164,7 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
   const stop = useCallback(async (active: ActivePlayback | null, immediate = false) => {
     if (!active || active.stopped) return;
     active.stopped = true;
+    active.disposeSubtitles?.();
     await report(active, 'Stopped', immediate);
     try { await api.stopActiveEncoding(active.session.info.PlaySessionId); } catch { /* The backend also expires abandoned encodings. */ }
   }, [report]);
@@ -327,9 +330,16 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
     const video = videoRef.current;
     if (!video || !playback) return;
     const active = activeRef.current;
-    if (!active) return;
-    let disposed = false;
+    if (active?.session !== playback || active.stopped) return;
+    const subtitles = new AbortController();
     let hls: Hls | undefined;
+    const disposeSubtitles = () => {
+      if (subtitles.signal.aborted) return;
+      subtitles.abort();
+      if (hls) hls.subtitleTrack = -1;
+    };
+    active.disposeSubtitles = disposeSubtitles;
+    let disposed = false;
     let detachStartEvents: (() => void) | undefined;
     let mediaRecovery = 0;
     video.volume = statusRef.current.volume;
@@ -354,7 +364,9 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
     };
     video.addEventListener('loadedmetadata', metadata, { once: true });
     if (isHls && Hls.isSupported()) {
-      const client = new Hls({ autoStartLoad: false, backBufferLength: 45, renderTextTracksNatively: true });
+      const client = new Hls({ autoStartLoad: false, backBufferLength: 45, renderTextTracksNatively: true,
+        fLoader: subtitleFragmentLoader(disposeSubtitles),
+      });
       hls = client;
       hlsRef.current = client;
       const current = () => !disposed && activeRef.current === active;
@@ -404,7 +416,10 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
       };
       client.subtitleDisplay = false;
       client.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, () => {
-        if ((active.selection.subtitleStreamIndex ?? -1) < 0) { client.subtitleTrack = -1; return; }
+        if (subtitles.signal.aborted || (active.selection.subtitleStreamIndex ?? -1) < 0) {
+          client.subtitleTrack = -1;
+          return;
+        }
         const selected = active.session.source.MediaStreams?.find((stream) => stream.Type === 'Subtitle' && stream.Index === active.selection.subtitleStreamIndex);
         const preferred = client.subtitleTracks.findIndex((track) => track.default);
         const matching = client.subtitleTracks.findIndex((track) => track.lang === selected?.Language || track.name === selected?.DisplayTitle);
@@ -431,12 +446,15 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
     } else if (!isHls || video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = playback.url;
       video.load();
+      if (playback.subtitleUrl) loadDirectSubtitleTrack(video, playback.subtitleUrl, subtitles.signal);
     } else {
       setError('当前浏览器不支持此播放格式，请更换浏览器或使用外部播放器。');
       setLoading(false);
     }
     return () => {
       disposed = true;
+      disposeSubtitles();
+      if (active.disposeSubtitles === disposeSubtitles) active.disposeSubtitles = undefined;
       video.removeEventListener('loadedmetadata', metadata);
       detachStartEvents?.();
       if (hlsRef.current === hls) {
@@ -452,38 +470,50 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !playback) return;
-    const bindings = new Map<TextTrack, () => void>();
+    const active = activeRef.current;
+    if (!video || !playback || active?.session !== playback || active.stopped) return;
+    const bindings = new Set<TextTrack>();
     const update = () => {
+      if (activeRef.current !== active) return;
       const values: string[] = [];
-      for (const track of Array.from(video.textTracks)) {
-        if (track.mode !== 'hidden') continue;
-        for (const cue of Array.from(track.activeCues ?? [])) {
-          const text = 'getCueAsHTML' in cue ? (cue as VTTCue).getCueAsHTML().textContent ?? '' : '';
-          if (text && !values.includes(text)) values.push(text);
+      if (!active.stopped) {
+        for (const track of bindings) {
+          if (track.mode !== 'hidden') continue;
+          for (const cue of Array.from(track.activeCues ?? [])) {
+            const text = 'getCueAsHTML' in cue ? (cue as VTTCue).getCueAsHTML().textContent ?? '' : '';
+            if (text && !values.includes(text)) values.push(text);
+          }
         }
       }
       setCues(values);
     };
     const bind = () => {
-      for (const track of Array.from(video.textTracks)) {
-        if (track.kind !== 'subtitles' && track.kind !== 'captions') continue;
-        if (!hlsRef.current) track.mode = (selection.subtitleStreamIndex ?? -1) >= 0 ? 'hidden' : 'disabled';
-        if (!bindings.has(track)) { track.addEventListener('cuechange', update); bindings.set(track, update); }
+      if (activeRef.current !== active) return;
+      const tracks = Array.from(video.textTracks).filter(track => track.kind === 'subtitles' || track.kind === 'captions');
+      for (const track of bindings) {
+        if (tracks.includes(track)) continue;
+        track.removeEventListener('cuechange', update);
+        bindings.delete(track);
+      }
+      for (const track of tracks) {
+        if (!hlsRef.current) track.mode = !active.stopped && (active.selection.subtitleStreamIndex ?? -1) >= 0 ? 'hidden' : 'disabled';
+        if (!bindings.has(track)) { track.addEventListener('cuechange', update); bindings.add(track); }
       }
       update();
     };
     video.textTracks.addEventListener('addtrack', bind);
+    video.textTracks.addEventListener('removetrack', bind);
     video.textTracks.addEventListener('change', update);
     video.addEventListener('loadeddata', bind);
     bind();
     return () => {
       video.textTracks.removeEventListener('addtrack', bind);
+      video.textTracks.removeEventListener('removetrack', bind);
       video.textTracks.removeEventListener('change', update);
       video.removeEventListener('loadeddata', bind);
-      for (const [track, listener] of bindings) track.removeEventListener('cuechange', listener);
+      for (const track of bindings) track.removeEventListener('cuechange', update);
     };
-  }, [playback, selection.subtitleStreamIndex]);
+  }, [playback]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -871,9 +901,7 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
   };
 
   return <div ref={rootRef} className={`player-page ${visible || panel || error ? 'is-visible' : 'is-hidden'}`} onPointerMove={reveal} onFocusCapture={reveal} style={subtitleStyles(app.prefs)}>
-    <video ref={videoRef} className="player-video" crossOrigin="anonymous" playsInline preload="auto" onClick={() => { if (panel) closePanel(); else if (window.matchMedia('(hover: hover)').matches) toggle(); else setVisible((value) => !value); }} onDoubleClick={toggleFull} onTimeUpdate={updateTime} onProgress={updateBuffer} onLoadedData={onLoadedData} onPlaying={onPlaying} onPause={onPause} onWaiting={() => { if (activeRef.current && !error) setLoading(true); }} onSeeked={() => { updateTime(); const active = activeRef.current; if (active?.started && !active.stopped) void report(active, 'Progress'); }} onEnded={onEnded} onError={() => { if (activeRef.current && !hlsRef.current) { setError('当前影片无法播放，请尝试其他画质。'); setLoading(false); setVisible(true); } }} aria-label={item?.Name ?? '影片'}>
-      {playback?.subtitleUrl && <track key={playback.subtitleUrl} kind="subtitles" src={playback.subtitleUrl} label="字幕" default />}
-    </video>
+    <video ref={videoRef} className="player-video" crossOrigin="anonymous" playsInline preload="auto" onClick={() => { if (panel) closePanel(); else if (window.matchMedia('(hover: hover)').matches) toggle(); else setVisible((value) => !value); }} onDoubleClick={toggleFull} onTimeUpdate={updateTime} onProgress={updateBuffer} onLoadedData={onLoadedData} onPlaying={onPlaying} onPause={onPause} onWaiting={() => { if (activeRef.current && !error) setLoading(true); }} onSeeked={() => { updateTime(); const active = activeRef.current; if (active?.started && !active.stopped) void report(active, 'Progress'); }} onEnded={onEnded} onError={(event) => { if (event.target === event.currentTarget && activeRef.current && !hlsRef.current) { activeRef.current.disposeSubtitles?.(); setError('当前影片无法播放，请尝试其他画质。'); setLoading(false); setVisible(true); } }} aria-label={item?.Name ?? '影片'} />
     {cues.length > 0 && <div className={`player-subtitles subtitle-${app.prefs.subtitleStyle}`} aria-live="off">{cues.map((cue, index) => <span key={`${index}-${cue}`}>{cue}</span>)}</div>}
     {loading && !error && <div className="player-loading" role="status" aria-label="正在缓冲"><span /><span className="sr-only">正在缓冲</span></div>}
     {!playing && !loading && !error && !ended && <button className="player-big-play" aria-label="播放" onClick={toggle}><Glyph name="play" size={40} /></button>}

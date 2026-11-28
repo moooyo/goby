@@ -13,6 +13,11 @@ import (
 const MaxSubtitleExtractionBytes = 8 << 20
 const MaxFontAttachmentBytes = 16 << 20
 
+const (
+	inlineSubtitleExtractionTimeout     = 20 * time.Second
+	BackgroundSubtitleExtractionTimeout = 3 * time.Minute
+)
+
 var ErrSubtitleExtraction = errors.New("subtitle extraction unavailable")
 var subtitleExtractionSlots = make(chan struct{}, 4)
 
@@ -35,6 +40,16 @@ func SubtitleExtractFormat(codec string) string {
 // absolute catalog stream index. Paths, remote protocols and arbitrary output
 // arguments never enter this API. The source is rechecked after extraction.
 func ExtractSubtitle(ctx context.Context, executable string, input *os.File, stream Stream, format string) ([]byte, error) {
+	return extractTextSubtitle(ctx, executable, input, stream, format, inlineSubtitleExtractionTimeout)
+}
+
+// ExtractBackgroundSubtitle uses a separate whole-track deadline. It shares the
+// bounded helper and output limits; playback requests never wait for this budget.
+func ExtractBackgroundSubtitle(ctx context.Context, executable string, input *os.File, stream Stream, format string) ([]byte, error) {
+	return extractTextSubtitle(WithBackgroundProcess(ctx), executable, input, stream, format, BackgroundSubtitleExtractionTimeout)
+}
+
+func extractTextSubtitle(ctx context.Context, executable string, input *os.File, stream Stream, format string, timeout time.Duration) ([]byte, error) {
 	if stream.CodecType != "subtitle" || stream.IsExternal || SubtitleExtractFormat(stream.Codec) == "" {
 		return nil, ErrSubtitleExtraction
 	}
@@ -56,7 +71,7 @@ func ExtractSubtitle(ctx context.Context, executable string, input *os.File, str
 		"-protocol_whitelist", "file,pipe", "-format_whitelist", probeFormats,
 		"-i", "/proc/self/fd/3", "-map", "0:" + strconv.Itoa(stream.Index), "-vn", "-an", "-dn",
 		"-c:s", codec, "-f", muxer, "pipe:1"}
-	return extractSubtitleBytes(ctx, executable, input, stream.Index, MaxSubtitleExtractionBytes, args)
+	return extractSubtitleBytes(ctx, executable, input, stream.Index, MaxSubtitleExtractionBytes, timeout, args)
 }
 
 // FontAttachment identifies only embedded OpenType/TrueType fonts. Metadata is
@@ -86,7 +101,7 @@ func ExtractFontAttachment(ctx context.Context, executable string, input *os.Fil
 		"-dump_attachment:" + strconv.Itoa(stream.Index), "pipe:1",
 		"-protocol_whitelist", "file,pipe", "-format_whitelist", probeFormats,
 		"-i", "/proc/self/fd/3", "-map", "0:v:0?", "-map", "0:a:0?", "-t", "0", "-f", "null", "-"}
-	data, err := extractSubtitleBytes(ctx, executable, input, stream.Index, MaxFontAttachmentBytes, args)
+	data, err := extractSubtitleBytes(ctx, executable, input, stream.Index, MaxFontAttachmentBytes, inlineSubtitleExtractionTimeout, args)
 	if err != nil {
 		return nil, err
 	}
@@ -96,11 +111,11 @@ func ExtractFontAttachment(ctx context.Context, executable string, input *os.Fil
 	return data, nil
 }
 
-func extractSubtitleBytes(ctx context.Context, executable string, input *os.File, index, limit int, args []string) ([]byte, error) {
+func extractSubtitleBytes(ctx context.Context, executable string, input *os.File, index, limit int, timeout time.Duration, args []string) ([]byte, error) {
 	if input == nil || index < 0 || index > 4095 || strings.TrimSpace(executable) == "" || strings.ContainsAny(executable, "\x00\r\n") {
 		return nil, ErrSubtitleExtraction
 	}
-	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	select {
 	case subtitleExtractionSlots <- struct{}{}:
@@ -112,7 +127,7 @@ func extractSubtitleBytes(ctx context.Context, executable string, input *os.File
 	if err != nil || !before.Mode().IsRegular() {
 		return nil, ErrSubtitleExtraction
 	}
-	data, err := runLimitedFiles(ctx, 20*time.Second, limit, executable, []*os.File{input}, args...)
+	data, err := runLimitedFiles(ctx, timeout, limit, executable, []*os.File{input}, args...)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrSubtitleExtraction, err)
 	}

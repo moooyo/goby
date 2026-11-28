@@ -18,7 +18,18 @@ export function useSubtitleTimelines(itemId: string, sourceId: string | undefine
     try { owner = subtitleTimelineOwner(); } catch { return; }
     let retired = false;
     let running = 0;
-    const pending: ((signal: AbortSignal) => Promise<void>)[] = [];
+    const pending: (() => Promise<void>)[] = [];
+    const enqueueBitmap = (task: (signal: AbortSignal) => Promise<void>) => pending.push(async () => {
+      const request = new AbortController();
+      const abort = () => request.abort();
+      controller.signal.addEventListener('abort', abort, { once: true });
+      const timeout = setTimeout(abort, 15_000);
+      try { await task(request.signal); }
+      finally {
+        clearTimeout(timeout);
+        controller.signal.removeEventListener('abort', abort);
+      }
+    });
     const ownsRequest = () => {
       if (retired) return false;
       try { return owner === subtitleTimelineOwner(); } catch { return false; }
@@ -30,30 +41,25 @@ export function useSubtitleTimelines(itemId: string, sourceId: string | undefine
     const drain = () => {
       while (ownsRequest() && running < 4 && pending.length) {
         const task = pending.shift()!;
-        const request = new AbortController();
-        const abort = () => request.abort();
-        controller.signal.addEventListener('abort', abort, { once: true });
-        const timeout = setTimeout(abort, 15_000);
         running += 1;
-        void task(request.signal).catch(() => {}).finally(() => {
-          clearTimeout(timeout);
-          controller.signal.removeEventListener('abort', abort);
+        void task().catch(() => {}).finally(() => {
           running -= 1;
           drain();
         });
       }
     };
     const bitmap = streams.filter(isBitmapSubtitle);
-    if (sourceId && bitmap.length) pending.push(async signal => {
+    if (sourceId && bitmap.length) enqueueBitmap(async signal => {
       const descriptor = await loadSubtitleTimelines(itemId, sourceId, durationTicks, signal);
       if (!ownsRequest() || !descriptor.available) return;
       for (const entry of descriptor.streams) {
         if (!entry.intervalCount || !bitmap.some(stream => stream.Index === entry.streamIndex && stream.Codec?.toLowerCase() === entry.codec)) continue;
-        pending.push(async trackSignal => publish(entry.streamIndex, subtitleIntervalPath(await loadSubtitleTimeline(descriptor, entry, trackSignal), durationTicks)));
+        enqueueBitmap(async trackSignal => publish(entry.streamIndex, subtitleIntervalPath(await loadSubtitleTimeline(descriptor, entry, trackSignal), durationTicks)));
       }
       drain();
     });
-    for (const stream of streams.filter(stream => isTextSubtitle(stream) && !isBitmapSubtitle(stream))) pending.push(async signal => publish(stream.Index, textSubtitlePath(await api.subtitleText(stream, signal), durationTicks)));
+    // Keep retries in the same slot instead of starting another track while one prepares.
+    for (const stream of streams.filter(stream => isTextSubtitle(stream) && !isBitmapSubtitle(stream))) pending.push(async () => publish(stream.Index, textSubtitlePath(await api.subtitleText(stream, controller.signal), durationTicks)));
     drain();
     // There is no cross-stage cache: every visit rechecks the source version.
     return () => { retired = true; pending.length = 0; controller.abort(); };

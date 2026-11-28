@@ -17,7 +17,6 @@ import (
 	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/playback"
 	"github.com/moooyo/goby/internal/settings"
-	"github.com/moooyo/goby/internal/subtitle"
 	"github.com/moooyo/goby/internal/transcode"
 )
 
@@ -231,7 +230,7 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 	// file is unplayable. Do not read or extract that unused track before HLS
 	// negotiation; the selected conversion or its subtitle requests validate it.
 	if (decision.DirectPlay || decision.DirectStream) && decision.SubtitleMethod == playback.SubtitleDeliveryMethodExternal && decision.DefaultSubtitleStreamIndex != nil {
-		if _, err := s.readSubtitleContentFor(ctx, librarySubject(principal, principal.User.ID), source.Item.ID, source.SourceID, *decision.DefaultSubtitleStreamIndex, subtitle.Format(decision.SubtitleFormat)); err != nil {
+		if err := s.validatePlaybackExternalSubtitle(ctx, principal, source, *decision.DefaultSubtitleStreamIndex); err != nil {
 			s.playbackError(w, r, err)
 			return
 		}
@@ -244,7 +243,7 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 			}
 		} else {
 			index := *conversion.Output.DefaultSubtitleStreamIndex
-			if _, err := s.readSubtitleContentFor(ctx, librarySubject(principal, principal.User.ID), source.Item.ID, source.SourceID, index, subtitle.Format(conversion.Output.SubtitleFormat)); err != nil {
+			if err := s.validatePlaybackExternalSubtitle(ctx, principal, source, index); err != nil {
 				s.playbackError(w, r, err)
 				return
 			}

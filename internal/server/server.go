@@ -44,6 +44,7 @@ type Server struct {
 	streamSlots               chan struct{}
 	originals                 *originalStreamRuntime
 	subtitleSlots             chan struct{}
+	subtitleExtractions       *subtitleExtractionCache
 	eventHub                  *events.Hub
 	sockets                   *socketRuntime
 	notifier                  *userDataNotifier
@@ -175,6 +176,7 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 		_ = catalog.Close(ctx)
 		return nil, err
 	}
+	app.subtitleExtractions = newSubtitleExtractionCache()
 	app.notifier = newUserDataNotifier(catalog, hub)
 	app.catalogNotifier = newLibraryNotifier(catalog, hub)
 	app.serverPolicy, err = settings.NewServerPolicy(ctx, app.library)
@@ -305,6 +307,7 @@ func (s *Server) initializeTasks(ctx context.Context) error {
 }
 
 func (s *Server) Close(ctx context.Context) error {
+	s.subtitleExtractions.beginClose()
 	if s.updates != nil {
 		s.updates.Close()
 	}

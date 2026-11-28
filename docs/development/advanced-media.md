@@ -62,6 +62,10 @@ Both `/emby/Videos/{Id}/{MediaSourceId}` and the `/emby/Items/...` alias expose
 HEAD behavior. Subtitle options include start/end ticks, `CopyTimestamps`, and
 bounded signed `SubtitleOffsetTicks`; an explicit query start overrides the
 path start. This does not assign a guessed unit to upstream `SubtitleOffset`.
+Standalone embedded text GETs can start background preparation and briefly
+return a retryable pending status instead of a partial subtitle. See the
+[shared embedded subtitle contract](hls-subtitle-renditions.md#background-preparation-for-embedded-text)
+for response headers, cache bounds and authority checks.
 
 Generated HLS uses `/emby/Videos/{Id}/hls2/{PlaylistId}/{Artifact}` and the Audio
 equivalent. Phase 2 source adds a fixed set of at most eight text subtitle

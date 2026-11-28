@@ -11,6 +11,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/primaryio"
 )
 
 // RevalidateMediaSourceFor opens a fresh authorized source for an already
@@ -20,18 +21,31 @@ import (
 // absent. Initial playback planning and public item projection must continue
 // to use OpenMediaFor. No permission or filesystem observations are cached.
 func (s *Store) RevalidateMediaSourceFor(ctx context.Context, subject Subject, itemID, sourceID string, includeSubtitles bool) (*os.File, MediaFile, error) {
+	return s.revalidateMediaSourceFor(ctx, subject, itemID, sourceID, includeSubtitles, false)
+}
+
+// RevalidateBackgroundMediaSourceFor uses the same authority and source checks
+// but joins actual storage work and reserves foreground capacity for viewers.
+func (s *Store) RevalidateBackgroundMediaSourceFor(ctx context.Context, subject Subject, itemID, sourceID string) (*os.File, MediaFile, error) {
+	return s.revalidateMediaSourceFor(ctx, subject, itemID, sourceID, false, true)
+}
+
+func (s *Store) revalidateMediaSourceFor(ctx context.Context, subject Subject, itemID, sourceID string, includeSubtitles, background bool) (*os.File, MediaFile, error) {
 	if strings.TrimSpace(itemID) == "" || strings.ContainsRune(itemID, '\x00') || strings.ContainsRune(sourceID, '\x00') {
 		return nil, MediaFile{}, ErrInvalidInput
 	}
 	if s == nil || s.pool == nil {
 		return nil, MediaFile{}, ErrUnavailable
 	}
-	return s.runPreparedMediaSourceWorker(ctx, false, func(ctx context.Context) (mediaSourceRootHint, error) {
+	return s.runPreparedMediaSourceWorker(ctx, background, func(ctx context.Context) (mediaSourceRootHint, error) {
 		return s.readMediaSourceRootHint(ctx, itemID)
 	}, func(ctx context.Context) (*os.File, MediaFile, error) {
 		snapshot, err := s.readMediaRevalidationFor(ctx, subject, itemID, sourceID, includeSubtitles)
 		if err != nil {
 			return nil, MediaFile{}, err
+		}
+		if background {
+			snapshot.mediaFile.primaryReadProof.class = primaryio.Background
 		}
 		// Reuse rooted pathname/descriptor identity checks and the fresh
 		// post-open publication barrier, including a replaced directory entry.

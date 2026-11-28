@@ -45,6 +45,22 @@ func (s *Store) sealPrimaryMediaReadSnapshot(ctx context.Context, snapshot *inde
 	return nil
 }
 
+// MediaSourceReadVersion includes the physical snapshot and its catalog fences.
+// Compare it by value; it is not content or permission evidence on its own.
+type MediaSourceReadVersion struct {
+	etag, publicationRevision string
+	bindingRevision           int64
+}
+
+func (source MediaFile) ReadVersion() MediaSourceReadVersion {
+	proof := source.primaryReadProof
+	if proof == nil || proof.etag == "" || proof.etag != source.ETag || proof.sourceID != source.SourceID ||
+		proof.itemID != source.Item.ID || proof.libraryID != source.Item.LibraryID || proof.hint.bindingRevision <= 0 || proof.publicationRevision == "" {
+		return MediaSourceReadVersion{}
+	}
+	return MediaSourceReadVersion{etag: proof.etag, publicationRevision: proof.publicationRevision, bindingRevision: proof.hint.bindingRevision}
+}
+
 // MediaSourceReadIO carries an opaque, committed catalog route through input
 // handoff, queueing, subprocess reads and final descriptor cleanup. It grants no
 // playback authority and cannot be constructed from a pathname or client Spec.

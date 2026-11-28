@@ -9,6 +9,7 @@ import (
 
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
+	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/transcode"
 )
 
@@ -109,6 +110,54 @@ func (jobs *publicationJoinJobs) CancelSource(ctx context.Context, itemID, sourc
 		return nil
 	case <-ctx.Done():
 		return ctx.Err()
+	}
+}
+
+func TestMediaPublicationJoinsSubtitleExtractionAndPropagatesUnknownRetirement(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		fault error
+	}{
+		{name: "joined"},
+		{name: "unknown", fault: media.ErrProcessRetirementUnknown},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cache := newSubtitleExtractionCache()
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			defer func() { _ = cache.close(ctx) }()
+			server := &Server{subtitleExtractions: cache}
+			started, canceled, release := make(chan struct{}), make(chan struct{}), make(chan struct{}, 1)
+			defer func() { release <- struct{}{} }()
+			key := subtitleExtractionKey{item: "item", source: "source"}
+			if _, err := cache.findOrQueue(key, nil, func(work context.Context) ([]byte, error) {
+				close(started)
+				<-work.Done()
+				close(canceled)
+				<-release
+				return nil, tc.fault
+			}); err != nil {
+				t.Fatal(err)
+			}
+			waitSubtitleCache(t, started)
+			result := make(chan error, 1)
+			go func() { result <- server.retireReplacedMediaSource(ctx, key.item, key.source) }()
+			waitSubtitleCache(t, canceled)
+			select {
+			case <-result:
+				t.Fatal("publication returned before the subtitle worker retired")
+			default:
+			}
+			release <- struct{}{}
+			select {
+			case err := <-result:
+				if !errors.Is(err, tc.fault) {
+					t.Fatalf("publication returned %v, want %v", err, tc.fault)
+				}
+			case <-ctx.Done():
+				t.Fatal("publication did not join the subtitle worker")
+			}
+		})
 	}
 }
 

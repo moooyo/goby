@@ -70,6 +70,7 @@ func (s *Server) retireReplacedMediaSource(ctx context.Context, itemID, sourceID
 		return library.ErrInvalidInput
 	}
 	pending := s.originals.retireSource(itemID, sourceID)
+	subtitle := s.subtitleExtractions.retireSource(itemID, sourceID)
 	scopes := make(map[transcode.Scope]struct{})
 	var sessions []*hlsSession
 	var manager hlsJobs
@@ -125,5 +126,5 @@ func (s *Server) retireReplacedMediaSource(ctx context.Context, itemID, sourceID
 			return errors.Join(result, ctx.Err())
 		}
 	}
-	return errors.Join(result, ctx.Err())
+	return errors.Join(result, subtitle.waitRetirement(ctx), ctx.Err())
 }

@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -94,98 +95,114 @@ func readSubtitleOptions(r *http.Request) (int, subtitle.Options, error) {
 	return int(index), options, nil
 }
 
-// readSubtitleContentFor shares current source authorization between sidecar
-// delivery and embedded extraction. Every cache validator still passes through
-// this path; extracted bytes never substitute for current authorization.
-func (s *Server) readSubtitleContentFor(ctx context.Context, subject library.Subject, itemID, sourceID string, index int, format subtitle.Format) (library.SubtitleContent, error) {
-	return s.readSubtitleContentForExtraction(ctx, subject, itemID, sourceID, index, format, nil)
-}
-
-func (s *Server) readSubtitleContentForExtraction(ctx context.Context, subject library.Subject, itemID, sourceID string, index int, format subtitle.Format, cached *hlsSubtitleExtractionRead, admittedExtraction ...bool) (library.SubtitleContent, error) {
+// Every subtitle response (including a cache hit) starts with a fresh source
+// open. A bound HLS track keeps the extraction policy captured by its plan.
+func (s *Server) readSubtitleContentFor(ctx context.Context, principal identity.Principal, itemID, sourceID string, index int, format subtitle.Format, session *hlsSession, startExtraction bool, wait time.Duration) (library.SubtitleContent, error) {
 	if index < 0 || sourceID == "" {
 		return library.SubtitleContent{}, library.ErrInvalidInput
 	}
-	// Standalone downloads use this request's committed settings. A bound HLS
-	// track keeps its admission even when a later request sees new settings.
-	extractEmbedded := cached != nil
-	if len(admittedExtraction) > 0 {
-		extractEmbedded = admittedExtraction[0]
-	} else if !extractEmbedded {
-		extractEmbedded = s.settingsForContext(ctx).Transcoding.EnableSubtitleExtraction
-	}
-	file, source, err := s.library.OpenMediaFor(ctx, subject, itemID, sourceID)
+	subject := librarySubject(principal, principal.User.ID)
+	file, source, err := s.library.RevalidateMediaSourceFor(ctx, subject, itemID, sourceID, false)
 	if err != nil {
 		s.logPlaybackFailure(ctx, "subtitle_input", err)
 		return library.SubtitleContent{}, err
 	}
-	read, err := s.library.PrepareMediaSourceIO(ctx, source)
-	if err != nil {
-		_ = file.Close()
-		s.logPlaybackFailure(ctx, "subtitle_input", err)
-		return library.SubtitleContent{}, err
-	}
-	defer func() {
-		if err := closePrimaryMediaSource(file, read); err != nil && cached != nil {
-			// An uncertain input retirement must not publish a reusable result.
-			cached.candidate = library.SubtitleContent{}
-		}
-	}()
-	ctx = read.Context(ctx)
-	if source.Item.Media == nil {
-		return library.SubtitleContent{}, library.ErrNotFound
-	}
-	for _, stream := range source.Item.Media.Streams {
-		if stream.Index != index {
-			continue
-		}
-		if stream.CodecType != "subtitle" {
-			return library.SubtitleContent{}, library.ErrNotFound
-		}
-		if !extractEmbedded {
-			return library.SubtitleContent{}, subtitle.ErrUnsupportedFormat
-		}
-		if media.SubtitleExtractFormat(stream.Codec) == "" {
-			return library.SubtitleContent{}, subtitle.ErrUnsupportedFormat
-		}
-		native := media.SubtitleExtractFormat(stream.Codec)
-		// Preserve ASS script/style data until Render chooses a representation.
-		// FFmpeg handles codec conversion for other embedded text formats.
-		if native != "ass" && format != "" {
-			native = string(format)
-		}
-		if cached != nil {
-			if err := cached.prepare(ctx, source, stream, native, s.cfg.FFmpegPath); err != nil {
-				return library.SubtitleContent{}, err
-			}
-			if content, found := cached.get(); found {
-				return content, nil
-			}
-		}
-		var data []byte
-		stage := "subtitle_input"
-		err := media.RunSourceReadPhase(ctx, func(work context.Context) error {
-			stage = "subtitle_extraction"
-			var err error
-			data, err = media.ExtractSubtitle(work, s.cfg.FFmpegPath, file, stream, native)
-			return err
-		})
-		if err != nil {
-			s.logPlaybackFailure(ctx, stage, err)
+	stream, found := embeddedSubtitleStream(source, index)
+	if !found {
+		if err := file.Close(); err != nil {
 			return library.SubtitleContent{}, err
 		}
-		content := library.SubtitleContent{Data: data, Info: library.Subtitle{Index: index, Codec: native,
-			Language: stream.Language, Title: stream.Title, IsDefault: stream.IsDefault, IsForced: stream.IsForced,
-			Size: int64(len(data)), ModifiedAt: source.ModifiedAt}, ModifiedAt: source.ModifiedAt}
-		if cached != nil {
-			cached.candidate = content
+		content, err := s.library.ReadSubtitleFor(ctx, subject, itemID, sourceID, index)
+		if err != nil {
+			s.logPlaybackFailure(ctx, "subtitle_input", err)
 		}
-		return content, nil
+		return content, err
 	}
-	content, err := s.library.ReadSubtitleFor(ctx, subject, itemID, sourceID, index)
+	if stream.CodecType != "subtitle" {
+		_ = file.Close()
+		return library.SubtitleContent{}, library.ErrNotFound
+	}
+	if session != nil && (session.ctx.Err() != nil || session.key.stamp != source.ETag) {
+		_ = file.Close()
+		return library.SubtitleContent{}, library.ErrSourceChanged
+	}
+	native := media.SubtitleExtractFormat(stream.Codec)
+	if native == "" || session == nil && !s.settingsForContext(ctx).Transcoding.EnableSubtitleExtraction {
+		_ = file.Close()
+		return library.SubtitleContent{}, subtitle.ErrUnsupportedFormat
+	}
+	// Preserve ASS script/style data until Render chooses a representation.
+	// Other embedded codecs keep their existing FFmpeg output representation.
+	if native != "ass" && format != "" {
+		native = string(format)
+	}
+	command := s.cfg.FFmpegPath
+	toolPath, tool := subtitleExtractionTool(command)
+	var data []byte
+	if tool != nil {
+		if err := file.Close(); err != nil {
+			return library.SubtitleContent{}, err
+		}
+		version := source.ReadVersion()
+		if version == (library.MediaSourceReadVersion{}) {
+			return library.SubtitleContent{}, library.ErrUnavailable
+		}
+		requestID, _ := ctx.Value(requestIDKey).(string)
+		key := subtitleExtractionKey{item: itemID, source: sourceID, version: version, index: index, codec: stream.Codec, format: native, tool: toolPath}
+		work := subtitleExtractionWork{key: key, tool: tool, command: command, actor: subtitleExtractionActor(principal), bound: session != nil, requestID: requestID}
+		var load func(context.Context) ([]byte, error)
+		if startExtraction {
+			load = func(lifetime context.Context) ([]byte, error) { return s.extractBackgroundSubtitle(lifetime, work) }
+		}
+		data, err = s.subtitleExtractions.read(ctx, key, tool, wait, load)
+		if err == nil && session == nil {
+			// Waiting for shared work cannot borrow the admitting client's
+			// authority. Verify the standalone caller again before delivery.
+			var current *os.File
+			current, _, _, err = s.openSubtitleExtractionSource(ctx, work, false)
+			if err == nil {
+				err = current.Close()
+			}
+		}
+	} else if !startExtraction {
+		err = errors.Join(errSubtitlePreparing, file.Close())
+	} else {
+		data, err = s.extractUncacheableSubtitle(ctx, command, file, source, stream, native)
+	}
 	if err != nil {
-		s.logPlaybackFailure(ctx, "subtitle_input", err)
+		return library.SubtitleContent{}, err
 	}
-	return content, err
+	return library.SubtitleContent{Data: data, Info: library.Subtitle{Index: index, Codec: native,
+		Language: stream.Language, Title: stream.Title, IsDefault: stream.IsDefault, IsForced: stream.IsForced,
+		Size: int64(len(data)), ModifiedAt: source.ModifiedAt}, ModifiedAt: source.ModifiedAt}, nil
+}
+
+// Keep aliases with unwitnessed invocation dependencies out of the shared cache.
+func (s *Server) extractUncacheableSubtitle(ctx context.Context, command string, file *os.File, source library.MediaFile, stream media.Stream, format string) (data []byte, resultErr error) {
+	stage := "subtitle_input"
+	defer func() { s.logPlaybackFailure(ctx, stage, resultErr) }()
+	read, err := s.library.PrepareMediaSourceIO(ctx, source)
+	defer func() { resultErr = errors.Join(resultErr, closePrimaryMediaSource(file, read)) }()
+	if err != nil {
+		return nil, err
+	}
+	err = read.Run(ctx, func(work context.Context) error {
+		stage = "subtitle_extraction"
+		var err error
+		data, err = media.ExtractSubtitle(work, command, file, stream, format)
+		return err
+	})
+	return data, err
+}
+
+// Negotiation validates sidecars but never waits for embedded subtitle bytes.
+// A real subtitle GET schedules the selected track if its cache is cold.
+func (s *Server) validatePlaybackExternalSubtitle(ctx context.Context, principal identity.Principal, source library.MediaFile, index int) error {
+	if _, embedded := embeddedSubtitleStream(source, index); embedded {
+		return nil
+	}
+	_, err := s.library.ReadSubtitleFor(ctx, librarySubject(principal, principal.User.ID), source.Item.ID, source.SourceID, index)
+	return err
 }
 
 func (s *Server) subtitleStream(w http.ResponseWriter, r *http.Request) {
@@ -226,10 +243,10 @@ func (s *Server) subtitleStream(w http.ResponseWriter, r *http.Request) {
 			err = library.ErrNotFound
 		}
 	} else {
-		content, err = s.readSubtitleContentFor(ctx, librarySubject(principal, principal.User.ID), r.PathValue("Id"), r.PathValue("MediaSourceId"), index, options.Format)
+		content, err = s.readSubtitleContentFor(ctx, principal, r.PathValue("Id"), r.PathValue("MediaSourceId"), index, options.Format, nil, r.Method == http.MethodGet, subtitleExtractionFastWait)
 	}
 	if err != nil {
-		if errors.Is(err, subtitle.ErrUnsupportedFormat) || errors.Is(err, media.ErrSubtitleExtraction) {
+		if subtitleExtractionPending(err) || errors.Is(err, subtitle.ErrUnsupportedFormat) || errors.Is(err, media.ErrSubtitleExtraction) || errors.Is(err, subtitle.ErrLimitExceeded) {
 			s.subtitleError(w, r, err)
 		} else {
 			s.playbackError(w, r, err)
@@ -339,8 +356,22 @@ func (s *Server) subtitleAttachment(w http.ResponseWriter, r *http.Request) {
 	s.playbackError(w, r, library.ErrNotFound)
 }
 
+func subtitleExtractionPending(err error) bool {
+	return errors.Is(err, errSubtitlePreparing) || errors.Is(err, errSubtitleExtractionBusy)
+}
+
 func (s *Server) subtitleError(w http.ResponseWriter, r *http.Request, err error) {
+	if subtitleExtractionPending(err) {
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Retry-After", "2")
+		w.Header().Set(subtitlePreparingHeader, "1")
+		w.Header().Set("Access-Control-Expose-Headers", "Retry-After, "+subtitlePreparingHeader)
+	}
 	switch {
+	case errors.Is(err, errSubtitlePreparing):
+		apiError(w, r, http.StatusServiceUnavailable, "subtitle_preparing", "The embedded subtitle is being prepared. Retry shortly.")
+	case errors.Is(err, errSubtitleExtractionBusy):
+		apiError(w, r, http.StatusTooManyRequests, "subtitle_extraction_busy", "The embedded subtitle preparation queue is full. Retry shortly.")
 	case errors.Is(err, subtitle.ErrUnsupportedFormat):
 		apiError(w, r, http.StatusUnsupportedMediaType, "subtitle_format_unavailable", "The requested subtitle format is not supported.")
 	case errors.Is(err, subtitle.ErrInvalidRange):

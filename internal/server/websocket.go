@@ -69,6 +69,9 @@ func (s *Server) closeSockets(ctx context.Context) error {
 		if err := s.notificationRuntime.Close(ctx); err != nil {
 			return err
 		}
+		if err := s.subtitleExtractions.close(ctx); err != nil {
+			return err
+		}
 		return s.library.Close(ctx)
 	}
 	runtime := s.sockets
@@ -100,7 +103,8 @@ func (s *Server) closeSockets(ctx context.Context) error {
 			notificationErr := s.notificationRuntime.Close(context.Background())
 			taskErr := s.taskManager.Close(context.Background())
 			analysisErr := s.mediaAnalysis.Close(context.Background())
-			runtime.shutdownErr = errors.Join(diagnosticErr, operationErr, notificationErr, <-hlsDone, <-dynamicDone, taskErr, analysisErr, s.library.Close(context.Background()))
+			subtitleErr := s.subtitleExtractions.close(context.Background())
+			runtime.shutdownErr = errors.Join(diagnosticErr, operationErr, notificationErr, <-hlsDone, <-dynamicDone, taskErr, analysisErr, subtitleErr, s.library.Close(context.Background()))
 			close(runtime.done)
 		}()
 	})

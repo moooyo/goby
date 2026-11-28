@@ -1,6 +1,7 @@
 import type { AuthSession, BackgroundPreviewResponse, DisplayPreferences, ItemQuery, ItemsResponse, MediaItem, MediaStream, PlaybackEvent, PlaybackInfo, PlaybackOptions, PlaybackSession, SearchHintsResponse, SystemInfo, ThemeMediaResponse, User, UserConfiguration, UserData } from '../types';
 import { applyUserConfiguration, configurePreferencePersistence, resolveItemPreferences, setPreferenceScope } from './preferences';
 import { remoteCommands } from './remoteControl';
+import { loadSubtitleText } from './subtitlePlayback';
 
 const SESSION_KEY = 'goby.player.session.v1';
 const DEVICE_KEY = 'goby.player.device.v1';
@@ -230,13 +231,14 @@ export class GobyApi {
   itemThumbnailUrl(id: string, thumbnail: { ImageTag: string; PositionTicks: number }, width = 400): string {
     return this.mediaUrl(`/emby/Items/${encodeURIComponent(id)}/Images/Thumbnail?${new URLSearchParams({ PositionTicks: String(thumbnail.PositionTicks), tag: thumbnail.ImageTag, MaxWidth: String(width), quality: '90' })}`);
   }
-  async subtitleText(stream: MediaStream, signal?: AbortSignal): Promise<string> {
+  async subtitleText(stream: MediaStream, signal: AbortSignal): Promise<string> {
     if (!stream.DeliveryUrl || !stream.IsTextSubtitleStream && !['srt', 'subrip', 'ass', 'ssa', 'webvtt', 'vtt', 'mov_text', 'ttml'].includes(stream.Codec?.toLowerCase() || '')) throw new ApiError(422, 'text_subtitle_unavailable', 'This track does not expose text subtitles.');
     const url = new URL(this.mediaUrl(stream.DeliveryUrl));
     url.pathname = url.pathname.replace(/\/Stream\.[^/]+$/i, '/Stream.vtt');
-    const response = await fetch(url, { credentials: 'omit', signal, headers: { Accept: 'text/vtt' } });
-    if (!response.ok) throw new ApiError(response.status, 'subtitle_unavailable', 'The subtitle track could not be loaded.');
-    return response.text();
+    const text = await loadSubtitleText(url.href, signal, !stream.IsExternal);
+    signal.throwIfAborted();
+    if (text === undefined) throw new ApiError(0, 'subtitle_unavailable', 'The subtitle track could not be loaded.');
+    return text;
   }
   subtitleTimelinesUrl(id: string): string {
     return this.mediaUrl(`/emby/Items/${encodeURIComponent(id)}/SubtitleTimelines?${new URLSearchParams({ UserId: this.userId() })}`);

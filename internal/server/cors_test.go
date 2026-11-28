@@ -12,7 +12,7 @@ func TestEmbyPreflightMatchesReferenceAndDoesNotExposeAdmin(t *testing.T) {
 	request := httptest.NewRequest(http.MethodOptions, "/emby/Items", nil)
 	request.Header.Set("Origin", "https://example.invalid")
 	request.Header.Set("Access-Control-Request-Method", "GET")
-	request.Header.Set("Access-Control-Request-Headers", "X-Emby-Token,Content-Type")
+	request.Header.Set("Access-Control-Request-Headers", "X-Emby-Token,Content-Type,Prefer")
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, request)
 	if response.Code != 200 || response.Body.Len() != 0 {
@@ -23,7 +23,7 @@ func TestEmbyPreflightMatchesReferenceAndDoesNotExposeAdmin(t *testing.T) {
 			t.Errorf("%s = %q, want %q", name, got, want)
 		}
 	}
-	for _, header := range []string{"X-Emby-Token", "Content-Type", "X-MediaBrowser-Token", "X-Emby-Device-Id"} {
+	for _, header := range []string{"X-Emby-Token", "Content-Type", "X-MediaBrowser-Token", "X-Emby-Device-Id", "Prefer"} {
 		if !strings.Contains(response.Header().Get("Access-Control-Allow-Headers"), header) {
 			t.Errorf("missing allowed header %s", header)
 		}

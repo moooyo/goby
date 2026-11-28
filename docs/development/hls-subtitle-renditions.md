@@ -80,11 +80,51 @@ Confirmed sidecar identity, metadata, or content-hash changes carry
 This lets immutable conversions retire immediately without misclassifying an
 ordinary transient storage or database read failure as a confirmed mutation.
 
-`HEAD` validates the known representation without starting a media producer,
-extracting an embedded subtitle, or measuring a new mux clock. Subtitle GETs
-share the media-policy lifetime and existing bounded subtitle extraction slots.
-This implementation does not retain parsed full-source documents across
-requests; source authority is checked before reading and again before delivery.
+`HEAD` checks the bound resource without starting a media producer, extracting
+an embedded subtitle, or measuring a new mux clock. It does not report whether
+subtitle bytes are ready. Subtitle GETs share the existing media-policy and
+request limits. Pending or failed subtitle preparation does not retire the A/V
+producer or count as media delivery.
+
+## Background preparation for embedded text
+
+An authorized subtitle body GET starts or joins a whole-track background read
+if there is no completed extraction. `PlaybackInfo`, the master, and the media
+and subtitle playlists do not wait for this read. HLS VTT and standalone
+`Stream.*` share complete extraction bytes when the source version, absolute
+track index, format and executable identity match. ASS is retained in its native
+representation before rendering. Rendering still applies the current request's
+window, timestamp mode and offsets, not those of the first caller.
+
+Standalone requests and HLS requests carrying `Prefer: respond-async` wait up
+to 500 ms for extraction. HLS requests without that preference can wait up to
+20 seconds for the shared result, preserving the previous wait for players
+that cannot poll explicitly. This does not change A/V or playlist waits.
+Native clients without retries may need a new request after a longer wait.
+An expired wait returns `503 subtitle_preparing`; admission to a full queue
+returns `429 subtitle_extraction_busy`. Both include
+`Retry-After: 2`, `X-Goby-Subtitle-Preparing: 1` and `Cache-Control: no-store`;
+neither contains a subtitle representation or an ETag. Retry the same URL with
+current authority. A standalone cold embedded `HEAD` may return
+`503 subtitle_preparing` but does not enqueue a read. Sidecar delivery and
+normal ready responses, including ranges and conditional GETs, keep their
+existing behavior. A terminal extraction failure remains an unmarked error; a
+genuinely empty HLS window returns valid WebVTT only after the complete track is
+known.
+
+One source reader and eight queued requests are admitted per server, with a
+three-minute budget per preparation including queue time. Successful bytes have
+a 30-minute lifetime, a limit of 128 retained entries and a 64 MiB total byte
+budget. Per-track output remains capped at 8 MiB. Failed or incomplete bytes are
+never published. The extractor runs in the background source and process lanes,
+with authorization and source checks before reading and again before publication.
+It can finish after a requesting connection or HLS play stops; a stopped or
+revoked URL cannot use the result. Source publication retires matching work, and
+server shutdown cancels and joins the worker. The cache is in memory only and
+starts empty after restart. Configured executable aliases whose identity cannot
+witness their invocation dependencies retain uncached, bounded extraction.
+This does not change font attachments, embedded burn-in, dynamic-source
+subtitles, or video encoding quotas.
 
 ## Standard playlist entry points
 
