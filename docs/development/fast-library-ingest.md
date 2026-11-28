@@ -12,15 +12,25 @@ identifies series and seasons.
    missing-media reconciliation still requires complete rooted observations
    and a fresh proof of absence. Deferred descriptions are not proof of file
    presence or absence.
-2. **Import local metadata** processes pending NFO and local images in a new,
-   fenced task after the scan completes. A rescan of an existing source does not
-   put its local NFO back into pending if a bounded read proves the same accepted
-   document and source binding, or confirms the continued absence of all
-   candidates. This includes physical series and season directories. Artwork
-   remains independent. New, changed, or unproven NFOs, and any already pending
-   work, still require verification. Viewers with applicable rating or tag
-   restrictions wait for that proof. A verified absence after removal clears
-   the local layer, not manual overrides.
+2. **Import local metadata** verifies pending NFOs in a fenced task after the
+   scan completes. **Import local artwork** consumes the independent image
+   phase of the same accepted work. A slow, invalid, or stopped artwork task
+   does not hold a pending NFO flag. At most one artwork worker can be active;
+   when the administrator configures a single generic worker, a running worker
+   is not preempted and waiting NFO work gets the next slot before artwork.
+   New, changed, or unproven NFOs still require verification. Pending NFOs on
+   the item or its ancestors continue to hide it from viewers with applicable
+   rating, unrated-item, or tag restrictions. Valid imports and verified
+   absence update the permission projection and clear the NFO flag together;
+   an invalid observation clears neither. An unchanged rescan retains the
+   accepted projection only after a bounded proof of the same winning document,
+   source and parent, or continued absence. Artwork and manual overrides do not
+   participate in that proof.
+
+   The Goby Web catalog and open series detail revalidate through the normal
+   authorized HTTP endpoints on `LibraryChanged` and on socket reconnection.
+   Notifications are only invalidation hints, not permission to display an ID.
+   Refreshes are coalesced without reloading the document or restarting playback.
 3. **Enrich newly scanned metadata** can fill missing TMDB matches after local
    work. Set `GOBY_FAST_LIBRARY_ONLINE_METADATA=true` as a separate opt-in; the
    deployment provider gate, managed internet-provider setting, and TMDB

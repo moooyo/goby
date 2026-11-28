@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/systemevents"
 )
 
@@ -24,6 +25,29 @@ const (
 	executionQueueFull
 	executionDeferRun
 )
+
+const localArtworkExecutionGroup = "metadata.local_artwork"
+
+func (m *Manager) artworkMustYield(ctx context.Context, limit int) (bool, error) {
+	// Never let artwork occupy all generic slots. With a one-worker setting,
+	// honor the limit and give accepted NFO work the next available slot.
+	if limit > 1 {
+		for _, worker := range m.executions {
+			if worker.group == localArtworkExecutionGroup {
+				return true, nil
+			}
+		}
+		return false, nil
+	}
+	if _, present := m.store.executors.lookup(library.TaskLocalMetadataIngestKey); !present {
+		return false, nil
+	}
+	var nfoWaiting bool
+	err := m.store.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM task_runs run
+		JOIN task_run_children child ON child.run_id=run.id
+		WHERE run.task_key=$1 AND run.state IN ('pending','running') AND child.state='waiting')`, library.TaskLocalMetadataIngestKey).Scan(&nfoWaiting)
+	return nfoWaiting, err
+}
 
 // Fencing forbids further database writes, but does not transfer ownership of
 // an executing provider's resources. Keep Close pending until every worker has
@@ -119,6 +143,16 @@ func (m *Manager) reconcileExecution(ctx context.Context, run Run, child Child, 
 	if len(m.executions) >= limit {
 		return executionQueueFull, nil
 	}
+	if run.TaskKey == library.TaskLocalArtworkIngestKey {
+		blocked, err := m.artworkMustYield(ctx, limit)
+		if err != nil {
+			return executionContinue, err
+		}
+		if blocked {
+			return executionDeferRun, nil
+		}
+		group = localArtworkExecutionGroup
+	}
 	if !m.enter() {
 		return executionContinue, context.Canceled
 	}
@@ -136,7 +170,7 @@ func (m *Manager) reconcileExecution(ctx context.Context, run Run, child Child, 
 	workCtx, cancel := context.WithCancel(systemevents.WithDerived(m.ctx))
 	execution := &workerExecution{runID: run.ID, token: token, cancel: cancel, done: make(chan struct{}), group: group}
 	m.executions[child.ID] = execution
-	if group != "" {
+	if group == analysisConcurrencyGroup {
 		m.lastAnalysisTaskKey = run.TaskKey
 	}
 	entry, registered := m.store.executors.lookup(run.TaskKey)

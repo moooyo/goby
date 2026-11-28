@@ -732,7 +732,7 @@ func TestNativeRefreshMediaAdministratorBrowser(t *testing.T) {
 		t.Fatal("browser task baseline has schedules")
 	}
 	// The installed ingest schedules can record independent empty occurrences.
-	ingestKeys := []string{library.TaskLocalMetadataIngestKey, library.TaskNFORecoveryKey}
+	ingestKeys := []string{library.TaskLocalMetadataIngestKey, library.TaskLocalArtworkIngestKey, library.TaskNFORecoveryKey}
 	var initialRuns int
 	if f.pool.QueryRow(f.ctx, `SELECT count(*) FROM task_runs WHERE NOT (task_key=ANY($1::text[]) AND total_children=0)`, ingestKeys).Scan(&initialRuns) != nil || initialRuns != 0 {
 		t.Fatal("browser task baseline has runs other than empty ingest occurrences")

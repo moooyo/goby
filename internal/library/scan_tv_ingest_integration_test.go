@@ -39,7 +39,7 @@ func TestLocalMetadataIngestSkipsHistoricalSystemDirectories(t *testing.T) {
 		if err := tx.QueryRow(`SELECT run_id FROM task_run_children WHERE id=$1`, child).Scan(&run); err != nil {
 			return err
 		}
-		count, err := SnapshotLocalMetadataIngestChildren(tx, run)
+		count, err := SnapshotLocalMetadataIngestChildren(tx, run, TaskLocalMetadataIngestKey)
 		if err != nil || count != 0 {
 			t.Fatalf("excluded work entered task admission: %d %v", count, err)
 		}
@@ -120,15 +120,19 @@ func TestStoreTVScanRetiresIncompatibleGroupingMetadataWork(t *testing.T) {
 			if afterGroup.Type != "Folder" || afterGroup.ID != group.ID {
 				t.Fatalf("reclassification did not retain the grouping folder identity: %+v", afterGroup)
 			}
-			var work, nfoOrOnline, imagesCurrent bool
-			if err := pool.QueryRow(ctx, `SELECT count(*)>0,COALESCE(bool_or(import_nfo OR enrich_online),false),
-				COALESCE(bool_or(import_images AND scan_job_id=$2),false) FROM local_metadata_ingest WHERE item_id=$1`, group.ID, job.ID).
-				Scan(&work, &nfoOrOnline, &imagesCurrent); err != nil || work != mode.oldImages || nfoOrOnline || imagesCurrent != mode.oldImages {
-				t.Fatalf("wrong grouping work: queued=%t obsolete=%t current images=%t err=%v", work, nfoOrOnline, imagesCurrent, err)
+			var work bool
+			if err := pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM local_metadata_ingest WHERE item_id=$1)`, group.ID).
+				Scan(&work); err != nil || work {
+				t.Fatalf("reclassified grouping folder retained obsolete work or disabled artwork: queued=%t err=%v", work, err)
 			}
-			child, fence := metadataIngestTestWorker(t, ctx, pool, collection, TaskLocalMetadataIngestKey)
-			if err := store.ImportLocalScanMetadata(ctx, child, collection.ID, fence, func(ProviderProgress) error { return nil }); err != nil {
-				t.Fatalf("background import did not drain accepted work: %v", err)
+			for key, importPhase := range map[string]func(context.Context, string, string, AnalysisFence, func(ProviderProgress) error) error{
+				TaskLocalMetadataIngestKey: store.ImportLocalScanMetadata,
+				TaskLocalArtworkIngestKey:  store.ImportLocalScanArtwork,
+			} {
+				child, fence := metadataIngestTestWorker(t, ctx, pool, collection, key)
+				if err := importPhase(ctx, child, collection.ID, fence, func(ProviderProgress) error { return nil }); err != nil {
+					t.Fatalf("%s did not drain accepted work: %v", key, err)
+				}
 			}
 			if err := pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM local_metadata_ingest)`).Scan(&work); err != nil || work {
 				t.Fatalf("pending work after background import: %t %v", work, err)

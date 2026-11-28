@@ -257,7 +257,7 @@ func TestHTTPAdminRefreshMediaTaskRejectsNonNativeCredentialsWithoutChangingTask
 	var runs, scans int
 	if err := a.pool.QueryRow(a.ctx, `SELECT
 		(SELECT count(*) FROM task_runs WHERE NOT (task_key=ANY($1::text[]) AND total_children=0)),
-		(SELECT count(*) FROM scan_jobs)`, []string{library.TaskLocalMetadataIngestKey, library.TaskNFORecoveryKey}).Scan(&runs, &scans); err != nil || runs != 0 || scans != 0 {
+		(SELECT count(*) FROM scan_jobs)`, []string{library.TaskLocalMetadataIngestKey, library.TaskLocalArtworkIngestKey, library.TaskNFORecoveryKey}).Scan(&runs, &scans); err != nil || runs != 0 || scans != 0 {
 		t.Fatal("non-native credentials admitted refresh or scan work")
 	}
 }

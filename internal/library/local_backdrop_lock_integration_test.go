@@ -90,7 +90,7 @@ func TestLocalBackdropLockFencesScansAndDeferredImportThroughCommit(t *testing.T
 
 	// The real startup-triggered importer must skip the held row even with
 	// all its files now valid. It can still finish another directory.
-	child, fence := metadataIngestTestWorker(t, f.ctx, f.pool, f.collection, TaskLocalMetadataIngestKey)
+	child, fence := metadataIngestTestWorker(t, f.ctx, f.pool, f.collection, TaskLocalArtworkIngestKey)
 	if _, err := f.store.RereadLocalBackdrop(f.ctx, f.actor, f.item.ID); !errors.Is(err, ErrLocalBackdropLocked) {
 		t.Fatalf("reread without lock ID = %v", err)
 	}
@@ -99,7 +99,7 @@ func TestLocalBackdropLockFencesScansAndDeferredImportThroughCommit(t *testing.T
 		t.Fatalf("a different session borrowed the hold: %v", err)
 	}
 	var progress ProviderProgress
-	if err := f.store.ImportLocalScanMetadata(f.ctx, child, f.collection.ID, fence, func(current ProviderProgress) error {
+	if err := f.store.ImportLocalScanArtwork(f.ctx, child, f.collection.ID, fence, func(current ProviderProgress) error {
 		progress = current
 		return nil
 	}); err != nil || progress.Updated < 1 {

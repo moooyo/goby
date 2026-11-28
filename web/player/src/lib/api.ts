@@ -117,6 +117,7 @@ export class GobyApi {
       throw new ApiError(0, 'network_error', 'The server could not be reached. Check its address and network connection.');
     }
     const text = await response.text();
+    options.signal?.throwIfAborted();
     if (!options.anonymous && requestToken !== this.session?.AccessToken) throw new ApiError(401, 'session_changed', 'The active account changed before this request completed.');
     let value: unknown;
     try { value = text ? JSON.parse(text) : undefined; } catch { value = undefined; }
@@ -152,7 +153,7 @@ export class GobyApi {
     return user;
   }
   publicUsers(): Promise<User[]> { return this.request('/emby/Users/Public', { anonymous: true }); }
-  views(): Promise<ItemsResponse> { return this.request(`/emby/Users/${encodeURIComponent(this.userId())}/Views`); }
+  views(signal?: AbortSignal): Promise<ItemsResponse> { return this.request(`/emby/Users/${encodeURIComponent(this.userId())}/Views`, { signal }); }
   items(query: ItemQuery = {}, signal?: AbortSignal): Promise<ItemsResponse> { return this.request(`/emby/Users/${encodeURIComponent(this.userId())}/Items`, { query: { Recursive: true, IncludeItemTypes: 'Movie,Series', Fields: FIELDS, ...query }, signal }); }
   latest(query: ItemQuery = {}): Promise<MediaItem[]> {
     const types = query.IncludeItemTypes?.split(',');
@@ -161,10 +162,10 @@ export class GobyApi {
     return this.request(`/emby/Users/${encodeURIComponent(this.userId())}/Items/Latest`, { query: { Fields: FIELDS, Limit: 18, ...adjusted } });
   }
   resume(limit = 24): Promise<ItemsResponse> { return this.request(`/emby/Users/${encodeURIComponent(this.userId())}/Items/Resume`, { query: { Fields: FIELDS, IncludeItemTypes: 'Movie,Episode', Limit: limit } }); }
-  favorites(query: ItemQuery = {}): Promise<ItemsResponse> { return this.items({ ...query, IsFavorite: true }); }
+  favorites(query: ItemQuery = {}, signal?: AbortSignal): Promise<ItemsResponse> { return this.items({ ...query, IsFavorite: true }, signal); }
   search(term: string, query: ItemQuery = {}): Promise<ItemsResponse> { return this.items({ ...query, SearchTerm: term }); }
-  searchHints(term: string, startIndex = 0, limit = 48): Promise<SearchHintsResponse> {
-    return this.request('/emby/Search/Hints', { query: { UserId: this.userId(), SearchTerm: term, StartIndex: startIndex, Limit: limit, IncludeItemTypes: 'Movie,Series,Person,Genre', IncludeMedia: true, IncludePeople: true, IncludeGenres: true, IncludeStudios: false, IncludeArtists: false } });
+  searchHints(term: string, startIndex = 0, limit = 48, signal?: AbortSignal): Promise<SearchHintsResponse> {
+    return this.request('/emby/Search/Hints', { signal, query: { UserId: this.userId(), SearchTerm: term, StartIndex: startIndex, Limit: limit, IncludeItemTypes: 'Movie,Series,Person,Genre', IncludeMedia: true, IncludePeople: true, IncludeGenres: true, IncludeStudios: false, IncludeArtists: false } });
   }
   themeMedia(id: string, signal?: AbortSignal): Promise<ThemeMediaResponse> {
     return this.request(`/emby/Items/${encodeURIComponent(id)}/ThemeMedia`, { signal, query: { UserId: this.userId(), InheritFromParent: true, EnableThemeSongs: false, EnableThemeVideos: true, Fields: 'MediaSources,MediaStreams' } });
@@ -176,11 +177,11 @@ export class GobyApi {
     return this.request(`/emby/Users/${encodeURIComponent(this.userId())}/Items/${encodeURIComponent(id)}/LocalTrailers`, { signal, query: { Fields: 'MediaSources,MediaStreams' } });
   }
   item(id: string, signal?: AbortSignal): Promise<MediaItem> { return this.request(`/emby/Users/${encodeURIComponent(this.userId())}/Items/${encodeURIComponent(id)}`, { signal, query: { Fields: FIELDS } }); }
-  seasons(seriesId: string): Promise<ItemsResponse> { return this.request(`/emby/Shows/${encodeURIComponent(seriesId)}/Seasons`, { query: { UserId: this.userId(), Fields: FIELDS, Limit: 1000 } }); }
-  episodes(seriesId: string, seasonId?: string): Promise<ItemsResponse> { return this.request(`/emby/Shows/${encodeURIComponent(seriesId)}/Episodes`, { query: { UserId: this.userId(), SeasonId: seasonId, Fields: FIELDS, Limit: 1000, SortBy: 'ParentIndexNumber,IndexNumber' } }); }
-  nextUp(seriesId?: string): Promise<ItemsResponse> { return this.request('/emby/Shows/NextUp', { query: { UserId: this.userId(), SeriesId: seriesId, Fields: FIELDS, Limit: 24 } }); }
-  similar(id: string, limit = 12): Promise<ItemsResponse> { return this.request(`/emby/Items/${encodeURIComponent(id)}/Similar`, { query: { UserId: this.userId(), Fields: FIELDS, Limit: limit } }); }
-  genres(parentId?: string, includeItemTypes = 'Movie,Series'): Promise<ItemsResponse> { return this.request('/emby/Genres', { query: { UserId: this.userId(), ParentId: parentId, IncludeItemTypes: includeItemTypes, Limit: 1000 } }); }
+  seasons(seriesId: string, signal?: AbortSignal): Promise<ItemsResponse> { return this.request(`/emby/Shows/${encodeURIComponent(seriesId)}/Seasons`, { signal, query: { UserId: this.userId(), Fields: FIELDS, Limit: 1000 } }); }
+  episodes(seriesId: string, seasonId?: string, signal?: AbortSignal): Promise<ItemsResponse> { return this.request(`/emby/Shows/${encodeURIComponent(seriesId)}/Episodes`, { signal, query: { UserId: this.userId(), SeasonId: seasonId, Fields: FIELDS, Limit: 1000, SortBy: 'ParentIndexNumber,IndexNumber' } }); }
+  nextUp(seriesId?: string, signal?: AbortSignal): Promise<ItemsResponse> { return this.request('/emby/Shows/NextUp', { signal, query: { UserId: this.userId(), SeriesId: seriesId, Fields: FIELDS, Limit: 24 } }); }
+  similar(id: string, limit = 12, signal?: AbortSignal): Promise<ItemsResponse> { return this.request(`/emby/Items/${encodeURIComponent(id)}/Similar`, { signal, query: { UserId: this.userId(), Fields: FIELDS, Limit: limit } }); }
+  genres(parentId?: string, includeItemTypes = 'Movie,Series', signal?: AbortSignal): Promise<ItemsResponse> { return this.request('/emby/Genres', { signal, query: { UserId: this.userId(), ParentId: parentId, IncludeItemTypes: includeItemTypes, Limit: 1000 } }); }
   people(query: ItemQuery = {}): Promise<ItemsResponse> { return this.request('/emby/Persons', { query: { UserId: this.userId(), ...query } }); }
   counts(): Promise<{ MovieCount: number; EpisodeCount: number; SeriesCount: number }> { return this.request('/emby/Items/Counts', { query: { UserId: this.userId() } }); }
   setFavorite(id: string, value: boolean): Promise<UserData> { return this.request(`/emby/Users/${encodeURIComponent(this.userId())}/FavoriteItems/${encodeURIComponent(id)}`, { method: value ? 'POST' : 'DELETE' }); }

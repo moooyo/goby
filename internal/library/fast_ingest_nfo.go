@@ -6,7 +6,6 @@ import (
 	"reflect"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/moooyo/goby/internal/media"
 )
 
 // scannedNFOReuse ties an accepted local layer to the catalog row observed
@@ -66,12 +65,13 @@ func (state *scanState) deferredFolderNFO(relative, path, itemType, parentID str
 	}); err != nil {
 		return localMetadata{}, err
 	}
-	if check && canReuseScannedNFO(snapshot.local, observation, proof, kind, itemType, nil, *request) {
+	accepted, reuse := reusableScannedNFO(snapshot.local, observation, proof, kind, itemType, nil, *request)
+	if check && reuse {
 		source.nfoProof = proof
 		request.nfoReuse = &snapshot
 		request.reuseAcceptedNFO()
 		if saveRecovery {
-			state.captureScannedNFORecovery(request, source.row, source.relative, itemType, true, observation, &source.nfoProof, snapshot.local, 0)
+			state.captureScannedNFORecovery(request, source.row, source.relative, itemType, true, observation, &source.nfoProof, accepted, 0)
 		}
 	} else if snapshot.id != "" {
 		request.nfoCheck = scanNFOPending
@@ -104,29 +104,26 @@ func (snapshot scannedNFOReuse) check(ctx context.Context, tx pgx.Tx, root rootB
 	return nil
 }
 
-// A fresh observation must select the same document, or prove that every
-// candidate is absent. Equal content alone does not prove a valid episode merge.
-func canReuseScannedNFO(previous localMetadata, observation localNFOObservation, proof nfoIngestProof,
-	kind, itemType string, binding *episodePairBinding, request scanMetadataImport) bool {
+// A fresh observation must select the same document or prove every candidate
+// absent. Compare the normalized projection but return the raw parsed metadata
+// for the stricter recovery check, which must see conflicting numbering.
+func reusableScannedNFO(previous localMetadata, observation localNFOObservation, proof nfoIngestProof,
+	kind, itemType string, binding *episodePairBinding, request scanMetadataImport) (localMetadata, bool) {
 	if kind == "" || observation.disabled || observation.invalid || observation.path != previous.path || len(proof.entries) == 0 {
-		return false
-	}
-	for _, entry := range proof.entries {
-		if entry.info != nil && media.FileChangeTime(entry.info) <= 0 {
-			return false
-		}
+		return localMetadata{}, false
 	}
 	current, err := parseObservedNFO(observation, kind, binding)
 	if err != nil || current.hash != previous.hash || !current.pair.same(previous.pair) {
-		return false
+		return localMetadata{}, false
 	}
+	projection := current
 	switch itemType {
 	case "Episode":
-		current, _, _, _ = normalizeEpisodeNumbering(current, request.index, request.parentIndex, request.parentDefined)
+		projection, _, _, _ = normalizeEpisodeNumbering(current, request.index, request.parentIndex, request.parentDefined)
 	case "Season":
-		current, _ = normalizeSeasonNumbering(current, itemType, request.index)
+		projection, _ = normalizeSeasonNumbering(current, itemType, request.index)
 	}
-	return reflect.DeepEqual(current.value, previous.value)
+	return current, reflect.DeepEqual(projection.value, previous.value)
 }
 
 func (request *scanMetadataImport) reuseAcceptedNFO() {

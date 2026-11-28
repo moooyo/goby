@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/metadata"
 	"github.com/moooyo/goby/internal/primaryio"
 )
@@ -21,6 +22,7 @@ type nfoIngestEntry struct {
 
 type nfoIngestProof struct {
 	entries           []nfoIngestEntry
+	directory         os.FileInfo
 	recoveryDirectory os.FileInfo
 }
 
@@ -38,9 +40,20 @@ func observeMetadataIngestNFO(ctx context.Context, dir *os.Root, directoryPath s
 // file's stamp. A present but unreadable candidate never permits fallback.
 func observeMetadataIngestNFOWithReader(ctx context.Context, dir *os.Root, directoryPath string, candidates []string,
 	read func(context.Context, *os.Root, string, os.FileInfo) ([]byte, bool, error)) (localNFOObservation, nfoIngestProof, error) {
-	proof := nfoIngestProof{entries: make([]nfoIngestEntry, 0, len(candidates))}
+	before, err := dir.Stat(".")
+	if err != nil || before == nil || !before.IsDir() || media.FileChangeTime(before) <= 0 {
+		return localNFOObservation{invalid: true}, nfoIngestProof{}, localNFOFatalReadError(ctx, err)
+	}
+	proof := nfoIngestProof{directory: before, entries: make([]nfoIngestEntry, 0, len(candidates))}
+	finish := func(observation localNFOObservation) (localNFOObservation, nfoIngestProof, error) {
+		current, err := dir.Stat(".")
+		if err != nil || !sameSubtitleDirectoryInfo(proof.directory, current) {
+			return localNFOObservation{invalid: true}, nfoIngestProof{}, localNFOFatalReadError(ctx, err)
+		}
+		return observation, proof, ctx.Err()
+	}
 	for _, name := range candidates {
-		before, err := dir.Lstat(name)
+		candidate, err := dir.Lstat(name)
 		if errors.Is(err, os.ErrNotExist) {
 			proof.entries = append(proof.entries, nfoIngestEntry{name: name})
 			continue
@@ -51,10 +64,10 @@ func observeMetadataIngestNFOWithReader(ctx context.Context, dir *os.Root, direc
 			}
 			return localNFOObservation{invalid: true}, nfoIngestProof{}, nil
 		}
-		if !before.Mode().IsRegular() || before.Size() > maxLocalNFOBytes {
+		if !candidate.Mode().IsRegular() || candidate.Size() > maxLocalNFOBytes || media.FileChangeTime(candidate) <= 0 {
 			return localNFOObservation{invalid: true}, nfoIngestProof{}, nil
 		}
-		data, invalid, err := read(ctx, dir, name, before)
+		data, invalid, err := read(ctx, dir, name, candidate)
 		if err != nil {
 			if fatal := localNFOFatalReadError(ctx, err); fatal != nil {
 				return localNFOObservation{}, nfoIngestProof{}, fatal
@@ -62,17 +75,17 @@ func observeMetadataIngestNFOWithReader(ctx context.Context, dir *os.Root, direc
 			return localNFOObservation{invalid: true}, nfoIngestProof{}, nil
 		}
 		after, err := dir.Lstat(name)
-		if invalid || err != nil || !sameLocalNFOFile(before, after) {
-			return localNFOObservation{invalid: true}, nfoIngestProof{}, nil
+		if invalid || err != nil || !sameLocalNFOFile(candidate, after) {
+			return localNFOObservation{invalid: true}, nfoIngestProof{}, localNFOFatalReadError(ctx, err)
 		}
-		proof.entries = append(proof.entries, nfoIngestEntry{name: name, info: before})
-		return localNFOObservation{path: filepath.ToSlash(filepath.Join(directoryPath, name)), data: data}, proof, ctx.Err()
+		proof.entries = append(proof.entries, nfoIngestEntry{name: name, info: candidate})
+		return finish(localNFOObservation{path: filepath.ToSlash(filepath.Join(directoryPath, name)), data: data})
 	}
-	return localNFOObservation{}, proof, ctx.Err()
+	return finish(localNFOObservation{})
 }
 
-func (proof nfoIngestProof) verify(ctx context.Context, lease *libraryRootLease, directory string) (resultErr error) {
-	root, err := lease.Open()
+func (proof nfoIngestProof) verify(ctx context.Context, openRoot func() (*os.Root, error), directory string) (resultErr error) {
+	root, err := openRoot()
 	if err != nil {
 		return err
 	}
@@ -97,13 +110,31 @@ func (proof nfoIngestProof) verify(ctx context.Context, lease *libraryRootLease,
 	return ctx.Err()
 }
 
-func (proof nfoIngestProof) verifyAt(ctx context.Context, dir *os.Root) error {
+type nfoProofDirectory interface {
+	Stat(string) (os.FileInfo, error)
+	Lstat(string) (os.FileInfo, error)
+}
+
+func (proof nfoIngestProof) verifyAt(ctx context.Context, dir nfoProofDirectory) error {
+	if len(proof.entries) == 0 {
+		return ctx.Err()
+	}
+	before, err := dir.Stat(".")
+	if err != nil || before == nil || !before.IsDir() || proof.directory == nil || !os.SameFile(proof.directory, before) || media.FileChangeTime(before) <= 0 {
+		return errors.Join(errMetadataIngestChanged, err, ctx.Err())
+	}
 	for _, entry := range proof.entries {
 		current, err := dir.Lstat(entry.name)
 		if entry.info == nil && errors.Is(err, os.ErrNotExist) || entry.info != nil && err == nil && sameLocalNFOFile(entry.info, current) {
 			continue
 		}
-		return errors.Join(errMetadataIngestChanged, err)
+		return errors.Join(errMetadataIngestChanged, err, ctx.Err())
+	}
+	// Inode identity cannot prove absence: a preferred candidate may have
+	// appeared after its Lstat without changing the existing fallback file.
+	current, err := dir.Stat(".")
+	if err != nil || !sameSubtitleDirectoryInfo(before, current) {
+		return errors.Join(errMetadataIngestChanged, err, ctx.Err())
 	}
 	return ctx.Err()
 }
@@ -222,7 +253,7 @@ func (s *Store) publishMetadataIngestNFO(ctx context.Context, operation *Primary
 		if err := finishNFORecoveryObservation(ctx, tx, grant.roots[target.rootID], target.id, target.jobID, source, data, local.hash); err != nil {
 			return false, err
 		}
-		if err := s.completeLocalMetadataImport(ctx, tx, grant, state.library, target, true, false); err != nil {
+		if err := s.completeLocalMetadataImport(ctx, tx, grant, state.library, target, localIngestNFO); err != nil {
 			return false, err
 		}
 	} else {
@@ -246,7 +277,7 @@ func (s *Store) publishMetadataIngestNFO(ctx context.Context, operation *Primary
 			if err := verify(work); err != nil {
 				return err
 			}
-			if err := proof.verify(work, lease, directory); err != nil {
+			if err := proof.verify(work, lease.Open, directory); err != nil {
 				return err
 			}
 			return verify(work)

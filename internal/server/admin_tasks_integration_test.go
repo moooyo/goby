@@ -34,7 +34,8 @@ func adminTaskHTTPFixtureForKey(t *testing.T, key string) (*serverFixture, *http
 		tasks.LibraryScanKey: "Scan media library", tasks.LibraryRefreshMediaKey: "Refresh media details",
 		tasks.MetadataRefreshKey: "Refresh online metadata", tasks.SubtitleDownloadKey: "Download missing subtitles",
 		tasks.CacheMaintainKey: "Maintain provider cache", library.TaskOnlineImagesKey: "Download missing images",
-		library.TaskLocalMetadataIngestKey: "Import local metadata", library.TaskIntroAnalysisKey: "Analyze episode introductions",
+		library.TaskLocalMetadataIngestKey: "Import local metadata", library.TaskLocalArtworkIngestKey: "Import local artwork",
+		library.TaskIntroAnalysisKey:        "Analyze episode introductions",
 		library.TaskOnlineMetadataIngestKey: "Enrich newly scanned metadata", library.TaskVideoSeekIngestKey: "Index video seek points",
 		library.TaskDolbyVisionVerificationKey: "Verify Dolby Vision", library.TaskNFORecoveryKey: "Regenerate local NFO sidecars",
 		library.TaskCreditsAnalysisKey: "Analyze credits", library.TaskPreviewGenerationKey: "Generate seek previews",
@@ -54,6 +55,7 @@ func adminTaskHTTPFixtureForKey(t *testing.T, key string) (*serverFixture, *http
 	}
 	ingestEvents := map[string]systemevents.Event{
 		library.TaskLocalMetadataIngestKey: systemevents.LocalMetadataIngestRequested,
+		library.TaskLocalArtworkIngestKey:  systemevents.LocalMetadataIngestRequested,
 		library.TaskNFORecoveryKey:         systemevents.NFORecoveryRequested,
 	}
 	definitions := make(map[string]map[string]any)

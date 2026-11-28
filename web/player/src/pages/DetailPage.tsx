@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Icon, MediaImage, PlayerLogo, PlayButton, StageDeck } from '../components';
 import { useAudioWaveforms, WaveformLane } from '../components/WaveformLane';
 import { SubtitleTimelineLane, useSubtitleTimelines } from '../components/SubtitleTimeline';
 import { PreviewSoundToggle } from '../components/ThemePreview';
 import { PosterPreviewTarget } from '../components/PosterPreview';
 import { useApp } from '../context';
-import { api } from '../lib/api';
+import { api, ApiError } from '../lib/api';
+import { useLibraryRefresh } from '../lib/libraryRefresh';
 import { subtitleLabel } from '../lib/format';
 import { useArtworkAccent } from '../lib/artworkAccent';
 import { savedPage, savePage } from '../lib/navigation';
@@ -17,6 +18,11 @@ import { clock } from './playerUtils';
 import './detail.css';
 
 const ticksPerSecond = 10_000_000;
+const unavailableError = '此影片已移除或你已无权访问。';
+const loadError = '无法载入影片，请检查服务器连接或访问权限后重试。';
+const episodeLoadError = '无法载入剧集，请检查服务器连接后重试。';
+const inSeason = (episode: MediaItem, season: string) => !season || episode.SeasonId === season || episode.ParentId === season;
+const playableEpisode = (episode: MediaItem | undefined): episode is MediaItem => !!episode && !episode.IsMissing && episode.CanPlay !== false;
 const clamp = (value: number, min = 0, max = 1) => Math.min(max, Math.max(min, value));
 const progressOf = (item: MediaItem) => clamp(item.UserData?.PlayedPercentage != null
   ? item.UserData.PlayedPercentage / 100
@@ -181,6 +187,10 @@ function EpisodeRail({ series, seasons, episodes, selectedSeason, focused, activ
   const { rail, left, right } = useRailBoundaries(`${selectedSeason}:${episodes.map(episode => episode.Id).join(',')}`);
   const seasonRail = useRailBoundaries(seasons.map(season => season.Id).join(','));
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const cancelHover = useCallback(() => {
+    clearTimeout(hoverTimer.current);
+    hoverTimer.current = undefined;
+  }, []);
   const collapseTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const keyboardTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const lockTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -188,16 +198,16 @@ function EpisodeRail({ series, seasons, episodes, selectedSeason, focused, activ
   const pointerInside = useRef(false);
   const currentFocus = useRef(focused);
   currentFocus.current = focused;
-  const visible = episodes.filter(episode => !selectedSeason || episode.SeasonId === selectedSeason || episode.ParentId === selectedSeason);
+  const visible = episodes.filter(episode => inSeason(episode, selectedSeason));
   useEffect(() => {
     setExpanded(false);
-    clearTimeout(hoverTimer.current);
+    cancelHover();
     clearTimeout(collapseTimer.current);
     clearTimeout(keyboardTimer.current);
     clearTimeout(lockTimer.current);
     pointerInside.current = false;
     lockUntil.current = performance.now() + 1050;
-  }, [active]);
+  }, [active, cancelHover]);
   useEffect(() => {
     const element = rail.current?.querySelector<HTMLElement>(`[data-episode-id="${CSS.escape(currentFocus.current)}"]`);
     if (element && rail.current) rail.current.scrollTo({ left: element.offsetLeft - rail.current.clientWidth / 2 + element.clientWidth / 2, behavior: 'auto' });
@@ -208,7 +218,7 @@ function EpisodeRail({ series, seasons, episodes, selectedSeason, focused, activ
       if ((event.target as HTMLElement).closest('input,textarea,select,[data-menu]')) return;
       if (event.key === 'Enter' && !(event.target as HTMLElement).closest('button,a')) {
         const selected = visible.find(episode => episode.Id === focused);
-        if (selected) { event.preventDefault(); onPlay(selected); }
+        if (selected && playableEpisode(selected)) { event.preventDefault(); onPlay(selected); }
         return;
       }
       const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
@@ -228,11 +238,11 @@ function EpisodeRail({ series, seasons, episodes, selectedSeason, focused, activ
     return () => document.removeEventListener('keydown', keydown);
   }, [active, visible, focused, onFocus]);
   useEffect(() => () => {
-    clearTimeout(hoverTimer.current);
+    cancelHover();
     clearTimeout(collapseTimer.current);
     clearTimeout(keyboardTimer.current);
     clearTimeout(lockTimer.current);
-  }, []);
+  }, [cancelHover]);
   return <div className={`detail-episode-strip ${expanded ? 'is-expanded' : ''}`} onClick={event => event.stopPropagation()} onPointerEnter={event => {
     if (event.pointerType === 'touch') return;
     pointerInside.current = true;
@@ -241,7 +251,7 @@ function EpisodeRail({ series, seasons, episodes, selectedSeason, focused, activ
     lockTimer.current = setTimeout(() => { if (pointerInside.current) setExpanded(true); }, Math.max(150, lockUntil.current - performance.now()));
   }} onPointerLeave={() => {
     pointerInside.current = false;
-    clearTimeout(hoverTimer.current);
+    cancelHover();
     clearTimeout(lockTimer.current);
     collapseTimer.current = setTimeout(() => setExpanded(false), 280);
   }} onFocus={event => { if (event.target.matches(':focus-visible')) setExpanded(true); }}>
@@ -258,13 +268,17 @@ function EpisodeRail({ series, seasons, episodes, selectedSeason, focused, activ
     </div>
     <div className="detail-episode-rail-wrap">
       <div className="detail-episode-rail" ref={rail}>
-        {visible.map(episode => <div className={`detail-episode-card ${focused === episode.Id ? 'is-focused' : ''}`} key={episode.Id} data-episode-id={episode.Id} onPointerEnter={event => {
-          if (event.pointerType === 'touch') return;
-          clearTimeout(hoverTimer.current);
-          hoverTimer.current = setTimeout(() => onFocus(episode), 160);
-        }} onPointerLeave={() => clearTimeout(hoverTimer.current)}>
+        {visible.map(episode => <div className={`detail-episode-card ${focused === episode.Id ? 'is-focused' : ''}`} key={episode.Id} data-episode-id={episode.Id} onPointerMove={event => {
+          // Reordering cards beneath a stationary pointer must not steal focus.
+          if (event.pointerType === 'touch' || focused === episode.Id || hoverTimer.current !== undefined) return;
+          const card = event.currentTarget;
+          hoverTimer.current = setTimeout(() => {
+            hoverTimer.current = undefined;
+            if (card.isConnected) onFocus(episode);
+          }, 160);
+        }} onPointerLeave={cancelHover}>
           <div className="detail-episode-picture">
-            <button className="detail-episode-open" onClick={() => onPlay(episode)} onFocus={() => onFocus(episode)} aria-label={`播放第 ${episode.IndexNumber ?? ''} 集 ${episode.Name}`}>
+            <button className="detail-episode-open" disabled={!playableEpisode(episode)} onClick={() => onPlay(episode)} onFocus={() => { cancelHover(); onFocus(episode); }} aria-label={`播放第 ${episode.IndexNumber ?? ''} 集 ${episode.Name}`}>
               <MediaImage item={episode} kind="Primary" />
               <span className="detail-episode-shade" />
               <span className="detail-episode-number">{String(episode.IndexNumber ?? '').padStart(2, '0')}</span>
@@ -284,13 +298,13 @@ function EpisodeRail({ series, seasons, episodes, selectedSeason, focused, activ
   </div>;
 }
 
-function EpisodeInformation({ episode, series, seasonNumber }: { episode: MediaItem; series: MediaItem; seasonNumber?: number }) {
+function EpisodeInformation({ episode, episodes, series, seasonNumber }: { episode: MediaItem; episodes: MediaItem[]; series: MediaItem; seasonNumber?: number }) {
   const [snapshot, setSnapshot] = useState({ episode, seasonNumber });
-  const exiting = snapshot.episode.Id !== episode.Id;
+  const exiting = snapshot.episode.Id !== episode.Id && episodes.some(entry => entry.Id === snapshot.episode.Id);
   const displayed = exiting ? snapshot.episode : episode;
   const displayedSeason = exiting ? snapshot.seasonNumber : seasonNumber;
   useEffect(() => {
-    if (snapshot.episode.Id === episode.Id) {
+    if (!exiting) {
       if (snapshot.episode !== episode || snapshot.seasonNumber !== seasonNumber) setSnapshot({ episode, seasonNumber });
       return;
     }
@@ -301,7 +315,7 @@ function EpisodeInformation({ episode, series, seasonNumber }: { episode: MediaI
     // The delayed snapshot affects text only; selection and playback stay current.
     const timer = window.setTimeout(() => setSnapshot({ episode, seasonNumber }), 150);
     return () => window.clearTimeout(timer);
-  }, [episode, seasonNumber, snapshot.episode.Id]);
+  }, [episode, seasonNumber, snapshot.episode.Id, exiting]);
   return <div className="detail-episode-info" data-stage-info="true"><div className={`detail-episode-transition ${exiting ? 'is-exiting' : ''}`} key={displayed.Id}>
     <div className="detail-episode-heading"><div className="detail-focus-number">{String(displayed.IndexNumber ?? '').padStart(2, '0')}</div><div><div className="detail-episode-kicker">{series.Name} · 第 {displayed.ParentIndexNumber ?? displayedSeason ?? ''} 季</div><h3>{displayed.Name}</h3><div className="detail-focus-meta">{[runtime(displayed.RunTimeTicks), displayed.UserData?.Played ? '已看过' : progressOf(displayed) > 0 ? `已看 ${Math.round(progressOf(displayed) * 100)}%` : ''].filter(Boolean).join(' · ')}</div></div></div>
     {displayed.Overview && <p>{displayed.Overview}</p>}
@@ -384,80 +398,140 @@ function MediaInformation({ item, series, selection, active }: { item: MediaItem
 }
 
 export function DetailPage({ id }: { id: string }) {
-  const { prefs, play, navigate, notify, revision, changed, setBackdrop } = useApp();
+  const { session, prefs, play, navigate, notify, revision, changed, setBackdrop } = useApp();
   const [item, setItem] = useState<MediaItem | null>(null);
   const [episodes, setEpisodes] = useState<MediaItem[]>([]);
   const [seasons, setSeasons] = useState<MediaItem[]>([]);
   const [similar, setSimilar] = useState<MediaItem[]>([]);
-  const [focusedId, setFocusedId] = useState('');
+  const [choice, setChoice] = useState({ season: '', episode: '' });
   const [resumeId, setResumeId] = useState('');
-  const [seasonId, setSeasonId] = useState('');
   const [page, setPage] = useState(() => savedPage(`detail.${id}`, 4));
   const [error, setError] = useState('');
+  const [reload, setReload] = useState(0);
   const [selection, setSelection] = useState<ItemPreferences>(() => getItemPreferences(id));
   const [pending, setPending] = useState(false);
   const [watchedPending, setWatchedPending] = useState<ReadonlySet<string>>(new Set());
   const watchedRequests = useRef(new Set<string>());
   const selectionEdits = useRef(0);
+  const latestRead = useRef<AbortController | null>(null);
+  const similarRead = useRef<AbortController | null>(null);
   const similarRail = useRailBoundaries(similar.map(movie => movie.Id).join(','));
   const castRail = useRailBoundaries(`${item?.Id}:${item?.People?.map(person => `${person.Name}:${person.Type}`).join(',')}`);
   useEffect(() => savePage(`detail.${id}`, page), [id, page]);
   useEffect(() => { if (item?.Type && item.Type !== 'Series') setPage(current => Math.min(2, current)); }, [item?.Type]);
+  useLayoutEffect(() => { setBackdrop(null, 'none'); }, [setBackdrop]);
 
-  useEffect(() => {
-    let cancelled = false;
-    setItem(null);
-    setError('');
-    setEpisodes([]);
-    setSeasons([]);
-    setSimilar([]);
-    setFocusedId('');
-    setResumeId('');
-    setSeasonId('');
-    setPage(savedPage(`detail.${id}`, 4));
-    setSelection(getItemPreferences(id));
-    selectionEdits.current = 0;
-    api.item(id).then(result => {
-      if (cancelled) return;
+  const readDetail = useCallback(async (signal: AbortSignal, current: () => boolean, background: boolean) => {
+    let readingEpisodes = false;
+    try {
+      if (!current()) return;
+      const result = await api.item(id, signal);
+      signal.throwIfAborted();
+      if (!current()) return;
+      if (!background) setItem(result);
+      if (result.Type === 'Series') {
+        readingEpisodes = true;
+        const [seasonResult, episodeResult, nextResult, similarResult] = await Promise.all([
+          api.seasons(id, signal), api.episodes(id, undefined, signal), api.nextUp(id, signal).catch(() => undefined),
+          background ? api.similar(id, 16, signal).catch(() => undefined) : undefined,
+        ]);
+        signal.throwIfAborted();
+        if (!current()) return;
+        const nextEpisodes = episodeResult.Items;
+        const nextSeasons = seasonResult.Items;
+        const available = nextEpisodes.filter(playableEpisode);
+        const resume = available.find(episode => episode.Id === nextResult?.Items[0]?.Id)
+          ?? available.find(episode => (episode.UserData?.PlaybackPositionTicks ?? 0) > 0 && !episode.UserData?.Played)
+          ?? available.find(episode => !episode.UserData?.Played) ?? available[0];
+        const defaultEpisode = resume ?? nextEpisodes[0];
+        if (similarResult) {
+          similarRead.current?.abort();
+          setSimilar(similarResult.Items);
+        }
+        setSeasons(nextSeasons);
+        setEpisodes(nextEpisodes);
+        setResumeId(resume?.Id ?? '');
+        setChoice(previous => {
+          const previousEpisode = nextEpisodes.find(episode => episode.Id === previous.episode);
+          const keepSeason = previous.season && (nextSeasons.some(entry => entry.Id === previous.season) || nextEpisodes.some(episode => inSeason(episode, previous.season)));
+          const season = keepSeason ? previous.season : previousEpisode?.SeasonId ?? previousEpisode?.ParentId
+            ?? defaultEpisode?.SeasonId ?? defaultEpisode?.ParentId ?? nextSeasons[0]?.Id ?? '';
+          const focused = (previousEpisode && inSeason(previousEpisode, season) ? previousEpisode : undefined)
+            ?? (resume && inSeason(resume, season) ? resume : undefined)
+            ?? available.find(episode => inSeason(episode, season)) ?? nextEpisodes.find(episode => inSeason(episode, season));
+          return { season, episode: focused?.Id ?? '' };
+        });
+      } else {
+        setSeasons([]);
+        setEpisodes([]);
+        setChoice({ season: '', episode: '' });
+        setResumeId('');
+      }
       setItem(result);
-      const preferenceId = result.SeriesId || result.Id;
-      setSelection(getItemPreferences(preferenceId));
-      loadItemPreferences(preferenceId).then(saved => { if (!cancelled && selectionEdits.current === 0) setSelection(saved); }).catch(() => {});
-    }).catch(() => { if (!cancelled) setError('无法载入影片，请检查服务器连接或访问权限后重试。'); });
-    return () => { cancelled = true; };
-  }, [id]);
-
-  useEffect(() => {
-    if (!revision) return;
-    let cancelled = false;
-    api.item(id).then(result => { if (!cancelled) setItem(result); }).catch(() => {});
-    return () => { cancelled = true; };
-  }, [id, revision]);
-
-  useEffect(() => {
-    if (!item) return;
-    let cancelled = false;
-    api.similar(item.Id, 16).then(result => { if (!cancelled) setSimilar(result.Items); }).catch(() => {});
-    if (item.Type === 'Series') {
-      Promise.all([api.seasons(item.Id), api.episodes(item.Id), api.nextUp(item.Id).catch(() => ({ Items: [], TotalRecordCount: 0 }))]).then(([seasonResult, episodeResult, nextResult]) => {
-        if (cancelled) return;
-        setSeasons(seasonResult.Items);
-        setEpisodes(episodeResult.Items);
-        const resume = nextResult.Items[0] ?? episodeResult.Items.find(episode => (episode.UserData?.PlaybackPositionTicks ?? 0) > 0 && !episode.UserData?.Played) ?? episodeResult.Items.find(episode => !episode.UserData?.Played) ?? episodeResult.Items[0];
-        if (resume) {
-          setFocusedId(resume.Id);
-          setResumeId(resume.Id);
-          setSeasonId(resume.SeasonId ?? resume.ParentId ?? seasonResult.Items[0]?.Id ?? '');
-        } else setSeasonId(seasonResult.Items[0]?.Id ?? '');
-      }).catch(() => { if (!cancelled) notify('无法载入剧集，请检查服务器连接后重试。'); });
+      setError('');
+    } catch (reason) {
+      if (!current()) return;
+      if (reason instanceof ApiError && (reason.status === 403 || reason.status === 404)) {
+        similarRead.current?.abort();
+        setItem(null);
+        setSeasons([]);
+        setEpisodes([]);
+        setSimilar([]);
+        setChoice({ season: '', episode: '' });
+        setResumeId('');
+        setBackdrop(null, 'none');
+        setError(unavailableError);
+      } else {
+        setError(previous => previous || loadError);
+        if (background || readingEpisodes) notify(background ? '暂时无法刷新影片，请检查服务器连接。' : episodeLoadError);
+      }
     }
-    return () => { cancelled = true; };
-  }, [item?.Id, item?.Type]);
+  }, [id, notify, setBackdrop]);
+
+  useLayoutEffect(() => {
+    latestRead.current?.abort();
+    const request = new AbortController();
+    latestRead.current = request;
+    const current = () => !request.signal.aborted && api.matchesSession(session);
+    void readDetail(AbortSignal.any([request.signal, AbortSignal.timeout(15_000)]), current, false).finally(() => request.abort());
+    return () => request.abort();
+  }, [readDetail, reload, revision, session]);
+
+  const refreshDetail = useCallback(async (signal: AbortSignal, current: () => boolean) => {
+    latestRead.current?.abort();
+    const request = new AbortController();
+    latestRead.current = request;
+    try {
+      await readDetail(AbortSignal.any([signal, request.signal]), () => !request.signal.aborted && current(), true);
+    } finally { request.abort(); }
+  }, [readDetail]);
+  useLibraryRefresh(!item || item.Type === 'Series', refreshDetail);
+
+  const preferenceId = item?.SeriesId || item?.Id;
+  useEffect(() => {
+    if (!preferenceId) return;
+    let active = true;
+    setSelection(getItemPreferences(preferenceId));
+    void loadItemPreferences(preferenceId).then(saved => { if (active && api.matchesSession(session) && selectionEdits.current === 0) setSelection(saved); }).catch(() => {});
+    return () => { active = false; };
+  }, [preferenceId, session]);
+
+  const itemId = item?.Id;
+  useLayoutEffect(() => {
+    if (!itemId || !api.matchesSession(session)) return;
+    const request = new AbortController();
+    similarRead.current = request;
+    api.similar(itemId, 16, request.signal).then(result => {
+      if (!request.signal.aborted && api.matchesSession(session)) setSimilar(result.Items);
+    }).catch(() => {});
+    return () => request.abort();
+  }, [itemId, session]);
 
   const series = item?.Type === 'Series';
-  const focused = episodes.find(episode => episode.Id === focusedId && (!seasonId || episode.SeasonId === seasonId || episode.ParentId === seasonId)) ?? episodes.find(episode => !seasonId || episode.SeasonId === seasonId || episode.ParentId === seasonId);
-  const playable = series ? focused : item;
-  const overviewPlayable = series ? episodes.find(episode => episode.Id === resumeId) ?? focused : item;
+  const seasonId = choice.season;
+  const focused = episodes.find(episode => episode.Id === choice.episode && inSeason(episode, seasonId)) ?? episodes.find(episode => inSeason(episode, seasonId));
+  const playable = series ? (playableEpisode(focused) ? focused : null) : item;
+  const overviewPlayable = series ? episodes.find(episode => episode.Id === resumeId && playableEpisode(episode)) ?? playable : item;
   const preferenceItem = page === 0 ? overviewPlayable : playable;
   const streams = preferenceItem ? streamList(preferenceItem) : [];
   const source = preferenceItem?.MediaSources?.[0];
@@ -477,9 +551,9 @@ export function DetailPage({ id }: { id: string }) {
   const typeName = series ? '剧集' : item?.Type === 'Episode' ? '剧集' : '电影';
   const labels = series ? ['概览', '剧集', '演职员', '媒体信息'] : ['概览', '演职员', '媒体信息'];
 
-  const focusEpisode = (episode: MediaItem) => setFocusedId(episode.Id);
+  const focusEpisode = (episode: MediaItem) => setChoice(previous => previous.episode === episode.Id ? previous : { ...previous, episode: episode.Id });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!item) return;
     setBackdrop(page === 1 && series && focused ? focused : item, page > (series ? 1 : 0) ? 'blur' : 'stage', item);
   }, [item, focused, page, series, setBackdrop]);
@@ -494,9 +568,10 @@ export function DetailPage({ id }: { id: string }) {
     setPending(true);
     try {
       const userData = await api.setFavorite(item.Id, !item.UserData?.IsFavorite);
-      setItem(current => current ? { ...current, UserData: userData } : current);
+      if (!api.matchesSession(session)) return;
+      setItem(current => current?.Id === item.Id ? { ...current, UserData: userData } : current);
       changed();
-    } catch { notify('收藏未能保存，请重试。'); }
+    } catch { if (api.matchesSession(session)) notify('收藏未能保存，请重试。'); }
     finally { setPending(false); }
   };
   const toggleWatched = async (target: MediaItem) => {
@@ -505,15 +580,11 @@ export function DetailPage({ id }: { id: string }) {
     setWatchedPending(new Set(watchedRequests.current));
     try {
       const userData = await api.setPlayed(target.Id, !target.UserData?.Played);
-      const next = { ...target, UserData: userData };
-      if (target.Id === item?.Id) setItem(next);
-      setEpisodes(current => current.map(episode => episode.Id === target.Id ? next : episode));
-      if (target.Type === 'Series') {
-        const result = await api.episodes(target.Id);
-        setEpisodes(result.Items);
-      }
+      if (!api.matchesSession(session)) return;
+      setItem(current => current?.Id === target.Id ? { ...current, UserData: userData } : current);
+      setEpisodes(current => current.map(episode => episode.Id === target.Id ? { ...episode, UserData: userData } : episode));
       changed();
-    } catch { notify('观看状态未能保存，请重试。'); }
+    } catch { if (api.matchesSession(session)) notify('观看状态未能保存，请重试。'); }
     finally { watchedRequests.current.delete(target.Id); setWatchedPending(new Set(watchedRequests.current)); }
   };
   const copyLink = async () => {
@@ -526,7 +597,7 @@ export function DetailPage({ id }: { id: string }) {
   const playLabel = playbackLabel(playable);
   const overviewPlayLabel = playbackLabel(overviewPlayable);
 
-  if (!item) return <div className="detail-loading" role="status">{error ? <><h1>无法载入影片</h1><p>{error}</p><button onClick={() => navigate({ page: 'home' })}>返回首页</button></> : <><span className="detail-loading-ring" /><p>正在载入影片</p></>}</div>;
+  if (!item) return <div className="detail-loading" role="status">{error ? <><h1>{error === unavailableError ? '影片不可用' : '无法载入影片'}</h1><p>{error}</p><button onClick={() => setReload(value => value + 1)}>重试</button><button onClick={() => navigate({ page: 'home' })}>返回首页</button></> : <><span className="detail-loading-ring" /><p>正在载入影片</p></>}</div>;
 
   const qualityOptions: MenuOption[] = [
     { value: 'original', label: '原画', selectedLabel: ['原画', [resolution(video), videoDynamicRange(video)].filter(Boolean).join(' ')].filter(Boolean).join(' · '), description: [[resolution(video), videoDynamicRange(video)].filter(Boolean).join(' '), bitrate(source?.Bitrate)].filter(Boolean).join(' · ') || '保留片源画质，按设备能力匹配播放方式', isDefault: prefs.quality === 'original' },
@@ -568,11 +639,11 @@ export function DetailPage({ id }: { id: string }) {
   </section>;
 
   const episodePage = <section className="stage-page detail-episodes-page" data-stage="true" key="episodes">
-    {focused && <><button className="detail-stage-hit" aria-label={`播放${focused.Name}`} onClick={() => play(focused)} tabIndex={-1} /><PlayButton item={focused} label={playLabel} /></>}
-    <div className="stage-scroll detail-episodes-scroll" onClick={() => { if (focused) play(focused); }}>
+    {playable && <><button className="detail-stage-hit" aria-label={`播放${playable.Name}`} onClick={() => play(playable)} tabIndex={-1} /><PlayButton item={playable} label={playLabel} /></>}
+    <div className="stage-scroll detail-episodes-scroll" onClick={() => { if (playable) play(playable); }}>
       <div className="detail-episodes-bottom">
-        {focused && <EpisodeInformation key={item.Id} episode={focused} series={item} seasonNumber={seasons.find(season => season.Id === seasonId)?.IndexNumber} />}
-        <EpisodeRail series={item} seasons={seasons} episodes={episodes} selectedSeason={seasonId} focused={focusedId} active={page === 1} watchedPending={watchedPending} onSeason={season => { setSeasonId(season); const first = episodes.find(episode => episode.SeasonId === season || episode.ParentId === season); setFocusedId(first?.Id ?? ''); }} onFocus={focusEpisode} onPlay={episode => play(episode)} onWatched={toggleWatched} />
+        {focused && <EpisodeInformation key={item.Id} episode={focused} episodes={episodes} series={item} seasonNumber={seasons.find(season => season.Id === seasonId)?.IndexNumber} />}
+        <EpisodeRail series={item} seasons={seasons} episodes={episodes} selectedSeason={seasonId} focused={focused?.Id ?? ''} active={page === 1} watchedPending={watchedPending} onSeason={season => setChoice({ season, episode: episodes.find(episode => inSeason(episode, season))?.Id ?? '' })} onFocus={focusEpisode} onPlay={episode => play(episode)} onWatched={toggleWatched} />
       </div>
     </div>
   </section>;

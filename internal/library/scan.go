@@ -626,7 +626,7 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 		currentInfo, pathErr = state.opened.Lstat(path)
 		return ctx.Err()
 	}); err != nil {
-		if scanProbeSourceChangedOnly(err) {
+		if scanProbeSourceChangedOnly(err) || scanPublicationErrorOnly(err, errScannedNFOChanged) {
 			return err
 		}
 		return scanReadFailure(err)
@@ -651,12 +651,13 @@ func (state *scanState) publishScannedMediaAttempt(path, kind string, current hi
 	}
 	if checkDeferredNFO && nfoProof != nil {
 		// A flat episode's virtual parent is known only after hierarchy publication.
-		if stored.parentID == parentID && canReuseScannedNFO(stored.local, nfoObservation, nfoProof.nfo, nfoKind, itemType, binding, deferred) {
+		accepted, reuse := reusableScannedNFO(stored.local, nfoObservation, nfoProof.nfo, nfoKind, itemType, binding, deferred)
+		if stored.parentID == parentID && reuse {
 			deferred.nfoReuse = &scannedNFOReuse{id: stored.id, relative: relative, path: stored.path,
 				itemType: itemType, parentID: parentID, local: stored.local}
 			deferred.reuseAcceptedNFO()
 			if writableRecovery && !skipNFORecovery {
-				state.captureScannedNFORecovery(&deferred, input.primary.row, path, itemType, false, nfoObservation, &nfoProof.nfo, stored.local, media.FileChangeTime(info))
+				state.captureScannedNFORecovery(&deferred, input.primary.row, path, itemType, false, nfoObservation, &nfoProof.nfo, accepted, media.FileChangeTime(info))
 			}
 		}
 		// The fast visit either keeps the accepted layer or queues its import;

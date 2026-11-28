@@ -15,6 +15,7 @@ func (s *Store) installScanIngestSchedules(tx library.OwnedTx) error {
 		interval, maxRuntime time.Duration
 	}{
 		{library.TaskLocalMetadataIngestKey, systemevents.LocalMetadataIngestRequested, time.Hour, time.Hour},
+		{library.TaskLocalArtworkIngestKey, systemevents.LocalMetadataIngestRequested, time.Hour, time.Hour},
 		{library.TaskOnlineMetadataIngestKey, systemevents.OnlineMetadataIngestRequested, time.Hour, time.Hour},
 		{library.TaskVideoSeekIngestKey, systemevents.VideoSeekIngestRequested, time.Hour, time.Hour},
 		{library.TaskDolbyVisionVerificationKey, systemevents.DolbyVisionVerificationRequested, 15 * time.Minute, 20 * time.Minute},

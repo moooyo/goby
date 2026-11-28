@@ -143,9 +143,14 @@ func (source *scanFolderSource) final(ctx context.Context, tx pgx.Tx) error {
 			if len(source.nfoProof.entries) == 0 {
 				return nil
 			}
-			if err := source.nfoProof.verifyAt(check, source.directory); err != nil {
+			if err := source.nfoProof.verify(check, func() (*os.Root, error) {
+				return source.sourceRoot.Open(check)
+			}, source.relative); err != nil {
 				if fatal := localNFOFatalReadError(check, err); fatal != nil {
 					return fatal
+				}
+				if errors.Is(err, errNFORecoveryDirectoryChanged) {
+					return errNFORecoveryDirectoryChanged
 				}
 				return errScannedNFOChanged
 			}

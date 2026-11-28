@@ -16,17 +16,13 @@ type scannedNFOProof struct {
 	nfo                 nfoIngestProof
 }
 
-func (proof *scannedNFOProof) open(ctx context.Context, root *os.Root) (_ *os.Root, resultErr error) {
+func (proof *scannedNFOProof) open(ctx context.Context, root *os.Root) (*os.Root, error) {
 	dir, err := openRegisteredRoot(root, proof.directory)
 	if err != nil {
 		if fatal := localNFOFatalReadError(ctx, err); fatal != nil {
 			return nil, fatal
 		}
-		return nil, errScanProbeSourceChanged
-	}
-	info, err := dir.Stat(".")
-	if err != nil || !info.IsDir() || fileIdentity(info) != proof.identity {
-		return nil, errors.Join(errScanProbeSourceChanged, ctx.Err(), closeDirectoryPrimaryRoot(ctx, dir))
+		return nil, errScannedNFOChanged
 	}
 	return dir, nil
 }
@@ -38,6 +34,10 @@ func (proof *scannedNFOProof) observe(ctx context.Context, root *os.Root, candid
 		return localNFOObservation{}, err
 	}
 	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryRoot(ctx, dir)) }()
+	info, err := dir.Stat(".")
+	if err != nil || !info.IsDir() || fileIdentity(info) != proof.identity {
+		return localNFOObservation{}, errors.Join(errScannedNFOChanged, localNFOFatalReadError(ctx, err))
+	}
 	names := make([]string, len(candidates))
 	for i, candidate := range candidates {
 		names[i] = filepath.Base(candidate)
@@ -64,13 +64,13 @@ func (proof *scannedNFOProof) verify(ctx context.Context, root *os.Root) (result
 	}
 	current, err := root.Lstat(proof.directory)
 	if err != nil || !current.IsDir() || fileIdentity(current) != proof.identity {
-		return errors.Join(errScanProbeSourceChanged, ctx.Err())
+		return errors.Join(errScannedNFOChanged, localNFOFatalReadError(ctx, err))
 	}
 	return errors.Join(proof.nfo.verifyRecoveryDirectory(current), ctx.Err())
 }
 
 func (input *primaryScanRead) revalidatePublicationNFO(tx pgx.Tx, proof *scannedNFOProof) error {
-	if proof == nil {
+	if proof == nil || len(proof.nfo.entries) == 0 {
 		return input.revalidatePublicationSource(tx)
 	}
 	return input.revalidatePublicationStorage(tx, func(ctx context.Context) error {

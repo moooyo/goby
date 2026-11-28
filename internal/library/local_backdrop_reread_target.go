@@ -93,7 +93,7 @@ func readLocalBackdropGeneration(ctx context.Context, tx pgx.Tx, libraryID strin
 	// source instead of rejecting an unrelated child in this library.
 	taskKeys := []string{TaskNFORecoveryKey, TaskOnlineMetadataIngestKey, TaskOnlineMetadataRefreshKey, TaskOnlineImagesKey}
 	if !scopedImporter {
-		taskKeys = append(taskKeys, TaskLocalMetadataIngestKey)
+		taskKeys = append(taskKeys, TaskLocalArtworkIngestKey)
 	}
 	var busy bool
 	if err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM scan_jobs WHERE library_id=$1 AND status IN ('Queued','Running'))

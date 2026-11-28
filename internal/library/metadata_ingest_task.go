@@ -33,19 +33,42 @@ func metadataIngestUncertainOnly(err error) bool {
 	return false
 }
 
-// SnapshotLocalMetadataIngestChildren includes only libraries with accepted
-// work. An unsuccessful scan cannot authorize a second source operation.
-func SnapshotLocalMetadataIngestChildren(tx OwnedTx, runID string) (int64, error) {
-	if tx == nil || !validTaskChildID(runID) {
+type localIngestPhase string
+
+const (
+	localIngestNFO     localIngestPhase = TaskLocalMetadataIngestKey
+	localIngestArtwork localIngestPhase = TaskLocalArtworkIngestKey
+)
+
+func (phase localIngestPhase) predicate() string {
+	if phase == localIngestNFO {
+		return `q.import_nfo`
+	}
+	return `q.import_images`
+}
+
+func (phase localIngestPhase) pending(request scanMetadataImport) bool {
+	if phase == localIngestNFO {
+		return request.nfo
+	}
+	return request.images
+}
+
+// SnapshotLocalMetadataIngestChildren admits NFO and artwork independently,
+// including when both phases are pending on the same accepted item.
+// An unsuccessful scan cannot authorize either source operation.
+func SnapshotLocalMetadataIngestChildren(tx OwnedTx, runID, key string) (int64, error) {
+	phase := localIngestPhase(key)
+	if tx == nil || !validTaskChildID(runID) || phase != localIngestNFO && phase != localIngestArtwork {
 		return 0, ErrInvalidInput
 	}
 	tag, err := tx.Exec(`INSERT INTO task_run_children(id,run_id,library_id,library_name,ordinal)
 		SELECT md5($1||':'||l.id),$1,l.id,l.name,(row_number() OVER (ORDER BY l.id)-1)::integer
-		FROM task_runs run CROSS JOIN libraries l WHERE run.id=$1 AND EXISTS(
+		FROM task_runs run CROSS JOIN libraries l WHERE run.id=$1 AND run.task_key=$2 AND EXISTS(
 		SELECT 1 FROM scan_jobs j JOIN local_metadata_ingest q ON q.scan_job_id=j.id JOIN items i ON i.id=q.item_id
 		WHERE j.library_id=l.id AND i.library_id=l.id AND j.status='Completed' AND j.finished_at<=run.created_at
-		AND (q.import_nfo OR q.import_images) AND `+database.CatalogPathVisibleSQL("i")+`
-		AND `+scanIngestAutomaticGenerationSQL+`)`, runID)
+		AND `+phase.predicate()+` AND `+database.CatalogPathVisibleSQL("i")+`
+		AND `+scanIngestAutomaticGenerationSQL+`)`, runID, key)
 	return tag.RowsAffected(), err
 }
 
@@ -82,10 +105,13 @@ var metadataIngestTargetBase = metadataIngestTargetSQL + ordinaryItemSQL("i") + 
 var (
 	metadataIngestTargetReadOne = metadataIngestTargetBase + ` AND i.id=$2 AND q.scan_job_id=$3`
 	metadataIngestTargetLock    = metadataIngestTargetReadOne + ` FOR UPDATE OF i,q`
-	metadataIngestTargetPage    = metadataIngestTargetBase + ` AND q.item_id>$2 AND EXISTS(
+)
+
+func (phase localIngestPhase) pageSQL() string {
+	return metadataIngestTargetBase + ` AND ` + phase.predicate() + ` AND q.item_id>$2 AND EXISTS(
 		SELECT 1 FROM task_runs run WHERE run.id=$4 AND j.finished_at<=run.created_at
 		AND ` + scanIngestAutomaticGenerationSQL + `) ORDER BY q.item_id LIMIT $3`
-)
+}
 
 func readMetadataIngestTarget(row rowScanner) (metadataIngestTarget, error) {
 	var target metadataIngestTarget
@@ -130,9 +156,20 @@ func (target metadataIngestTarget) matchesFile(info os.FileInfo) bool {
 		catalogModifiedTime(info).Equal(*target.modified) && media.FileChangeTime(info) == target.changeNS
 }
 
-// ImportLocalScanMetadata uses a live generic task grant, never a completed
-// scan capability. Bounded pages release their SQL snapshot before opening media.
-func (s *Store) ImportLocalScanMetadata(ctx context.Context, childID, libraryID string, fence AnalysisFence, report func(ProviderProgress) error) (resultErr error) {
+// ImportLocalScanMetadata verifies pending NFOs without reading artwork.
+func (s *Store) ImportLocalScanMetadata(ctx context.Context, childID, libraryID string, fence AnalysisFence, report func(ProviderProgress) error) error {
+	return s.importLocalScanPhase(ctx, childID, libraryID, fence, report, localIngestNFO)
+}
+
+// ImportLocalScanArtwork processes artwork, including on items whose NFO is still pending.
+func (s *Store) ImportLocalScanArtwork(ctx context.Context, childID, libraryID string, fence AnalysisFence, report func(ProviderProgress) error) error {
+	return s.importLocalScanPhase(ctx, childID, libraryID, fence, report, localIngestArtwork)
+}
+
+// A live generic task grant authorizes only its phase of an accepted scan.
+// Bounded pages release their SQL snapshot before opening storage.
+func (s *Store) importLocalScanPhase(ctx context.Context, childID, libraryID string, fence AnalysisFence,
+	report func(ProviderProgress) error, phase localIngestPhase) (resultErr error) {
 	if ctx == nil || fence == nil || report == nil || !metadataIdentifier(libraryID) {
 		return ErrInvalidInput
 	}
@@ -145,7 +182,7 @@ func (s *Store) ImportLocalScanMetadata(ctx context.Context, childID, libraryID 
 			return nil
 		}
 		return tx.QueryRow(`SELECT run.id FROM task_run_children child JOIN task_runs run ON run.id=child.run_id
-			WHERE child.id=$1 AND child.library_id=$2 AND run.task_key=$3`, childID, libraryID, TaskLocalMetadataIngestKey).Scan(&runID)
+			WHERE child.id=$1 AND child.library_id=$2 AND run.task_key=$3`, childID, libraryID, string(phase)).Scan(&runID)
 	}
 	ctx, release, err := s.BeginTaskSourceOperation(systemevents.WithDerived(ctx), childID, checkedFence)
 	if err != nil {
@@ -162,12 +199,13 @@ func (s *Store) ImportLocalScanMetadata(ctx context.Context, childID, libraryID 
 	}
 	progress := ProviderProgress{}
 	var warnings bool
-	// Group each bounded page by physical directory. Keep only one immutable
-	// listing so flat libraries do not reread a complete directory per item.
+	// Keep only one immutable listing so flat libraries do not reread a complete
+	// directory per artwork item. The NFO phase never touches this listing.
 	var images metadataIngestImageListing
 	const pageSize = 32
+	query := phase.pageSQL()
 	for after := ""; ; {
-		rows, err := s.pool.Query(ctx, metadataIngestTargetPage, libraryID, after, pageSize, runID)
+		rows, err := s.pool.Query(ctx, query, libraryID, after, pageSize, runID)
 		if err != nil {
 			return err
 		}
@@ -187,22 +225,24 @@ func (s *Store) ImportLocalScanMetadata(ctx context.Context, childID, libraryID 
 		if len(page) == 0 {
 			break
 		}
-		// Preserve the high-water ID even when processing this page out of order.
+		// Preserve the high-water ID even when processing an artwork page out of order.
 		after = page[len(page)-1].id
-		sort.SliceStable(page, func(i, j int) bool {
-			left, right := page[i], page[j]
-			if left.rootID != right.rootID {
-				return left.rootID < right.rootID
-			}
-			return left.directoryPath() < right.directoryPath()
-		})
+		if phase == localIngestArtwork {
+			sort.SliceStable(page, func(i, j int) bool {
+				left, right := page[i], page[j]
+				if left.rootID != right.rootID {
+					return left.rootID < right.rootID
+				}
+				return left.directoryPath() < right.directoryPath()
+			})
+		}
 		for _, target := range page {
 			if err := ctx.Err(); err != nil {
 				return err
 			}
 			itemChanged := false
 			for attempt := 0; ; attempt++ {
-				changed, err := s.importLocalMetadataTarget(ctx, grant, library, target, &images)
+				changed, err := s.importLocalMetadataTarget(ctx, grant, library, target, phase, &images)
 				itemChanged = itemChanged || changed
 				if sidecarAdmissionRetryable(err) {
 					if attempt == 2 {
@@ -218,6 +258,9 @@ func (s *Store) ImportLocalScanMetadata(ctx context.Context, childID, libraryID 
 					}
 					if err != nil {
 						return err
+					}
+					if !phase.pending(current.request) {
+						break
 					}
 					target = current
 					continue
@@ -247,6 +290,9 @@ func (s *Store) ImportLocalScanMetadata(ctx context.Context, childID, libraryID 
 		}
 	}
 	if warnings {
+		if phase == localIngestArtwork {
+			return errors.New("some local artwork could not be verified and remains pending")
+		}
 		return errors.New("some local metadata could not be verified and remains pending")
 	}
 	return nil
@@ -276,11 +322,27 @@ func (target metadataIngestTarget) nfoCandidates(path string) ([]string, string)
 }
 
 func (s *Store) importLocalMetadataTarget(ctx context.Context, grant *internalTaskSourceGrant, library Library,
-	target metadataIngestTarget, listing *metadataIngestImageListing) (_ bool, resultErr error) {
+	target metadataIngestTarget, phase localIngestPhase, listing *metadataIngestImageListing) (_ bool, resultErr error) {
+	options := EffectiveLibraryOptions(library)
+	if phase == localIngestNFO && !options.EnableLocalMetadata {
+		// Disabling the reader is not proof that the old rating or tags still apply.
+		return false, errMetadataIngestChanged
+	}
 	row := grant.roots[target.rootID]
 	path, valid := target.sourcePath(row.root)
 	if !valid {
 		return false, errMetadataIngestChanged
+	}
+	check := func(work context.Context, tx pgx.Tx) error {
+		return s.checkMetadataIngestTarget(work, tx, grant, library, row, target, phase)
+	}
+	finish := func(work context.Context, tx pgx.Tx) error {
+		return s.completeLocalMetadataImport(work, tx, grant, library, target, phase)
+	}
+	if phase == localIngestArtwork && !options.EnableLocalImages {
+		// Retire optional work under the current options and generation fence,
+		// without opening a disabled image source or altering pending NFOs.
+		return false, s.finishMetadataIngest(ctx, check, finish)
 	}
 	directoryPath := target.directoryPath()
 	release, admitted := s.backdropExecution.beginWork(localBackdropWorkScope{
@@ -315,12 +377,13 @@ func (s *Store) importLocalMetadataTarget(ctx context.Context, grant *internalTa
 		return verifyMetadataIngestSource(work, lease, opened, target, directoryPath, path, directoryInfo)
 	}
 	state := &scanState{store: s, library: library, root: row.root, imageInspection: &s.imageInspection}
-	options := EffectiveLibraryOptions(library)
 	var observation localNFOObservation
 	var proof nfoIngestProof
 	var rootIdentity string
 	candidates, kind := target.nfoCandidates(path)
-	importNFO := target.request.nfo && options.EnableLocalMetadata
+	if phase == localIngestNFO && kind == "" {
+		return false, errMetadataIngestChanged
+	}
 	if err := operation.Run(ctx, row.root.id, primaryio.Background, func(work context.Context) (readErr error) {
 		var err error
 		lease, err = s.leaseLibraryRootContext(work, row.root)
@@ -344,7 +407,7 @@ func (s *Store) importLocalMetadataTarget(ctx context.Context, grant *internalTa
 		if err := verify(work); err != nil {
 			return err
 		}
-		if importNFO {
+		if phase == localIngestNFO {
 			info, err := opened.Stat(".")
 			if err != nil {
 				return errors.Join(errMetadataIngestChanged, err)
@@ -363,96 +426,81 @@ func (s *Store) importLocalMetadataTarget(ctx context.Context, grant *internalTa
 	}); err != nil {
 		return false, err
 	}
-	state.directoryIdentities = map[string]os.FileInfo{directoryPath: directoryInfo}
-	var pairSource episodePairSource
-	var binding *episodePairBinding
-	if importNFO && target.kind == "Episode" {
-		file := episodePairFile{Identity: target.fileIdentity, Size: target.fileSize,
-			ModifiedNS: target.modified.UnixNano(), ChangeNS: target.changeNS}
-		pairSource = newEpisodePairSource(row, path, target.parentID, rootIdentity, target.request, file)
-		binding, err = pairSource.readBinding(ctx, s.pool, false)
-		if err != nil {
-			return false, err
-		}
-	}
-	check := func(work context.Context, tx pgx.Tx) error {
-		return s.checkMetadataIngestTarget(work, tx, grant, library, row, target, true)
-	}
-	var changed bool
-	// Disabling a reader does not verify a pending NFO or allow the previous
-	// rating and tags to pass as current evidence for the source.
-	uncertainNFO := target.request.nfo && !importNFO
-	finish := func(work context.Context, tx pgx.Tx) error {
-		return s.completeLocalMetadataImport(work, tx, grant, library, target, !uncertainNFO, true)
-	}
-	var handedOff bool
-	if importNFO {
-		changed, err = s.publishMetadataIngestNFO(ctx, operation, check, grant, verify, lease, target, path, directoryPath,
-			kind, rootIdentity, candidates, observation, proof, state, pairSource, binding)
-		if err != nil {
-			handedOff = scanPublicationErrorOnly(err, errMetadataIngestNFOHandedOff)
-			if !handedOff && !scanPublicationErrorOnly(err, errMetadataIngestInvalidNFO) {
+	if phase == localIngestNFO {
+		var pairSource episodePairSource
+		var binding *episodePairBinding
+		if target.kind == "Episode" {
+			file := episodePairFile{Identity: target.fileIdentity, Size: target.fileSize,
+				ModifiedNS: target.modified.UnixNano(), ChangeNS: target.changeNS}
+			pairSource = newEpisodePairSource(row, path, target.parentID, rootIdentity, target.request, file)
+			binding, err = pairSource.readBinding(ctx, s.pool, false)
+			if err != nil {
 				return false, err
 			}
-			uncertainNFO = true
-		} else {
-			if !target.request.images {
-				return changed, nil
-			}
-			target.request.nfo = false
 		}
-	}
-	if target.request.images && options.EnableLocalImages {
-		if listing.rootID == target.rootID && listing.directory == directoryPath && listing.index != nil &&
-			sameSubtitleDirectoryInfo(directoryInfo, listing.index.info) {
-			state.imageDirectories = map[string]*imageDirectoryIndex{directoryPath: listing.index}
-		}
-		before := state.warnings
-		authority := &imageRefreshAuthority{
-			prepare: func() (*PrimaryRootIO, rootBindingRow, error) {
-				child, err := operation.Fork(ctx)
-				return child, row, err
-			},
-			check: check,
-			finish: func(work context.Context, tx pgx.Tx) error {
-				if state.warnings != before {
-					return checkTaskIngestFence(work, tx, grant)
-				}
-				return finish(work, tx)
-			},
-			prove: verify,
-		}
-		if err := state.refreshLocalImages(ctx, authority, target.id, target.kind, path, target.folder, false); err != nil {
-			*listing = metadataIngestImageListing{}
+		changed, err := s.publishMetadataIngestNFO(ctx, operation, check, grant, verify, lease, target, path, directoryPath,
+			kind, rootIdentity, candidates, observation, proof, state, pairSource, binding)
+		switch {
+		case scanPublicationErrorOnly(err, errMetadataIngestNFOHandedOff):
+			return changed, nil
+		case scanPublicationErrorOnly(err, errMetadataIngestInvalidNFO):
+			return changed, errMetadataIngestChanged
+		default:
 			return changed, err
 		}
-		*listing = metadataIngestImageListing{rootID: target.rootID, directory: directoryPath, index: state.imageDirectories[directoryPath]}
-		if state.warnings != before || uncertainNFO && !handedOff {
-			return changed, errMetadataIngestChanged
-		}
-		return true, nil
 	}
-	if handedOff {
-		return changed, nil
+	state.directoryIdentities = map[string]os.FileInfo{directoryPath: directoryInfo}
+	if listing.rootID == target.rootID && listing.directory == directoryPath && listing.index != nil &&
+		sameSubtitleDirectoryInfo(directoryInfo, listing.index.info) {
+		state.imageDirectories = map[string]*imageDirectoryIndex{directoryPath: listing.index}
 	}
-	if uncertainNFO {
-		return changed, errMetadataIngestChanged
+	authority := &imageRefreshAuthority{
+		prepare: func() (*PrimaryRootIO, rootBindingRow, error) {
+			child, err := operation.Fork(ctx)
+			return child, row, err
+		},
+		check: check,
+		finish: func(work context.Context, tx pgx.Tx) error {
+			if state.warnings != 0 {
+				return checkTaskIngestFence(work, tx, grant)
+			}
+			return finish(work, tx)
+		},
+		prove: verify,
 	}
-	return changed, s.finishMetadataIngest(ctx, check, finish)
+	if err := state.refreshLocalImages(ctx, authority, target.id, target.kind, path, target.folder, false); err != nil {
+		*listing = metadataIngestImageListing{}
+		return false, err
+	}
+	*listing = metadataIngestImageListing{rootID: target.rootID, directory: directoryPath, index: state.imageDirectories[directoryPath]}
+	if state.warnings != 0 {
+		return false, errMetadataIngestChanged
+	}
+	return true, nil
 }
 
-// In the same transaction that accepted the sidecar, retire only its phase
-// and signal the next task if the remaining local work is now complete.
+// The publishing transaction locks the current queue row. Retire only the
+// completed phase, never the other phase's possibly stale observed value.
 func (s *Store) completeLocalMetadataImport(ctx context.Context, tx pgx.Tx, grant *internalTaskSourceGrant,
-	library Library, target metadataIngestTarget, nfoDone, imagesDone bool) error {
-	if nfoDone && target.request.nfo {
-		if err := mergeAuxiliaryCatalogChanges(tx, []CatalogChange{metadataIngestVisibilityChange(target, library.ID)}, false); err != nil {
+	library Library, target metadataIngestTarget, phase localIngestPhase) error {
+	var pending scanMetadataImport
+	err := tx.QueryRow(ctx, `SELECT import_nfo,import_images,enrich_online FROM local_metadata_ingest
+		WHERE item_id=$1 AND scan_job_id=$2 FOR UPDATE`, target.id, target.jobID).
+		Scan(&pending.nfo, &pending.images, &pending.online)
+	if errors.Is(err, pgx.ErrNoRows) || err == nil && !phase.pending(pending) {
+		return errMetadataIngestChanged
+	}
+	if err != nil {
+		return err
+	}
+	if phase == localIngestNFO {
+		pending.nfo = false
+		if err := recordMetadataIngestVisibility(ctx, tx, target, library.ID, false); err != nil {
 			return err
 		}
+	} else {
+		pending.images = false
 	}
-	pending := target.request
-	pending.nfo = pending.nfo && !nfoDone
-	pending.images = pending.images && !imagesDone
 	if pending.pending() {
 		if _, err := tx.Exec(ctx, `UPDATE local_metadata_ingest SET import_nfo=$3,import_images=$4
 			WHERE item_id=$1 AND scan_job_id=$2`, target.id, target.jobID, pending.nfo, pending.images); err != nil {
@@ -493,9 +541,23 @@ func (s *Store) finishMetadataIngest(ctx context.Context, check, finish func(con
 	return tx.Commit(ctx)
 }
 
-func metadataIngestVisibilityChange(target metadataIngestTarget, libraryID string) CatalogChange {
-	return CatalogChange{Kind: CatalogUpdated, ItemID: target.id, LibraryID: libraryID, ParentID: target.parentID,
-		IsFolder: target.folder, ChildrenAdded: target.folder}
+func recordMetadataIngestVisibility(ctx context.Context, tx pgx.Tx, target metadataIngestTarget, libraryID string, pending bool) error {
+	change := CatalogChange{Kind: CatalogUpdated, ItemID: target.id, LibraryID: libraryID, ParentID: target.parentID,
+		IsFolder: target.folder, ChildrenAdded: target.folder && !pending}
+	changes := []CatalogChange{change}
+	if target.parentID != "" {
+		// A viewer who loses access cannot receive the affected ID. Invalidate
+		// the surviving container as well; the socket still filters every ID.
+		parent := CatalogChange{Kind: CatalogUpdated, ItemID: target.parentID, LibraryID: libraryID, IsFolder: true, ChildrenRemoved: true}
+		err := tx.QueryRow(ctx, `SELECT COALESCE(parent_id,''),type='CollectionFolder' FROM items WHERE id=$1 AND library_id=$2 AND is_folder`,
+			target.parentID, libraryID).Scan(&parent.ParentID, &parent.IsCollectionFolder)
+		if err == nil {
+			changes = append(changes, parent)
+		} else if !errors.Is(err, pgx.ErrNoRows) {
+			return err
+		}
+	}
+	return mergeAuxiliaryCatalogChanges(tx, changes, false)
 }
 
 func verifyMetadataIngestSource(ctx context.Context, lease *libraryRootLease, opened *os.Root, target metadataIngestTarget,
@@ -537,7 +599,7 @@ func checkTaskIngestFence(ctx context.Context, tx pgx.Tx, grant *internalTaskSou
 }
 
 func (s *Store) checkMetadataIngestTarget(ctx context.Context, tx pgx.Tx, grant *internalTaskSourceGrant,
-	library Library, row rootBindingRow, target metadataIngestTarget, checkImages bool) error {
+	library Library, row rootBindingRow, target metadataIngestTarget, phase localIngestPhase) error {
 	if err := checkTaskIngestFence(ctx, tx, grant); err != nil {
 		return err
 	}
@@ -565,10 +627,13 @@ func (s *Store) checkMetadataIngestTarget(ctx context.Context, tx pgx.Tx, grant 
 	if err != nil {
 		return err
 	}
-	if !checkImages {
-		// Artwork can complete independently without changing the authority
-		// to regenerate a pending NFO for the same accepted source.
-		target.request.images, current.request.images = false, false
+	// The other phase may have committed against this same generation since
+	// the page was read. Only its flag may differ; its result cannot grant
+	// authority over this phase or a different source.
+	if phase == localIngestNFO {
+		target.request.images = current.request.images
+	} else {
+		target.request.nfo = current.request.nfo
 	}
 	if !target.matches(current) {
 		return errMetadataIngestChanged

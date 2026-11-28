@@ -406,6 +406,13 @@ func waitFastIngestDrain(t *testing.T, f *serverFixture) {
 		if definition.CurrentRun == nil && definition.LastRun != nil && definition.LastRun.State == tasks.RunFailed {
 			t.Fatalf("local metadata task failed with %d pending: %s (%s)", pending, definition.LastRun.ErrorMessage, definition.LastRun.ErrorCode)
 		}
-		return pending == 0 && definition.CurrentRun == nil && definition.LastRun != nil && definition.LastRun.State == tasks.RunCompleted
+		artwork, err := f.app.taskStore.GetByKey(f.ctx, library.TaskLocalArtworkIngestKey)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if artwork.CurrentRun == nil && artwork.LastRun != nil && artwork.LastRun.State == tasks.RunFailed {
+			t.Fatalf("local artwork task failed with %d pending: %s (%s)", pending, artwork.LastRun.ErrorMessage, artwork.LastRun.ErrorCode)
+		}
+		return pending == 0 && artwork.CurrentRun == nil && definition.CurrentRun == nil && definition.LastRun != nil && definition.LastRun.State == tasks.RunCompleted
 	})
 }

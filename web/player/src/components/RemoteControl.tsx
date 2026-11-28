@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp } from '../context';
 import { api } from '../lib/api';
@@ -11,9 +11,20 @@ interface RemoteControlState {
   register: (receiver: PlaybackReceiver) => () => void;
 }
 const RemoteContext = createContext<RemoteControlState>({ status: 'unavailable', register: () => () => undefined });
+type LibraryListener = (signal: AbortSignal) => void;
+const LibraryInvalidationContext = createContext<((listener: LibraryListener) => () => void) | null>(null);
 type DisplayMessage = Extract<RemoteCommand, { kind: 'message' }> & { serial: number };
 
 export function useRemoteControl() { return useContext(RemoteContext); }
+
+export function useLibraryInvalidation(listener: LibraryListener, enabled = true) {
+  const subscribe = useContext(LibraryInvalidationContext);
+  const current = useRef(listener);
+  useLayoutEffect(() => { current.current = listener; });
+  useLayoutEffect(() => {
+    if (enabled) return subscribe?.(signal => current.current(signal));
+  }, [enabled, subscribe]);
+}
 
 export function useRemotePlayback(receiver: (command: RemotePlaybackCommand) => Promise<void>, enabled: boolean, requestId?: number) {
   const { register } = useRemoteControl();
@@ -78,6 +89,11 @@ export function RemoteControlProvider({ children }: { children: ReactNode }) {
   const appRef = useRef(app); appRef.current = app;
   const receiver = useRef<PlaybackReceiver | null>(null);
   const waiters = useRef(new Set<() => void>());
+  const libraryListeners = useRef(new Set<LibraryListener>());
+  const subscribeToLibrary = useCallback((listener: LibraryListener) => {
+    libraryListeners.current.add(listener);
+    return () => { libraryListeners.current.delete(listener); };
+  }, []);
   const requestId = useRef(0);
   const messageId = useRef(0);
   const [message, setMessage] = useState<DisplayMessage | null>(null);
@@ -113,6 +129,9 @@ export function RemoteControlProvider({ children }: { children: ReactNode }) {
       register: signal => api.registerRemoteCapabilities(signal),
       socketUrl: () => api.remoteSocketUrl(owner),
       status: value => { if (owned()) setStatus(value); },
+      invalidateLibrary: signal => {
+        if (owned() && !signal.aborted) for (const listener of libraryListeners.current) listener(signal);
+      },
       command: async (command, signal) => {
         if (!owned() || signal.aborted) return;
         if (command.kind === 'message') { setMessage({ ...command, serial: ++messageId.current }); return; }
@@ -142,7 +161,7 @@ export function RemoteControlProvider({ children }: { children: ReactNode }) {
     return () => { active = false; disconnected(); receiver.current = null; };
   }, [app.session.AccessToken, app.session.User.Id, app.session.serverUrl, app.session.SessionInfo?.Id]);
 
-  return <RemoteContext.Provider value={{ status, register }}>{children}{message && <ServerMessage key={message.serial} message={message} dismiss={dismiss}/>}</RemoteContext.Provider>;
+  return <RemoteContext.Provider value={{ status, register }}><LibraryInvalidationContext.Provider value={subscribeToLibrary}>{children}</LibraryInvalidationContext.Provider>{message && <ServerMessage key={message.serial} message={message} dismiss={dismiss}/>}</RemoteContext.Provider>;
 }
 
 export function RemoteControlStatus() {

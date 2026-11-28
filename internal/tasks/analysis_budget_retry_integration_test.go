@@ -45,7 +45,7 @@ func TestPreviewBudgetFailureDoesNotBlockLocalArtworkImport(t *testing.T) {
 	failBudget, attempts := true, 0
 	var schedulingContext *analysisBudgetTestContext
 	registry, err := NewExecutorRegistry(
-		ExecutorRegistration{Key: library.TaskLocalMetadataIngestKey, Name: "Local import", AutomaticDisabled: true, Executor: localArtworkTestExecutor{f.catalog}},
+		ExecutorRegistration{Key: library.TaskLocalArtworkIngestKey, Name: "Local import", AutomaticDisabled: true, Executor: localArtworkTestExecutor{f.catalog}},
 		ExecutorRegistration{Key: library.TaskPreviewGenerationKey, Name: "Seek previews", Executor: &analysisTestExecutor{},
 			AnalysisAdmission: func(tx library.OwnedTx, request AnalysisAdmissionRequest) (AnalysisAdmissionBinding, error) {
 				actual, err := library.PrepareAnalysis(tx, request.TaskKey, request.Selection, library.AnalysisExecutionProfile{
@@ -78,7 +78,7 @@ func TestPreviewBudgetFailureDoesNotBlockLocalArtworkImport(t *testing.T) {
 	if err := store.Reconcile(f.ctx); err != nil {
 		t.Fatal(err)
 	}
-	local, err := store.GetByKey(f.ctx, library.TaskLocalMetadataIngestKey)
+	local, err := store.GetByKey(f.ctx, library.TaskLocalArtworkIngestKey)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -200,7 +200,7 @@ func (executor localArtworkTestExecutor) Available() bool { return executor.cata
 
 func (executor localArtworkTestExecutor) Execute(ctx context.Context, work Work, report func(Progress) error) error {
 	work = work.WithContext(ctx)
-	return executor.catalog.ImportLocalScanMetadata(ctx, work.ChildID, work.LibraryID, work.Fence, func(p library.ProviderProgress) error {
+	return executor.catalog.ImportLocalScanArtwork(ctx, work.ChildID, work.LibraryID, work.Fence, func(p library.ProviderProgress) error {
 		return report(Progress{Processed: p.Processed, Updated: p.Updated})
 	})
 }

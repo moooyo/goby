@@ -247,6 +247,66 @@ func TestFastIngestNFORechecksWarmProofAtPublication(t *testing.T) {
 	}
 }
 
+func TestFastIngestNFODirectoryReplacementWithSameVideoLeavesPolicyPending(t *testing.T) {
+	trace := &fastIngestNFOTrace{}
+	ctx, pool, store, approved, viewer := fastIngestNFOTracedStore(t, trace)
+	root := filepath.Join(approved, "movies")
+	video := libraryIntegrationFile(t, root, "Film/Film.mp4", "video:hard-linked-fixture")
+	const acceptedNFO = `<movie><title>Accepted Film</title><mpaa>PG</mpaa></movie>`
+	libraryIntegrationFile(t, root, "Film/Film.nfo", acceptedNFO)
+	replacement := filepath.Dir(libraryIntegrationFile(t, approved, "replacement/Film.nfo", `<movie><title>Restricted Film</title><mpaa>R</mpaa></movie>`))
+	// Create both names before the cold scan so creating the link does not
+	// advance the media inode's ctime after its first accepted observation.
+	if err := os.Link(video, filepath.Join(replacement, "Film.mp4")); err != nil {
+		t.Fatal(err)
+	}
+	collection := createFastIngestNFOLibrary(t, ctx, pool, store, "movies", root, false)
+	accepted := primeFastIngestNFOWarmScan(t, ctx, pool, store, collection, viewer, video, acceptedNFO)
+	const restricted = "directory-replacement-viewer"
+	libraryIntegrationUser(t, ctx, pool, restricted, false, true, nil)
+	if _, err := pool.Exec(ctx, `UPDATE users SET policy=policy||'{"MaxParentalRating":5}'::jsonb WHERE id=$1`, restricted); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.GetItem(ctx, restricted, accepted.ID); err != nil {
+		t.Fatal(err)
+	}
+	trace.mu.Lock()
+	trace.owner = store.ownership.conn.Conn()
+	trace.matches = func(data pgx.TraceQueryStartData) bool {
+		return strings.HasPrefix(data.SQL, "SELECT file_identity=$5 AND file_size=$6") && len(data.Args) > 0 && data.Args[0] == accepted.ID
+	}
+	trace.mutate = func() error {
+		before, err := os.Stat(video)
+		if err != nil {
+			return err
+		}
+		if err := os.Rename(filepath.Dir(video), filepath.Join(approved, "old-directory")); err != nil {
+			return err
+		}
+		if err := os.Rename(replacement, filepath.Dir(video)); err != nil {
+			return err
+		}
+		after, err := os.Stat(video)
+		if err != nil || !sameMediaSourceFile(before, after) {
+			return errors.Join(errors.New("fixture changed the media identity"), err)
+		}
+		return nil
+	}
+	trace.mu.Unlock()
+	job := libraryIntegrationScan(t, ctx, store, collection.ID, "Completed")
+	trace.mu.Lock()
+	injected, mutationErr, outcome := trace.injected, trace.err, trace.outcome
+	trace.mu.Unlock()
+	if !injected || mutationErr != nil || outcome != "ROLLBACK" {
+		t.Fatalf("changed NFO directory did not roll back: injected=%t error=%v transaction=%q", injected, mutationErr, outcome)
+	}
+	assertFastIngestNFOPhases(t, ctx, pool, accepted.ID, job.ID, true, false)
+	assertFastIngestNFORetained(t, accepted, nfoCatalogItem(t, ctx, store, viewer, collection.ID, video))
+	if _, err := store.GetItem(ctx, restricted, accepted.ID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("replaced NFO directory left the old rating authorized: %v", err)
+	}
+}
+
 func TestFastIngestNFOWarmProofCanRetainOptedInRecoveryOriginals(t *testing.T) {
 	ctx, pool, store, approved, viewer := libraryIntegrationStore(t, forceProbeVersionedFunc(versionedEpisodePairTestProbe))
 	store.deferLocalMetadata = true

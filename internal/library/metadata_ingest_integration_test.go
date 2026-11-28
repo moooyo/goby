@@ -85,7 +85,11 @@ func TestLocalMetadataIngestRechecksAcceptedSourceAndSelectedSidecar(t *testing.
 					t.Fatal(err)
 				}
 			}
-			child, fence := metadataIngestTestWorker(t, ctx, pool, collection, TaskLocalMetadataIngestKey)
+			key, importPhase := TaskLocalMetadataIngestKey, store.ImportLocalScanMetadata
+			if scenario == "image" {
+				key, importPhase = TaskLocalArtworkIngestKey, store.ImportLocalScanArtwork
+			}
+			child, fence := metadataIngestTestWorker(t, ctx, pool, collection, key)
 			work, cancel := context.WithCancel(ctx)
 			defer cancel()
 			fenceCalls := 0
@@ -123,7 +127,7 @@ func TestLocalMetadataIngestRechecksAcceptedSourceAndSelectedSidecar(t *testing.
 				}
 				return mutationErr
 			}
-			err := store.ImportLocalScanMetadata(work, child, collection.ID, guard, func(ProviderProgress) error { return nil })
+			err := importPhase(work, child, collection.ID, guard, func(ProviderProgress) error { return nil })
 			if !mutated || mutationErr != nil || err == nil || scenario == "cancel" && !errors.Is(err, context.Canceled) {
 				t.Fatalf("source mutation was not rejected: injected=%v mutation=%v import=%v", mutated, mutationErr, err)
 			}

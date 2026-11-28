@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import { Icon, MediaImage, PosterGrid } from '../components';
 import { useApp } from '../context';
 import { api, ApiError } from '../lib/api';
+import { useLibraryRefresh } from '../lib/libraryRefresh';
 import type { ItemQuery, ItemsResponse, MediaItem, SearchHint } from '../types';
 import './catalog.css';
 
@@ -10,8 +11,10 @@ type SortKey = 'DateCreated' | 'CommunityRating' | 'ProductionYear' | 'SortName'
 type FavoriteKind = 'all' | 'Movie' | 'Series';
 type VideoFilter = 'all' | '4k' | 'hdr' | 'hlg' | 'dolby-vision';
 type CatalogResponse = ItemsResponse & { hints?: SearchHint[]; received: number };
+type ListRead = 'initial' | 'more' | 'refresh';
 type GenreCard = { image?: MediaItem; count: number };
 const PAGE_SIZE = 48;
+const MAX_ITEM_LIMIT = 1000;
 const VIDEO_FILTERS: Array<{ value: VideoFilter; label: string; range?: string }> = [
   { value: 'all', label: '全部' },
   { value: '4k', label: '4K' },
@@ -39,10 +42,24 @@ function saveStored(key: string, value: unknown) {
   try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* Preferences remain usable without browser storage. */ }
 }
 
-function loadingError(reason: unknown) {
+function accessLost(reason: unknown) {
+  return reason instanceof ApiError && (reason.status === 403 || reason.status === 404);
+}
+
+function loadingError(reason: unknown, background: boolean) {
   if (reason instanceof ApiError && reason.status === 403) return '没有访问这些影片的权限。';
   if (reason instanceof ApiError && reason.status === 401) return '登录已过期，请重新登录。';
-  return '暂时无法加载影片，请检查服务器连接后重试。';
+  return background ? '暂时无法刷新影片，请检查服务器连接后重试。' : '暂时无法加载影片，请检查服务器连接后重试。';
+}
+
+function appendUnique<T>(previous: T[], next: T[], key: (entry: T) => string) {
+  const seen = new Set(previous.map(key));
+  return [...previous, ...next.filter(entry => {
+    const id = key(entry);
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  })];
 }
 
 function hintKey(hint: SearchHint): string { return `${hint.GobyReference.Kind}:${hint.GobyReference.Id}`; }
@@ -122,12 +139,14 @@ function CatalogView({ kind }: { kind: CatalogKind }) {
   const [libraryTotal, setLibraryTotal] = useState<number>();
   const [browseBackdrop, setBrowseBackdrop] = useState<MediaItem | null>(null);
   const [received, setReceived] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState('');
+  const [reading, setReading] = useState<ListRead | null>(null);
+  const loading = reading === 'initial';
+  const loadingMore = reading === 'more';
+  const [error, setError] = useState<{ message: string; retry: ListRead } | null>(null);
   const [menu, setMenu] = useState<'sort' | 'filter' | 'year' | null>(null);
-  const [reload, setReload] = useState(0);
-  const requestSequence = useRef(0);
+  const listRead = useRef<AbortController | null>(null);
+  const metaRead = useRef<AbortController | null>(null);
+  const pagination = useRef({ received: 0, depth: PAGE_SIZE });
   const genreScope = useRef('');
   const libraryTabsRef = useRef<HTMLDivElement>(null);
   const genreTabsRef = useRef<HTMLDivElement>(null);
@@ -148,71 +167,63 @@ function CatalogView({ kind }: { kind: CatalogKind }) {
   const videoFilterLabel = VIDEO_FILTERS.find(option => option.value === videoFilter)?.label ?? '全部';
   const searchContext = [person ? `${person.Name}的作品` : '', genre, year ? `${year} 年` : '', videoFilter !== 'all' ? videoFilterLabel : ''].filter(Boolean).join(' · ');
 
-  useEffect(() => {
-    setBackdrop(null, 'blur');
-    return () => { requestSequence.current += 1; };
-  }, [setBackdrop]);
+  const scope = `${kind}:${library}`;
+  const itemTypes = kind === 'movies' ? 'Movie' : kind === 'series' ? 'Series' : 'Movie,Series';
+  useLayoutEffect(() => { setBackdrop(null, 'blur'); }, [setBackdrop]);
 
-  useEffect(() => {
-    if (!wall) return;
-    let active = true;
-    api.views().then((response) => {
-      if (!active) return;
-      const relevant = response.Items.filter((item) => !item.CollectionType || item.CollectionType === 'mixed' || item.CollectionType === (kind === 'movies' ? 'movies' : 'tvshows'));
-      setLibraries(relevant);
-      if (library && !relevant.some((item) => item.Id === library)) setLibrary('');
-    }).catch(() => { if (active) setLibraries([]); });
-    return () => { active = false; };
-  }, [kind, wall]);
+  const readMetadata = useCallback(async (connection?: AbortSignal, current: () => boolean = () => true) => {
+    if (!api.matchesSession(session) || connection?.aborted || !current()) return;
+    metaRead.current?.abort();
+    const request = new AbortController();
+    metaRead.current = request;
+    const signal = AbortSignal.any([request.signal, connection ?? AbortSignal.timeout(15_000)]);
+    const active = () => !signal.aborted && api.matchesSession(session) && current();
+    const reads: Promise<unknown>[] = [];
+    if (wall) {
+      reads.push(api.views(signal).then(response => {
+        if (!active()) return;
+        const relevant = response.Items.filter(item => !item.CollectionType || item.CollectionType === 'mixed' || item.CollectionType === (kind === 'movies' ? 'movies' : 'tvshows'));
+        setLibraries(relevant);
+        if (library && !relevant.some(item => item.Id === library)) {
+          setLibrary('');
+          saveStored(`${storagePrefix}.${kind}.library`, '');
+        }
+      }));
+      reads.push(api.items({ ParentId: library || undefined, IncludeItemTypes: itemTypes, Limit: 0 }, signal).then(response => {
+        if (active()) setLibraryTotal(response.TotalRecordCount);
+      }).catch(reason => { if (active() && accessLost(reason)) setLibraryTotal(undefined); }));
+    }
+    if (wall || isSearch) reads.push(api.genres(library || undefined, itemTypes, signal).then(response => {
+      if (active()) { genreScope.current = scope; setGenres(response.Items); }
+    }).catch(reason => { if (active() && accessLost(reason)) { setGenres([]); setGenreCards({}); } }));
+    if (isSearch || isFavorites) reads.push(api.items({ IncludeItemTypes: 'Movie,Series', Limit: 1, SortBy: 'DateCreated', SortOrder: 'Descending' }, signal).then(response => {
+      if (active()) setBrowseBackdrop(response.Items[0] ?? null);
+    }).catch(reason => { if (active() && accessLost(reason)) setBrowseBackdrop(null); }));
+    if (isFavorites) reads.push(Promise.all([
+      api.favorites({ IncludeItemTypes: 'Movie,Series', Limit: 0 }, signal),
+      api.favorites({ IncludeItemTypes: 'Movie', Limit: 0 }, signal),
+      api.favorites({ IncludeItemTypes: 'Series', Limit: 0 }, signal),
+    ]).then(([all, movies, series]) => {
+      if (active()) setFavoriteCounts({ all: all.TotalRecordCount, Movie: movies.TotalRecordCount, Series: series.TotalRecordCount });
+    }).catch(reason => { if (active() && accessLost(reason)) setFavoriteCounts({}); }));
+    await Promise.allSettled(reads);
+  }, [wall, isSearch, isFavorites, kind, library, itemTypes, scope, session, storagePrefix]);
 
-  useEffect(() => {
-    if (!wall && !isSearch) return;
-    let active = true;
-    const scope = `${kind}:${library}`;
+  useLayoutEffect(() => {
     genreScope.current = '';
     setGenres([]);
     setGenreCards({});
-    api.genres(library || undefined, kind === 'movies' ? 'Movie' : kind === 'series' ? 'Series' : 'Movie,Series').then((response) => {
-      if (active) { genreScope.current = scope; setGenres(response.Items); }
-    }).catch(() => { if (active) setGenres([]); });
-    return () => { active = false; };
-  }, [library, wall, isSearch, kind]);
-
-  useEffect(() => {
-    if (!wall) return;
-    let active = true;
     setLibraryTotal(undefined);
-    api.items({ ParentId: library || undefined, IncludeItemTypes: kind === 'movies' ? 'Movie' : 'Series', Recursive: true, Limit: 0 }).then(response => {
-      if (active) setLibraryTotal(response.TotalRecordCount);
-    }).catch(() => { if (active) setLibraryTotal(undefined); });
-    return () => { active = false; };
-  }, [kind, library, wall, revision]);
+  }, [scope]);
+  useLayoutEffect(() => {
+    void readMetadata();
+    return () => metaRead.current?.abort();
+  }, [readMetadata, revision]);
+  useLibraryRefresh(true, readMetadata);
 
-  useEffect(() => {
-    if (!isSearch && !isFavorites) return;
-    let active = true;
-    api.items({ IncludeItemTypes: 'Movie,Series', Recursive: true, Limit: 1, SortBy: 'DateCreated', SortOrder: 'Descending' }).then(response => {
-      if (active) setBrowseBackdrop(response.Items[0] ?? null);
-    }).catch(() => {});
-    return () => { active = false; };
-  }, [isSearch, isFavorites, revision]);
-
-  useEffect(() => {
+  useLayoutEffect(() => {
     if ((isSearch || isFavorites) && !loading) setBackdrop(items[0] ?? browseBackdrop, 'blur');
   }, [isSearch, isFavorites, loading, items, browseBackdrop, setBackdrop]);
-
-  useEffect(() => {
-    if (!isFavorites) return;
-    let active = true;
-    Promise.all([
-      api.favorites({ IncludeItemTypes: 'Movie,Series', Limit: 0 }),
-      api.favorites({ IncludeItemTypes: 'Movie', Limit: 0 }),
-      api.favorites({ IncludeItemTypes: 'Series', Limit: 0 }),
-    ]).then(([all, movies, series]) => {
-      if (active) setFavoriteCounts({ all: all.TotalRecordCount, Movie: movies.TotalRecordCount, Series: series.TotalRecordCount });
-    }).catch(() => { if (active) setFavoriteCounts({}); });
-    return () => { active = false; };
-  }, [isFavorites, revision]);
 
   useEffect(() => {
     if (isSearch) searchRef.current?.focus();
@@ -224,13 +235,14 @@ function CatalogView({ kind }: { kind: CatalogKind }) {
     return () => window.clearTimeout(timer);
   }, [term, isSearch]);
 
-  useEffect(() => {
-    if ((!isSearch && !wall) || !genres.length || genreScope.current !== `${kind}:${library}`) return;
-    let active = true;
+  useLayoutEffect(() => {
+    if ((!isSearch && !wall) || !genres.length || genreScope.current !== scope) return;
+    const request = new AbortController();
+    const active = () => !request.signal.aborted && api.matchesSession(session);
     let next = 0;
     const cards: Record<string, GenreCard> = {};
     const collect = async () => {
-      while (active && next < genres.length) {
+      while (active() && next < genres.length) {
         const item = genres[next++];
         const supplied = item as MediaItem & { ItemCount?: number };
         const count = supplied.ItemCount ?? item.ChildCount ?? item.RecursiveItemCount;
@@ -242,16 +254,16 @@ function CatalogView({ kind }: { kind: CatalogKind }) {
           const response = await api.items({
             ParentId: wall ? library || undefined : undefined,
             GenreIds: item.Id || undefined, Genres: item.Id ? undefined : item.Name,
-            IncludeItemTypes: kind === 'movies' ? 'Movie' : kind === 'series' ? 'Series' : 'Movie,Series',
+            IncludeItemTypes: itemTypes,
             Recursive: true, Limit: isSearch ? 1 : 0, SortBy: 'DateCreated', SortOrder: 'Descending',
-          });
-          if (active) cards[item.Id || item.Name] = { image: response.Items[0], count: count ?? response.TotalRecordCount };
+          }, request.signal);
+          if (active()) cards[item.Id || item.Name] = { image: response.Items[0], count: count ?? response.TotalRecordCount };
         } catch { /* Keep the server order when an individual genre count is unavailable. */ }
       }
     };
-    void Promise.all(Array.from({ length: Math.min(4, genres.length) }, collect)).then(() => { if (active) setGenreCards(cards); });
-    return () => { active = false; };
-  }, [genres, isSearch, wall, library, kind, revision]);
+    void Promise.all(Array.from({ length: Math.min(4, genres.length) }, collect)).then(() => { if (active()) setGenreCards(cards); });
+    return () => request.abort();
+  }, [genres, isSearch, wall, library, itemTypes, scope, session]);
 
   useEffect(() => {
     const tabs = genreTabsRef.current;
@@ -284,87 +296,105 @@ function CatalogView({ kind }: { kind: CatalogKind }) {
     };
   }, [menu]);
 
-  const makeQuery = (startIndex = 0): ItemQuery => ({
-    IncludeItemTypes: kind === 'movies' ? 'Movie' : kind === 'series' ? 'Series' : isFavorites && favoriteKind !== 'all' ? favoriteKind : 'Movie,Series',
-    Recursive: true,
-    Limit: PAGE_SIZE,
-    StartIndex: startIndex,
-    ParentId: wall ? library || undefined : undefined,
-    Genres: genreFilter.id ? undefined : genre || undefined,
-    GenreIds: genreFilter.id || undefined,
-    PersonIds: person?.Id,
-    Years: year || undefined,
-    IsPlayed: unwatched ? false : undefined,
-    Is4K: videoFilter === '4k' ? true : undefined,
-    ExtendedVideoTypes: VIDEO_FILTERS.find(option => option.value === videoFilter)?.range,
-    GobyAggregateVideoFilters: (kind === 'series' || isSearch) && videoFilter !== 'all' ? true : undefined,
-    SortBy: isSearch ? 'SortName' : sort,
-    SortOrder: isSearch || sort === 'SortName' ? 'Ascending' : 'Descending',
-  });
-
-  async function fetchPage(startIndex: number): Promise<CatalogResponse> {
+  const personId = person?.Id;
+  const fetchPage = useCallback(async (startIndex: number, limit: number, signal: AbortSignal, current: () => boolean): Promise<CatalogResponse | undefined> => {
     if (showingHints) {
-      const response = await api.searchHints(query, startIndex, PAGE_SIZE);
+      const response = await api.searchHints(query, startIndex, limit, signal);
+      signal.throwIfAborted();
+      if (!current()) return;
       const physical = response.SearchHints.filter(entry => entry.GobyReference.Kind === 'Item');
-      // Hydrate only physical IDs; entity IDs can collide with these IDs.
-      const details = physical.length ? await api.items({ Ids: physical.map(entry => entry.GobyReference.Id).join(','), Limit: physical.length }).catch(() => undefined) : undefined;
+      // Entity IDs can collide with physical IDs. A successful hydration that
+      // omits an item supersedes the older hint (it may no longer be visible).
+      const details = physical.length ? await api.items({ Ids: physical.map(entry => entry.GobyReference.Id).join(','), Limit: physical.length }, signal) : undefined;
       const indexed = new Map(details?.Items.map(item => [item.Id, item]));
-      return { Items: physical.map(entry => indexed.get(entry.GobyReference.Id) ?? hintItem(entry)), hints: response.SearchHints, received: response.SearchHints.length, TotalRecordCount: response.TotalRecordCount };
+      const items = physical.flatMap(entry => {
+        const item = indexed.get(entry.GobyReference.Id);
+        return item ? [item] : [];
+      });
+      return { Items: items, hints: response.SearchHints, received: response.SearchHints.length, TotalRecordCount: response.TotalRecordCount };
     }
-    const response = isFavorites ? await api.favorites(makeQuery(startIndex)) : await api.items(makeQuery(startIndex));
+    const parameters: ItemQuery = {
+      IncludeItemTypes: isFavorites && favoriteKind !== 'all' ? favoriteKind : itemTypes,
+      Recursive: true, Limit: limit, StartIndex: startIndex, ParentId: wall ? library || undefined : undefined,
+      Genres: genreFilter.id ? undefined : genre || undefined, GenreIds: genreFilter.id || undefined,
+      PersonIds: personId, Years: year || undefined, IsPlayed: unwatched ? false : undefined,
+      Is4K: videoFilter === '4k' ? true : undefined, ExtendedVideoTypes: VIDEO_FILTERS.find(option => option.value === videoFilter)?.range,
+      GobyAggregateVideoFilters: (kind === 'series' || isSearch) && videoFilter !== 'all' ? true : undefined,
+      SortBy: isSearch ? 'SortName' : sort, SortOrder: isSearch || sort === 'SortName' ? 'Ascending' : 'Descending',
+    };
+    const response = await (isFavorites ? api.favorites(parameters, signal) : api.items(parameters, signal));
     return { ...response, received: response.Items.length };
-  }
+  }, [showingHints, query, itemTypes, kind, isFavorites, favoriteKind, wall, library, genre, genreFilter.id, personId, year, unwatched, videoFilter, isSearch, sort]);
 
-  useEffect(() => {
-    const sequence = ++requestSequence.current;
-    setLoadingMore(false);
-    setError('');
-    setHints([]);
-    setReceived(0);
-    setTotal(0);
-    if (isSearch && !hasSearch) {
-      setItems([]);
-      setTotal(0);
-      setLoading(false);
-      return;
+  const readResults = useCallback(async (mode: ListRead, connection?: AbortSignal, current: () => boolean = () => true) => {
+    if (!api.matchesSession(session) || connection?.aborted || !current()) return;
+    listRead.current?.abort();
+    const request = new AbortController();
+    listRead.current = request;
+    const ownsRequest = () => !request.signal.aborted && api.matchesSession(session);
+    const active = () => ownsRequest() && current();
+    const signal = AbortSignal.any([request.signal, connection ?? AbortSignal.timeout(15_000)]);
+    const clear = () => { setItems([]); setHints([]); setReceived(0); setTotal(0); if (wall) setBackdrop(null, 'blur'); };
+    setError(null);
+    if (mode === 'initial') {
+      pagination.current = { received: 0, depth: PAGE_SIZE };
+      clear();
     }
-    setLoading(true);
-    setItems([]);
-    fetchPage(0).then((response) => {
-      if (sequence !== requestSequence.current) return;
-      setItems(response.Items);
-      setHints(response.hints ?? []);
-      setReceived(response.received);
-      setTotal(response.TotalRecordCount);
-      if (wall && response.Items[0]) setBackdrop(response.Items[0], 'blur');
-    }).catch((reason: unknown) => {
-      if (sequence === requestSequence.current) setError(loadingError(reason));
-    }).finally(() => { if (sequence === requestSequence.current) setLoading(false); });
-  }, [kind, library, genre, genreFilter.id, sort, unwatched, videoFilter, favoriteKind, query, person, year, revision, reload]);
-
-  async function loadMore() {
-    if (loadingMore || loading) return;
-    const sequence = requestSequence.current;
-    setLoadingMore(true);
-    setError('');
     try {
-      const response = await fetchPage(received);
-      if (sequence !== requestSequence.current) return;
-      setItems((previous) => {
-        const existing = new Set(previous.map((item) => item.Id));
-        return [...previous, ...response.Items.filter((item) => !existing.has(item.Id))];
-      });
-      setHints(previous => {
-        const existing = new Set(previous.map(hintKey));
-        return [...previous, ...(response.hints ?? []).filter(entry => !existing.has(hintKey(entry)))];
-      });
-      setReceived(value => value + response.received);
-      setTotal(response.TotalRecordCount);
+      if (isSearch && !hasSearch) return;
+      setReading(mode);
+      const { received: start, depth } = pagination.current;
+      const startIndex = mode === 'more' ? start : 0;
+      const target = mode === 'refresh' ? depth : startIndex + PAGE_SIZE;
+      // A refresh also replaces an append that was requested but not yet shown.
+      if (mode === 'more') pagination.current.depth = Math.max(depth, target);
+      // Replace the loaded prefix, not individual IDs. Insertions and removals
+      // can move every page boundary. Keep hints in small hydration batches.
+      const limit = showingHints ? PAGE_SIZE : MAX_ITEM_LIMIT;
+      let offset = startIndex;
+      let latest: CatalogResponse;
+      let nextItems: MediaItem[] = [];
+      let nextHints: SearchHint[] = [];
+      do {
+        const page = await fetchPage(offset, Math.min(target - offset, limit), signal, active);
+        signal.throwIfAborted();
+        if (!page || !active()) return;
+        latest = page;
+        nextItems = appendUnique(nextItems, latest.Items, item => item.Id);
+        nextHints = appendUnique(nextHints, latest.hints ?? [], hintKey);
+        offset += latest.received;
+      } while (latest.received && offset < target && offset < latest.TotalRecordCount);
+      pagination.current = { received: offset, depth: Math.max(depth, target) };
+      setItems(previous => mode === 'more' ? appendUnique(previous, nextItems, item => item.Id) : nextItems);
+      setHints(previous => mode === 'more' ? appendUnique(previous, nextHints, hintKey) : nextHints);
+      setReceived(offset);
+      setTotal(latest.TotalRecordCount);
+      if (wall && mode !== 'more') setBackdrop(nextItems[0] ?? null, 'blur');
     } catch (reason) {
-      if (sequence === requestSequence.current) setError(loadingError(reason));
+      if (!ownsRequest() || !current()) return;
+      if (accessLost(reason)) {
+        clear();
+        pagination.current.received = 0;
+      }
+      setError({ message: loadingError(reason, mode === 'refresh'), retry: accessLost(reason) ? 'refresh' : mode });
     } finally {
-      if (sequence === requestSequence.current) setLoadingMore(false);
+      if (listRead.current === request) {
+        listRead.current = null;
+        if (ownsRequest()) setReading(null);
+      }
+      request.abort();
     }
+  }, [session, wall, setBackdrop, isSearch, hasSearch, showingHints, fetchPage]);
+
+  useLayoutEffect(() => {
+    void readResults('initial');
+    return () => listRead.current?.abort();
+  }, [readResults, revision]);
+  const refreshResults = useCallback((signal: AbortSignal, current: () => boolean) => readResults('refresh', signal, current), [readResults]);
+  useLibraryRefresh(!isSearch || hasSearch, refreshResults);
+
+  function loadMore() {
+    if (!listRead.current) void readResults('more');
   }
 
   function chooseLibrary(value: string) {
@@ -499,14 +529,14 @@ function CatalogView({ kind }: { kind: CatalogKind }) {
         </div>}
         {isSearch && !loading && (total > 0 || hasSearchFilters) && <div className="catalog-search-count" aria-live="polite"><span>{searchContext || `“${query}”`} · {total} {showingHints ? '条结果' : '部影片'}</span>{hasSearchFilters && <button onClick={clearSearchFilters}>清除筛选 <Icon name="close" size={14} /></button>}</div>}
         {loading ? <div className="catalog-loading" role="status" aria-label="正在加载影片"><div className="catalog-skeleton-grid">{Array.from({ length: 12 }, (_, index) => <div className="catalog-skeleton" key={index}><div /><span /><span /></div>)}</div></div> : <PosterGrid items={items} variant={isFavorites ? 'favorites' : isSearch ? 'search' : 'catalog'} />}
-        {error && <div className="catalog-error" role="alert"><p>{error}</p><button onClick={() => received ? void loadMore() : setReload((value) => value + 1)}>重新加载</button></div>}
+        {error && <div className="catalog-error" role="alert"><p>{error.message}</p><button onClick={() => void readResults(error.retry)}>重新加载</button></div>}
         {!loading && !error && !items.length && !entities.length && <div className="catalog-empty">
           {isFavorites && <Icon name="heart" size={44} strokeWidth={1.5} />}
           <h2>{isFavorites ? '这里还空着' : isSearch && query ? `没有找到“${query}”` : '没有符合条件的影片'}</h2>
           <p>{isFavorites ? '在详情页或预览卡上点 ♡，影片就会出现在这里' : isSearch ? '换个关键词，或试试演员名、年份或画质筛选' : '试试放宽类型或画质筛选'}</p>
           {isFavorites ? <button onClick={() => navigate({ page: 'movies' })}>去逛逛电影</button> : wall ? <button onClick={resetFilters}>清除筛选</button> : null}
         </div>}
-        {!loading && received > 0 && received < total && <div className="catalog-more"><button disabled={loadingMore} onClick={() => void loadMore()}>{loadingMore ? '正在加载…' : '加载更多'}{!loadingMore && <Icon name="chevronDown" size={16} />}</button><span>已显示 {showingHints ? hints.length : items.length} / {total}</span></div>}
+        {!loading && received > 0 && received < total && <div className="catalog-more"><button disabled={reading !== null || error?.retry === 'refresh'} onClick={loadMore}>{loadingMore ? '正在加载…' : '加载更多'}{!loadingMore && <Icon name="chevronDown" size={16} />}</button><span>已显示 {showingHints ? hints.length : items.length} / {total}</span></div>}
       </div>}
     </main>
   );

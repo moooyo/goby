@@ -234,7 +234,7 @@ func (s *Store) regenerateNFOTarget(ctx context.Context, grant *internalTaskSour
 		return "", false, errMetadataIngestChanged
 	}
 	check := func(work context.Context, tx pgx.Tx) error {
-		if err := s.checkMetadataIngestTarget(work, tx, grant, library, row, target, false); err != nil {
+		if err := s.checkMetadataIngestTarget(work, tx, grant, library, row, target, localIngestNFO); err != nil {
 			return err
 		}
 		var revision int64

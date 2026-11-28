@@ -483,7 +483,7 @@ func TestFeatureWaveBrowserIntegration(t *testing.T) {
 		(SELECT count(*) FROM task_runs WHERE NOT (task_key=ANY($4::text[]) AND total_children=0)),
 		(SELECT count(*) FROM task_runs WHERE state IN ('pending','running','stopping')),
 		(SELECT count(*) FROM task_triggers t JOIN task_definitions d ON d.id=t.task_id WHERE t.retired_at IS NULL AND NOT (d.key=ANY($4::text[])))`,
-		movieIDs, movieIDs[0], movieIDs[1], []string{library.TaskLocalMetadataIngestKey, library.TaskNFORecoveryKey}).Scan(&virtual, &entries, &shares, &mediaCount, &expired, &fresh, &active, &totalRuns, &activeRuns, &activeTriggers)
+		movieIDs, movieIDs[0], movieIDs[1], []string{library.TaskLocalMetadataIngestKey, library.TaskLocalArtworkIngestKey, library.TaskNFORecoveryKey}).Scan(&virtual, &entries, &shares, &mediaCount, &expired, &fresh, &active, &totalRuns, &activeRuns, &activeTriggers)
 	if err != nil || virtual != 0 || entries != 0 || shares != 0 || mediaCount != 2 || expired != 0 || fresh != 1 || active != 0 || totalRuns != 1 || activeRuns != 0 || activeTriggers != 0 {
 		t.Fatal("feature-wave final database invariants differ from the browser evidence")
 	}

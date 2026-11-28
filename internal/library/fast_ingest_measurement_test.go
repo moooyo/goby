@@ -79,7 +79,12 @@ func TestFastIngestSyntheticPublicationTiming(t *testing.T) {
 			scanDone := time.Since(start)
 			if fast {
 				child, fence := metadataIngestTestWorker(t, ctx, pool, collection, TaskLocalMetadataIngestKey)
-				if err := store.ImportLocalScanMetadata(ctx, child, collection.ID, fence, func(ProviderProgress) error { return nil }); err != nil {
+				report := func(ProviderProgress) error { return nil }
+				if err := store.ImportLocalScanMetadata(ctx, child, collection.ID, fence, report); err != nil {
+					t.Fatal(err)
+				}
+				child, fence = metadataIngestTestWorker(t, ctx, pool, collection, TaskLocalArtworkIngestKey)
+				if err := store.ImportLocalScanArtwork(ctx, child, collection.ID, fence, report); err != nil {
 					t.Fatal(err)
 				}
 				var pending int

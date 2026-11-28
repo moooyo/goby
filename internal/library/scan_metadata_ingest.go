@@ -12,7 +12,10 @@ import (
 	"github.com/moooyo/goby/internal/systemevents"
 )
 
-const TaskLocalMetadataIngestKey = "metadata.import_local"
+const (
+	TaskLocalMetadataIngestKey = "metadata.import_local"
+	TaskLocalArtworkIngestKey  = "metadata.import_local_artwork"
+)
 
 // WithDeferredLocalMetadata lets ordinary movie and TV scans leave descriptive
 // sidecars to the local import task. Source verification, hierarchy, subtitles,
@@ -179,14 +182,28 @@ const queueScanMetadataImportSQL = `INSERT INTO local_metadata_ingest
 // checkpoint. Item writes and their request share the original scan transaction.
 func (state *scanState) queueMetadataImport(tx pgx.Tx, itemID string, request scanMetadataImport) error {
 	if request.recheckOnly {
-		_, err := tx.Exec(state.task.ctx, `UPDATE local_metadata_ingest q SET scan_job_id=$2,directory_identity=$3,
-			source_key=`+metadataIngestSourceKeySQL+`,index_number=$4,parent_index_number=$5,parent_number_defined=$6
+		ctx := state.task.ctx
+		images := EffectiveLibraryOptions(state.library).EnableLocalImages
+		online := state.store.enrichOnlineMetadata && !state.task.job.ForceProbe
+		if _, err := tx.Exec(ctx, `DELETE FROM local_metadata_ingest WHERE item_id=$1
+			AND NOT (import_nfo OR (import_images AND $2) OR (enrich_online AND $3))`, itemID, images, online); err != nil {
+			return err
+		}
+		_, err := tx.Exec(ctx, `UPDATE local_metadata_ingest q SET scan_job_id=$2,directory_identity=$3,
+			source_key=`+metadataIngestSourceKeySQL+`,index_number=$4,parent_index_number=$5,parent_number_defined=$6,
+			import_images=q.import_images AND $7,enrich_online=q.enrich_online AND $8
 			FROM items i JOIN library_roots r ON r.id=i.root_id AND r.library_id=i.library_id
 			WHERE q.item_id=i.id AND i.id=$1`, itemID, state.task.job.ID, request.directoryIdentity,
-			request.index, request.parentIndex, request.parentDefined)
+			request.index, request.parentIndex, request.parentDefined, images, online)
 		return err
 	}
 	if !request.pending() {
+		if request.preserveNFO && request.directoryIdentity != "" {
+			// With artwork disabled, an unchanged NFO must not leave an old
+			// optional phase blocking the online reader. Preserve any NFO gate.
+			_, err := tx.Exec(state.task.ctx, `DELETE FROM local_metadata_ingest WHERE item_id=$1 AND NOT import_nfo`, itemID)
+			return err
+		}
 		return nil
 	}
 	_, err := tx.Exec(state.task.ctx, queueScanMetadataImportSQL, itemID, state.task.job.ID, request.directoryIdentity,
@@ -214,8 +231,8 @@ func (state *scanState) queueScannedNFOImport(tx pgx.Tx, itemID, parentID string
 	}
 	request.recheckOnly, request.preserveNFO = false, false
 	request.nfo = request.nfoCheck == scanNFOPending
-	request.images = request.images || images
-	request.online = request.online || online
+	request.images = request.images || (images && EffectiveLibraryOptions(state.library).EnableLocalImages)
+	request.online = request.online || (online && state.store.enrichOnlineMetadata && !state.task.job.ForceProbe)
 	if request.pending() {
 		if err := state.queueMetadataImport(tx, itemID, request); err != nil {
 			return err
@@ -226,20 +243,7 @@ func (state *scanState) queueScannedNFOImport(tx pgx.Tx, itemID, parentID string
 		}
 	}
 	if wasPending != request.nfo {
-		changes := []CatalogChange{metadataIngestVisibilityChange(metadataIngestTarget{id: itemID, parentID: parentID, folder: folder}, state.library.ID)}
-		if request.nfo {
-			// A viewer may no longer be allowed to receive the item's ID. Its
-			// visible parent still needs a membership refresh after a rejection.
-			parent := CatalogChange{Kind: CatalogUpdated, ItemID: parentID, LibraryID: state.library.ID, IsFolder: true, ChildrenRemoved: true}
-			err := tx.QueryRow(ctx, `SELECT COALESCE(parent_id,''),type='CollectionFolder' FROM items WHERE id=$1 AND library_id=$2 AND is_folder`,
-				parentID, state.library.ID).Scan(&parent.ParentID, &parent.IsCollectionFolder)
-			if err == nil {
-				changes = append(changes, parent)
-			} else if !errors.Is(err, pgx.ErrNoRows) {
-				return err
-			}
-		}
-		return mergeAuxiliaryCatalogChanges(tx, changes, false)
+		return recordMetadataIngestVisibility(ctx, tx, metadataIngestTarget{id: itemID, parentID: parentID, folder: folder}, state.library.ID, request.nfo)
 	}
 	return nil
 }

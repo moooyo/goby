@@ -447,7 +447,11 @@ func TestEpisodePairNFOKeepsAncestorGateWithImageOnlyScan(t *testing.T) {
 		t.Fatalf("independent image stage did not queue: %t %v", pendingImages, err)
 	}
 	if err := runEpisodePairTestImport(t, ctx, pool, store, collection); err == nil {
-		t.Fatal("the image-only import claimed to verify the disabled NFO")
+		t.Fatal("the disabled NFO reader claimed to verify the pending document")
+	}
+	imageChild, imageFence := metadataIngestTestWorker(t, ctx, pool, collection, TaskLocalArtworkIngestKey)
+	if err := store.ImportLocalScanArtwork(ctx, imageChild, collection.ID, imageFence, func(ProviderProgress) error { return nil }); err != nil {
+		t.Fatalf("artwork could not run independently of the failed NFO reader: %v", err)
 	}
 	assertEpisodePairPending(t, ctx, pool, series.ID, secondScan.ID, true)
 	if err := pool.QueryRow(ctx, `SELECT import_images FROM local_metadata_ingest WHERE item_id=$1`, series.ID).Scan(&pendingImages); err != nil || pendingImages {

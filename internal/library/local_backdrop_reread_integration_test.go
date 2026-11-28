@@ -346,13 +346,13 @@ func TestLocalBackdropRereadRechecksAuthorityAndSourceBeforeCommit(t *testing.T)
 
 func startBackdropFixtureImporter(t *testing.T, f localBackdropFixture) {
 	t.Helper()
-	child, fence := metadataIngestTestWorker(t, f.ctx, f.pool, f.collection, TaskLocalMetadataIngestKey)
+	child, fence := metadataIngestTestWorker(t, f.ctx, f.pool, f.collection, TaskLocalArtworkIngestKey)
 	ctx, cancel := context.WithCancel(f.ctx)
 	entered, done := make(chan struct{}), make(chan struct{})
 	var importErr error
 	go func() {
 		defer close(done)
-		importErr = f.store.ImportLocalScanMetadata(ctx, child, f.collection.ID, fence, func(ProviderProgress) error {
+		importErr = f.store.ImportLocalScanArtwork(ctx, child, f.collection.ID, fence, func(ProviderProgress) error {
 			// Hold the real startup importer between two targets, without a
 			// catalog transaction. The target's own queue row is still pending.
 			close(entered)

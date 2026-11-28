@@ -678,7 +678,7 @@ func (state *scanState) revalidateScanProbeStorageWithNFO(tx pgx.Tx, path string
 	err := input.primary.publicationIO.RunImmediate(ctx, authority.root.id, primaryio.Background, func(work context.Context) error {
 		return runStorageObservation(work, []*storageObservationLifetime{&capture.observation, &authority.observation},
 			func(observation context.Context) error {
-				if proof == nil {
+				if proof == nil || len(proof.nfo.entries) == 0 {
 					if err := capture.Revalidate(observation); err != nil {
 						return err
 					}
