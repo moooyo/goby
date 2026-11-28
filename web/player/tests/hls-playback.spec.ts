@@ -119,6 +119,117 @@ test('keeps a paused drag target beyond the current HLS prefix and opens the cor
   await expect(page.getByRole('status', { name: '正在缓冲' })).toHaveCount(0);
 });
 
+async function nativeTrackFixture(page: Page) {
+  const selections: number[] = [];
+  await page.addInitScript(() => {
+    // Chromium exercises real media and TextTrack events, not native HLS networking.
+    for (const name of ['MediaSource', 'ManagedMediaSource', 'WebKitMediaSource']) Object.defineProperty(window, name, { value: undefined });
+    const canPlayType = HTMLMediaElement.prototype.canPlayType;
+    HTMLMediaElement.prototype.canPlayType = function (type) {
+      return type === 'application/vnd.apple.mpegurl' ? 'maybe' : canPlayType.call(this, type);
+    };
+  });
+  await page.route(/\/emby\/Users\/[^/]+\/Items\/guitu\?/, async route => {
+    const response = await route.fetch();
+    const item = await response.json() as MediaItem;
+    item.UserData!.PlaybackPositionTicks = 0;
+    await route.fulfill({ response, json: item });
+  });
+  await page.route('**/emby/Items/guitu/PlaybackInfo*', async route => {
+    const request = route.request().postDataJSON();
+    const result = await (await route.fetch()).json() as PlaybackInfo;
+    const source = result.MediaSources[0];
+    const first = source.MediaStreams!.find(stream => stream.Index === 3)!;
+    Object.assign(first, { Codec: 'subrip', IsExternal: false });
+    source.MediaStreams!.push({ ...first, Index: 13 });
+    selections.push(request.SubtitleStreamIndex);
+    Object.assign(source, {
+      SupportsDirectPlay: false, SupportsDirectStream: false, SupportsTranscoding: true,
+      TranscodingUrl: source.DirectStreamUrl,
+      TranscodingSubProtocol: 'hls',
+    });
+    await route.fulfill({ json: result });
+  });
+  return selections;
+}
+
+const nativeModes = (page: Page) => page.locator('.player-video').evaluate((video: HTMLVideoElement) =>
+  Array.from(video.textTracks, track => track.mode));
+
+function addNativeTrack(page: Page, index: number, text: string, initialMode: TextTrackMode = 'disabled') {
+  return page.locator('.player-video').evaluate((video: HTMLVideoElement, track) => {
+    const created = video.addTextTrack('subtitles', `Same language [${track.index}]`, 'chi');
+    created.addCue(new VTTCue(0, 12, track.text));
+    created.addCue(new VTTCue(19, 28, `${track.text} after seek`));
+    created.mode = track.initialMode;
+  }, { index, text, initialMode });
+}
+
+test('native HLS reads only the selected source index and refreshes captions during a paused seek', async ({ page }) => {
+  const selections = await nativeTrackFixture(page);
+  await signIn(page);
+  await page.goto('/#/player/guitu');
+  await expect.poll(async () => (await videoState(page)).frames).toBeGreaterThan(0);
+  expect(selections).toEqual([3]);
+  await addNativeTrack(page, 13, 'Wrong track', 'showing');
+  await expect.poll(() => nativeModes(page)).toEqual(['disabled']);
+  await expect(page.locator('.player-subtitles')).toHaveCount(0);
+  await addNativeTrack(page, 3, 'Selected track');
+  await expect.poll(() => nativeModes(page)).toEqual(['disabled', 'hidden']);
+  await expect(page.locator('.player-subtitles')).toHaveText('Selected track');
+  await page.locator('.player-video').evaluate((video: HTMLVideoElement) => { video.textTracks[0].mode = 'showing'; });
+  await expect.poll(() => nativeModes(page)).toEqual(['disabled', 'hidden']);
+  await expect(page.locator('.player-subtitles')).toHaveText('Selected track');
+
+  await page.mouse.move(650, 810);
+  await page.locator('.player-toggle').click();
+  await expect.poll(async () => (await videoState(page)).paused).toBe(true);
+  const progress = page.getByRole('slider', { name: '播放进度' });
+  const bounds = (await progress.boundingBox())!;
+  await progress.click({ position: { x: bounds.width * 21 / 30, y: 8 } });
+  await expect.poll(async () => (await videoState(page)).time).toBeCloseTo(21, 0);
+  await expect(page.locator('.player-subtitles')).toHaveText('Selected track after seek');
+  expect((await videoState(page)).paused).toBe(true);
+  expect(selections).toEqual([3]);
+
+  await page.getByRole('button', { name: '字幕', exact: true }).click();
+  await page.getByRole('option').filter({ hasText: '#13' }).click();
+  await expect.poll(() => selections).toEqual([3, 13]);
+  await expect(page.locator('.player-subtitles')).toHaveCount(0);
+  // Programmatic tracks survive load(), unlike the active rendition. Old events
+  // must not activate a stale track even if it matches the new selection.
+  await page.locator('.player-video').evaluate((video: HTMLVideoElement) => {
+    video.textTracks[0].dispatchEvent(new Event('cuechange'));
+    video.textTracks.dispatchEvent(new Event('change'));
+  });
+  await expect.poll(() => nativeModes(page)).toEqual(['disabled', 'disabled']);
+  await addNativeTrack(page, 13, 'New track');
+  await expect.poll(() => nativeModes(page)).toEqual(['disabled', 'disabled', 'hidden']);
+  await expect(page.locator('.player-subtitles')).toHaveText('New track after seek');
+
+  await page.mouse.move(650, 810);
+  await page.getByRole('button', { name: '字幕', exact: true }).click();
+  await page.getByRole('option', { name: '关闭', exact: true }).click();
+  await expect.poll(() => selections).toEqual([3, 13, -1]);
+  await addNativeTrack(page, 3, 'Late caption', 'showing');
+  await expect.poll(() => nativeModes(page)).toEqual(['disabled', 'disabled', 'disabled', 'disabled']);
+  await expect(page.locator('.player-subtitles')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(page).toHaveURL(/#\/detail\/guitu$/);
+});
+
+test('native HLS disables ambiguous subtitle matches instead of choosing one', async ({ page }) => {
+  await nativeTrackFixture(page);
+  await signIn(page);
+  await page.goto('/#/player/guitu');
+  await expect.poll(async () => (await videoState(page)).frames).toBeGreaterThan(0);
+  await addNativeTrack(page, 3, 'First match');
+  await expect(page.locator('.player-subtitles')).toHaveText('First match');
+  await addNativeTrack(page, 3, 'Ambiguous match', 'showing');
+  await expect.poll(() => nativeModes(page)).toEqual(['disabled', 'disabled']);
+  await expect(page.locator('.player-subtitles')).toHaveCount(0);
+});
+
 const vttType = 'text/vtt; charset=utf-8';
 const earlyCue = 'Caption while playing';
 const soughtCue = 'Caption after seek';

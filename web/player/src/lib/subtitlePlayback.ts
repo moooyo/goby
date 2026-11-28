@@ -89,6 +89,71 @@ export function loadDirectSubtitleTrack(video: HTMLVideoElement, url: string, si
   });
 }
 
+export function subtitleCueText(tracks: Iterable<TextTrack>): string[] {
+  const values = new Set<string>();
+  for (const track of tracks) {
+    if (track.mode !== 'hidden') continue;
+    for (const cue of Array.from(track.activeCues ?? [])) {
+      const text = 'getCueAsHTML' in cue ? (cue as VTTCue).getCueAsHTML().textContent : null;
+      if (text) values.add(text);
+    }
+  }
+  return [...values];
+}
+
+// Native HLS requests cues even in hidden mode. Only the exact source stream
+// named by the Goby rendition may load cues and drive the overlay.
+export function bindNativeHLSSubtitles(video: HTMLVideoElement, streamIndex: number, publish: (cues: string[]) => void): () => void {
+  const list = video.textTracks;
+  const textTracks = () => Array.from(list).filter(track => track.kind === 'subtitles' || track.kind === 'captions');
+  const priorSource = new WeakSet(textTracks());
+  const suffix = ` [${streamIndex}]`;
+  let selected: TextTrack | undefined;
+  let disposed = false;
+  let reconciling = false;
+  const refresh = () => {
+    if (!disposed && !reconciling) publish(!video.seeking && selected ? subtitleCueText([selected]) : []);
+  };
+  const clear = () => { if (!disposed) publish([]); };
+  const reconcile = () => {
+    if (disposed || reconciling) return;
+    reconciling = true;
+    try {
+      const tracks = textTracks();
+      const matches = streamIndex < 0 ? [] : tracks.filter(track => !priorSource.has(track) && track.label.endsWith(suffix));
+      const next = matches.length === 1 ? matches[0] : undefined;
+      if (selected !== next) {
+        selected?.removeEventListener('cuechange', refresh);
+        if (selected && selected.mode !== 'disabled') selected.mode = 'disabled';
+        selected = next;
+        selected?.addEventListener('cuechange', refresh);
+      }
+      for (const track of tracks) if (track !== selected && track.mode !== 'disabled') track.mode = 'disabled';
+      if (selected && selected.mode !== 'hidden') selected.mode = 'hidden';
+    } finally { reconciling = false; }
+    refresh();
+  };
+  const listEvents = ['addtrack', 'removetrack', 'change'] as const;
+  const readyEvents = ['loadedmetadata', 'loadeddata'] as const;
+  for (const event of listEvents) list.addEventListener(event, reconcile);
+  for (const event of readyEvents) video.addEventListener(event, reconcile);
+  video.addEventListener('seeking', clear);
+  video.addEventListener('seeked', refresh);
+  reconcile();
+  return () => {
+    if (disposed) return;
+    disposed = true;
+    for (const event of listEvents) list.removeEventListener(event, reconcile);
+    for (const event of readyEvents) video.removeEventListener(event, reconcile);
+    video.removeEventListener('seeking', clear);
+    video.removeEventListener('seeked', refresh);
+    selected?.removeEventListener('cuechange', refresh);
+    if (selected && selected.mode !== 'disabled') selected.mode = 'disabled';
+    for (const track of textTracks()) if (track.mode !== 'disabled') track.mode = 'disabled';
+    publish([]);
+  };
+}
+
 export function subtitleFragmentLoader(onUnavailable: () => void): NonNullable<HlsConfig['fLoader']> {
   const preparation = new SubtitlePreparation();
   return class implements Loader<FragmentLoaderContext> {

@@ -9,11 +9,15 @@ import { api, ApiError } from '../lib/api';
 import { videoResolution } from '../lib/mediaFormat';
 import { seekThumbnailAt, seekThumbnails, seekThumbnailUrl, type SeekThumbnail } from '../lib/seekPreviews';
 import { subtitleStyles } from '../lib/subtitleStyles';
-import { loadDirectSubtitleTrack, subtitleFragmentLoader } from '../lib/subtitlePlayback';
+import { bindNativeHLSSubtitles, loadDirectSubtitleTrack, subtitleCueText, subtitleFragmentLoader } from '../lib/subtitlePlayback';
 import { isPlayableSubtitle, loadItemPreferences, resolveItemPreferences, setItemPreferences } from '../lib/preferences';
 import type { MediaItem, PlaybackEvent, PlaybackOptions, PlaybackSession, Quality } from '../types';
 import { canSeekTo, clamp, clock, CREDITS_COUNTDOWN_SECONDS, resolveCreditsIntervals, episodeLabel, introInterval, streamLabel, TICKS_PER_SECOND } from './playerUtils';
 import './player.css';
+
+function isHLSPlayback(session: PlaybackSession): boolean {
+  return /\.m3u8(?:\?|$)/i.test(session.url) || session.method === 'Transcode' && session.source.TranscodingSubProtocol === 'hls';
+}
 
 type Panel = 'episodes' | 'subtitles' | 'audio' | 'quality' | 'rate' | 'settings' | null;
 type ActivePlayback = {
@@ -333,9 +337,11 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
     if (active?.session !== playback || active.stopped) return;
     const subtitles = new AbortController();
     let hls: Hls | undefined;
+    let disposeNativeSubtitles: (() => void) | undefined;
     const disposeSubtitles = () => {
       if (subtitles.signal.aborted) return;
       subtitles.abort();
+      disposeNativeSubtitles?.();
       if (hls) hls.subtitleTrack = -1;
     };
     active.disposeSubtitles = disposeSubtitles;
@@ -352,8 +358,7 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
         setLoading(false); setPlaying(false); setVisible(true); setAutoplayBlocked(failure instanceof DOMException && failure.name === 'NotAllowedError');
       });
     };
-    const isHls = /\.m3u8(?:\?|$)/i.test(playback.url)
-      || playback.method === 'Transcode' && playback.source.TranscodingSubProtocol === 'hls';
+    const isHls = isHLSPlayback(playback);
     const metadata = () => {
       if (disposed || activeRef.current !== active) return;
       if ((!isHls || !playback.source.RunTimeTicks) && Number.isFinite(video.duration) && video.duration > 0) setDuration(video.duration);
@@ -444,9 +449,14 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
       client.attachMedia(video);
       client.loadSource(playback.url);
     } else if (!isHls || video.canPlayType('application/vnd.apple.mpegurl')) {
+      if (isHls) {
+        disposeNativeSubtitles = bindNativeHLSSubtitles(video, active.selection.subtitleStreamIndex ?? -1, values => {
+          if (activeRef.current === active) setCues(values);
+        });
+      }
       video.src = playback.url;
       video.load();
-      if (playback.subtitleUrl) loadDirectSubtitleTrack(video, playback.subtitleUrl, subtitles.signal);
+      if (!isHls && playback.subtitleUrl) loadDirectSubtitleTrack(video, playback.subtitleUrl, subtitles.signal);
     } else {
       setError('当前浏览器不支持此播放格式，请更换浏览器或使用外部播放器。');
       setLoading(false);
@@ -472,20 +482,11 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
     const video = videoRef.current;
     const active = activeRef.current;
     if (!video || !playback || active?.session !== playback || active.stopped) return;
+    // Native HLS already owns these tracks in the attachment effect above.
+    if (isHLSPlayback(playback) && !hlsRef.current) return;
     const bindings = new Set<TextTrack>();
     const update = () => {
-      if (activeRef.current !== active) return;
-      const values: string[] = [];
-      if (!active.stopped) {
-        for (const track of bindings) {
-          if (track.mode !== 'hidden') continue;
-          for (const cue of Array.from(track.activeCues ?? [])) {
-            const text = 'getCueAsHTML' in cue ? (cue as VTTCue).getCueAsHTML().textContent ?? '' : '';
-            if (text && !values.includes(text)) values.push(text);
-          }
-        }
-      }
-      setCues(values);
+      if (activeRef.current === active) setCues(active.stopped ? [] : subtitleCueText(bindings));
     };
     const bind = () => {
       if (activeRef.current !== active) return;
