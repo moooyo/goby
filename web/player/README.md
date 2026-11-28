@@ -122,7 +122,10 @@ Open `http://127.0.0.1:5174`. `GOBY_DEV_API` selects the existing Goby backend f
 the Vite development proxy; its default is `http://127.0.0.1:8096`. `/emby` and
 `/admin` remain same-origin paths in the browser. Use a configured Goby account
 for sign-in. The backend still requires its own database, media and runtime
-configuration; starting Vite does not start those services.
+configuration; starting Vite does not start those services. The sign-in form
+asks only for credentials: API and media requests always use the frontend's
+origin, and `GOBY_DEV_API` or `GOBY_API_UPSTREAM` selects the backend at the
+proxy, not in the browser.
 
 If the administrator dashboard will also be used through this origin, configure
 the backend's `GOBY_PUBLIC_URL` as `http://127.0.0.1:5174` for that development

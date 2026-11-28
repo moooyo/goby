@@ -227,7 +227,10 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 		// (including Off) and the original-file playback decision unchanged.
 		formats = playback.ExternalSubtitleCandidateFormats(input, request.DeviceProfile)
 	}
-	if decision.SubtitleMethod == playback.SubtitleDeliveryMethodExternal && decision.DefaultSubtitleStreamIndex != nil {
+	// The original selection also describes a subtitle format when the original
+	// file is unplayable. Do not read or extract that unused track before HLS
+	// negotiation; the selected conversion or its subtitle requests validate it.
+	if (decision.DirectPlay || decision.DirectStream) && decision.SubtitleMethod == playback.SubtitleDeliveryMethodExternal && decision.DefaultSubtitleStreamIndex != nil {
 		if _, err := s.readSubtitleContentFor(ctx, librarySubject(principal, principal.User.ID), source.Item.ID, source.SourceID, *decision.DefaultSubtitleStreamIndex, subtitle.Format(decision.SubtitleFormat)); err != nil {
 			s.playbackError(w, r, err)
 			return

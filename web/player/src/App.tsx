@@ -32,12 +32,30 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean
 }
 
 function Login({ onAuthenticated }: { onAuthenticated: (session: AuthSession) => void }) {
-  const [server, setServer] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
-  return <main className="login-page"><form className="login-card" onSubmit={async event => { event.preventDefault(); setPending(true); setError(''); try { const session = await api.authenticate(server || location.origin, username, password); onAuthenticated(session); } catch { setError('登录失败，请检查服务器地址、用户名和密码。'); } finally { setPending(false); } }}><span className="login-symbol"><Icon name="play" size={30}/></span><h1>回到你的光影世界</h1><p>登录 Goby，继续你的故事。</p><label htmlFor="server">服务器地址</label><input id="server" type="url" value={server} onChange={event => setServer(event.target.value)} placeholder={location.origin} autoComplete="url"/><label htmlFor="username">用户名</label><input id="username" value={username} onChange={event => setUsername(event.target.value)} autoComplete="username" required autoFocus/><label htmlFor="password">密码</label><input id="password" type="password" value={password} onChange={event => setPassword(event.target.value)} autoComplete="current-password"/>{error && <p className="form-error" role="alert">{error}</p>}<button className="primary-button" type="submit" disabled={pending}>{pending ? '正在连接…' : '登录'}</button></form></main>;
+  return <main className="login-page">
+    <form className="login-card" onSubmit={async event => {
+      event.preventDefault();
+      setPending(true);
+      setError('');
+      try { onAuthenticated(await api.authenticate(username, password)); }
+      catch { setError('登录失败，请检查用户名、密码或网络连接。'); }
+      finally { setPending(false); }
+    }}>
+      <span className="login-symbol"><Icon name="play" size={30}/></span>
+      <h1>回到你的光影世界</h1>
+      <p>登录 Goby，继续你的故事。</p>
+      <label htmlFor="username">用户名</label>
+      <input id="username" value={username} onChange={event => setUsername(event.target.value)} autoComplete="username" required autoFocus/>
+      <label htmlFor="password">密码</label>
+      <input id="password" type="password" value={password} onChange={event => setPassword(event.target.value)} autoComplete="current-password"/>
+      {error && <p className="form-error" role="alert">{error}</p>}
+      <button className="primary-button" type="submit" disabled={pending}>{pending ? '正在连接…' : '登录'}</button>
+    </form>
+  </main>;
 }
 
 function applyAccent(image: HTMLImageElement) {

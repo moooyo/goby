@@ -48,18 +48,32 @@ test.afterEach(async ({ request }, testInfo) => {
   expect(snapshot.unknownRequests).toEqual([]);
 });
 
-test('login rejects incorrect credentials and restores an authenticated session', async ({ page, request }) => {
+test('login uses the deployment origin, rejects incorrect credentials and restores the session', async ({ page, request }) => {
   await page.goto('/');
+  await expect(page.getByLabel('服务器地址', { exact: true })).toHaveCount(0);
   await page.getByLabel('用户名', { exact: true }).fill('reviewer');
   await page.getByLabel('密码', { exact: true }).fill('incorrect');
   await page.getByRole('button', { name: '登录', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('登录失败');
   await page.getByLabel('密码', { exact: true }).fill('goby-player-test');
+  const authentication = page.waitForRequest(request => new URL(request.url()).pathname === '/emby/Users/AuthenticateByName' && request.method() === 'POST');
   await page.getByRole('button', { name: '登录', exact: true }).click();
+  expect(new URL((await authentication).url()).origin).toBe(new URL(page.url()).origin);
   await expect(activePanel(page).getByRole('heading', { name: '深海回响', exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByRole('navigation', { name: '主导航' })).toBeVisible();
   expect((await state(request)).requests.filter((entry: { path: string }) => entry.path === '/Users/AuthenticateByName')).toHaveLength(2);
+});
+
+test('rejects a saved session from outside the deployment origin', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('goby.player.session.v1', JSON.stringify({
+      AccessToken: 'wrong-origin-fixture-token', User: { Id: 'reviewer', Name: 'Reviewer' }, ServerId: 'other', serverUrl: 'https://other.invalid',
+    }));
+  });
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: '登录', exact: true })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: '主导航' })).toHaveCount(0);
 });
 
 test('home pages respond to keyboard and show a recoverable server error', async ({ page, request }) => {

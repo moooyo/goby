@@ -53,6 +53,77 @@ test('centers the active episode and switches seasons through the drawer', async
   await expect(page.locator('.player-header')).toContainText('第 1 季第 1 集');
 });
 
+test('distinguishes audio tracks with the same title by their codec and index', async ({ page, request }) => {
+  await page.route('**/emby/Items/deep-2-5/PlaybackInfo*', async route => {
+    const response = await route.fetch();
+    const body = await response.json();
+    const audio = body.MediaSources[0].MediaStreams.filter((stream: { Type: string }) => stream.Type === 'Audio');
+    Object.assign(audio[0], { Title: 'Japanese', Codec: 'dts' });
+    Object.assign(audio[1], { Title: 'Japanese', Codec: 'aac' });
+    await route.fulfill({ response, json: body });
+  });
+  await openEpisode(page);
+  await page.getByRole('button', { name: '音轨', exact: true }).click();
+  await expect(page.getByRole('option', { name: /Japanese DTS/ })).toBeVisible();
+  await page.getByRole('option', { name: /Japanese AAC/ }).click();
+  await expect.poll(async () => {
+    const state = await (await request.get('/__fixture/state')).json();
+    return state.events.filter((event: { route: string }) => event.route === '/Sessions/Playing').at(-1)?.AudioStreamIndex;
+  }).toBe(2);
+});
+
+test('shows the reason that negotiation failed and does not claim an episode is playing', async ({ page }) => {
+  let timeout = true;
+  await page.route('**/emby/Items/deep-2-5/PlaybackInfo*', route => timeout
+    ? route.fulfill({ status: 503, json: { ResponseStatus: { ErrorCode: 'playback_timeout' } } })
+    : route.fulfill({ json: { ErrorCode: 'NoCompatibleStream', MediaSources: [] } }));
+  await page.goto('/#/player/deep-2-5');
+  await expect(page.getByRole('alert')).toContainText('服务器准备播放超时');
+  timeout = false;
+  await page.getByRole('button', { name: '重试', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('无法为当前浏览器和所选画质、音轨或字幕提供兼容的视频流');
+  await page.getByRole('button', { name: '选集', exact: true }).click();
+  const current = page.getByRole('dialog', { name: '选集' }).locator('[data-current="true"]');
+  await expect(current).toContainText('当前剧集');
+  await expect(current).not.toContainText('正在播放');
+});
+
+test('uses the same resolution class as the detail page for cropped originals', async ({ page }) => {
+  await page.route('**/emby/Items/guitu/PlaybackInfo*', async route => {
+    const response = await route.fetch();
+    const body = await response.json();
+    const video = body.MediaSources[0].MediaStreams.find((stream: { Type: string }) => stream.Type === 'Video');
+    Object.assign(video, { Width: 1920, Height: 820 });
+    await route.fulfill({ response, json: body });
+  });
+  await page.goto('/#/player/guitu');
+  await expect.poll(() => page.locator('.player-video').evaluate((video: HTMLVideoElement) => video.readyState)).toBeGreaterThanOrEqual(2);
+  await page.getByRole('button', { name: '画质', exact: true }).click();
+  await expect(page.getByRole('option', { name: /原画 · 1080p/ })).toHaveAttribute('aria-selected', 'true');
+});
+
+test('renders a selected text subtitle and removes it when switched off', async ({ page }) => {
+  await openEpisode(page);
+  await page.getByRole('button', { name: '字幕', exact: true }).click();
+  await page.getByRole('option', { name: '英文', exact: true }).click();
+  await expect(page.locator('.player-subtitles')).toContainText('又是那个频率。');
+  await page.getByRole('button', { name: '字幕', exact: true }).click();
+  await page.getByRole('option', { name: '关闭', exact: true }).click();
+  await expect.poll(() => page.locator('.player-video').evaluate((video: HTMLVideoElement) => video.readyState >= 2 && !video.paused)).toBe(true);
+  await expect(page.locator('.player-subtitles')).toHaveCount(0);
+  await expect(page.locator('.player-video track')).toHaveCount(0);
+});
+
+test('enters full screen while decoding and returns to the same player', async ({ page }) => {
+  await openEpisode(page);
+  await page.getByRole('button', { name: '全屏（F）', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => document.fullscreenElement?.classList.contains('player-page'))).toBe(true);
+  expect(await page.locator('.player-video').evaluate((video: HTMLVideoElement) => video.readyState >= 2 && !video.paused)).toBe(true);
+  await page.getByRole('button', { name: '退出全屏（F）', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(false);
+  await expect(page).toHaveURL(/#\/player\/deep-2-5$/);
+});
+
 test('keeps stream changes in separate ordered playback sessions', async ({ page, request }) => {
   await openEpisode(page);
   await page.getByRole('button', { name: '音轨', exact: true }).click();

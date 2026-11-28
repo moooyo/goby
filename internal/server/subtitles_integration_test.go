@@ -241,6 +241,31 @@ func TestHTTPSubtitleDescriptorsNegotiateAndDeliverCredentialedTracks(t *testing
 	}
 }
 
+func TestHTTPPlaybackInfoSkipsUnusedOriginalSubtitle(t *testing.T) {
+	s := newSubtitleHTTPFixture(t)
+	// The catalog still advertises this external subtitle, but reading its bytes
+	// would fail. An incompatible original must not try to open it.
+	if err := os.Remove(s.srtPath); err != nil {
+		t.Fatal(err)
+	}
+	request := matchingPlaybackHTTPBody()
+	request["SubtitleStreamIndex"] = 6
+	profile := request["DeviceProfile"].(map[string]any)
+	profile["SubtitleProfiles"] = []map[string]any{{"Format": "vtt", "Method": "External"}}
+	direct := profile["DirectPlayProfiles"].([]map[string]any)[0]
+	direct["Container"] = "mkv"
+	info, source := s.p.prepare(t, request)
+	if info["ErrorCode"] != "NoCompatibleStream" || source["SupportsDirectPlay"] != false || source["SupportsDirectStream"] != false {
+		t.Fatal("an unused subtitle must not mask incompatible playback")
+	}
+	// The same selected track is still checked when the file is compatible.
+	direct["Container"] = "mp4"
+	response := s.p.s.f.request(t, http.MethodPost, "/emby/Items/"+s.p.s.video.id+"/PlaybackInfo", request, s.p.headers)
+	if response.Code < 400 {
+		t.Fatalf("original delivery accepted a missing selected subtitle: status %d", response.Code)
+	}
+}
+
 func TestHTTPSubtitleCandidateFormatsKeepOffAndNativeCatalogURLs(t *testing.T) {
 	s := newSubtitleHTTPFixture(t)
 	p := s.p

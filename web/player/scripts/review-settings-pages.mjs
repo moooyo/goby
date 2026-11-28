@@ -16,7 +16,7 @@ const accountOnly = process.env.GOBY_SETTINGS_SCOPE === 'account';
 const output = resolve(root, 'artifacts/other-pages-review-20261005/settings', accountOnly ? 'account-final' : phase);
 await mkdir(output, { recursive: true });
 const origin = 'http://127.0.0.1:4224';
-const apiOrigin = 'http://goby.local';
+const apiOrigin = origin;
 const widths = accountOnly ? [[1440, 900], [393, 852]] : [[1440, 900], [393, 852], [375, 852], [1040, 900]];
 const ids = ['guitu', 'deep-2-5', 'rain-1-3', 'drift', 'lighthouse', 'typist'];
 const keys = ['guitu', 'deep:2:5', 'rain:1:3', 'drift', 'lighthouse', 'typist'];
@@ -143,7 +143,7 @@ async function configureFixture(reference) {
 }
 
 async function installAPI(context, reference, catalogue) {
-  await context.route(`${apiOrigin}/**`, async route => {
+  await context.route(`${apiOrigin}/emby/**`, async route => {
     const url = new URL(route.request().url());
     let target = `${origin}${url.pathname}${url.search}`;
     if (url.pathname.endsWith('/ViewingStatistics')) return route.fulfill({ json: { EstimatedContentHours: Number(reference.stats[2].value), EstimatedContentTicks: String(BigInt(reference.stats[2].value) * 36_000_000_000n), IsEstimate: true } });

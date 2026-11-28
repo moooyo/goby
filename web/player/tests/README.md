@@ -96,6 +96,21 @@ To regenerate the video, run `node tests/generate-media.mjs`. The script uses Pl
 
 The optional `/reference/` route serves the original handoff read-only from `GOBY_HANDOFF_DIR` (default `D:/Code/design_handoff_goby_player`) and redirects its Picsum assets to the same cache. It is intended for visual comparison only and is not needed by the acceptance tests.
 
+`assets/hls/` holds the first three three-second MPEG-TS segments of the
+existing synthetic background clip looped with a generated 440 Hz AAC track.
+`hls-playback.spec.ts` serves these through a growing EVENT playlist to test
+actual Chromium decoding, deferred resume and a paused drag beyond the current
+playlist. To regenerate with FFmpeg (from `web/player`):
+
+```sh
+ffmpeg -stream_loop 9 -i tests/assets/background.mp4 \
+  -f lavfi -i sine=frequency=440:sample_rate=48000 -t 24 \
+  -c:v copy -c:a aac -b:a 32k -hls_time 3 -hls_list_size 0 \
+  -hls_segment_filename "$scratch/playback-%02d.ts" "$scratch/fixture.m3u8"
+```
+
+Use a new empty `$scratch` directory and retain only segments 00 through 02.
+
 `assets/background.mp4` is a separate generated fixture for the subsequent
 background-preview integration. The owned FFmpeg preparation produced a
 58,754-byte, three-second, 320x180 silent H.264 MP4. It contains synthetic test

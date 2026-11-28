@@ -21,7 +21,7 @@ function savedSession(): AuthSession | null {
     const value: unknown = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
     if (value && typeof value === 'object') {
       const session = value as AuthSession;
-      if (typeof session.AccessToken === 'string' && typeof session.serverUrl === 'string' && session.User?.Id && session.User?.Name) return session;
+      if (typeof session.AccessToken === 'string' && session.serverUrl === window.location.origin && session.User?.Id && session.User?.Name) return session;
     }
   } catch { /* An inaccessible or expired browser store requires a fresh login. */ }
   return null;
@@ -31,14 +31,6 @@ function newDeviceId(): string {
   const id = globalThis.crypto?.randomUUID?.() ?? `web-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   try { const stored = localStorage.getItem(DEVICE_KEY); if (stored) return stored; localStorage.setItem(DEVICE_KEY, id); } catch { /* Keep an in-memory device ID. */ }
   return id;
-}
-
-export function normalizeServerUrl(value: string): string {
-  const input = value.trim().replace(/\/+$/, '').replace(/\/emby$/i, '');
-  if (!input) return '';
-  const url = new URL(input.startsWith('/') ? input : /^https?:\/\//i.test(input) ? input : `http://${input}`, window.location.origin);
-  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) throw new ApiError(0, 'invalid_server_url', 'Use an HTTP or HTTPS server address without credentials, query, or fragment.');
-  return `${url.origin}${url.pathname.replace(/\/+$/, '')}`;
 }
 
 export function browserDeviceProfile(options: PlaybackOptions = {}): object {
@@ -88,7 +80,7 @@ export class GobyApi {
   }
   remoteSocketUrl(owner: AuthSession): string {
     if (!this.matchesSession(owner)) throw new ApiError(401, 'session_changed', 'The active account changed before remote control connected.');
-    const url = this.url('/embywebsocket', {}, normalizeServerUrl(owner.serverUrl));
+    const url = this.url('/embywebsocket');
     url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
     url.searchParams.set('api_key', owner.AccessToken);
     url.searchParams.set('deviceId', this.deviceId);
@@ -100,22 +92,21 @@ export class GobyApi {
     this.updateScope();
     if (typeof window !== 'undefined') window.dispatchEvent(new Event('goby:session'));
   }
-  private base(): string { return this.session?.serverUrl ?? ''; }
   private userId(): string { if (!this.session) throw new ApiError(401, 'unauthorized', 'Sign in to continue.'); return this.session.User.Id; }
   private authorization(token = this.session?.AccessToken): string {
     const fields = { Client: CLIENT, Device: 'Web Browser', DeviceId: this.deviceId, Version: '1.0.0', ...(token ? { Token: token } : {}) };
     return `Emby ${Object.entries(fields).map(([key, value]) => `${key}="${value.replace(/["\\\r\n]/g, '')}"`).join(', ')}`;
   }
-  private url(path: string, query: Query = {}, base = this.base()): URL {
-    const url = new URL(`${base}${path}`, window.location.origin);
+  private url(path: string, query: Query = {}): URL {
+    const url = new URL(path, window.location.origin);
     for (const [key, value] of Object.entries(query)) if (value !== undefined && value !== '') url.searchParams.set(key, String(value));
     return url;
   }
-  private async request<T>(path: string, options: { method?: string; body?: unknown; query?: Query; base?: string; anonymous?: boolean; keepalive?: boolean; signal?: AbortSignal } = {}): Promise<T> {
+  private async request<T>(path: string, options: { method?: string; body?: unknown; query?: Query; anonymous?: boolean; keepalive?: boolean; signal?: AbortSignal } = {}): Promise<T> {
     const requestToken = this.session?.AccessToken;
     let response: Response;
     try {
-      response = await fetch(this.url(path, options.query, options.base), {
+      response = await fetch(this.url(path, options.query), {
         method: options.method || 'GET', credentials: 'omit', cache: 'no-store', keepalive: options.keepalive, signal: options.signal,
         headers: { 'X-Emby-Authorization': this.authorization(options.anonymous ? '' : undefined), Accept: 'application/json', ...(options.body === undefined ? {} : { 'Content-Type': 'application/json' }) },
         body: options.body === undefined ? undefined : JSON.stringify(options.body),
@@ -139,11 +130,10 @@ export class GobyApi {
     return value as T;
   }
 
-  async authenticate(serverUrl: string, username: string, password: string): Promise<AuthSession> {
-    const base = normalizeServerUrl(serverUrl);
-    const result = await this.request<Omit<AuthSession, 'serverUrl'>>('/emby/Users/AuthenticateByName', { method: 'POST', base, anonymous: true, body: { Username: username, Pw: password } });
+  async authenticate(username: string, password: string): Promise<AuthSession> {
+    const result = await this.request<Omit<AuthSession, 'serverUrl'>>('/emby/Users/AuthenticateByName', { method: 'POST', anonymous: true, body: { Username: username, Pw: password } });
     if (!result?.AccessToken || !result.User?.Id) throw new ApiError(200, 'invalid_response', 'The server returned an incomplete authentication response.');
-    this.session = { ...result, serverUrl: base }; this.persistSession();
+    this.session = { ...result, serverUrl: window.location.origin }; this.persistSession();
     if (result.User.Configuration) applyUserConfiguration(result.User.Configuration);
     return this.session;
   }
@@ -151,7 +141,7 @@ export class GobyApi {
     try { if (this.session) await this.request('/emby/Sessions/Logout', { method: 'POST' }); }
     finally { this.session = null; this.persistSession(); }
   }
-  systemInfo(serverUrl?: string): Promise<SystemInfo> { return this.request('/emby/System/Info/Public', { base: serverUrl === undefined ? undefined : normalizeServerUrl(serverUrl), anonymous: true }); }
+  systemInfo(): Promise<SystemInfo> { return this.request('/emby/System/Info/Public', { anonymous: true }); }
   endpoint(): Promise<{ IsLocal?: boolean; IsInNetwork?: boolean }> { return this.request('/emby/System/Endpoint'); }
   async currentUser(): Promise<User> {
     const owner = this.session?.AccessToken;
@@ -160,7 +150,7 @@ export class GobyApi {
     this.session = { ...this.session, User: user }; this.persistSession();
     return user;
   }
-  publicUsers(serverUrl?: string): Promise<User[]> { return this.request('/emby/Users/Public', { base: serverUrl === undefined ? undefined : normalizeServerUrl(serverUrl), anonymous: true }); }
+  publicUsers(): Promise<User[]> { return this.request('/emby/Users/Public', { anonymous: true }); }
   views(): Promise<ItemsResponse> { return this.request(`/emby/Users/${encodeURIComponent(this.userId())}/Views`); }
   items(query: ItemQuery = {}, signal?: AbortSignal): Promise<ItemsResponse> { return this.request(`/emby/Users/${encodeURIComponent(this.userId())}/Items`, { query: { Recursive: true, IncludeItemTypes: 'Movie,Series', Fields: FIELDS, ...query }, signal }); }
   latest(query: ItemQuery = {}): Promise<MediaItem[]> {
@@ -214,9 +204,8 @@ export class GobyApi {
   mediaUrl(path: string): string {
     if (!path) return '';
     path = path.replace(/^\/(Videos|Audio|Items|Users)\//i, '/emby/$1/');
-    const base = this.url('/');
-    const absolute = /^https?:\/\//i.test(path) ? new URL(path) : new URL(`${this.base()}${path.startsWith('/') ? '' : '/'}${path}`, window.location.origin);
-    if (absolute.origin !== base.origin) throw new ApiError(0, 'untrusted_media_url', 'The server returned media on an unexpected origin.');
+    const absolute = this.url(path);
+    if (absolute.origin !== window.location.origin) throw new ApiError(0, 'untrusted_media_url', 'The server returned media on an unexpected origin.');
     absolute.pathname = absolute.pathname.replace(/^\/(Videos|Audio|Items|Users)\//i, '/emby/$1/');
     if (this.session && !absolute.searchParams.has('api_key')) absolute.searchParams.set('api_key', this.session.AccessToken);
     return absolute.href;

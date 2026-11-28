@@ -5,7 +5,8 @@ import { useApp } from '../context';
 import { MediaImage } from '../components';
 import { useRemotePlayback } from '../components/RemoteControl';
 import type { RemotePlaybackCommand } from '../lib/remoteControl';
-import { api } from '../lib/api';
+import { api, ApiError } from '../lib/api';
+import { videoResolution } from '../lib/mediaFormat';
 import { seekThumbnailAt, seekThumbnails, seekThumbnailUrl, type SeekThumbnail } from '../lib/seekPreviews';
 import { subtitleStyles } from '../lib/subtitleStyles';
 import { isPlayableSubtitle, loadItemPreferences, resolveItemPreferences, setItemPreferences } from '../lib/preferences';
@@ -55,6 +56,7 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
   const rootRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
+  const hlsOpening = useRef<(() => void) | null>(null);
   const activeRef = useRef<ActivePlayback | null>(null);
   const generationRef = useRef(0);
   const requestedPosition = useRef(0);
@@ -66,7 +68,7 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
   const episodeRow = useRef<HTMLDivElement>(null);
   const dragRef = useRef(false);
   const reportFailure = useRef(false);
-  const remotelyPaused = useRef(false);
+  const pauseIntent = useRef(false);
   const nextStarted = useRef(false);
   const skipDone = useRef(false);
   const itemOwner = useRef<MediaItem | null>(null);
@@ -164,18 +166,26 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
     try { await api.stopActiveEncoding(active.session.info.PlaySessionId); } catch { /* The backend also expires abandoned encodings. */ }
   }, [report]);
 
+  const markReadyPaused = useCallback((active: ActivePlayback, video: HTMLVideoElement) => {
+    if (!pauseIntent.current || !video.paused || active.stopped || active.started) return;
+    active.position = Math.max(0, video.currentTime);
+    active.started = true;
+    setPosition(active.position);
+    setLoading(false); setPlaying(false); setVisible(true);
+    void report(active, 'Started');
+  }, [report]);
+
   const begin = useCallback(async (target: MediaItem, at: number, options: PlaybackOptions, keepPaused = false) => {
     const generation = ++generationRef.current;
     const previous = activeRef.current;
     activeRef.current = null;
+    hlsOpening.current = null;
     videoRef.current?.pause();
-    hlsRef.current?.destroy();
-    hlsRef.current = null;
     setPlayback(null);
     setLoading(true);
     setError('');
     setAutoplayBlocked(false);
-    remotelyPaused.current = keepPaused;
+    pauseIntent.current = keepPaused;
     setPlaying(false);
     setEnded(false);
     setCues([]);
@@ -203,9 +213,14 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
       setDuration((session.source.RunTimeTicks ?? target.RunTimeTicks ?? 0) / TICKS_PER_SECOND);
       setPlayback(session);
       reveal();
-    } catch {
+    } catch (failure) {
       if (generation !== generationRef.current) return;
-      setError('无法开始播放，请检查服务器连接，或尝试其他画质。');
+      const code = failure instanceof ApiError ? failure.code : '';
+      setError(code === 'NoCompatibleStream'
+        ? '服务器无法为当前浏览器和所选画质、音轨或字幕提供兼容的视频流。请尝试其他播放选项。'
+        : code === 'playback_timeout'
+          ? '服务器准备播放超时。请重试，或切换音轨、字幕或画质。'
+          : '无法开始播放，请检查服务器连接，或尝试其他画质。');
       setLoading(false);
       setVisible(true);
     }
@@ -260,9 +275,6 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
       const active = activeRef.current;
       activeRef.current = null;
       void stop(active);
-      hlsRef.current?.destroy();
-      hlsRef.current = null;
-      videoRef.current?.pause();
       clearTimeout(hideTimer.current);
       clearTimeout(flashTimer.current);
     };
@@ -317,45 +329,96 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
     const active = activeRef.current;
     if (!active) return;
     let disposed = false;
+    let hls: Hls | undefined;
+    let detachStartEvents: (() => void) | undefined;
     let mediaRecovery = 0;
-    const wanted = playback.startTimeTicks / TICKS_PER_SECOND;
     video.volume = statusRef.current.volume;
     video.muted = statusRef.current.muted;
     video.playbackRate = statusRef.current.rate;
     const play = () => {
-      if (disposed || remotelyPaused.current) return;
+      if (disposed || activeRef.current !== active || pauseIntent.current) return;
       void video.play().catch((failure: unknown) => {
-        if (!disposed) { setLoading(false); setPlaying(false); setVisible(true); setAutoplayBlocked(failure instanceof DOMException && failure.name === 'NotAllowedError'); }
+        if (disposed || activeRef.current !== active || failure instanceof DOMException && failure.name === 'AbortError') return;
+        setLoading(false); setPlaying(false); setVisible(true); setAutoplayBlocked(failure instanceof DOMException && failure.name === 'NotAllowedError');
       });
     };
     const isHls = /\.m3u8(?:\?|$)/i.test(playback.url)
       || playback.method === 'Transcode' && playback.source.TranscodingSubProtocol === 'hls';
     const metadata = () => {
-      if (disposed) return;
+      if (disposed || activeRef.current !== active) return;
       if ((!isHls || !playback.source.RunTimeTicks) && Number.isFinite(video.duration) && video.duration > 0) setDuration(video.duration);
+      if (hls) return;
       const target = requestedPosition.current;
       if (Math.abs(video.currentTime - target) > 0.5) video.currentTime = target;
       play();
     };
     video.addEventListener('loadedmetadata', metadata, { once: true });
     if (isHls && Hls.isSupported()) {
-      const hls = new Hls({ startPosition: wanted, backBufferLength: 45, renderTextTracksNatively: true });
-      hlsRef.current = hls;
-      hls.subtitleDisplay = false;
-      hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, () => {
-        if ((active.selection.subtitleStreamIndex ?? -1) < 0) { hls.subtitleTrack = -1; return; }
-        const selected = active.session.source.MediaStreams?.find((stream) => stream.Type === 'Subtitle' && stream.Index === active.selection.subtitleStreamIndex);
-        const preferred = hls.subtitleTracks.findIndex((track) => track.default);
-        const matching = hls.subtitleTracks.findIndex((track) => track.lang === selected?.Language || track.name === selected?.DisplayTitle);
-        hls.subtitleTrack = preferred >= 0 ? preferred : matching >= 0 ? matching : 0;
-        hls.subtitleDisplay = false;
+      const client = new Hls({ autoStartLoad: false, backBufferLength: 45, renderTextTracksNatively: true });
+      hls = client;
+      hlsRef.current = client;
+      const current = () => !disposed && activeRef.current === active;
+      const readyAtRequestedPosition = () => {
+        if (!current() || !hlsOpening.current || video.seeking || video.readyState === 0) return;
+        const target = requestedPosition.current;
+        if (Math.abs(video.currentTime - target) > 0.05) {
+          if (canSeekTo(video.buffered, target)) { video.currentTime = target; return; }
+          if (target > 0) return;
+        }
+        if (video.readyState < 2) return;
+        hlsOpening.current = null;
+        if (pauseIntent.current) markReadyPaused(active, video);
+        else play();
+      };
+      const openAtRequestedPosition = () => {
+        if (!current()) return;
+        const details = client.latestLevelDetails;
+        const target = requestedPosition.current;
+        // An EVENT playlist may initially expose only the first fragment.
+        // Keep polling it without starting at the end of that prefix.
+        if (details?.live && details.type === 'EVENT' && target >= details.fragmentEnd) {
+          client.pauseBuffering();
+          return;
+        }
+        if (!details) { client.pauseBuffering(); return; }
+        // A completed or sliding playlist is bounded on both sides. Only a
+        // growing EVENT playlist can reveal a later missing position.
+        requestedPosition.current = target < details.fragmentEnd ? Math.max(target, details.fragmentStart)
+          : Math.max(details.fragmentStart, details.fragmentEnd - 0.05);
+        if (client.startPosition === requestedPosition.current) client.resumeBuffering();
+        else client.startLoad(requestedPosition.current);
+        readyAtRequestedPosition();
+      };
+      hlsOpening.current = openAtRequestedPosition;
+      client.on(Hls.Events.MANIFEST_PARSED, () => {
+        client.startLoad(requestedPosition.current);
+        if (hlsOpening.current) openAtRequestedPosition();
       });
-      hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (!data.fatal || disposed) return;
+      client.on(Hls.Events.LEVEL_UPDATED, () => hlsOpening.current?.());
+      client.on(Hls.Events.FRAG_BUFFERED, readyAtRequestedPosition);
+      video.addEventListener('loadeddata', readyAtRequestedPosition);
+      video.addEventListener('seeked', readyAtRequestedPosition);
+      detachStartEvents = () => {
+        video.removeEventListener('loadeddata', readyAtRequestedPosition);
+        video.removeEventListener('seeked', readyAtRequestedPosition);
+      };
+      client.subtitleDisplay = false;
+      client.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, () => {
+        if ((active.selection.subtitleStreamIndex ?? -1) < 0) { client.subtitleTrack = -1; return; }
+        const selected = active.session.source.MediaStreams?.find((stream) => stream.Type === 'Subtitle' && stream.Index === active.selection.subtitleStreamIndex);
+        const preferred = client.subtitleTracks.findIndex((track) => track.default);
+        const matching = client.subtitleTracks.findIndex((track) => track.lang === selected?.Language || track.name === selected?.DisplayTitle);
+        client.subtitleTrack = preferred >= 0 ? preferred : matching >= 0 ? matching : 0;
+        client.subtitleDisplay = false;
+      });
+      client.on(Hls.Events.ERROR, (_event, data) => {
+        if (!data.fatal || disposed || activeRef.current !== active) return;
         if (data.type === Hls.ErrorTypes.MEDIA_ERROR && mediaRecovery < 1) {
           mediaRecovery += 1;
-          hls.recoverMediaError();
+          client.recoverMediaError();
         } else {
+          hlsOpening.current = null;
+          client.stopLoad();
           video.pause();
           setError(data.type === Hls.ErrorTypes.NETWORK_ERROR ? '播放连接已中断，请重试。' : '当前影片无法解码，请尝试其他画质。');
           setLoading(false);
@@ -363,9 +426,8 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
           setVisible(true);
         }
       });
-      hls.attachMedia(video);
-      hls.loadSource(playback.url);
-      hls.on(Hls.Events.MANIFEST_PARSED, play);
+      client.attachMedia(video);
+      client.loadSource(playback.url);
     } else if (!isHls || video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = playback.url;
       video.load();
@@ -376,13 +438,17 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
     return () => {
       disposed = true;
       video.removeEventListener('loadedmetadata', metadata);
-      hlsRef.current?.destroy();
-      hlsRef.current = null;
+      detachStartEvents?.();
+      if (hlsRef.current === hls) {
+        hlsOpening.current = null;
+        hlsRef.current = null;
+      }
+      hls?.destroy();
       video.pause();
       video.removeAttribute('src');
       video.load();
     };
-  }, [playback]);
+  }, [playback, markReadyPaused]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -460,7 +526,8 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
     const active = activeRef.current;
     if (!video || !active || error) return;
     if (active.stopped) { void begin(active.item, 0, active.selection); return; }
-    if (video.paused) { remotelyPaused.current = false; void video.play().catch(() => { setVisible(true); appRef.current.notify('浏览器未能开始播放，请重试。'); }); }
+    if (hlsOpening.current) pauseIntent.current = false;
+    else if (video.paused) { pauseIntent.current = false; void video.play().catch(() => { setVisible(true); appRef.current.notify('浏览器未能开始播放，请重试。'); }); }
     else video.pause();
     reveal();
   }, [begin, reveal, error]);
@@ -475,10 +542,19 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
     setEnded(false);
     setResumeAt(null);
     if (target < position) skipDone.current = false;
-    if (video.readyState === 0) {
-      // Metadata applies the latest intent, including a remote seek received
-      // while the requested source is still opening.
-    } else if (active.session.method === 'DirectPlay' || hlsRef.current || canSeekTo(video.seekable, target)) {
+    const hls = hlsRef.current;
+    const details = hls?.latestLevelDetails;
+    if (hlsOpening.current) {
+      hlsOpening.current();
+    } else if (details?.live && details.type === 'EVENT' && target >= details.fragmentEnd) {
+      // Asking the media element to seek beyond a growing playlist silently
+      // lands at its current end. Renegotiate with the intended source time and
+      // wait for that time rather than reporting the clamped position.
+      void begin(active.item, target, active.selection, video.paused);
+    } else if (video.readyState === 0) {
+      if (hls) hls.startLoad(target);
+      // For native media, loadedmetadata applies the latest intent.
+    } else if (active.session.method === 'DirectPlay' || hls || canSeekTo(video.seekable, target)) {
       video.currentTime = target;
     } else {
       void begin(active.item, target, active.selection, video.paused);
@@ -493,7 +569,7 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
     const owner = appRef.current.session;
     const current = () => api.matchesSession(owner) && activeRef.current === active;
     if (command.command === 'Stop') {
-      remotelyPaused.current = true;
+      pauseIntent.current = true;
       video.pause();
       active.position = Number.isFinite(video.currentTime) ? Math.max(0, video.currentTime) : active.position;
       setPlaying(false); setLoading(false); setVisible(true);
@@ -506,8 +582,9 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
       catch { if (current()) appRef.current.notify('当前影片暂时无法跳转，请稍后重试。'); }
       return;
     }
-    const pause = command.command === 'Pause' || command.command === 'PlayPause' && !video.paused;
-    remotelyPaused.current = pause;
+    const pause = command.command === 'Pause' || command.command === 'PlayPause' && (hlsOpening.current ? !pauseIntent.current : !video.paused);
+    pauseIntent.current = pause;
+    if (hlsOpening.current) { reveal(); return; }
     if (pause) {
       const alreadyPaused = video.paused;
       video.pause();
@@ -623,13 +700,14 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
   }, [closePanel, exit, jump, openPanel, panel, reveal, setPlayerVolume, toggle, toggleFull, toggleMute, visible, volume]);
 
   const changeSelection = (patch: PlaybackOptions) => {
-    const target = activeRef.current?.item ?? item;
+    const active = activeRef.current;
+    const target = active?.item ?? item;
     if (!target) return;
     const next = { ...selection, ...patch };
     setSelection(next);
     closePanel();
     void setItemPreferences(target.SeriesId || target.Id, { quality: next.quality, audioStreamIndex: next.audioStreamIndex, subtitleStreamIndex: next.subtitleStreamIndex }).catch(() => appRef.current.notify('播放偏好已保存在本机，服务器同步失败。'));
-    void begin(target, activeRef.current?.position ?? position, next);
+    void begin(target, active?.started ? active.position : requestedPosition.current, next);
   };
 
   const playNext = useCallback(() => {
@@ -695,7 +773,7 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
   const updateTime = () => {
     const video = videoRef.current;
     const active = activeRef.current;
-    if (!video || !active || active.stopped) return;
+    if (!video || !active || active.stopped || hlsOpening.current) return;
     active.position = clamp(video.currentTime, 0, duration || Number.MAX_SAFE_INTEGER);
     if (!dragRef.current) setPosition(active.position);
   };
@@ -710,7 +788,7 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
 
   const onPlaying = () => {
     const active = activeRef.current;
-    if (!active || active.stopped) return;
+    if (!active || active.stopped || hlsOpening.current) return;
     setLoading(false);
     setPlaying(true);
     setAutoplayBlocked(false);
@@ -730,11 +808,7 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
   const onLoadedData = () => {
     const active = activeRef.current;
     const video = videoRef.current;
-    if (!remotelyPaused.current || !video?.paused || !active || active.stopped || active.started) return;
-    active.position = Math.max(0, video.currentTime);
-    active.started = true;
-    setLoading(false); setPlaying(false); setVisible(true);
-    void report(active, 'Started');
+    if (active && video && !hlsOpening.current) markReadyPaused(active, video);
   };
 
   const onEnded = () => {
@@ -759,8 +833,9 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
   const subtitleStreams = sourceStreams.filter(isPlayableSubtitle);
   const videoStream = sourceStreams.find((stream) => stream.Type === 'Video');
   const height = videoStream?.Height ?? 0;
+  const resolution = videoResolution(videoStream);
   const qualities: { value: Quality; label: string; detail: string }[] = [
-    { value: 'original', label: `原画${height ? ` · ${height >= 2160 ? '4K' : `${height}p`}` : ''}`, detail: '保留片源画质' },
+    { value: 'original', label: resolution ? `原画 · ${resolution}` : '原画', detail: '保留片源画质' },
     ...(height > 1080 || !height ? [{ value: '1080p' as const, label: '1080p · 20 Mbps', detail: '服务器转码' }] : []),
     ...(height > 720 || !height ? [{ value: '720p' as const, label: '720p · 8 Mbps', detail: '服务器转码' }] : []),
     ...(height > 480 || !height ? [{ value: '480p' as const, label: '480p · 3 Mbps', detail: '服务器转码' }] : []),
@@ -776,6 +851,11 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
   const panelTitle = { episodes: '选集', subtitles: '字幕', audio: '音轨', quality: '画质', rate: '播放速度', settings: '播放设置' };
   const activeSubtitle = subtitleStreams.find((stream) => stream.Index === selection.subtitleStreamIndex);
   const activeAudio = audioStreams.find((stream) => stream.Index === selection.audioStreamIndex);
+  const trackDetails = (stream: (typeof sourceStreams)[number], tracks: typeof sourceStreams) => {
+    const detail = stream.Type === 'Subtitle' && stream.IsTextSubtitleStream === false ? '图形字幕 · 样式跟随片源' : undefined;
+    if (!tracks.some(other => other.Index !== stream.Index && streamLabel(other) === streamLabel(stream))) return detail;
+    return [detail, stream.Codec?.toUpperCase(), stream.ChannelLayout || (stream.Channels ? `${stream.Channels} 声道` : ''), `#${stream.Index}`].filter(Boolean).join(' · ');
+  };
   const subtitleName = (selection.subtitleStreamIndex ?? -1) < 0 ? '关闭' : activeSubtitle ? streamLabel(activeSubtitle).split(' · ')[0] : '字幕';
   const subtitleShort = ({ '关闭': '关', '简体中文': '简中', '繁体中文': '繁中', '繁體中文': '繁中', '英语': '英', '英文': '英', '中英双语': '双语' } as Record<string, string>)[subtitleName] ?? subtitleName;
   const audioShort = activeAudio ? streamLabel(activeAudio).split(' · ')[0] : '音轨';
@@ -783,7 +863,7 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
   const previewUrl = previewFrame && playback ? seekThumbnailUrl(id, playback.source.Id, previewFrame) : '';
   const showPreviewFrame = Boolean(previewUrl && previewUrl !== failedPreview);
 
-  const panelOption = (label: string, selected: boolean, action: () => void, detail?: string) => <button key={label} className="player-option" role="option" aria-selected={selected} onClick={action}><span>{label}{detail && <small>{detail}</small>}</span>{selected && <Glyph name="check" size={18} />}</button>;
+  const panelOption = (label: string, selected: boolean, action: () => void, detail?: string, key: string | number = label) => <button key={key} className="player-option" role="option" aria-selected={selected} onClick={action}><span>{label}{detail && <small>{detail}</small>}</span>{selected && <Glyph name="check" size={18} />}</button>;
   const iconButton = (name: string, label: string, action: () => void, className = '') => <button type="button" className={`player-icon ${className}`} title={label} aria-label={label} onClick={action}><Glyph name={name} /></button>;
   const scrollEpisodes = (direction: number) => {
     const row = episodeRow.current;
@@ -799,7 +879,7 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
     {!playing && !loading && !error && !ended && <button className="player-big-play" aria-label="播放" onClick={toggle}><Glyph name="play" size={40} /></button>}
     {autoplayBlocked && !playing && !error && <p className="player-autoplay-notice" role="status">浏览器已阻止自动播放，请点按播放继续。</p>}
     {flash && <div className={`player-flash ${flash}`}>{flash === 'forward' ? '快进 10 秒 ›' : '‹ 后退 10 秒'}</div>}
-    {error && <div className="player-error" role="alert"><h1>暂时无法播放</h1><p>{error}</p><div><button onClick={() => { if (item) void begin(item, position, selection); else window.location.reload(); }}>重试</button><button onClick={() => openPanel('quality')}>选择画质</button><button onClick={exit}>返回详情</button></div></div>}
+    {error && <div className="player-error" role="alert"><h1>暂时无法播放</h1><p>{error}</p><div><button onClick={() => { if (item) void begin(item, activeRef.current?.started ? activeRef.current.position : requestedPosition.current, selection); else window.location.reload(); }}>重试</button><button onClick={() => openPanel('quality')}>选择画质</button><button onClick={exit}>返回详情</button></div></div>}
     {ended && !showNext && !error && <div className="player-ended"><h2>播放结束</h2><button onClick={() => { if (item) void begin(item, 0, selection); }}>重新播放</button><button onClick={exit}>返回详情</button></div>}
     <div className="player-interface" aria-hidden={!visible && !panel && !error} inert={!visible && !panel && !error}>
       <div className="player-top-scrim" /><div className="player-bottom-scrim" />
@@ -819,7 +899,7 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
           <button className={`player-pill ${(selection.subtitleStreamIndex ?? -1) >= 0 ? 'is-selected' : ''}`} title={`字幕（C） · ${subtitleName}`} aria-label="字幕" aria-expanded={panel === 'subtitles'} onClick={() => openPanel('subtitles')}><Glyph name="subtitles" size={22} /><span className="player-control-label">{subtitleShort}</span></button>
           <button className="player-pill player-desktop" title={`音轨 · ${activeAudio ? streamLabel(activeAudio) : audioShort}`} aria-label="音轨" aria-expanded={panel === 'audio'} onClick={() => openPanel('audio')}><Glyph name="audio" size={22} /><span className="player-control-label">{audioShort}</span></button>
           <button className="player-pill player-rate player-desktop" title="播放速度" aria-label="播放速度" aria-expanded={panel === 'rate'} onClick={() => openPanel('rate')}>{rate}×</button>
-          <button className="player-quality" title="画质" aria-label="画质" aria-expanded={panel === 'quality'} onClick={() => openPanel('quality')}>{selection.quality === 'original' || !selection.quality ? height >= 2160 ? '4K' : '原画' : selection.quality}</button>
+          <button className="player-quality" title="画质" aria-label="画质" aria-expanded={panel === 'quality'} onClick={() => openPanel('quality')}>{selection.quality === 'original' || !selection.quality ? resolution === '4K' || resolution === '8K' ? resolution : '原画' : selection.quality}</button>
           {iconButton(full ? 'restore' : 'fullscreen', full ? '退出全屏（F）' : '全屏（F）', toggleFull)}
         </div>
       </div>
@@ -828,13 +908,13 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
     {inIntro && intro && !error && <button className="player-skip player-float" onClick={() => { skipDone.current = true; seek(intro.to); }}><span className="player-skip-fill" style={{ width: `${(position - intro.from) / (intro.to - intro.from) * 100}%` }} />跳过片头<Glyph name="skip" size={18} /></button>}
     {showNext && !error && <div className="player-next player-float"><div className="player-next-image"><MediaImage item={nextEpisode} kind="Thumb" />{app.prefs.autoNext && <span className="player-next-progress" aria-hidden="true" style={{ width: `${nextProgress * 100}%` }} />}</div><div className="player-next-body"><small>{app.prefs.autoNext ? `下一集 · ${Math.ceil(nextCountdown)} 秒后自动播放` : '下一集'}</small><h2>{episodeLabel(nextEpisode)} · {nextEpisode.Name}</h2><div><button onClick={playNext}>立即播放</button><button onClick={() => setNextCancelled(true)}>取消</button></div></div></div>}
     {panel && panel !== 'episodes' && <><button className="player-panel-dismiss" tabIndex={-1} aria-label="关闭播放菜单" onClick={closePanel} /><div ref={panelRef} className="player-panel" role="dialog" aria-modal="true" aria-label={panelTitle[panel]}><div className="player-panel-heading"><span>{panelTitle[panel]}</span>{iconButton('close', '关闭', closePanel)}</div><div className="player-panel-options" role={panel === 'settings' ? undefined : 'listbox'} aria-label={panelTitle[panel]}>
-      {panel === 'subtitles' && <>{panelOption('关闭', (selection.subtitleStreamIndex ?? -1) < 0, () => changeSelection({ subtitleStreamIndex: -1 }))}{subtitleStreams.map((stream) => panelOption(streamLabel(stream), stream.Index === selection.subtitleStreamIndex, () => changeSelection({ subtitleStreamIndex: stream.Index }), stream.IsTextSubtitleStream === false ? '图形字幕 · 样式跟随片源' : undefined))}{subtitleStreams.length === 0 && <p className="player-panel-note">此片源没有可用字幕。</p>}{activeSubtitle?.IsTextSubtitleStream !== false && subtitleStreams.length > 0 && <p className="player-panel-note">字幕样式跟随个人设置。</p>}</>}
-      {panel === 'audio' && <>{audioStreams.map((stream) => panelOption(streamLabel(stream), stream.Index === selection.audioStreamIndex, () => changeSelection({ audioStreamIndex: stream.Index })))}{audioStreams.length === 0 && <p className="player-panel-note">此片源没有可用音轨。</p>}</>}
+      {panel === 'subtitles' && <>{panelOption('关闭', (selection.subtitleStreamIndex ?? -1) < 0, () => changeSelection({ subtitleStreamIndex: -1 }))}{subtitleStreams.map((stream) => panelOption(streamLabel(stream), stream.Index === selection.subtitleStreamIndex, () => changeSelection({ subtitleStreamIndex: stream.Index }), trackDetails(stream, subtitleStreams), stream.Index))}{subtitleStreams.length === 0 && <p className="player-panel-note">此片源没有可用字幕。</p>}{activeSubtitle?.IsTextSubtitleStream !== false && subtitleStreams.length > 0 && <p className="player-panel-note">字幕样式跟随个人设置。</p>}</>}
+      {panel === 'audio' && <>{audioStreams.map((stream) => panelOption(streamLabel(stream), stream.Index === selection.audioStreamIndex, () => changeSelection({ audioStreamIndex: stream.Index }), trackDetails(stream, audioStreams), stream.Index))}{audioStreams.length === 0 && <p className="player-panel-note">此片源没有可用音轨。</p>}</>}
       {panel === 'quality' && qualities.map((quality) => panelOption(quality.label, quality.value === (selection.quality ?? 'original'), () => changeSelection({ quality: quality.value }), quality.detail))}
       {panel === 'rate' && [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map((value) => panelOption(value === 1 ? '正常' : `${value}×`, value === rate, () => { setRate(value); if (videoRef.current) videoRef.current.playbackRate = value; closePanel(); }))}
       {panel === 'settings' && <>{nextEpisode && <button className="player-option" onClick={playNext}><span>下一集</span><Glyph name="next" size={20} /></button>}<button className="player-option" onClick={() => setPanel('audio')}><span>音轨</span><Glyph name="audio" size={20} /></button><button className="player-option" onClick={() => setPanel('rate')}><span>播放速度</span><span>{rate}×</span></button><div className="player-panel-volume">{iconButton(muted ? 'mute' : 'volume', '静音 / 取消静音', toggleMute)}<input type="range" aria-label="音量" min="0" max="1" step="0.01" value={muted ? 0 : volume} onChange={(event) => setPlayerVolume(Number(event.target.value))} /></div></>}
     </div></div></>}
-    {panel === 'episodes' && <div ref={panelRef} className="player-episodes" role="dialog" aria-modal="true" aria-label="选集"><button className="player-episodes-scrim" tabIndex={-1} aria-label="关闭选集" onClick={closePanel} /><div className="player-episodes-content"><div className="player-episodes-heading"><div><h2>选集</h2>{seasons.length > 1 && <div className="player-seasons">{seasons.map((season) => <button key={season.Id} className={seasonId === season.Id ? 'is-active' : ''} aria-pressed={seasonId === season.Id} onClick={() => setSeasonId(season.Id)}>{season.IndexNumber != null ? `第 ${season.IndexNumber} 季` : season.Name}</button>)}</div>}<span>{episodesLoading ? '正在载入' : `${episodes.length} 集`}</span></div>{iconButton('close', '关闭选集（Esc）', closePanel)}</div>{episodesError ? <p className="player-episodes-empty" role="status">暂时无法载入剧集，请关闭后重试。</p> : episodesLoading ? <p className="player-episodes-empty" role="status">正在载入剧集…</p> : episodes.length === 0 ? <p className="player-episodes-empty">这一季还没有可播放的剧集。</p> : <div className="player-episodes-strip"><div ref={episodeRow} className="player-episodes-row">{episodes.map((episode) => <button key={episode.Id} data-current={episode.Id === id} className={`player-episode ${episode.Id === id ? 'is-current' : ''}`} aria-label={`${episodeLabel(episode)} ${episode.Name}${episode.Id === id ? '，正在播放' : ''}`} disabled={episode.IsMissing || episode.CanPlay === false} onClick={() => { if (episode.Id === id) closePanel(); else { appRef.current.changed(); void appRef.current.play(episode); } }}><div className="player-episode-image"><MediaImage item={episode} kind="Thumb" /><div className="player-episode-gradient" /><span className="player-episode-number">{String(episode.IndexNumber ?? '').padStart(2, '0')}</span>{episode.Id === id && <span className="player-episode-current"><Glyph name="audio" size={13} />正在播放</span>}{episode.UserData?.Played && <span className="player-episode-watched"><Glyph name="check" size={14} /></span>}{(episode.UserData?.PlaybackPositionTicks ?? 0) > 0 && <span className="player-episode-progress" style={{ width: `${clamp((episode.UserData?.PlaybackPositionTicks ?? 0) / (episode.RunTimeTicks || 1) * 100, 0, 100)}%` }} />}</div><div className="player-episode-title"><strong>{episode.Name}</strong><span>{episode.RunTimeTicks ? `${Math.round(episode.RunTimeTicks / TICKS_PER_SECOND / 60)} 分钟` : episode.IsMissing ? '尚未入库' : ''}</span></div><p>{episode.Overview}</p></button>)}</div><button className="player-episodes-arrow is-previous" aria-label="向前浏览剧集" disabled={episodeEdges.start} onClick={() => scrollEpisodes(-1)}><Glyph name="back" size={20} /></button><button className="player-episodes-arrow is-next" aria-label="向后浏览剧集" disabled={episodeEdges.end} onClick={() => scrollEpisodes(1)}><Glyph name="back" size={20} /></button></div>}</div></div>}
+    {panel === 'episodes' && <div ref={panelRef} className="player-episodes" role="dialog" aria-modal="true" aria-label="选集"><button className="player-episodes-scrim" tabIndex={-1} aria-label="关闭选集" onClick={closePanel} /><div className="player-episodes-content"><div className="player-episodes-heading"><div><h2>选集</h2>{seasons.length > 1 && <div className="player-seasons">{seasons.map((season) => <button key={season.Id} className={seasonId === season.Id ? 'is-active' : ''} aria-pressed={seasonId === season.Id} onClick={() => setSeasonId(season.Id)}>{season.IndexNumber != null ? `第 ${season.IndexNumber} 季` : season.Name}</button>)}</div>}<span>{episodesLoading ? '正在载入' : `${episodes.length} 集`}</span></div>{iconButton('close', '关闭选集（Esc）', closePanel)}</div>{episodesError ? <p className="player-episodes-empty" role="status">暂时无法载入剧集，请关闭后重试。</p> : episodesLoading ? <p className="player-episodes-empty" role="status">正在载入剧集…</p> : episodes.length === 0 ? <p className="player-episodes-empty">这一季还没有可播放的剧集。</p> : <div className="player-episodes-strip"><div ref={episodeRow} className="player-episodes-row">{episodes.map((episode) => <button key={episode.Id} data-current={episode.Id === id} className={`player-episode ${episode.Id === id ? 'is-current' : ''}`} aria-label={`${episodeLabel(episode)} ${episode.Name}${episode.Id === id ? playing ? '，正在播放' : '，当前剧集' : ''}`} disabled={episode.IsMissing || episode.CanPlay === false} onClick={() => { if (episode.Id === id) closePanel(); else { appRef.current.changed(); void appRef.current.play(episode); } }}><div className="player-episode-image"><MediaImage item={episode} kind="Thumb" /><div className="player-episode-gradient" /><span className="player-episode-number">{String(episode.IndexNumber ?? '').padStart(2, '0')}</span>{episode.Id === id && <span className="player-episode-current"><Glyph name="audio" size={13} />{playing ? '正在播放' : '当前剧集'}</span>}{episode.UserData?.Played && <span className="player-episode-watched"><Glyph name="check" size={14} /></span>}{(episode.UserData?.PlaybackPositionTicks ?? 0) > 0 && <span className="player-episode-progress" style={{ width: `${clamp((episode.UserData?.PlaybackPositionTicks ?? 0) / (episode.RunTimeTicks || 1) * 100, 0, 100)}%` }} />}</div><div className="player-episode-title"><strong>{episode.Name}</strong><span>{episode.RunTimeTicks ? `${Math.round(episode.RunTimeTicks / TICKS_PER_SECOND / 60)} 分钟` : episode.IsMissing ? '尚未入库' : ''}</span></div><p>{episode.Overview}</p></button>)}</div><button className="player-episodes-arrow is-previous" aria-label="向前浏览剧集" disabled={episodeEdges.start} onClick={() => scrollEpisodes(-1)}><Glyph name="back" size={20} /></button><button className="player-episodes-arrow is-next" aria-label="向后浏览剧集" disabled={episodeEdges.end} onClick={() => scrollEpisodes(1)}><Glyph name="back" size={20} /></button></div>}</div></div>}
   </div>;
 }
 
