@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/subtitle"
 )
@@ -98,8 +99,14 @@ func newHLSSubtitleExtractionHTTPFixture(t *testing.T) hlsSubtitleExtractionHTTP
 		}
 		fixture.children = append(fixture.children, children)
 	}
-	// The A/V manager retains its original executable. Only subsequent text
-	// extraction uses this real-tool wrapper, giving an independent call count.
+	countHLSSubtitleExtractions(t, h, directory)
+	return fixture
+}
+
+func countHLSSubtitleExtractions(t *testing.T, h *hlsHTTPFixture, directory string) {
+	t.Helper()
+	// The A/V manager retains its original executable. Count only the separate
+	// subtitle extraction process used by the HTTP handler.
 	quote := func(value string) string { return "'" + strings.ReplaceAll(value, "'", "'\"'\"'") + "'" }
 	wrapper := filepath.Join(directory, "count-extractions")
 	program := "#!/bin/sh\nset -eu\ndirectory=${0%/*}\nprintf x >> \"$directory/calls\"\n" +
@@ -108,7 +115,6 @@ func newHLSSubtitleExtractionHTTPFixture(t *testing.T) hlsSubtitleExtractionHTTP
 		t.Fatal(err)
 	}
 	h.f.app.cfg.FFmpegPath = wrapper
-	return fixture
 }
 
 func (fixture hlsSubtitleExtractionHTTPFixture) calls(t *testing.T) int {
@@ -139,6 +145,78 @@ func hlsSubtitleExtractionObservedServer(t *testing.T, h *hlsHTTPFixture) (*http
 	}))
 	t.Cleanup(server.Close)
 	return server, done
+}
+
+func TestHTTPPlaybackInfoKeepsEmbeddedASSExtractionOffTheHLSStartupPath(t *testing.T) {
+	h := newHLSHTTPFixture(t)
+	directory := t.TempDir()
+	text := filepath.Join(directory, "captions.srt")
+	if err := os.WriteFile(text, []byte("1\n00:00:00,500 --> 00:00:02,000\nGoby subtitle fixture\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	mkv := filepath.Join(filepath.Dir(h.path), "Embedded.ASS.mkv")
+	hlsHTTPMediaCommand(t, h.ffmpeg, "-hide_banner", "-nostdin", "-v", "error", "-i", h.path, "-i", text,
+		"-map", "0:v:0", "-map", "0:a:0", "-map", "1:0", "-c:v", "copy", "-c:a", "copy", "-c:s", "ass", mkv)
+	(&streamHTTPFixture{f: h.f}).rescan(t, h.libraryID)
+	items, err := h.f.app.library.QueryItems(h.f.ctx, library.Query{UserID: h.accounts.viewer.userID, ParentID: h.libraryID, Recursive: true, Limit: 20})
+	if err != nil {
+		t.Fatal(err)
+	}
+	index := -1
+	for _, item := range items.Items {
+		if item.Path != mkv || item.Media == nil {
+			continue
+		}
+		h.item = item
+		for _, stream := range item.Media.Streams {
+			if stream.CodecType == "subtitle" && stream.Codec == "ass" && !stream.IsExternal {
+				index = stream.Index
+			}
+		}
+	}
+	if index < 0 {
+		t.Fatal("the fixture did not index an embedded ASS track")
+	}
+	countHLSSubtitleExtractions(t, h, directory)
+	fixture := hlsSubtitleExtractionHTTPFixture{h: h, directory: directory}
+	profile := map[string]any{
+		"SupportedMediaTypes": "Video",
+		"DirectPlayProfiles": []map[string]any{{"Type": "Video", "Container": "mp4", "VideoCodec": "h264", "AudioCodec": "aac"}},
+		"TranscodingProfiles": []map[string]any{{"Type": "Video", "Container": "ts", "Protocol": "hls", "VideoCodec": "h264", "AudioCodec": "aac", "Context": "Streaming", "ManifestSubtitles": "vtt", "SegmentLength": 3}},
+		"SubtitleProfiles": []map[string]any{{"Format": "vtt", "Method": "Hls", "Container": "ts"}, {"Format": "vtt", "Method": "External"}},
+	}
+	prepared := h.request(t, http.MethodPost, "/emby/Items/"+h.item.ID+"/PlaybackInfo", map[string]any{
+		"IsPlayback": true, "EnableDirectPlay": false, "EnableDirectStream": false, "EnableTranscoding": true,
+		"AllowVideoStreamCopy": false, "SubtitleStreamIndex": index, "DeviceProfile": profile,
+	}, h.accounts.viewer.headers)
+	expectHLSHTTPStatus(t, prepared, http.StatusOK)
+	var negotiation struct {
+		ErrorCode    string
+		MediaSources []struct{ TranscodingURL string `json:"TranscodingUrl"` }
+	}
+	if json.Unmarshal(prepared.body, &negotiation) != nil || negotiation.ErrorCode != "" || len(negotiation.MediaSources) != 1 || negotiation.MediaSources[0].TranscodingURL == "" {
+		t.Fatal("forced HLS with embedded ASS did not return a usable master URL")
+	}
+	if fixture.calls(t) != 0 {
+		t.Fatal("HLS negotiation extracted the full ASS track before any subtitle was requested")
+	}
+	master := h.request(t, http.MethodGet, negotiation.MediaSources[0].TranscodingURL, nil, nil)
+	expectHLSHTTPStatus(t, master, http.StatusOK)
+	tracks := hlsSubtitleRenditionURLs(t, master.body)
+	if len(tracks) != 1 {
+		t.Fatal("the negotiated HLS master must retain its selected subtitle rendition")
+	}
+	list := h.request(t, http.MethodGet, tracks[0], nil, nil)
+	expectHLSHTTPStatus(t, list, http.StatusOK)
+	segments := hlsHTTPManifestChildren(list.body)
+	if len(segments) == 0 || fixture.calls(t) != 0 {
+		t.Fatal("subtitle playlist creation read captions or exposed no measured window")
+	}
+	vtt := h.request(t, http.MethodGet, segments[0], nil, nil)
+	expectHLSHTTPStatus(t, vtt, http.StatusOK)
+	if !bytes.HasPrefix(vtt.body, []byte("WEBVTT")) || !bytes.Contains(vtt.body, []byte("Goby subtitle fixture")) || fixture.calls(t) != 1 {
+		t.Fatal("HLS subtitle segment did not extract and render the selected ASS content")
+	}
 }
 
 func TestHTTPHLSEmbeddedSubtitleExtractionReusesSegmentsAndRechecksAuthority(t *testing.T) {

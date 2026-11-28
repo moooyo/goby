@@ -76,6 +76,51 @@ func TestRequestLoggingMiddlewareUsesPatternAndAcceptedBytes(t *testing.T) {
 	}
 }
 
+func TestPlaybackFailureDiagnosticsKeepCauseAndRequestIDWithoutPrivateInput(t *testing.T) {
+	server, output := requestLoggingServer()
+	mux := http.NewServeMux()
+	const pattern = "GET /emby/Videos/{Id}/hls2/{PlaylistId}/{Artifact}"
+	mux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
+		err := errors.Join(errors.New("private subtitle/media path"), context.DeadlineExceeded)
+		server.logPlaybackFailure(r.Context(), "subtitle_extraction", err)
+		apiError(w, r, http.StatusServiceUnavailable, "subtitle_unavailable", "Subtitle unavailable.")
+	})
+	request := httptest.NewRequest(http.MethodGet, "/emby/Videos/private-item/hls2/private-play/subtitles-0-segment-000000.vtt?api_key=private-token", nil)
+	response := httptest.NewRecorder()
+	server.middleware(mux).ServeHTTP(response, request)
+	decoder := json.NewDecoder(bytes.NewReader(output.Bytes()))
+	var failure, completion map[string]any
+	if err := decoder.Decode(&failure); err != nil {
+		t.Fatal(err)
+	}
+	if err := decoder.Decode(&completion); err != nil {
+		t.Fatal(err)
+	}
+	requestID := response.Header().Get("X-Request-Id")
+	if response.Code != http.StatusServiceUnavailable || requestID == "" || failure["event"] != "playback.operation.failed" ||
+		failure["playback_stage"] != "subtitle_extraction" || failure["error_class"] != "deadline_exceeded" || failure["request_id"] != requestID ||
+		completion["route"] != pattern || completion["request_id"] != requestID {
+		t.Fatal("playback error and completion did not retain the same sanitized request identity and failure phase")
+	}
+	if strings.Contains(output.String(), "private") || strings.Contains(output.String(), "api_key") {
+		t.Fatal("playback diagnostics retained a private field")
+	}
+}
+
+func TestPlaybackFailureDiagnosticsKeepPausedProducerCorrelation(t *testing.T) {
+	server, output := requestLoggingServer()
+	const id = "0123456789abcdef0123456789abcdef"
+	server.logPlaybackFailure(context.Background(), "hls_media_manifest", &hlsPausedProducerError{jobID: id, reason: "job_quota"})
+	var failure map[string]any
+	if err := json.Unmarshal(output.Bytes(), &failure); err != nil {
+		t.Fatal(err)
+	}
+	if failure["playback_stage"] != "hls_media_manifest" || failure["error_class"] != "paused_producer_unavailable" ||
+		failure["job_id"] != id || failure["job_failure"] != "job_quota" {
+		t.Fatal("paused manifest failure lost its producer correlation")
+	}
+}
+
 func TestRequestLoggingMiddlewareCoversPreflightEarlyReturn(t *testing.T) {
 	server, output := requestLoggingServer()
 	next := http.HandlerFunc(func(http.ResponseWriter, *http.Request) { t.Fatal("preflight reached the router") })

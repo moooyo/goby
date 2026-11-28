@@ -206,6 +206,9 @@ func TestHandlerRequestAttributeTypesAndRoutes(t *testing.T) {
 		{"integer outcome", slog.Int("outcome", 200), "outcome", nil},
 		{"boolean outcome", slog.Bool("outcome", true), "outcome", nil},
 		{"registered pattern", slog.String("route", "GET /admin/v1/users/{id}"), "route", "GET /admin/v1/users/{id}"},
+		{"generated video HLS pattern", slog.String("route", "GET /emby/Videos/{Id}/hls2/{PlaylistId}/{Artifact}"), "route", "GET /emby/Videos/{Id}/hls2/{PlaylistId}/{Artifact}"},
+		{"generated audio HLS pattern", slog.String("route", "GET /emby/Audio/{Id}/hls2/{PlaylistId}/{Artifact}"), "route", "GET /emby/Audio/{Id}/hls2/{PlaylistId}/{Artifact}"},
+		{"concrete playlist path", slog.String("route", "GET /emby/Videos/test-secret/hls2/private-play/main.m3u8"), "route", "unmatched"},
 		{"concrete path", slog.String("route", "GET /admin/v1/users/test-secret"), "route", "unmatched"},
 		{"concrete log path", slog.String("route", "GET /admin/v1/logs/test-secret/lines"), "route", "unmatched"},
 		{"query", slog.String("route", "/healthz?token=test-secret"), "route", "unmatched"},
@@ -534,6 +537,32 @@ func TestHandlerClassifiesOnlyKnownErrorTypesWithoutText(t *testing.T) {
 		actual := diagnosticJSON(t, output.Bytes())
 		if actual["error_class"] != test.class || bytes.Contains(output.Bytes(), []byte("test-secret")) {
 			t.Errorf("case %d leaked error text or lost its safe class: %#v", index, actual)
+		}
+	}
+}
+
+func TestHandlerPlaybackAndProducerFieldsUseClosedValues(t *testing.T) {
+	for _, tc := range []struct {
+		message, event string
+		attr           slog.Attr
+		want           any
+	}{
+		{"playback operation failed", "playback.operation.failed", slog.String("playback_stage", "hls_media_manifest"), "hls_media_manifest"},
+		{"playback operation failed", "playback.operation.failed", slog.String("playback_stage", "test-secret"), nil},
+		{"playback operation failed", "playback.operation.failed", slog.String("error_class", "paused_producer_unavailable"), "paused_producer_unavailable"},
+		{"playback operation failed", "playback.operation.failed", slog.String("job_failure", "cache_space"), "cache_space"},
+		{"transcode producer failed", "transcode.producer.failed", slog.String("job_failure", "job_quota"), "job_quota"},
+		{"transcode producer failed", "transcode.producer.failed", slog.String("job_failure", "test-secret"), nil},
+		{"request completed", "request.completed", slog.String("playback_stage", "subtitle_input"), nil},
+	} {
+		var output bytes.Buffer
+		handler := NewHandler(nil, slog.NewJSONHandler(&output, nil))
+		if err := handler.Handle(context.Background(), diagnosticTestRecord(tc.message, tc.attr)); err != nil {
+			t.Fatal(err)
+		}
+		value := diagnosticJSON(t, output.Bytes())
+		if value["event"] != tc.event || value[tc.attr.Key] != tc.want || bytes.Contains(output.Bytes(), []byte("test-secret")) {
+			t.Fatal("playback or producer diagnostics did not apply their closed vocabulary")
 		}
 	}
 }

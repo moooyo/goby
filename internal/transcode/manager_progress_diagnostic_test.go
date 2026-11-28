@@ -169,6 +169,25 @@ func TestManagerProgressFailureDiagnostic(t *testing.T) {
 					}
 				}
 			}
+			if test.wantState == "failed" {
+				var observed managerProgressLogObservation
+				select {
+				case observed = <-sink.records:
+				case <-time.After(5 * time.Second):
+					t.Fatal("terminal producer diagnostic was not emitted")
+				}
+				if observed.contextErr != nil || !observed.locksReleased || observed.finished || observed.running != 0 || observed.subjectHeld || observed.working != 1 {
+					t.Fatal("terminal producer diagnostic violated finalization ownership")
+				}
+				var value map[string]any
+				if err := json.Unmarshal(observed.data, &value); err != nil {
+					t.Fatal(err)
+				}
+				if value["event"] != "transcode.producer.failed" || value["job_id"] != record.ID || value["job_failure"] != test.wantCode ||
+					bytes.Contains(observed.data, []byte("secret")) {
+					t.Fatal("terminal producer diagnostic disclosed input or lost the manager failure code")
+				}
+			}
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 			if err := manager.Close(ctx); err != nil {

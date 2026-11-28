@@ -115,11 +115,13 @@ func (s *Server) readSubtitleContentForExtraction(ctx context.Context, subject l
 	}
 	file, source, err := s.library.OpenMediaFor(ctx, subject, itemID, sourceID)
 	if err != nil {
+		s.logPlaybackFailure(ctx, "subtitle_input", err)
 		return library.SubtitleContent{}, err
 	}
 	read, err := s.library.PrepareMediaSourceIO(ctx, source)
 	if err != nil {
 		_ = file.Close()
+		s.logPlaybackFailure(ctx, "subtitle_input", err)
 		return library.SubtitleContent{}, err
 	}
 	defer func() {
@@ -160,12 +162,15 @@ func (s *Server) readSubtitleContentForExtraction(ctx context.Context, subject l
 			}
 		}
 		var data []byte
+		stage := "subtitle_input"
 		err := media.RunSourceReadPhase(ctx, func(work context.Context) error {
+			stage = "subtitle_extraction"
 			var err error
 			data, err = media.ExtractSubtitle(work, s.cfg.FFmpegPath, file, stream, native)
 			return err
 		})
 		if err != nil {
+			s.logPlaybackFailure(ctx, stage, err)
 			return library.SubtitleContent{}, err
 		}
 		content := library.SubtitleContent{Data: data, Info: library.Subtitle{Index: index, Codec: native,
@@ -176,7 +181,11 @@ func (s *Server) readSubtitleContentForExtraction(ctx context.Context, subject l
 		}
 		return content, nil
 	}
-	return s.library.ReadSubtitleFor(ctx, subject, itemID, sourceID, index)
+	content, err := s.library.ReadSubtitleFor(ctx, subject, itemID, sourceID, index)
+	if err != nil {
+		s.logPlaybackFailure(ctx, "subtitle_input", err)
+	}
+	return content, err
 }
 
 func (s *Server) subtitleStream(w http.ResponseWriter, r *http.Request) {
@@ -229,11 +238,13 @@ func (s *Server) subtitleStream(w http.ResponseWriter, r *http.Request) {
 	}
 	document, err := subtitle.Parse(content.Data, subtitle.Format(content.Info.Codec))
 	if err != nil {
+		s.logPlaybackFailure(ctx, "subtitle_render", err)
 		s.subtitleError(w, r, err)
 		return
 	}
 	result, err := subtitle.Render(document, options)
 	if err != nil {
+		s.logPlaybackFailure(ctx, "subtitle_render", err)
 		s.subtitleError(w, r, err)
 		return
 	}

@@ -29,6 +29,7 @@ func (s *Server) serveGeneratedHLSSubtitle(w http.ResponseWriter, r *http.Reques
 	defer cancel()
 	_, windows, delta, err := s.hls.subtitleMediaWindow(ctx, session, input, producerIDs...)
 	if err != nil {
+		s.logPlaybackFailure(ctx, "hls_subtitle_manifest", err)
 		s.hlsError(w, r, err)
 		return false
 	}
@@ -56,6 +57,7 @@ func (s *Server) serveGeneratedHLSSubtitle(w http.ResponseWriter, r *http.Reques
 	}
 	document, err := subtitle.Parse(content.Data, subtitle.Format(content.Info.Codec))
 	if err != nil {
+		s.logPlaybackFailure(ctx, "subtitle_render", err)
 		s.subtitleError(w, r, err)
 		return false
 	}
@@ -66,6 +68,7 @@ func (s *Server) serveGeneratedHLSSubtitle(w http.ResponseWriter, r *http.Reques
 		result, err = subtitle.RenderHLSWindow(document, max(0, window.Start), max(0, window.End), view.OffsetTicks, delta)
 	}
 	if err != nil {
+		s.logPlaybackFailure(ctx, "subtitle_render", err)
 		s.subtitleError(w, r, err)
 		return false
 	}

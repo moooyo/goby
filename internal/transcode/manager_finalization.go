@@ -3,6 +3,7 @@ package transcode
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"time"
 )
 
@@ -224,6 +225,15 @@ func (m *Manager) finalizeJobTerminal(j *managedJob, runErr, inspectionErr error
 	}
 	if runErr != nil && progressFailure != nil {
 		logManagerProgressFailure(j.record.ID, runnerErrorCode(runErr), progressFailure)
+	}
+	m.mu.Lock()
+	record := j.record
+	m.mu.Unlock()
+	if record.State == "failed" {
+		// Use only the terminal code assigned by the manager. Do not retain
+		// FFmpeg stderr or the source path, even in the fallback logger.
+		slog.LogAttrs(context.Background(), slog.LevelWarn, "transcode producer failed",
+			slog.String("job_id", record.ID), slog.String("job_failure", record.ErrorCode))
 	}
 	if j.cancel != nil {
 		j.cancel()

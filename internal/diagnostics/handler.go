@@ -227,8 +227,11 @@ func filterDiagnosticAttrs(attrs []slog.Attr, spec diagnosticEvent, budget *int)
 		} else if spec.fields[attr.Key] {
 			if attr.Key == "error_class" {
 				allowed := diagnosticErrorClassAllowed(attr.Value.String())
-				if spec.name == "transcode.progress.invalid" {
+				switch spec.name {
+				case "transcode.progress.invalid":
 					allowed = diagnosticProgressErrorClassAllowed(attr.Value.String())
+				case "playback.operation.failed":
+					allowed = allowed || diagnosticPlaybackErrorClassAllowed(attr.Value.String())
 				}
 				if !allowed {
 					continue
@@ -323,8 +326,22 @@ func freezeDiagnosticValue(attr slog.Attr) (slog.Attr, bool) {
 			}
 		}
 	case "error_class":
-		if value.Kind() == slog.KindString && (diagnosticErrorClassAllowed(value.String()) || diagnosticProgressErrorClassAllowed(value.String())) {
+		if value.Kind() == slog.KindString && (diagnosticErrorClassAllowed(value.String()) || diagnosticProgressErrorClassAllowed(value.String()) || diagnosticPlaybackErrorClassAllowed(value.String())) {
 			return slog.String(key, value.String()), true
+		}
+	case "job_failure":
+		if value.Kind() == slog.KindString {
+			switch value.String() {
+			case "cache_unavailable", "cache_space", "cache_quota", "job_quota", "hardware_unavailable", "persistence", "runtime_timeout", "startup_timeout", "progress_timeout", "invalid_output", "process_start", "process_progress", "unsupported", "source_unavailable", "process_failed", "cancelled", "session_cancelled", "source_replaced", "idle_timeout", "manager_closed":
+				return slog.String(key, value.String()), true
+			}
+		}
+	case "playback_stage":
+		if value.Kind() == slog.KindString {
+			switch value.String() {
+			case "subtitle_input", "subtitle_extraction", "subtitle_render", "hls_source", "hls_media_manifest", "hls_subtitle_manifest":
+				return slog.String(key, value.String()), true
+			}
 		}
 	case "phase":
 		if value.Kind() == slog.KindString && (value.String() == "Write" || value.String() == "finish") {
@@ -454,6 +471,14 @@ func diagnosticErrorClassAllowed(value string) bool {
 	return false
 }
 
+func diagnosticPlaybackErrorClassAllowed(value string) bool {
+	switch value {
+	case "paused_producer_unavailable", "manifest_limit", "invalid_playlist", "output_unavailable", "producer_failed", "producer_quota", "source_changed", "output_limit", "subtitle_extraction":
+		return true
+	}
+	return false
+}
+
 func diagnosticProgressErrorClassAllowed(value string) bool {
 	switch value {
 	case "cancelled", "process_start", "process_progress", "unsupported", "source_unavailable", "cache_unavailable", "process_failed":
@@ -502,6 +527,7 @@ var diagnosticEvents = func() map[string]diagnosticEvent {
 	add("server.shutdown.failed", "background work did not close cleanly", "error_class")
 	add("request.completed", "request completed", "request_id", "method", "route", "status", "duration_ms", "bytes", "outcome")
 	add("request.panic", "request panic", "request_id")
+	add("playback.operation.failed", "playback operation failed", "request_id", "job_id", "job_failure", "playback_stage", "error_class")
 	add("activity.retention.retry", "activity retention will retry", "error_class")
 	add("task.scheduling.retry", "Task scheduling will retry; scheduler readiness is unavailable", "error_class")
 	add("task.coordination.retry", "Task coordination will retry", "error_class")
@@ -528,6 +554,7 @@ var diagnosticEvents = func() map[string]diagnosticEvent {
 	}
 	add("transcode.completed", "transcode completed", "job_id", "request_id", "item_id", "duration_ms", "bytes", "mode", "exit_code", "cancelled")
 	add("transcode.failed", "transcode failed", "job_id", "request_id", "item_id", "duration_ms", "mode", "exit_code", "cancelled", "error_class")
+	add("transcode.producer.failed", "transcode producer failed", "job_id", "job_failure")
 	add("transcode.progress.invalid", "transcode progress rejected", "job_id", "error_class", "phase", "reason", "field",
 		"line_bytes", "captured_bytes", "truncated", "line_sha256", "safe_value", "previous_known", "output_ticks", "bytes", "ended",
 		"wait_delay", "wait_error_class", "exit_code")
@@ -614,6 +641,8 @@ GET /emby/Users/{UserId}/Items/Root
 GET /emby/Users/{UserId}/Views
 GET /emby/Users/Public
 GET /emby/Users/Query
+GET /emby/Videos/{Id}/live_subtitles.m3u8
+GET /emby/Videos/{Id}/subtitles.m3u8
 GET /healthz
 GET /readyz
 POST /admin/v1/api-keys
@@ -687,7 +716,7 @@ PUT /admin/v1/users/{id}
 	}
 	for _, resource := range []string{"Videos", "Audio"} {
 		base := "GET /emby/" + resource + "/{Id}/"
-		for _, suffix := range []string{"master.m3u8", "main.m3u8", "hls1/{PlaylistId}/{SegmentFile}"} {
+		for _, suffix := range []string{"master.m3u8", "main.m3u8", "hls1/{PlaylistId}/{SegmentFile}", "hls2/{PlaylistId}/{Artifact}"} {
 			routes[base+suffix] = true
 		}
 	}

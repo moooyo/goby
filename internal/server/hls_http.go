@@ -260,6 +260,7 @@ func (s *Server) hlsPlaylist(audioOnly, master bool) http.HandlerFunc {
 		}
 		session, loan, source, err := s.resolveHLS(ctx, r, values)
 		if err != nil {
+			s.logPlaybackFailure(ctx, "hls_source", err)
 			s.hlsError(w, r, err)
 			return
 		}
@@ -351,6 +352,7 @@ func (s *Server) hlsPlaylist(audioOnly, master bool) http.HandlerFunc {
 			}
 		}
 		if err != nil {
+			s.logPlaybackFailure(ctx, "hls_media_manifest", err)
 			s.hlsError(w, r, err)
 			return
 		}
@@ -362,6 +364,7 @@ func (s *Server) hlsPlaylist(audioOnly, master bool) http.HandlerFunc {
 			if permanentHLSError(err) {
 				s.hls.retire(session)
 			}
+			s.logPlaybackFailure(ctx, "hls_source", err)
 			s.hlsError(w, r, err)
 			return
 		}

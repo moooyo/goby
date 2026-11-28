@@ -17,6 +17,15 @@ import (
 	"github.com/moooyo/goby/internal/transcode"
 )
 
+var errHLSPausedProducerUnavailable = fmt.Errorf("paused generated HLS has no usable producer: %w", transcode.ErrOutputUnavailable)
+
+type hlsPausedProducerError struct {
+	jobID, reason string
+}
+
+func (err *hlsPausedProducerError) Error() string { return errHLSPausedProducerUnavailable.Error() }
+func (err *hlsPausedProducerError) Unwrap() error { return errHLSPausedProducerUnavailable }
+
 func hlsArtifactURL(session *hlsSession, resource, name, token string, start int64) string {
 	return hlsSessionURL(session, resource, "hls2/"+session.id+"/"+name, token, start)
 }
@@ -127,6 +136,7 @@ func (h *hlsRuntime) generatedArtifact(ctx context.Context, session *hlsSession,
 			session.mu.Unlock()
 			return nil, context.Canceled
 		}
+		var unavailable hlsPausedProducerError
 		for _, producer := range session.producers {
 			if producer.first != -1 || h.producerReleased(producer) {
 				continue
@@ -138,10 +148,11 @@ func (h *hlsRuntime) generatedArtifact(ctx context.Context, session *hlsSession,
 				releaseReservation()
 				return h.manager.Open(ctx, session.key.scope, producer.id, name)
 			}
+			unavailable = hlsPausedProducerError{jobID: producer.id, reason: state.ErrorCode}
 		}
 		if session.demand.paused {
 			session.mu.Unlock()
-			return nil, transcode.ErrOutputUnavailable
+			return nil, &unavailable
 		}
 		if pending := session.admission; pending != nil && pending.ctx.Err() == nil {
 			session.accessed = time.Now()
@@ -313,6 +324,9 @@ func (s *Server) hlsArtifact(audioOnly bool) http.HandlerFunc {
 		values["gobyhlsid"] = r.PathValue("PlaylistId")
 		session, loan, source, err := s.resolveHLS(ctx, r, values)
 		if err != nil {
+			if strings.HasSuffix(r.PathValue("Artifact"), ".m3u8") {
+				s.logPlaybackFailure(ctx, "hls_source", err)
+			}
 			s.hlsError(w, r, err)
 			return
 		}
@@ -415,11 +429,13 @@ func (s *Server) hlsArtifact(audioOnly bool) http.HandlerFunc {
 			}
 			proof, err := s.hls.subtitleMediaWindowProof(work, session, input, producerID)
 			if err != nil {
+				s.logPlaybackFailure(work, "hls_subtitle_manifest", err)
 				s.hlsError(w, r, err)
 				return
 			}
 			body, err := hlsSubtitleManifest(session, resource, token, start, slot, view, proof.list, proof.producerID)
 			if err != nil {
+				s.logPlaybackFailure(work, "hls_subtitle_manifest", err)
 				s.hlsError(w, r, err)
 				return
 			}
@@ -438,6 +454,7 @@ func (s *Server) hlsArtifact(audioOnly bool) http.HandlerFunc {
 			body, err := s.hls.generatedPlaylistFromCurrentSource(work, session, input, playbackMediaInfo(source.Item), name, resource, token, start, producerID, values["gobyhlswindowgraphid"], view)
 			if err != nil {
 				s.failHLSMediaPolicy(work, session)
+				s.logPlaybackFailure(work, "hls_media_manifest", err)
 				s.hlsError(w, r, err)
 				return
 			}
@@ -512,6 +529,9 @@ func (s *Server) revalidateGeneratedHLS(ctx context.Context, w http.ResponseWrit
 	if err != nil {
 		if permanentHLSError(err) {
 			s.hls.retire(session)
+		}
+		if strings.HasSuffix(r.PathValue("Artifact"), ".m3u8") {
+			s.logPlaybackFailure(ctx, "hls_source", err)
 		}
 		s.hlsError(w, r, err)
 		return false

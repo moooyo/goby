@@ -153,7 +153,19 @@ Byte counts include bytes accepted by the HTTP response writer; bytes written
 directly after a protocol hijack are outside that count. An abort before a
 response commits can omit status, and unrecognized HTTP methods are omitted.
 These request diagnostics report HTTP handling, not business-transaction
-commit evidence.
+commit evidence. Generated HLS requests retain the registered `hls2` pattern,
+not the concrete item, rendition, or artifact name.
+
+For playback failures, correlate `playback.operation.failed` with the
+`request.completed` record using the `X-Request-Id` response header. The fixed
+stage distinguishes subtitle input, extraction, and rendering from HLS source
+and manifest failures. A paused manifest request with no usable producer
+reports `paused_producer_unavailable` and the last attached candidate's job ID
+and known failure code, if available. The manager's `transcode.producer.failed`
+record retains its terminal code for correlation even after the job leaves
+memory. Neither event includes source paths, query strings, media bytes, or
+raw FFmpeg diagnostics. The paused status does not establish why a producer
+became unavailable, and the diagnostic does not change pause or retry policy.
 
 ## Linux file ownership, rotation, and quotas
 
