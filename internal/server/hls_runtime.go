@@ -16,6 +16,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/moooyo/goby/internal/config"
+	"github.com/moooyo/goby/internal/diagnostics"
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/media"
@@ -663,6 +664,7 @@ func (h *hlsRuntime) segment(ctx context.Context, session *hlsSession, input *os
 	defer closeHLSConsumedSource(ctx, input)
 	timeline, err := h.timeline(ctx, session, input)
 	if err != nil {
+		captureHLSSegmentFailure(ctx, "hls_segment_timeline", err, "")
 		return nil, err
 	}
 	if number < 0 || number >= len(timeline.Segments) {
@@ -712,11 +714,12 @@ func (h *hlsRuntime) segment(ctx context.Context, session *hlsSession, input *os
 				session.lastAsked, session.accessed = number, time.Now()
 				session.mu.Unlock()
 				releaseReservation()
-				return h.manager.Open(ctx, session.key.scope, producer.id, name)
+				return h.openHLSSegment(ctx, session, producer.id, name)
 			}
 		}
 		if session.demand.paused {
 			session.mu.Unlock()
+			captureHLSSegmentFailure(ctx, "hls_segment_paused", transcode.ErrOutputUnavailable, "")
 			return nil, transcode.ErrOutputUnavailable
 		}
 		if pending := session.admission; pending != nil && pending.ctx.Err() == nil {
@@ -724,7 +727,8 @@ func (h *hlsRuntime) segment(ctx context.Context, session *hlsSession, input *os
 			session.lastAsked, session.accessed = number, time.Now()
 			session.mu.Unlock()
 			releaseReservation()
-			record, err := waitHLSAdmission(ctx, session, pending)
+			var admissionFailure diagnostics.PlaybackFailure
+			record, err := waitHLSAdmissionObserved(ctx, session, pending, &admissionFailure)
 			if err != nil {
 				if retryHLSAdmission(ctx, session, pending, err) {
 					if errors.Is(err, errHLSAdmissionStale) {
@@ -736,10 +740,11 @@ func (h *hlsRuntime) segment(ctx context.Context, session *hlsSession, input *os
 					retryFrom = pending
 					continue
 				}
+				captureHLSSegmentAdmission(ctx, admissionFailure, err)
 				return nil, err
 			}
 			if inside {
-				return h.manager.Open(ctx, session.key.scope, record.ID, name)
+				return h.openHLSSegment(ctx, session, record.ID, name)
 			}
 			// A GET has no demand generation. Waiting for an unrelated bounded
 			// admission cannot revoke it or turn an old seek into current demand.
@@ -749,6 +754,7 @@ func (h *hlsRuntime) segment(ctx context.Context, session *hlsSession, input *os
 			session.mu.Unlock()
 			gate, err = h.reserveAdmission(session.key)
 			if err != nil {
+				captureHLSSegmentFailure(ctx, "hls_segment_admission", err, "")
 				return nil, err
 			}
 			continue
@@ -758,6 +764,7 @@ func (h *hlsRuntime) segment(ctx context.Context, session *hlsSession, input *os
 		cuts, err := timeline.BoundaryTicks(number, last)
 		if err != nil {
 			session.mu.Unlock()
+			captureHLSSegmentFailure(ctx, "hls_segment_timeline", err, "")
 			return nil, err
 		}
 		encodedCuts := make([]string, len(cuts))
@@ -777,6 +784,7 @@ func (h *hlsRuntime) segment(ctx context.Context, session *hlsSession, input *os
 		producerInput, playbackInput, playbackWorker, err := h.duplicateAdmissionInputLocked(session, input)
 		if err != nil {
 			session.mu.Unlock()
+			captureHLSSegmentFailure(ctx, "hls_segment_input", err, "")
 			return nil, err
 		}
 		pending := newHLSAdmission(ctx, session, transcode.Spec{Scope: session.key.scope, SourceStamp: session.key.stamp, Plan: plan}, number, last)
@@ -786,7 +794,8 @@ func (h *hlsRuntime) segment(ctx context.Context, session *hlsSession, input *os
 		workerGate := gate
 		gate = nil
 		go h.runAdmission(session, pending, workerGate, producerInput)
-		record, err := waitHLSAdmission(ctx, session, pending)
+		var admissionFailure diagnostics.PlaybackFailure
+		record, err := waitHLSAdmissionObserved(ctx, session, pending, &admissionFailure)
 		if err != nil {
 			if errors.Is(err, errHLSAdmissionStale) && retryHLSAdmission(ctx, session, pending, err) {
 				if staleRetries != 0 {
@@ -796,10 +805,17 @@ func (h *hlsRuntime) segment(ctx context.Context, session *hlsSession, input *os
 				retryFrom = pending
 				continue
 			}
+			captureHLSSegmentAdmission(ctx, admissionFailure, err)
 			return nil, err
 		}
-		return h.manager.Open(ctx, session.key.scope, record.ID, name)
+		return h.openHLSSegment(ctx, session, record.ID, name)
 	}
+}
+
+func (h *hlsRuntime) openHLSSegment(ctx context.Context, session *hlsSession, jobID, name string) (*transcode.ReadHandle, error) {
+	handle, err := h.manager.Open(ctx, session.key.scope, jobID, name)
+	captureHLSSegmentFailure(ctx, "hls_segment_read", err, jobID)
+	return handle, err
 }
 
 func paddedSegmentNumber(number int) string {

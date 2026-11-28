@@ -337,11 +337,12 @@ func freezeDiagnosticValue(attr slog.Attr) (slog.Attr, bool) {
 			}
 		}
 	case "playback_stage":
-		if value.Kind() == slog.KindString {
-			switch value.String() {
-			case "subtitle_input", "subtitle_extraction", "subtitle_render", "hls_source", "hls_media_manifest", "hls_subtitle_manifest":
-				return slog.String(key, value.String()), true
-			}
+		if value.Kind() == slog.KindString && diagnosticPlaybackStageAllowed(value.String()) {
+			return slog.String(key, value.String()), true
+		}
+	case "hls_error_code":
+		if value.Kind() == slog.KindString && (value.String() == "conversion_unavailable" || value.String() == "hls_unavailable") {
+			return slog.String(key, value.String()), true
 		}
 	case "phase":
 		if value.Kind() == slog.KindString && (value.String() == "Write" || value.String() == "finish") {
@@ -471,9 +472,25 @@ func diagnosticErrorClassAllowed(value string) bool {
 	return false
 }
 
+func diagnosticPlaybackStageAllowed(value string) bool {
+	switch value {
+	case "subtitle_input", "subtitle_extraction", "subtitle_render", "hls_source", "hls_media_manifest", "hls_subtitle_manifest",
+		"hls_runtime", "hls_segment_source", "hls_segment_policy", "hls_segment_timeline", "hls_segment_input",
+		"hls_segment_admission", "hls_segment_paused", "hls_segment_read", "hls_segment_reauthorize", "hls_segment_stat",
+		"hls_producer_source", "hls_producer_identity", "hls_producer_read_lease", "hls_producer_admission",
+		"hls_cache_health", "hls_cache_accounting", "hls_cache_space",
+		"hls_job_create", "hls_job_validate", "hls_job_begin", "hls_job_authorize", "hls_job_insert", "hls_job_commit":
+		return true
+	}
+	return false
+}
+
 func diagnosticPlaybackErrorClassAllowed(value string) bool {
 	switch value {
-	case "paused_producer_unavailable", "manifest_limit", "invalid_playlist", "output_unavailable", "producer_failed", "producer_quota", "source_changed", "output_limit", "subtitle_extraction":
+	case "paused_producer_unavailable", "manifest_limit", "invalid_playlist", "output_unavailable", "producer_failed", "producer_quota", "source_changed", "output_limit", "subtitle_extraction",
+		"source_busy", "source_unavailable", "invalid_input", "invalid_admission", "manager_closed", "persistence", "runtime_unavailable",
+		"cache_unavailable", "accounting_pending", "accounting_unknown", "invalid_record", "record_unauthorized", "record_conflict",
+		"database_conflict", "database_constraint", "database_busy", "database_unavailable", "database_error":
 		return true
 	}
 	return false
@@ -527,7 +544,7 @@ var diagnosticEvents = func() map[string]diagnosticEvent {
 	add("server.shutdown.failed", "background work did not close cleanly", "error_class")
 	add("request.completed", "request completed", "request_id", "method", "route", "status", "duration_ms", "bytes", "outcome")
 	add("request.panic", "request panic", "request_id")
-	add("playback.operation.failed", "playback operation failed", "request_id", "job_id", "job_failure", "playback_stage", "error_class")
+	add("playback.operation.failed", "playback operation failed", "request_id", "job_id", "job_failure", "playback_stage", "error_class", "hls_error_code", "status")
 	add("activity.retention.retry", "activity retention will retry", "error_class")
 	add("task.scheduling.retry", "Task scheduling will retry; scheduler readiness is unavailable", "error_class")
 	add("task.coordination.retry", "Task coordination will retry", "error_class")

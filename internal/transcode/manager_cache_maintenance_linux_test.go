@@ -9,6 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/moooyo/goby/internal/diagnostics"
 )
 
 func TestManagerPendingCacheAccountingFencesAdmissionAndScheduling(t *testing.T) {
@@ -26,8 +28,13 @@ func TestManagerPendingCacheAccountingFencesAdmissionAndScheduling(t *testing.T)
 		t.Fatal("budgeted change backlog did not fence its incomplete accounting")
 	}
 	input := managerTestInput(t)
-	if _, err := m.Ensure(context.Background(), managerTestSpec(3), input); !errors.Is(err, ErrOutputUnavailable) {
-		t.Fatalf("unmeasured backlog admitted new work: %v", err)
+	var failure diagnostics.PlaybackFailure
+	ctx := diagnostics.WithPlaybackFailureCapture(context.Background(), &failure)
+	if record, err := m.Ensure(ctx, managerTestSpec(3), input); !errors.Is(err, ErrOutputUnavailable) || record.ID != "" {
+		t.Fatalf("unmeasured backlog admitted new work: record=%q error=%v", record.ID, err)
+	}
+	if failure.Stage != "hls_cache_accounting" || failure.ErrorClass != "accounting_pending" || failure.JobID != "" {
+		t.Fatalf("pending accounting lost its pre-persistence diagnosis: %+v", failure)
 	}
 	assertManagerInputClosed(t, input)
 	m.schedule()

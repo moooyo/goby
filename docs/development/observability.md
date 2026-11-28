@@ -167,6 +167,32 @@ memory. Neither event includes source paths, query strings, media bytes, or
 raw FFmpeg diagnostics. The paused status does not establish why a producer
 became unavailable, and the diagnostic does not change pause or retry policy.
 
+For an HLS TS segment (`hls1`) that returns `503`, look for one
+`playback.operation.failed` with the same request ID, `status=503`, and
+`hls_error_code`. `conversion_unavailable` with stage `hls_runtime` means the
+conversion runtime did not admit the request. Otherwise `hls_unavailable` can
+report these stages:
+
+| Stage | What failed |
+| --- | --- |
+| `hls_segment_source`, `hls_segment_reauthorize` | Initial source checkout or fresh verification before delivery |
+| `hls_segment_policy`, `hls_segment_timeline`, `hls_segment_input` | Playback-policy admission, timeline preparation, or producer input handoff |
+| `hls_producer_source`, `hls_producer_identity`, `hls_producer_read_lease` | Producer source reopen, comparison against the held input, or source-read ownership |
+| `hls_segment_admission`, `hls_producer_admission` | HLS admission wait/gate or producer admission with no more specific observation |
+| `hls_cache_health`, `hls_cache_accounting`, `hls_cache_space` | Cache health, incomplete accounting (`accounting_pending` or `accounting_unknown`), or free-space observation |
+| `hls_job_create`, `hls_job_validate`, `hls_job_begin`, `hls_job_authorize`, `hls_job_insert`, `hls_job_commit` | Encoding job creation, with the most specific known repository phase and a fixed database error class |
+| `hls_segment_paused`, `hls_segment_read`, `hls_segment_stat` | Paused playback without usable output, waiting for/opening the segment, or statting the opened artifact |
+
+An optional `job_id` may identify an allocated job whose insert did not commit;
+its presence does not establish that a durable row or encoder process exists.
+The failure classification carries no raw SQL, SQL arguments or error text.
+Only the existing `503` branches emit this additional diagnostic. Successful
+requests, `404`, `429`, and canceled waits do not emit it. Once an initial
+failure retires the HLS registration, retries of the old segment URL can still
+return `404`; this logging does not renegotiate, retry, or change authorization.
+Use `request.completed` for duration and the registered route; it is still not
+commit evidence.
+
 ## Linux file ownership, rotation, and quotas
 
 [`store_linux.go`](../../internal/diagnostics/store_linux.go) pins the configured

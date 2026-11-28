@@ -74,9 +74,11 @@ func (h *hlsRuntime) prepareTranscodeSourceRead(ctx, lifetime context.Context, s
 	}
 	verified, source, err := h.verify(ctx, principal, spec.Scope, spec.SourceStamp, spec.Plan)
 	if err != nil {
+		captureHLSSegmentFailure(ctx, "hls_producer_source", err, "")
 		return nil, err
 	}
 	if verified == nil {
+		captureHLSSegmentFailure(ctx, "hls_producer_source", library.ErrUnavailable, "")
 		return nil, library.ErrUnavailable
 	}
 	before, sourceErr := verified.Stat()
@@ -85,7 +87,11 @@ func (h *hlsRuntime) prepareTranscodeSourceRead(ctx, lifetime context.Context, s
 	if sourceErr != nil || inputErr != nil || closeErr != nil || before == nil || current == nil ||
 		!before.Mode().IsRegular() || !current.Mode().IsRegular() || !os.SameFile(before, current) ||
 		before.Size() != current.Size() || !before.ModTime().Equal(current.ModTime()) || media.FileChangeTime(before) != media.FileChangeTime(current) {
-		return nil, errors.Join(library.ErrSourceChanged, sourceErr, inputErr, closeErr)
+		err := errors.Join(library.ErrSourceChanged, sourceErr, inputErr, closeErr)
+		captureHLSSegmentFailure(ctx, "hls_producer_identity", err, "")
+		return nil, err
 	}
-	return h.server.library.PrepareMediaSourceIO(lifetime, source)
+	read, err := h.server.library.PrepareMediaSourceIO(lifetime, source)
+	captureHLSSegmentFailure(ctx, "hls_producer_read_lease", err, "")
+	return read, err
 }

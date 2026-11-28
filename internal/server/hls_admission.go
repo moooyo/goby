@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/moooyo/goby/internal/diagnostics"
 	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/transcode"
 )
@@ -136,6 +137,7 @@ type hlsAdmission struct {
 	done              chan struct{}
 	record            transcode.Record
 	err               error
+	failure           diagnostics.PlaybackFailure // published by done
 	playbackInput     *playbackOwnedInput
 	playbackReference *playbackAdmissionReference
 	sourceRead        *library.MediaSourceReadIO
@@ -230,14 +232,20 @@ func (h *hlsRuntime) runAdmission(session *hlsSession, pending *hlsAdmission, ga
 		defer func() { <-gate.slot }()
 	}
 	var record transcode.Record
+	var failure diagnostics.PlaybackFailure
+	// A coalesced hls1 waiter may join work started by a different route (or
+	// see it finish after its initiating request is gone). Capture on the
+	// worker regardless of which request will consume the outcome.
+	work := diagnostics.WithPlaybackFailureCapture(pending.ctx, &failure)
 	err := pending.ctx.Err()
 	if acquired && err == nil {
 		consumed = true
 		if pending.playbackInput != nil {
-			record, err = pending.playbackInput.ensure(pending.ctx, h.manager, pending.spec)
+			record, err = pending.playbackInput.ensure(work, h.manager, pending.spec)
 		} else {
-			record, err = h.manager.Ensure(pending.ctx, pending.spec, input)
+			record, err = h.manager.Ensure(work, pending.spec, input)
 		}
+		captureHLSSegmentFailure(work, "hls_producer_admission", err, record.ID)
 	}
 	// A committed report can arrive while Ensure waits for authority or queue
 	// admission. Bind its latest position to the original scheduling policy.
@@ -277,6 +285,12 @@ func (h *hlsRuntime) runAdmission(session *hlsSession, pending *hlsAdmission, ga
 	if session.admission == pending {
 		session.admission = nil
 	}
+	if err != nil {
+		if failure.JobID == "" {
+			failure.JobID = record.ID
+		}
+		pending.failure = failure
+	}
 	pending.record, pending.err = record, err
 	close(pending.done)
 	session.mu.Unlock()
@@ -295,13 +309,32 @@ func retryHLSAdmission(ctx context.Context, session *hlsSession, pending *hlsAdm
 			(errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded))))
 }
 
+// Only copy the worker's observation when the caller uses its terminal
+// result, so retries cannot report an earlier abandoned attempt.
+func captureHLSSegmentAdmission(ctx context.Context, failure diagnostics.PlaybackFailure, err error) {
+	diagnostics.CapturePlaybackFailure(ctx, failure)
+	captureHLSSegmentFailure(ctx, "hls_segment_admission", err, "")
+}
+
+// admissionResult is read only after done publishes the worker's outcome.
+func (pending *hlsAdmission) admissionResult(observation *diagnostics.PlaybackFailure) (transcode.Record, error) {
+	if observation != nil {
+		*observation = pending.failure
+	}
+	return pending.record, pending.err
+}
+
 func waitHLSAdmission(ctx context.Context, session *hlsSession, pending *hlsAdmission) (transcode.Record, error) {
+	return waitHLSAdmissionObserved(ctx, session, pending, nil)
+}
+
+func waitHLSAdmissionObserved(ctx context.Context, session *hlsSession, pending *hlsAdmission, observation *diagnostics.PlaybackFailure) (transcode.Record, error) {
 	if err := ctx.Err(); err != nil {
 		return transcode.Record{}, err
 	}
 	select {
 	case <-pending.done:
-		return pending.record, pending.err
+		return pending.admissionResult(observation)
 	case <-ctx.Done():
 		return transcode.Record{}, ctx.Err()
 	case <-session.ctx.Done():
@@ -311,7 +344,7 @@ func waitHLSAdmission(ctx context.Context, session *hlsSession, pending *hlsAdmi
 		// that completed result over the cleanup cancellation when both fire.
 		select {
 		case <-pending.done:
-			return pending.record, pending.err
+			return pending.admissionResult(observation)
 		default:
 			if session.ctx.Err() != nil {
 				return transcode.Record{}, transcode.ErrJobNotFound

@@ -17,6 +17,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/moooyo/goby/internal/diagnostics"
 	"github.com/moooyo/goby/internal/media"
 )
 
@@ -413,6 +414,7 @@ func (m *Manager) ensureInputs(ctx context.Context, spec Spec, inputs StreamInpu
 		}
 		_, err := validateSourceInput(input, spec.Plan)
 		if err != nil {
+			diagnostics.CapturePlaybackFailure(ctx, diagnostics.PlaybackFailure{Stage: "hls_segment_input", ErrorClass: "invalid_input"})
 			return Record{}, ErrInvalidInput
 		}
 		jobCtx, cancel := context.WithCancel(m.ctx)
@@ -437,6 +439,7 @@ func (m *Manager) ensureInputs(ctx context.Context, spec Spec, inputs StreamInpu
 		}
 		if m.cacheFailed {
 			unlock()
+			diagnostics.CapturePlaybackFailure(ctx, diagnostics.PlaybackFailure{Stage: "hls_cache_health", ErrorClass: "cache_unavailable"})
 			return Record{}, ErrOutputUnavailable
 		}
 		if !admissionChecked {
@@ -471,6 +474,7 @@ func (m *Manager) ensureInputs(ctx context.Context, spec Spec, inputs StreamInpu
 			case m.closing:
 				err = ErrManagerClosed
 			case m.cacheFailed:
+				diagnostics.CapturePlaybackFailure(ctx, diagnostics.PlaybackFailure{Stage: "hls_cache_health", ErrorClass: "cache_unavailable"})
 				err = ErrOutputUnavailable
 			case m.playbackStoppedLocked(spec):
 				err = ErrJobCancelled
@@ -484,7 +488,9 @@ func (m *Manager) ensureInputs(ctx context.Context, spec Spec, inputs StreamInpu
 			return record, err
 		}
 		if m.unaccountedJobs != 0 || m.pendingAccountingJobs != 0 {
+			unknown := m.unaccountedJobs != 0
 			unlock()
+			captureCacheAccountingFailure(ctx, unknown)
 			return Record{}, ErrOutputUnavailable
 		}
 		if !m.admissionAvailableLocked(spec.Scope) {
@@ -511,6 +517,9 @@ func (m *Manager) ensureInputs(ctx context.Context, spec Spec, inputs StreamInpu
 		free, err := m.cache.FreeBytes()
 		m.filesMu.RUnlock()
 		if err != nil {
+			if diagnostics.CapturesPlaybackFailure(ctx) {
+				diagnostics.CapturePlaybackFailure(ctx, diagnostics.PlaybackFailure{Stage: "hls_cache_space", ErrorClass: diagnostics.ErrorClass(err)})
+			}
 			return Record{}, ErrOutputUnavailable
 		}
 		if free < m.options.MinFreeBytes {
@@ -531,6 +540,7 @@ func (m *Manager) ensureInputs(ctx context.Context, spec Spec, inputs StreamInpu
 		}
 		if m.cacheFailed {
 			unlock()
+			diagnostics.CapturePlaybackFailure(ctx, diagnostics.PlaybackFailure{Stage: "hls_cache_health", ErrorClass: "cache_unavailable"})
 			return Record{}, ErrOutputUnavailable
 		}
 		if m.playbackStoppedLocked(spec) {
@@ -544,7 +554,9 @@ func (m *Manager) ensureInputs(ctx context.Context, spec Spec, inputs StreamInpu
 			goto retryAdmission
 		}
 		if m.unaccountedJobs != 0 || m.pendingAccountingJobs != 0 {
+			unknown := m.unaccountedJobs != 0
 			unlock()
+			captureCacheAccountingFailure(ctx, unknown)
 			return Record{}, ErrOutputUnavailable
 		}
 		if !m.admissionAvailableLocked(spec.Scope) {
@@ -604,6 +616,7 @@ func (m *Manager) ensureInputs(ctx context.Context, spec Spec, inputs StreamInpu
 		unlock()
 		m.signal()
 		if err != nil {
+			captureEncodingCreateFailure(ctx, "hls_job_create", err)
 			return record, ErrPersistence
 		}
 		if err = ctx.Err(); err != nil {
@@ -724,6 +737,7 @@ func (m *Manager) reclaimForAdmission(ctx context.Context, spec Spec) (bool, err
 	}
 	if m.cacheFailed {
 		m.mu.Unlock()
+		diagnostics.CapturePlaybackFailure(ctx, diagnostics.PlaybackFailure{Stage: "hls_cache_health", ErrorClass: "cache_unavailable"})
 		return false, ErrOutputUnavailable
 	}
 	if existing := m.bySpec[spec]; existing != nil && existing.stopCode == "" {
@@ -731,7 +745,9 @@ func (m *Manager) reclaimForAdmission(ctx context.Context, spec Spec) (bool, err
 		return true, nil
 	}
 	if m.unaccountedJobs != 0 || m.pendingAccountingJobs != 0 {
+		unknown := m.unaccountedJobs != 0
 		m.mu.Unlock()
+		captureCacheAccountingFailure(ctx, unknown)
 		return false, ErrOutputUnavailable
 	}
 	if !m.workAdmissionAvailableLocked(spec.Scope) {
@@ -772,12 +788,14 @@ func (m *Manager) reclaimForAdmission(ctx context.Context, spec Spec) (bool, err
 		return false, ErrManagerClosed
 	}
 	if m.cacheFailed {
+		diagnostics.CapturePlaybackFailure(ctx, diagnostics.PlaybackFailure{Stage: "hls_cache_health", ErrorClass: "cache_unavailable"})
 		return false, ErrOutputUnavailable
 	}
 	if existing := m.bySpec[spec]; existing != nil && existing.stopCode == "" {
 		return true, nil
 	}
 	if m.unaccountedJobs != 0 || m.pendingAccountingJobs != 0 {
+		captureCacheAccountingFailure(ctx, m.unaccountedJobs != 0)
 		return false, ErrOutputUnavailable
 	}
 	if !m.workAdmissionAvailableLocked(spec.Scope) {
@@ -788,6 +806,7 @@ func (m *Manager) reclaimForAdmission(ctx context.Context, spec Spec) (bool, err
 	}
 	reclaimed := m.reclaimLocked(victim, true)
 	if m.cacheFailed {
+		diagnostics.CapturePlaybackFailure(ctx, diagnostics.PlaybackFailure{Stage: "hls_cache_health", ErrorClass: "cache_unavailable"})
 		return false, ErrOutputUnavailable
 	}
 	return reclaimed, nil

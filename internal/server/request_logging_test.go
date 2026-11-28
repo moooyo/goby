@@ -107,6 +107,35 @@ func TestPlaybackFailureDiagnosticsKeepCauseAndRequestIDWithoutPrivateInput(t *t
 	}
 }
 
+func TestHLSRuntimeUnavailableKeepsItsOwnDiagnosticCode(t *testing.T) {
+	server, output := requestLoggingServer()
+	mux := http.NewServeMux()
+	const route = "GET /emby/Videos/{Id}/hls1/{PlaylistId}/{SegmentFile}"
+	mux.HandleFunc(route, server.hlsSegment(false))
+	request := httptest.NewRequest(http.MethodGet, "/emby/Videos/path-secret/hls1/registration-secret/0.ts?api_key=query-secret", nil)
+	response := httptest.NewRecorder()
+	server.middleware(mux).ServeHTTP(response, request)
+	decoder := json.NewDecoder(bytes.NewReader(output.Bytes()))
+	var failure, completion map[string]any
+	if err := decoder.Decode(&failure); err != nil {
+		t.Fatal(err)
+	}
+	if err := decoder.Decode(&completion); err != nil {
+		t.Fatal(err)
+	}
+	id := response.Header().Get("X-Request-Id")
+	if response.Code != http.StatusServiceUnavailable || id == "" || failure["event"] != "playback.operation.failed" ||
+		failure["playback_stage"] != "hls_runtime" || failure["error_class"] != "runtime_unavailable" ||
+		failure["hls_error_code"] != "conversion_unavailable" || failure["status"] != float64(503) ||
+		failure["request_id"] != id || completion["event"] != "request.completed" || completion["request_id"] != id ||
+		completion["route"] != route || completion["status"] != float64(503) {
+		t.Fatalf("uncorrelated HLS runtime failure: %v %v", failure, completion)
+	}
+	if strings.Contains(output.String(), "secret") || strings.Contains(output.String(), "api_key") {
+		t.Fatal("runtime diagnostics retained private request data")
+	}
+}
+
 func TestPlaybackFailureDiagnosticsKeepPausedProducerCorrelation(t *testing.T) {
 	server, output := requestLoggingServer()
 	const id = "0123456789abcdef0123456789abcdef"

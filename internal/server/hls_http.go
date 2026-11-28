@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/moooyo/goby/internal/diagnostics"
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/playback"
@@ -46,6 +47,7 @@ func hlsSessionURL(session *hlsSession, resource, file, token string, start int6
 
 func (s *Server) beginHLS(w http.ResponseWriter, r *http.Request) (context.Context, func(), bool) {
 	if s.hls == nil || !s.hls.enter() {
+		s.logHLSUnavailable(r, "conversion_unavailable", diagnostics.PlaybackFailure{Stage: "hls_runtime", ErrorClass: "runtime_unavailable"})
 		apiError(w, r, http.StatusServiceUnavailable, "conversion_unavailable", "HLS conversion is unavailable.")
 		return nil, nil, false
 	}
@@ -398,9 +400,10 @@ func (s *Server) hlsSegment(audioOnly bool) http.HandlerFunc {
 			return
 		}
 		values["gobyhlsid"] = r.PathValue("PlaylistId")
+		var failure diagnostics.PlaybackFailure
 		session, loan, source, err := s.resolveHLS(ctx, r, values)
 		if err != nil {
-			s.hlsError(w, r, err)
+			s.writeHLSError(w, r, err, "hls_segment_source", failure)
 			return
 		}
 		defer loan.close()
@@ -413,7 +416,7 @@ func (s *Server) hlsSegment(audioOnly bool) http.HandlerFunc {
 		if r.Method != http.MethodHead {
 			policyContext, release, policyErr := s.acquireMediaPolicy(ctx, r.Context().Value(principalKey).(identity.Principal), session.key.scope)
 			if policyErr != nil {
-				s.hlsError(w, r, policyErr)
+				s.writeHLSError(w, r, policyErr, "hls_segment_policy", failure)
 				return
 			}
 			defer release()
@@ -426,13 +429,13 @@ func (s *Server) hlsSegment(audioOnly bool) http.HandlerFunc {
 		if r.Method == http.MethodHead {
 			handle, err = s.hls.segmentHeader(work, session, file, int(number))
 		} else {
-			handle, err = s.hls.segment(work, session, file, int(number))
+			handle, err = s.hls.segment(diagnostics.WithPlaybackFailureCapture(work, &failure), session, file, int(number))
 		}
 		if err != nil {
 			if r.Method != http.MethodHead {
 				s.failHLSMediaPolicy(work, session)
 			}
-			s.hlsError(w, r, err)
+			s.writeHLSError(w, r, err, "hls_segment_read", failure)
 			return
 		}
 		if handle != nil {
@@ -444,7 +447,7 @@ func (s *Server) hlsSegment(audioOnly bool) http.HandlerFunc {
 			if permanentHLSError(err) {
 				s.hls.retire(session)
 			}
-			s.hlsError(w, r, err)
+			s.writeHLSError(w, r, err, "hls_segment_reauthorize", failure)
 			return
 		}
 		_ = verified.Close()
@@ -456,7 +459,7 @@ func (s *Server) hlsSegment(audioOnly bool) http.HandlerFunc {
 		}
 		info, err := handle.Stat()
 		if err != nil {
-			s.hlsError(w, r, err)
+			s.writeHLSError(w, r, err, "hls_segment_stat", failure)
 			return
 		}
 		digest := sha256.Sum256([]byte(session.id + ":" + name + ":" + strconv.FormatInt(info.Size(), 10) + ":" + strconv.FormatInt(info.ModTime().UnixNano(), 10)))
@@ -511,6 +514,10 @@ func (s *Server) stopHLSEncodings(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) hlsError(w http.ResponseWriter, r *http.Request, err error) {
+	s.writeHLSError(w, r, err, "", diagnostics.PlaybackFailure{})
+}
+
+func (s *Server) writeHLSError(w http.ResponseWriter, r *http.Request, err error, fallbackStage string, observed diagnostics.PlaybackFailure) {
 	switch {
 	case errors.Is(err, context.Canceled):
 		if r.Context().Err() != nil {
@@ -531,6 +538,12 @@ func (s *Server) hlsError(w http.ResponseWriter, r *http.Request, err error) {
 	case errors.Is(err, library.ErrNotFound), errors.Is(err, transcode.ErrJobNotFound), errors.Is(err, transcode.ErrJobCancelled):
 		apiError(w, r, http.StatusNotFound, "hls_not_found", "The HLS resource is no longer available.")
 	default:
+		if fallbackStage != "" {
+			if observed.Stage == "" {
+				observed = diagnostics.PlaybackFailure{Stage: fallbackStage, ErrorClass: playbackFailureClass(err)}
+			}
+			s.logHLSUnavailable(r, "hls_unavailable", observed)
+		}
 		apiError(w, r, http.StatusServiceUnavailable, "hls_unavailable", "The HLS output could not be prepared.")
 	}
 }

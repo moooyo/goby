@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"net/http"
 
 	"github.com/moooyo/goby/internal/diagnostics"
 	"github.com/moooyo/goby/internal/library"
@@ -18,6 +19,22 @@ func (s *Server) logPlaybackFailure(ctx context.Context, stage string, err error
 		errors.Is(err, library.ErrForbidden) || errors.Is(err, library.ErrNotFound) || errors.Is(err, transcode.ErrJobNotFound) || errors.Is(err, transcode.ErrJobCancelled) {
 		return
 	}
+	class := playbackFailureClass(err)
+	attrs := []slog.Attr{slog.String("playback_stage", stage), slog.String("error_class", class)}
+	if id, ok := ctx.Value(requestIDKey).(string); ok {
+		attrs = append(attrs, slog.String("request_id", id))
+	}
+	var unavailable *hlsPausedProducerError
+	if errors.As(err, &unavailable) && unavailable.jobID != "" {
+		attrs = append(attrs, slog.String("job_id", unavailable.jobID))
+		if unavailable.reason != "" {
+			attrs = append(attrs, slog.String("job_failure", unavailable.reason))
+		}
+	}
+	s.log.LogAttrs(context.Background(), slog.LevelWarn, "playback operation failed", attrs...)
+}
+
+func playbackFailureClass(err error) string {
 	class := diagnostics.ErrorClass(err)
 	if class == "unclassified" {
 		switch {
@@ -39,18 +56,38 @@ func (s *Server) logPlaybackFailure(ctx context.Context, stage string, err error
 			class = "output_limit"
 		case errors.Is(err, media.ErrSubtitleExtraction):
 			class = "subtitle_extraction"
+		case errors.Is(err, library.ErrBusy):
+			class = "source_busy"
+		case errors.Is(err, library.ErrUnavailable):
+			class = "source_unavailable"
+		case errors.Is(err, transcode.ErrInvalidInput):
+			class = "invalid_input"
+		case errors.Is(err, transcode.ErrInvalidOptions), errors.Is(err, transcode.ErrInvalidScope):
+			class = "invalid_admission"
+		case errors.Is(err, transcode.ErrManagerClosed):
+			class = "manager_closed"
+		case errors.Is(err, transcode.ErrPersistence):
+			class = "persistence"
 		}
 	}
-	attrs := []slog.Attr{slog.String("playback_stage", stage), slog.String("error_class", class)}
-	if id, ok := ctx.Value(requestIDKey).(string); ok {
-		attrs = append(attrs, slog.String("request_id", id))
+	return class
+}
+
+func captureHLSSegmentFailure(ctx context.Context, stage string, err error, jobID string) {
+	if err != nil && diagnostics.CapturesPlaybackFailure(ctx) {
+		diagnostics.CapturePlaybackFailure(ctx, diagnostics.PlaybackFailure{Stage: stage, ErrorClass: playbackFailureClass(err), JobID: jobID})
 	}
-	var unavailable *hlsPausedProducerError
-	if errors.As(err, &unavailable) && unavailable.jobID != "" {
-		attrs = append(attrs, slog.String("job_id", unavailable.jobID))
-		if unavailable.reason != "" {
-			attrs = append(attrs, slog.String("job_failure", unavailable.reason))
-		}
+}
+
+// Emit only for a response that uses a 503 branch. A successful retry within
+// the server, a cancellation, or a rejected/foreign registration is not logged.
+func (s *Server) logHLSUnavailable(r *http.Request, code string, observed diagnostics.PlaybackFailure) {
+	if s.log == nil {
+		return
 	}
-	s.log.LogAttrs(context.Background(), slog.LevelWarn, "playback operation failed", attrs...)
+	id, _ := r.Context().Value(requestIDKey).(string)
+	s.log.LogAttrs(context.Background(), slog.LevelWarn, "playback operation failed",
+		slog.String("request_id", id), slog.String("playback_stage", observed.Stage),
+		slog.String("error_class", observed.ErrorClass), slog.String("job_id", observed.JobID),
+		slog.String("hls_error_code", code), slog.Int("status", http.StatusServiceUnavailable))
 }

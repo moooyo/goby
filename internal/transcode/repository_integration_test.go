@@ -18,6 +18,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/moooyo/goby/internal/database"
+	"github.com/moooyo/goby/internal/diagnostics"
 	"github.com/moooyo/goby/internal/transcode"
 )
 
@@ -150,8 +151,12 @@ func TestEncodingRepositoryPersistsImmutableScopeAndMonotonicStatus(t *testing.T
 	if stored := encodingStoredRecord(t, ctx, pool, record.ID); !reflect.DeepEqual(stored, record) {
 		t.Fatalf("stored encoding differs from immutable input: %+v", stored)
 	}
-	if err := repository.Create(ctx, record); !errors.Is(err, transcode.ErrRecordConflict) {
+	var conflict diagnostics.PlaybackFailure
+	if err := repository.Create(diagnostics.WithPlaybackFailureCapture(ctx, &conflict), record); !errors.Is(err, transcode.ErrRecordConflict) {
 		t.Fatalf("duplicate encoding ID = %v", err)
+	}
+	if conflict.Stage != "hls_job_insert" || conflict.ErrorClass != "record_conflict" {
+		t.Fatalf("missing encoding insert diagnosis: %+v", conflict)
 	}
 	record.State, record.OutputBytes = "running", 4096
 	record.UpdatedAt, record.LastAccessAt = record.CreatedAt.Add(2*time.Second), record.CreatedAt.Add(time.Second)
@@ -262,8 +267,12 @@ func TestEncodingRepositoryRechecksCurrentAuthenticationAndPlayback(t *testing.T
 			if test.edit != nil {
 				test.edit(&record)
 			}
-			if err := repository.Create(ctx, record); !errors.Is(err, transcode.ErrRecordUnauthorized) {
+			var failure diagnostics.PlaybackFailure
+			if err := repository.Create(diagnostics.WithPlaybackFailureCapture(ctx, &failure), record); !errors.Is(err, transcode.ErrRecordUnauthorized) {
 				t.Errorf("unauthorized encoding returned %v", err)
+			}
+			if failure.Stage != "hls_job_authorize" || failure.ErrorClass != "record_unauthorized" {
+				t.Errorf("missing encoding authorization diagnosis: %+v", failure)
 			}
 		})
 	}

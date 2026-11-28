@@ -66,13 +66,16 @@ func (r *PGRepository) Recover(ctx context.Context) error {
 func (r *PGRepository) Create(ctx context.Context, record Record) error {
 	plan, err := validateEncodingRecord(record)
 	if err != nil || r == nil || r.pool == nil {
+		captureEncodingCreateFailure(ctx, "hls_job_validate", ErrInvalidRecord)
 		return ErrInvalidRecord
 	}
 	if record.State != "queued" || record.OutputBytes != 0 || record.ErrorCode != "" {
+		captureEncodingCreateFailure(ctx, "hls_job_validate", ErrInvalidRecord)
 		return ErrInvalidRecord
 	}
 	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
+		captureEncodingCreateFailure(ctx, "hls_job_begin", err)
 		return fmt.Errorf("begin encoding creation: %w", err)
 	}
 	defer rollbackEncoding(tx)
@@ -83,7 +86,7 @@ func (r *PGRepository) Create(ctx context.Context, record Record) error {
 		AND jsonb_typeof(policy) = 'object'
 		AND (NOT (policy ? 'EnableMediaPlayback') OR policy -> 'EnableMediaPlayback' = 'true'::jsonb)
 		FOR SHARE`, scope.UserID).Scan(&id); err != nil {
-			return encodingAuthorizationError("authorize encoding account", err)
+			return encodingAuthorizationError(ctx, "authorize encoding account", err)
 		}
 	}
 	if err := tx.QueryRow(ctx, `SELECT id FROM sessions WHERE id = $1 AND user_id IS NOT DISTINCT FROM NULLIF($2, '')
@@ -93,24 +96,24 @@ func (r *PGRepository) Create(ctx context.Context, record Record) error {
 				AND EXISTS (SELECT 1 FROM application_keys application WHERE application.credential_id = sessions.id)))
 		FOR SHARE`, scope.AuthSessionID, scope.UserID, scope.DeviceID, scope.ApplicationKey).
 		Scan(&id); err != nil {
-		return encodingAuthorizationError("authorize encoding authentication session", err)
+		return encodingAuthorizationError(ctx, "authorize encoding authentication session", err)
 	}
 	if scope.ApplicationKey {
 		if err := tx.QueryRow(ctx, `SELECT credential_id FROM application_keys WHERE credential_id = $1 FOR SHARE`,
 			scope.AuthSessionID).Scan(&id); err != nil {
-			return encodingAuthorizationError("authorize encoding application key", err)
+			return encodingAuthorizationError(ctx, "authorize encoding application key", err)
 		}
 		if err := tx.QueryRow(ctx, `SELECT id FROM application_key_clients
 			WHERE id = $1 AND credential_id = $2 AND device_id = $3 FOR SHARE`,
 			scope.ApplicationClientID, scope.AuthSessionID, scope.DeviceID).Scan(&id); err != nil {
-			return encodingAuthorizationError("authorize encoding application client", err)
+			return encodingAuthorizationError(ctx, "authorize encoding application client", err)
 		}
 	}
 	// Catalog deletion locks the item before cascading to playback rows. Take
 	// this key lock first as well, so the later item foreign-key check cannot
 	// wait behind deletion while we hold a playback lock that deletion needs.
 	if err := tx.QueryRow(ctx, `SELECT id FROM items WHERE id = $1 FOR KEY SHARE`, scope.ItemID).Scan(&id); err != nil {
-		return encodingAuthorizationError("authorize encoding item existence", err)
+		return encodingAuthorizationError(ctx, "authorize encoding item existence", err)
 	}
 	if err := tx.QueryRow(ctx, `SELECT id FROM play_sessions WHERE id = $1 AND user_id IS NOT DISTINCT FROM NULLIF($2, '')
 		AND auth_session_id = $3 AND device_id = $4 AND item_id = $5 AND media_source_id = $6
@@ -118,7 +121,7 @@ func (r *PGRepository) Create(ctx context.Context, record Record) error {
 		AND state IN ('Prepared','Playing','Paused') AND expires_at > clock_timestamp() FOR SHARE`,
 		scope.PlaySessionID, scope.UserID, scope.AuthSessionID, scope.DeviceID, scope.ItemID, scope.SourceID, scope.ApplicationClientID).
 		Scan(&id); err != nil {
-		return encodingAuthorizationError("authorize encoding playback session", err)
+		return encodingAuthorizationError(ctx, "authorize encoding playback session", err)
 	}
 	result, err := tx.Exec(ctx, `INSERT INTO encoding_jobs (id, user_id, auth_session_id, device_id,
 		play_session_id, item_id, media_source_id, source_stamp, plan, state, output_bytes,
@@ -133,16 +136,20 @@ func (r *PGRepository) Create(ctx context.Context, record Record) error {
 	if err != nil {
 		var constraint *pgconn.PgError
 		if errors.As(err, &constraint) && constraint.Code == "23505" {
+			captureEncodingCreateFailure(ctx, "hls_job_insert", ErrRecordConflict)
 			return ErrRecordConflict
 		}
+		captureEncodingCreateFailure(ctx, "hls_job_insert", err)
 		return fmt.Errorf("insert encoding record: %w", err)
 	}
 	if result.RowsAffected() != 1 {
 		// Time can pass while acquiring later locks even though the locked
 		// account and session claims cannot change before this transaction ends.
+		captureEncodingCreateFailure(ctx, "hls_job_insert", ErrRecordUnauthorized)
 		return ErrRecordUnauthorized
 	}
 	if err := tx.Commit(ctx); err != nil {
+		captureEncodingCreateFailure(ctx, "hls_job_commit", err)
 		return fmt.Errorf("commit encoding creation: %w", err)
 	}
 	return nil
@@ -204,10 +211,12 @@ func (r *PGRepository) Update(ctx context.Context, record Record) error {
 	return nil
 }
 
-func encodingAuthorizationError(operation string, err error) error {
+func encodingAuthorizationError(ctx context.Context, operation string, err error) error {
 	if errors.Is(err, pgx.ErrNoRows) {
+		captureEncodingCreateFailure(ctx, "hls_job_authorize", ErrRecordUnauthorized)
 		return ErrRecordUnauthorized
 	}
+	captureEncodingCreateFailure(ctx, "hls_job_authorize", err)
 	return fmt.Errorf("%s: %w", operation, err)
 }
 
