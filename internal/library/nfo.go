@@ -274,24 +274,30 @@ func describeFromLocal(name string, local localMetadata) (string, string, string
 // Numbering describes the hierarchy already established from filenames and
 // folders. Conflicting NFO values are not applied or passed to item projections.
 func (state *scanState) episodeNumbering(local localMetadata, index, parent int, parentDefined bool) (localMetadata, int, int) {
+	local, index, parent, conflict := normalizeEpisodeNumbering(local, index, parent, parentDefined)
+	if conflict {
+		state.warnings++
+		state.numberingConflicts++
+	}
+	return local, index, parent
+}
+
+func normalizeEpisodeNumbering(local localMetadata, index, parent int, parentDefined bool) (localMetadata, int, int, bool) {
 	if local.value == nil {
-		return local, index, parent
+		return local, index, parent, false
 	}
 	copy := *local.value
 	if copy.IndexNumber != nil {
 		index = *copy.IndexNumber
 	}
-	if copy.ParentIndexNumber != nil {
-		if parentDefined && *copy.ParentIndexNumber != parent {
-			state.warnings++
-			state.numberingConflicts++
-			copy.ParentIndexNumber = nil
-		} else {
-			parent = *copy.ParentIndexNumber
-		}
+	conflict := copy.ParentIndexNumber != nil && parentDefined && *copy.ParentIndexNumber != parent
+	if conflict {
+		copy.ParentIndexNumber = nil
+	} else if copy.ParentIndexNumber != nil {
+		parent = *copy.ParentIndexNumber
 	}
 	local.value = &copy
-	return local, index, parent
+	return local, index, parent, conflict
 }
 
 func (state *scanState) folderLocalMetadata(relative, metadataPath, itemType string, index int) (_ localMetadata, resultErr error) {
@@ -356,14 +362,22 @@ func (state *scanState) folderLocalMetadataWithSource(relative, metadataPath, it
 }
 
 func (state *scanState) seasonNumbering(local localMetadata, itemType string, index int) localMetadata {
-	if itemType == "Season" && local.value != nil && local.value.IndexNumber != nil && *local.value.IndexNumber != index {
+	local, conflict := normalizeSeasonNumbering(local, itemType, index)
+	if conflict {
 		state.warnings++
 		state.numberingConflicts++
-		copy := *local.value
-		copy.IndexNumber = nil
-		local.value = &copy
 	}
 	return local
+}
+
+func normalizeSeasonNumbering(local localMetadata, itemType string, index int) (localMetadata, bool) {
+	if itemType != "Season" || local.value == nil || local.value.IndexNumber == nil || *local.value.IndexNumber == index {
+		return local, false
+	}
+	copy := *local.value
+	copy.IndexNumber = nil
+	local.value = &copy
+	return local, true
 }
 
 func encodeLocalMetadata(local localMetadata) ([]byte, error) {

@@ -147,7 +147,7 @@ func (source *scanFolderSource) final(ctx context.Context, tx pgx.Tx) error {
 				if fatal := localNFOFatalReadError(check, err); fatal != nil {
 					return fatal
 				}
-				return errScannedEpisodeNFOChanged
+				return errScannedNFOChanged
 			}
 			return source.validate(check)
 		})

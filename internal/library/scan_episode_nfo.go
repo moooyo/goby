@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-var errScannedEpisodeNFOChanged = errors.New("episode NFO no longer matches its scan observation")
+var errScannedNFOChanged = errors.New("local NFO no longer matches its scan observation")
 
 type scannedNFOProof struct {
 	directory, identity string
@@ -60,7 +60,7 @@ func (proof *scannedNFOProof) verify(ctx context.Context, root *os.Root) (result
 		if fatal := localNFOFatalReadError(ctx, err); fatal != nil {
 			return fatal
 		}
-		return errScannedEpisodeNFOChanged
+		return errScannedNFOChanged
 	}
 	current, err := root.Lstat(proof.directory)
 	if err != nil || !current.IsDir() || fileIdentity(current) != proof.identity {
@@ -79,14 +79,14 @@ func (input *primaryScanRead) revalidatePublicationNFO(tx pgx.Tx, proof *scanned
 }
 
 // Verify file pairs and pending video NFOs, including after an item is renamed
-// out of a pair layout. A writable recovery root also needs this proof before
-// it can retain accepted original bytes for a future independent task.
-func (state *scanState) prepareScannedEpisodeNFO(input *scannedMediaInput, path, itemType, parentID string,
-	request *scanMetadataImport) (episodePairSource, *scannedNFOProof, error) {
+// out of a pair layout. Retaining accepted NFO facts on a fast rescan or saving
+// original bytes for a recovery task also requires this proof.
+func (state *scanState) prepareScannedNFO(input *scannedMediaInput, path, itemType, parentID string,
+	request *scanMetadataImport, checkDeferredNFO bool) (episodePairSource, *scannedNFOProof, error) {
 	stored := input.stored
 	witnessRecovery := scanIngestVideoLibrary(state.library) && state.store.nfoRecoveryWritable(state.root) &&
 		(itemType == "Movie" || itemType == "Episode") && EffectiveLibraryOptions(state.library).EnableLocalMetadata
-	if !witnessRecovery && stored.local.pair == nil && !stored.pendingNFO {
+	if !witnessRecovery && stored.local.pair == nil && !stored.pendingNFO && !checkDeferredNFO {
 		if itemType != "Episode" {
 			return episodePairSource{}, nil, nil
 		}

@@ -49,6 +49,7 @@ type scanMetadataImport struct {
 	recheckOnly         bool
 	nfoCheck            scanNFOCheck
 	preserveNFO         bool
+	nfoReuse            *scannedNFOReuse
 	nfoRecovery         *scannedNFORecovery
 }
 
@@ -298,6 +299,11 @@ func (state *scanState) queueCachedIngestWork(stored storedFile, path string, in
 	}
 	if !sourceCurrent {
 		return errScanProbeSourceChanged
+	}
+	if request.nfoReuse != nil {
+		if err := request.nfoReuse.check(state.task.ctx, tx, input.row); err != nil {
+			return err
+		}
 	}
 	if err := checkPair(tx); err != nil {
 		return err

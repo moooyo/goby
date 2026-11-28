@@ -39,7 +39,8 @@ func newLocalBackdropFixture(t *testing.T, rootSeries bool) localBackdropFixture
 	if rootSeries {
 		libraryRoot = dir
 	} else {
-		// The deferred importer reaches this directory first, before the target.
+		// Give the unrelated directory a real image change to publish. A warm
+		// scan no longer queues its unchanged NFO just to clear it again.
 		libraryIntegrationFile(t, root, "A Other/Season 01/Other.S01E01.mp4", "independent series")
 	}
 	libraryIntegrationFile(t, dir, "Season 01/Show.S01E01.mp4", "synthetic episode")
@@ -69,6 +70,9 @@ func newLocalBackdropFixture(t *testing.T, rootSeries bool) localBackdropFixture
 		t.Fatal(err)
 	}
 	bad := libraryIntegrationFile(t, dir, "backdrop.jpg", "")
+	if !rootSeries {
+		imageScanTestWrite(t, filepath.Join(root, "A Other", "poster.png"), color.White)
+	}
 	store.deferLocalMetadata = true
 	libraryIntegrationScan(t, ctx, store, collection.ID, "Completed")
 	var item Item
@@ -84,10 +88,12 @@ func newLocalBackdropFixture(t *testing.T, rootSeries bool) localBackdropFixture
 	if err := pool.QueryRow(ctx, `SELECT item_id FROM local_metadata_ingest WHERE item_id<>$1 ORDER BY item_id LIMIT 1`, item.ID).Scan(&other); err != nil {
 		t.Fatal(err)
 	}
-	// The earlier synchronous scan already accepted the target NFO. Model the
-	// image-only phase without also letting automatic import process siblings.
-	if _, err := pool.Exec(ctx, `UPDATE local_metadata_ingest SET import_nfo=false WHERE item_id=$1`, item.ID); err != nil {
-		t.Fatal(err)
+	// The unchanged NFO stays accepted on the fast rescan, while the damaged
+	// backdrop still needs its own import. Do not edit the queue to create it.
+	var nfo, images bool
+	if err := pool.QueryRow(ctx, `SELECT import_nfo,import_images FROM local_metadata_ingest WHERE item_id=$1`, item.ID).
+		Scan(&nfo, &images); err != nil || nfo || !images {
+		t.Fatalf("expected an image-only import, got NFO=%t images=%t: %v", nfo, images, err)
 	}
 	return localBackdropFixture{ctx: ctx, pool: pool, store: store, actor: actor, collection: collection, item: item,
 		dir: dir, good: good, bad: bad, otherID: other, data: encoded.Bytes()}

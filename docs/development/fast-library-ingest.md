@@ -12,11 +12,15 @@ identifies series and seasons.
    missing-media reconciliation still requires complete rooted observations
    and a fresh proof of absence. Deferred descriptions are not proof of file
    presence or absence.
-2. **Import local metadata** reads NFO and local images in a new, fenced task
-   after the scan completes. Pending NFO is not an accepted rating or tag;
-   viewers with applicable rating or tag restrictions wait for that proof.
-   Invalid preferred NFOs and unstable sources retain previous facts and remain
-   pending. A verified absence clears the local layer, not manual overrides.
+2. **Import local metadata** processes pending NFO and local images in a new,
+   fenced task after the scan completes. A rescan of an existing source does not
+   put its local NFO back into pending if a bounded read proves the same accepted
+   document and source binding, or confirms the continued absence of all
+   candidates. This includes physical series and season directories. Artwork
+   remains independent. New, changed, or unproven NFOs, and any already pending
+   work, still require verification. Viewers with applicable rating or tag
+   restrictions wait for that proof. A verified absence after removal clears
+   the local layer, not manual overrides.
 3. **Enrich newly scanned metadata** can fill missing TMDB matches after local
    work. Set `GOBY_FAST_LIBRARY_ONLINE_METADATA=true` as a separate opt-in; the
    deployment provider gate, managed internet-provider setting, and TMDB
