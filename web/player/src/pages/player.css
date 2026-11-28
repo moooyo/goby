@@ -4,6 +4,7 @@
 .player-page button:disabled{cursor:not-allowed;opacity:.5}
 .player-page button:focus-visible,.player-page input:focus-visible,.player-progress:focus-visible{outline:2px solid #f3f2f0;outline-offset:4px}
 .player-video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+.player-page.is-positioning-native::before{content:"";position:absolute;inset:0;z-index:2;background:#000;pointer-events:none}
 .player-interface{position:absolute;inset:0;z-index:5;pointer-events:none;opacity:1;transition:opacity .35s ease}
 .is-hidden .player-interface{opacity:0}
 .player-top-scrim{position:absolute;top:0;left:0;right:0;height:170px;background:linear-gradient(180deg,rgba(0,0,0,.72),transparent)}

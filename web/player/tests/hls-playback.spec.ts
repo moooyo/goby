@@ -119,8 +119,9 @@ test('keeps a paused drag target beyond the current HLS prefix and opens the cor
   await expect(page.getByRole('status', { name: '正在缓冲' })).toHaveCount(0);
 });
 
-async function nativeTrackFixture(page: Page) {
+async function nativeTrackFixture(page: Page, model?: { resumeAt: number; dynamic?: boolean }) {
   const selections: number[] = [];
+  const negotiations: { id: string; seconds: number }[] = [];
   await page.addInitScript(() => {
     // Chromium exercises real media and TextTrack events, not native HLS networking.
     for (const name of ['MediaSource', 'ManagedMediaSource', 'WebKitMediaSource']) Object.defineProperty(window, name, { value: undefined });
@@ -132,7 +133,7 @@ async function nativeTrackFixture(page: Page) {
   await page.route(/\/emby\/Users\/[^/]+\/Items\/guitu\?/, async route => {
     const response = await route.fetch();
     const item = await response.json() as MediaItem;
-    item.UserData!.PlaybackPositionTicks = 0;
+    item.UserData!.PlaybackPositionTicks = (model?.resumeAt ?? 0) * ticks;
     await route.fulfill({ response, json: item });
   });
   await page.route('**/emby/Items/guitu/PlaybackInfo*', async route => {
@@ -148,9 +149,15 @@ async function nativeTrackFixture(page: Page) {
       TranscodingUrl: source.DirectStreamUrl,
       TranscodingSubProtocol: 'hls',
     });
+    if (model) {
+      result.PlaySessionId = `native-model-${selections.length}`;
+      source.TranscodingUrl += `&nativeModel=${selections.length}`;
+      if (model.dynamic) source.RequiresClosing = true;
+    }
+    negotiations.push({ id: result.PlaySessionId, seconds: request.StartTimeTicks / ticks });
     await route.fulfill({ json: result });
   });
-  return selections;
+  return { selections, negotiations };
 }
 
 const nativeModes = (page: Page) => page.locator('.player-video').evaluate((video: HTMLVideoElement) =>
@@ -166,7 +173,7 @@ function addNativeTrack(page: Page, index: number, text: string, initialMode: Te
 }
 
 test('native HLS reads only the selected source index and refreshes captions during a paused seek', async ({ page }) => {
-  const selections = await nativeTrackFixture(page);
+  const { selections } = await nativeTrackFixture(page);
   await signIn(page);
   await page.goto('/#/player/guitu');
   await expect.poll(async () => (await videoState(page)).frames).toBeGreaterThan(0);
@@ -228,6 +235,243 @@ test('native HLS disables ambiguous subtitle matches instead of choosing one', a
   await addNativeTrack(page, 3, 'Ambiguous match', 'showing');
   await expect.poll(() => nativeModes(page)).toEqual(['disabled', 'disabled']);
   await expect(page.locator('.player-subtitles')).toHaveCount(0);
+});
+
+type NativeClock = {
+  time: number;
+  paused: boolean;
+  seeking: boolean;
+  ready: number;
+  ranges: [number, number][];
+};
+type NativeObservation = { clock: NativeClock; seeks: number[]; plays: number[] };
+type NativeModelWindow = typeof window & {
+  nativeModel: {
+    current: () => NativeObservation | undefined;
+    amend: (clock: Partial<NativeClock>, events: string[]) => void;
+  };
+};
+
+async function nativePositionFixture(page: Page, resumeAt = 0, dynamic = false) {
+  const fixture = await nativeTrackFixture(page, { resumeAt, dynamic });
+  await page.addInitScript(() => {
+    // Model Safari's short initial seekable window separately from decoding and
+    // seek completion. The native track tests above still use real video frames.
+    const media = HTMLMediaElement.prototype;
+    let nextSource: string | undefined;
+    let current: (NativeObservation & { element: HTMLMediaElement; source: string }) | undefined;
+    const managed = new WeakSet<HTMLMediaElement>();
+    const model = (element: HTMLMediaElement) => current?.element === element ? current : undefined;
+    const fire = (element: HTMLMediaElement, events: string[]) => {
+      for (const event of events) element.dispatchEvent(new Event(event));
+    };
+    const source = Object.getOwnPropertyDescriptor(media, 'src')!;
+    Object.defineProperty(media, 'src', { ...source, set(value: string) {
+      const url = new URL(value, location.href);
+      if (!url.searchParams.has('nativeModel')) { source.set!.call(this, value); return; }
+      managed.add(this);
+      nextSource = url.href;
+    } });
+    const load = media.load;
+    media.load = function () {
+      if (!managed.has(this)) { load.call(this); return; }
+      current = nextSource ? { element: this, source: nextSource, seeks: [], plays: [], clock: {
+        time: 0, paused: true, seeking: false, ready: 2, ranges: [[0, 3]],
+      } } : undefined;
+      nextSource = undefined;
+      const opened = current;
+      if (opened) queueMicrotask(() => {
+        if (opened === current) fire(this, ['durationchange', 'loadedmetadata', 'loadeddata', 'timeupdate']);
+      });
+    };
+    const getters = {
+      currentSrc: (state: NonNullable<typeof current>) => state.source,
+      paused: (state: NonNullable<typeof current>) => state.clock.paused,
+      readyState: (state: NonNullable<typeof current>) => state.clock.ready,
+      seeking: (state: NonNullable<typeof current>) => state.clock.seeking,
+      currentTime: (state: NonNullable<typeof current>) => state.clock.time,
+      seekable: (state: NonNullable<typeof current>) => ({ length: state.clock.ranges.length,
+        start: (index: number) => state.clock.ranges[index][0], end: (index: number) => state.clock.ranges[index][1] }),
+    };
+    for (const [field, read] of Object.entries(getters)) {
+      const descriptor = Object.getOwnPropertyDescriptor(media, field)!;
+      Object.defineProperty(media, field, { ...descriptor,
+        get() { const state = model(this); return state ? read(state) : descriptor.get!.call(this); },
+        ...(field === 'currentTime' && { set(value: number) {
+          const state = model(this);
+          if (!state) { descriptor.set!.call(this, value); return; }
+          state.seeks.push(value);
+          // WebKit can echo an assignment while seeking; tests deliver seeked separately.
+          Object.assign(state.clock, { time: value, seeking: true });
+          fire(this, ['seeking']);
+        } }),
+      });
+    }
+    const play = media.play;
+    media.play = function () {
+      const state = model(this);
+      if (!state) return play.call(this);
+      state.plays.push(state.clock.time);
+      state.clock.paused = false;
+      queueMicrotask(() => { if (state === current && !state.clock.paused) fire(this, ['playing', 'timeupdate']); });
+      return Promise.resolve();
+    };
+    const pause = media.pause;
+    media.pause = function () {
+      const state = model(this);
+      if (!state) { pause.call(this); return; }
+      if (!state.clock.paused) {
+        state.clock.paused = true;
+        queueMicrotask(() => { if (state === current) fire(this, ['pause']); });
+      }
+    };
+    (window as NativeModelWindow).nativeModel = {
+      current: () => current && { clock: current.clock, seeks: current.seeks, plays: current.plays },
+      amend: (changes, events) => {
+        if (!current) throw new Error('No active native media model');
+        Object.assign(current.clock, changes);
+        fire(current.element, events);
+      },
+    };
+  });
+  return fixture;
+}
+
+const nativeObservation = (page: Page) => page.evaluate(() => (window as NativeModelWindow).nativeModel.current());
+const nativeAmend = (page: Page, clock: Partial<NativeClock>, events: string[] = []) => page.evaluate(
+  ({ clock, events }) => (window as NativeModelWindow).nativeModel.amend(clock, events), { clock, events });
+const nativeBuffered = (page: Page) => page.getByRole('status', { name: '正在缓冲' });
+
+async function selectNativeSubtitle(page: Page, index: number) {
+  await page.getByRole('button', { name: '字幕', exact: true }).click();
+  await (index < 0 ? page.getByRole('option', { name: '关闭', exact: true }) : page.getByRole('option').filter({ hasText: `#${index}` })).click();
+}
+
+type NativeReport = { route: string; PlaySessionId: string; PositionTicks?: number; IsPaused: boolean };
+async function nativeReports(request: import('@playwright/test').APIRequestContext, id: string): Promise<NativeReport[]> {
+  const { events } = await (await request.get('/__fixture/state')).json() as { events: NativeReport[] };
+  return events.filter(event => event.PlaySessionId === id);
+}
+
+test('native HLS waits for the real position through a track change and Off while playing', async ({ page, request }) => {
+  const { selections, negotiations } = await nativePositionFixture(page);
+  await signIn(page);
+  await page.goto('/#/player/guitu');
+  await expect.poll(async () => (await nativeObservation(page))?.plays).toEqual([0]);
+  await expect.poll(async () => (await nativeReports(request, negotiations[0].id)).length).toBe(1);
+  await nativeAmend(page, { time: 7 }, ['timeupdate']);
+  await selectNativeSubtitle(page, 13);
+  const progress = page.getByRole('slider', { name: '播放进度' });
+  for (const [ordinal, track] of [[1, 13], [2, -1]] as const) {
+    if (track < 0) await selectNativeSubtitle(page, track);
+    await expect.poll(() => selections[ordinal]).toBe(track);
+    await expect(page.locator('.is-positioning-native')).toHaveCount(1);
+    await expect(nativeBuffered(page)).toBeVisible();
+    const { id, seconds } = negotiations[ordinal];
+    expect(seconds).toBe(7);
+    await nativeAmend(page, { ranges: [[0, 3], [8, 9]] }, ['progress', 'timeupdate', 'ended']);
+    expect(await nativeObservation(page)).toMatchObject({ clock: { time: 0, paused: true }, seeks: [], plays: [] });
+    await expect(progress).toHaveAttribute('aria-valuenow', '7');
+    expect(await nativeReports(request, id)).toEqual([]);
+
+    // A longer seekable range can arrive with no DOM event.
+    await nativeAmend(page, { ranges: [[0, 9]] });
+    await expect.poll(async () => (await nativeObservation(page))?.seeks).toEqual([7]);
+    await nativeAmend(page, { seeking: false }, ['progress']);
+    expect((await nativeObservation(page))?.plays).toEqual([]);
+    await nativeAmend(page, { ready: 1 }, ['seeked']);
+    await expect(progress).toHaveAttribute('aria-valuenow', '7');
+    expect(await nativeReports(request, id)).toEqual([]);
+    await nativeAmend(page, { ready: 2 }, ['canplay']);
+    await expect.poll(async () => (await nativeObservation(page))?.plays).toEqual([7]);
+    await expect(nativeBuffered(page)).toHaveCount(0);
+    await expect.poll(() => nativeReports(request, id)).toMatchObject([{ route: '/Sessions/Playing', PositionTicks: 7 * ticks, IsPaused: false }]);
+  }
+  expect(selections).toEqual([3, 13, -1]);
+});
+
+test('native HLS applies the latest paused target without reporting the superseded seek', async ({ page, request }) => {
+  const { negotiations } = await nativePositionFixture(page);
+  await signIn(page);
+  await page.goto('/#/player/guitu');
+  await expect.poll(async () => (await nativeObservation(page))?.plays).toEqual([0]);
+  await nativeAmend(page, { time: 7, ranges: [[0, 30]] }, ['timeupdate']);
+  await page.locator('.player-toggle').click();
+  await expect.poll(async () => (await nativeObservation(page))?.clock.paused).toBe(true);
+  await selectNativeSubtitle(page, 13);
+  await expect(page.locator('.is-positioning-native')).toHaveCount(1);
+  expect(negotiations[1].seconds).toBe(7);
+  const id = negotiations[1].id;
+  await nativeAmend(page, { ranges: [[0, 9]] }, ['progress']);
+  await expect.poll(async () => (await nativeObservation(page))?.seeks).toEqual([7]);
+  await page.getByRole('button', { name: '快进 10 秒（→）' }).evaluate((button: HTMLButtonElement) => { button.click(); button.click(); });
+  await expect(page.getByRole('slider', { name: '播放进度' })).toHaveAttribute('aria-valuenow', '27');
+  await nativeAmend(page, { ranges: [[0, 30]] }, ['progress']);
+  expect((await nativeObservation(page))?.seeks).toEqual([7]);
+  await nativeAmend(page, { seeking: false }, ['seeked']);
+  await expect.poll(async () => (await nativeObservation(page))?.seeks).toEqual([7, 27]);
+  expect(await nativeReports(request, id)).toEqual([]);
+  await nativeAmend(page, { seeking: false }, ['seeked']);
+  await expect(nativeBuffered(page)).toHaveCount(0);
+  expect(await nativeObservation(page)).toMatchObject({ clock: { time: 27, paused: true }, plays: [] });
+  await expect.poll(() => nativeReports(request, id)).toMatchObject([{ route: '/Sessions/Playing', PositionTicks: 27 * ticks, IsPaused: true }]);
+  await page.locator('.player-toggle').click();
+  await expect.poll(async () => (await nativeObservation(page))?.plays).toEqual([27]);
+});
+
+test('native HLS cancels obsolete position waits on replacement and exit', async ({ page, request }) => {
+  await page.clock.install();
+  const { negotiations } = await nativePositionFixture(page, 7);
+  await signIn(page);
+  await page.goto('/#/player/guitu');
+  await expect(page.locator('.is-positioning-native')).toHaveCount(1);
+  await nativeAmend(page, { ranges: [[0, 9]] }, ['progress']);
+  await expect.poll(async () => (await nativeObservation(page))?.seeks).toEqual([7]);
+  await selectNativeSubtitle(page, -1);
+  await expect.poll(() => negotiations.length).toBe(2);
+  await expect(page.locator('.is-positioning-native')).toHaveCount(1);
+  await nativeAmend(page, {}, ['seeked', 'canplay', 'timeupdate']);
+  expect(await nativeObservation(page)).toMatchObject({ clock: { time: 0, paused: true }, seeks: [], plays: [] });
+  await page.keyboard.press('Escape');
+  await expect(page).toHaveURL(/#\/detail\/guitu$/);
+  await page.clock.fastForward(31_000);
+  for (const { id } of negotiations) {
+    await expect.poll(() => nativeReports(request, id)).toMatchObject([{ route: '/Sessions/Playing/Stopped' }]);
+    expect((await nativeReports(request, id))[0]).not.toHaveProperty('PositionTicks');
+  }
+});
+
+test('native HLS can retry an unavailable position without losing the updated pause intent', async ({ page, request }) => {
+  await page.clock.install();
+  const { negotiations } = await nativePositionFixture(page, 7);
+  await signIn(page);
+  await page.goto('/#/player/guitu');
+  await expect(page.locator('.is-positioning-native')).toHaveCount(1);
+  await expect(page.locator('.player-toggle')).toHaveAttribute('aria-label', '暂停');
+  await page.locator('.player-toggle').click();
+  await expect(page.locator('.player-toggle')).toHaveAttribute('aria-label', '播放');
+  expect(await nativeObservation(page)).toMatchObject({ clock: { time: 0, paused: true }, seeks: [], plays: [] });
+  await page.clock.fastForward(31_000);
+  await expect(page.getByRole('alert')).toContainText('无法跳转到所选播放位置');
+  await expect.poll(() => nativeReports(request, negotiations[0].id)).toMatchObject([{ route: '/Sessions/Playing/Stopped' }]);
+  expect((await nativeReports(request, negotiations[0].id))[0]).not.toHaveProperty('PositionTicks');
+  await page.getByRole('button', { name: '重试', exact: true }).click();
+  await expect.poll(() => negotiations.map(value => value.seconds)).toEqual([7, 7]);
+  await expect(page.locator('.is-positioning-native')).toHaveCount(1);
+  await nativeAmend(page, { ranges: [[0, 9]] }, ['progress']);
+  await expect.poll(async () => (await nativeObservation(page))?.seeks).toEqual([7]);
+  await nativeAmend(page, { seeking: false }, ['seeked']);
+  await expect(nativeBuffered(page)).toHaveCount(0);
+  expect((await nativeObservation(page))?.plays).toEqual([]);
+  await expect.poll(() => nativeReports(request, negotiations[1].id)).toMatchObject([{ route: '/Sessions/Playing', PositionTicks: 7 * ticks, IsPaused: true }]);
+});
+
+test('native HLS leaves leased dynamic sources out of the finite position wait', async ({ page }) => {
+  await nativePositionFixture(page, 7, true);
+  await signIn(page);
+  await page.goto('/#/player/guitu');
+  await expect.poll(async () => (await nativeObservation(page))?.plays).toEqual([7]);
+  await expect(page.locator('.is-positioning-native')).toHaveCount(0);
 });
 
 const vttType = 'text/vtt; charset=utf-8';

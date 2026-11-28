@@ -15,6 +15,10 @@ import type { MediaItem, PlaybackEvent, PlaybackOptions, PlaybackSession, Qualit
 import { canSeekTo, clamp, clock, CREDITS_COUNTDOWN_SECONDS, resolveCreditsIntervals, episodeLabel, introInterval, streamLabel, TICKS_PER_SECOND } from './playerUtils';
 import './player.css';
 
+const NATIVE_HLS_OPEN_TIMEOUT_MS = 30_000;
+const NATIVE_HLS_POSITION_POLL_MS = 250;
+const NATIVE_HLS_SEEK_RETRY_MS = 750;
+
 function isHLSPlayback(session: PlaybackSession): boolean {
   return /\.m3u8(?:\?|$)/i.test(session.url) || session.method === 'Transcode' && session.source.TranscodingSubProtocol === 'hls';
 }
@@ -28,6 +32,8 @@ type ActivePlayback = {
   started: boolean;
   stopped: boolean;
   queue: Promise<void>;
+  nativeFiniteHLS?: boolean;
+  disposeOpening?: () => void;
   disposeSubtitles?: () => void;
 };
 
@@ -75,6 +81,7 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
   const dragRef = useRef(false);
   const reportFailure = useRef(false);
   const pauseIntent = useRef(false);
+  const preserveNativeSelection = useRef(false);
   const nextStarted = useRef(false);
   const skipDone = useRef(false);
   const itemOwner = useRef<MediaItem | null>(null);
@@ -93,6 +100,7 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
   const [buffered, setBuffered] = useState<{ from: number; to: number }[]>([]);
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [nativePositioning, setNativePositioning] = useState<{ session: PlaybackSession; paused: boolean } | null>(null);
   const [error, setError] = useState('');
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const [visible, setVisible] = useState(true);
@@ -139,7 +147,7 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
   }, []);
 
   const report = useCallback((active: ActivePlayback, event: 'Started' | 'Progress' | 'Stopped', immediate = false) => {
-    if (event !== 'Stopped' && active.stopped) return Promise.resolve();
+    if (event !== 'Stopped' && (!active.started || active.stopped)) return Promise.resolve();
     const video = videoRef.current;
     const payload: PlaybackEvent = {
       ItemId: active.item.Id, MediaSourceId: active.session.source.Id,
@@ -166,12 +174,21 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
   }, []);
 
   const stop = useCallback(async (active: ActivePlayback | null, immediate = false) => {
-    if (!active || active.stopped) return;
+    if (!active) return;
+    if (active.stopped) return active.queue;
     active.stopped = true;
+    active.disposeOpening?.();
     active.disposeSubtitles?.();
-    await report(active, 'Stopped', immediate);
-    try { await api.stopActiveEncoding(active.session.info.PlaySessionId); } catch { /* The backend also expires abandoned encodings. */ }
+    active.queue = report(active, 'Stopped', immediate).then(async () => {
+      try { await api.stopActiveEncoding(active.session.info.PlaySessionId); } catch { /* The backend also expires abandoned encodings. */ }
+    });
+    return active.queue;
   }, [report]);
+
+  const setOpeningIntent = useCallback((paused: boolean) => {
+    pauseIntent.current = paused;
+    setNativePositioning(owner => owner && owner.paused !== paused ? { ...owner, paused } : owner);
+  }, []);
 
   const markReadyPaused = useCallback((active: ActivePlayback, video: HTMLVideoElement) => {
     if (!pauseIntent.current || !video.paused || active.stopped || active.started) return;
@@ -185,6 +202,7 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
   const begin = useCallback(async (target: MediaItem, at: number, options: PlaybackOptions, keepPaused = false) => {
     const generation = ++generationRef.current;
     const previous = activeRef.current;
+    if (previous) preserveNativeSelection.current = previous.nativeFiniteHLS === true;
     activeRef.current = null;
     hlsOpening.current = null;
     videoRef.current?.pause();
@@ -236,6 +254,7 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
   useEffect(() => {
     let disposed = false;
     itemOwner.current = null;
+    preserveNativeSelection.current = false;
     nextStarted.current = false;
     skipDone.current = false;
     setItem(null);
@@ -351,30 +370,36 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
     video.volume = statusRef.current.volume;
     video.muted = statusRef.current.muted;
     video.playbackRate = statusRef.current.rate;
+    const current = () => !disposed && activeRef.current === active && !active.stopped;
     const play = () => {
-      if (disposed || activeRef.current !== active || pauseIntent.current) return;
+      if (!current() || hlsOpening.current || pauseIntent.current) return;
       void video.play().catch((failure: unknown) => {
-        if (disposed || activeRef.current !== active || failure instanceof DOMException && failure.name === 'AbortError') return;
+        if (!current() || failure instanceof DOMException && failure.name === 'AbortError') return;
         setLoading(false); setPlaying(false); setVisible(true); setAutoplayBlocked(failure instanceof DOMException && failure.name === 'NotAllowedError');
       });
     };
     const isHls = isHLSPlayback(playback);
+    const useMSE = isHls && Hls.isSupported();
+    const useNativeHLS = isHls && !useMSE && Boolean(video.canPlayType('application/vnd.apple.mpegurl'));
+    const source = playback.source;
+    const runTimeTicks = source.RunTimeTicks ?? 0;
+    active.nativeFiniteHLS = useNativeHLS && Number.isFinite(runTimeTicks) && runTimeTicks > 0
+      && !source.RequiresOpening && !source.RequiresClosing && !source.IsInfiniteStream;
     const metadata = () => {
-      if (disposed || activeRef.current !== active) return;
+      if (!current()) return;
       if ((!isHls || !playback.source.RunTimeTicks) && Number.isFinite(video.duration) && video.duration > 0) setDuration(video.duration);
-      if (hls) return;
+      if (hls || hlsOpening.current) return;
       const target = requestedPosition.current;
       if (Math.abs(video.currentTime - target) > 0.5) video.currentTime = target;
       play();
     };
     video.addEventListener('loadedmetadata', metadata, { once: true });
-    if (isHls && Hls.isSupported()) {
+    if (useMSE) {
       const client = new Hls({ autoStartLoad: false, backBufferLength: 45, renderTextTracksNatively: true,
         fLoader: subtitleFragmentLoader(disposeSubtitles),
       });
       hls = client;
       hlsRef.current = client;
-      const current = () => !disposed && activeRef.current === active;
       const readyAtRequestedPosition = () => {
         if (!current() || !hlsOpening.current || video.seeking || video.readyState === 0) return;
         const target = requestedPosition.current;
@@ -411,7 +436,7 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
         client.startLoad(requestedPosition.current);
         if (hlsOpening.current) openAtRequestedPosition();
       });
-      client.on(Hls.Events.LEVEL_UPDATED, () => hlsOpening.current?.());
+      client.on(Hls.Events.LEVEL_UPDATED, () => { if (current()) hlsOpening.current?.(); });
       client.on(Hls.Events.FRAG_BUFFERED, readyAtRequestedPosition);
       video.addEventListener('loadeddata', readyAtRequestedPosition);
       video.addEventListener('seeked', readyAtRequestedPosition);
@@ -448,8 +473,61 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
       });
       client.attachMedia(video);
       client.loadSource(playback.url);
-    } else if (!isHls || video.canPlayType('application/vnd.apple.mpegurl')) {
-      if (isHls) {
+    } else if (!isHls || useNativeHLS) {
+      if (useNativeHLS) {
+        if (active.nativeFiniteHLS && requestedPosition.current > 0) {
+          // EXT-X-START is only a hint. A growing playlist can initially expose
+          // the opening seconds while the requested source time is still missing.
+          const deadline = performance.now() + NATIVE_HLS_OPEN_TIMEOUT_MS;
+          const events = ['loadedmetadata', 'durationchange', 'progress', 'loadeddata', 'canplay'] as const;
+          let attempt: { target: number; retryAt: number; settled: boolean } | undefined;
+          const seeked = () => {
+            // Do not complete here: this same event must not report Progress
+            // after marking a paused session Started.
+            if (attempt && !video.seeking && video.currentSrc === playback.url) attempt.settled = true;
+          };
+          const check = () => {
+            if (!current() || hlsOpening.current !== check) return;
+            const now = performance.now();
+            if (now >= deadline) {
+              void stop(active);
+              video.pause();
+              video.removeAttribute('src');
+              video.load();
+              setError('暂时无法跳转到所选播放位置。请重试。');
+              setLoading(false); setPlaying(false); setVisible(true);
+              return;
+            }
+            if (video.currentSrc !== playback.url || video.readyState < HTMLMediaElement.HAVE_METADATA || video.seeking) return;
+            const target = requestedPosition.current;
+            if (!canSeekTo(video.seekable, target)) return;
+            const tolerance = target > 0 ? Math.min(0.1, target / 2) : 0.1;
+            if (Math.abs(video.currentTime - target) <= tolerance) {
+              // currentTime can echo a write before the seek has actually landed.
+              if ((attempt && !attempt.settled) || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return;
+              disposeOpening();
+              if (pauseIntent.current) markReadyPaused(active, video);
+              else play();
+            } else if (attempt?.target !== target || now >= attempt.retryAt) {
+              attempt = { target, retryAt: now + NATIVE_HLS_SEEK_RETRY_MS, settled: false };
+              video.currentTime = target;
+            }
+          };
+          const poll = setInterval(check, NATIVE_HLS_POSITION_POLL_MS);
+          const disposeOpening = () => {
+            clearInterval(poll);
+            for (const event of events) video.removeEventListener(event, check);
+            video.removeEventListener('seeked', seeked);
+            if (hlsOpening.current === check) hlsOpening.current = null;
+            active.disposeOpening = undefined;
+            setNativePositioning(owner => owner?.session === playback ? null : owner);
+          };
+          active.disposeOpening = disposeOpening;
+          hlsOpening.current = check;
+          setNativePositioning({ session: playback, paused: pauseIntent.current });
+          for (const event of events) video.addEventListener(event, check);
+          video.addEventListener('seeked', seeked);
+        }
         disposeNativeSubtitles = bindNativeHLSSubtitles(video, active.selection.subtitleStreamIndex ?? -1, values => {
           if (activeRef.current === active) setCues(values);
         });
@@ -463,6 +541,7 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
     }
     return () => {
       disposed = true;
+      active.disposeOpening?.();
       disposeSubtitles();
       if (active.disposeSubtitles === disposeSubtitles) active.disposeSubtitles = undefined;
       video.removeEventListener('loadedmetadata', metadata);
@@ -476,7 +555,7 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
       video.removeAttribute('src');
       video.load();
     };
-  }, [playback, markReadyPaused]);
+  }, [playback, markReadyPaused, stop]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -557,11 +636,11 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
     const active = activeRef.current;
     if (!video || !active || error) return;
     if (active.stopped) { void begin(active.item, 0, active.selection); return; }
-    if (hlsOpening.current) pauseIntent.current = false;
+    if (hlsOpening.current) setOpeningIntent(active.disposeOpening ? !pauseIntent.current : false);
     else if (video.paused) { pauseIntent.current = false; void video.play().catch(() => { setVisible(true); appRef.current.notify('浏览器未能开始播放，请重试。'); }); }
-    else video.pause();
+    else { pauseIntent.current = true; video.pause(); }
     reveal();
-  }, [begin, reveal, error]);
+  }, [begin, reveal, error, setOpeningIntent]);
 
   const seek = useCallback((requested: number) => {
     const video = videoRef.current;
@@ -602,7 +681,7 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
     if (command.command === 'Stop') {
       pauseIntent.current = true;
       video.pause();
-      active.position = Number.isFinite(video.currentTime) ? Math.max(0, video.currentTime) : active.position;
+      if (active.started && !hlsOpening.current && Number.isFinite(video.currentTime)) active.position = Math.max(0, video.currentTime);
       setPlaying(false); setLoading(false); setVisible(true);
       await stop(active);
       if (current()) { appRef.current.notify('管理员已停止此设备的播放。'); exit(); }
@@ -614,8 +693,8 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
       return;
     }
     const pause = command.command === 'Pause' || command.command === 'PlayPause' && (hlsOpening.current ? !pauseIntent.current : !video.paused);
+    if (hlsOpening.current) { setOpeningIntent(pause); reveal(); return; }
     pauseIntent.current = pause;
-    if (hlsOpening.current) { reveal(); return; }
     if (pause) {
       const alreadyPaused = video.paused;
       video.pause();
@@ -633,11 +712,11 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
       });
     }
     reveal();
-  }, [error, exit, report, reveal, seek, stop]);
+  }, [error, exit, report, reveal, seek, setOpeningIntent, stop]);
   useRemotePlayback(remotePlayback, Boolean(playback) && !error, remoteRequestId);
 
   const jump = useCallback((delta: number) => {
-    seek((activeRef.current?.position ?? position) + delta);
+    seek((hlsOpening.current ? requestedPosition.current : activeRef.current?.position ?? position) + delta);
     setFlash(delta > 0 ? 'forward' : 'rewind');
     clearTimeout(flashTimer.current);
     flashTimer.current = setTimeout(() => setFlash(null), 650);
@@ -738,7 +817,9 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
     setSelection(next);
     closePanel();
     void setItemPreferences(target.SeriesId || target.Id, { quality: next.quality, audioStreamIndex: next.audioStreamIndex, subtitleStreamIndex: next.subtitleStreamIndex }).catch(() => appRef.current.notify('播放偏好已保存在本机，服务器同步失败。'));
-    void begin(target, active?.started ? active.position : requestedPosition.current, next);
+    const preserve = active ? active.nativeFiniteHLS : preserveNativeSelection.current;
+    const at = active?.started && (!preserve || !videoRef.current?.seeking) ? active.position : requestedPosition.current;
+    void begin(target, at, next, Boolean(preserve) && pauseIntent.current);
   };
 
   const playNext = useCallback(() => {
@@ -804,7 +885,7 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
   const updateTime = () => {
     const video = videoRef.current;
     const active = activeRef.current;
-    if (!video || !active || active.stopped || hlsOpening.current) return;
+    if (!video || !active || active.session !== playback || active.stopped || hlsOpening.current) return;
     active.position = clamp(video.currentTime, 0, duration || Number.MAX_SAFE_INTEGER);
     if (!dragRef.current) setPosition(active.position);
   };
@@ -819,7 +900,13 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
 
   const onPlaying = () => {
     const active = activeRef.current;
-    if (!active || active.stopped || hlsOpening.current) return;
+    const video = videoRef.current;
+    if (!active || active.session !== playback || active.stopped || !video || video.paused) return;
+    if (hlsOpening.current) {
+      if (active.disposeOpening) video.pause();
+      return;
+    }
+    pauseIntent.current = false;
     setLoading(false);
     setPlaying(true);
     setAutoplayBlocked(false);
@@ -833,18 +920,31 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
     setPlaying(false);
     setVisible(true);
     const active = activeRef.current;
-    if (active?.started && !active.stopped) { updateTime(); void report(active, 'Progress'); }
+    if (active?.started && active.session === playback && !active.stopped && !hlsOpening.current) {
+      if (videoRef.current?.paused) pauseIntent.current = true;
+      updateTime();
+      void report(active, 'Progress');
+    }
   };
 
   const onLoadedData = () => {
     const active = activeRef.current;
     const video = videoRef.current;
-    if (active && video && !hlsOpening.current) markReadyPaused(active, video);
+    if (active && active.session === playback && video && !hlsOpening.current) markReadyPaused(active, video);
+  };
+
+  const onSeeked = () => {
+    const active = activeRef.current;
+    if (!active || active.session !== playback || active.stopped || hlsOpening.current) return;
+    updateTime();
+    if (active.started) void report(active, 'Progress');
   };
 
   const onEnded = () => {
     const active = activeRef.current;
-    if (active) { active.position = duration || videoRef.current?.currentTime || active.position; void stop(active); }
+    if (!active || active.session !== playback || active.stopped || hlsOpening.current) return;
+    active.position = duration || videoRef.current?.currentTime || active.position;
+    void stop(active);
     setPosition(duration);
     setCues([]);
     setPlaying(false);
@@ -852,6 +952,15 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
     setEnded(true);
     setVisible(true);
     appRef.current.changed();
+  };
+
+  const onMediaError = () => {
+    const active = activeRef.current;
+    if (!active || active.session !== playback || active.stopped || hlsRef.current || !videoRef.current?.error) return;
+    if (active.disposeOpening) void stop(active);
+    else active.disposeSubtitles?.();
+    setError('当前影片无法播放，请尝试其他画质。');
+    setLoading(false); setVisible(true);
   };
 
   const hoverFraction = (event: ReactPointerEvent<HTMLElement>) => {
@@ -901,25 +1010,27 @@ export function PlayerPage({ id, restart = false, remoteOptions, remoteRequestId
     row?.scrollBy({ left: direction * row.clientWidth * 0.8, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   };
 
-  return <div ref={rootRef} className={`player-page ${visible || panel || error ? 'is-visible' : 'is-hidden'}`} onPointerMove={reveal} onFocusCapture={reveal} style={subtitleStyles(app.prefs)}>
-    <video ref={videoRef} className="player-video" crossOrigin="anonymous" playsInline preload="auto" onClick={() => { if (panel) closePanel(); else if (window.matchMedia('(hover: hover)').matches) toggle(); else setVisible((value) => !value); }} onDoubleClick={toggleFull} onTimeUpdate={updateTime} onProgress={updateBuffer} onLoadedData={onLoadedData} onPlaying={onPlaying} onPause={onPause} onWaiting={() => { if (activeRef.current && !error) setLoading(true); }} onSeeked={() => { updateTime(); const active = activeRef.current; if (active?.started && !active.stopped) void report(active, 'Progress'); }} onEnded={onEnded} onError={(event) => { if (event.target === event.currentTarget && activeRef.current && !hlsRef.current) { activeRef.current.disposeSubtitles?.(); setError('当前影片无法播放，请尝试其他画质。'); setLoading(false); setVisible(true); } }} aria-label={item?.Name ?? '影片'} />
-    {cues.length > 0 && <div className={`player-subtitles subtitle-${app.prefs.subtitleStyle}`} aria-live="off">{cues.map((cue, index) => <span key={`${index}-${cue}`}>{cue}</span>)}</div>}
+  const positioningNative = nativePositioning?.session === playback ? nativePositioning : null;
+  const playControlActive = positioningNative ? !positioningNative.paused : playing;
+  return <div ref={rootRef} className={`player-page ${visible || panel || error ? 'is-visible' : 'is-hidden'}${positioningNative ? ' is-positioning-native' : ''}`} onPointerMove={reveal} onFocusCapture={reveal} style={subtitleStyles(app.prefs)}>
+    <video ref={videoRef} className="player-video" crossOrigin="anonymous" playsInline preload="auto" onClick={() => { if (panel) closePanel(); else if (window.matchMedia('(hover: hover)').matches) toggle(); else setVisible((value) => !value); }} onDoubleClick={toggleFull} onTimeUpdate={updateTime} onProgress={updateBuffer} onLoadedData={onLoadedData} onPlaying={onPlaying} onPause={onPause} onWaiting={() => { if (activeRef.current && !error) setLoading(true); }} onSeeked={onSeeked} onEnded={onEnded} onError={onMediaError} aria-label={item?.Name ?? '影片'} />
+    {!positioningNative && cues.length > 0 && <div className={`player-subtitles subtitle-${app.prefs.subtitleStyle}`} aria-live="off">{cues.map((cue, index) => <span key={`${index}-${cue}`}>{cue}</span>)}</div>}
     {loading && !error && <div className="player-loading" role="status" aria-label="正在缓冲"><span /><span className="sr-only">正在缓冲</span></div>}
     {!playing && !loading && !error && !ended && <button className="player-big-play" aria-label="播放" onClick={toggle}><Glyph name="play" size={40} /></button>}
     {autoplayBlocked && !playing && !error && <p className="player-autoplay-notice" role="status">浏览器已阻止自动播放，请点按播放继续。</p>}
     {flash && <div className={`player-flash ${flash}`}>{flash === 'forward' ? '快进 10 秒 ›' : '‹ 后退 10 秒'}</div>}
-    {error && <div className="player-error" role="alert"><h1>暂时无法播放</h1><p>{error}</p><div><button onClick={() => { if (item) void begin(item, activeRef.current?.started ? activeRef.current.position : requestedPosition.current, selection); else window.location.reload(); }}>重试</button><button onClick={() => openPanel('quality')}>选择画质</button><button onClick={exit}>返回详情</button></div></div>}
+    {error && <div className="player-error" role="alert"><h1>暂时无法播放</h1><p>{error}</p><div><button onClick={() => { if (item) void begin(item, activeRef.current?.started ? activeRef.current.position : requestedPosition.current, selection, pauseIntent.current); else window.location.reload(); }}>重试</button><button onClick={() => openPanel('quality')}>选择画质</button><button onClick={exit}>返回详情</button></div></div>}
     {ended && !showNext && !error && <div className="player-ended"><h2>播放结束</h2><button onClick={() => { if (item) void begin(item, 0, selection); }}>重新播放</button><button onClick={exit}>返回详情</button></div>}
     <div className="player-interface" aria-hidden={!visible && !panel && !error} inert={!visible && !panel && !error}>
       <div className="player-top-scrim" /><div className="player-bottom-scrim" />
       <header className="player-header">{iconButton('back', '返回（Esc）', exit, 'player-back')}<div><h1>{title}</h1><p>{subtitle}</p></div>{iconButton('more', '更多播放设置', () => openPanel('settings'), 'player-mobile-settings')}</header>
       <div className="player-controls" onPointerEnter={() => { controlHeld.current = true; }} onPointerLeave={() => { controlHeld.current = false; reveal(); }}>
-        <div className={`player-progress ${drag != null ? 'is-dragging' : ''}`} role="slider" tabIndex={0} aria-label="播放进度" aria-valuemin={0} aria-valuemax={Math.round(duration)} aria-valuenow={Math.round(displayPosition)} aria-valuetext={`${clock(displayPosition)}，共 ${clock(duration)}`} onKeyDown={(event) => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) { event.preventDefault(); event.stopPropagation(); seek(event.key === 'Home' ? 0 : event.key === 'End' ? duration : position + (event.key === 'ArrowRight' ? 10 : -10)); } }} onPointerDown={(event) => { if (!duration) return; dragRef.current = true; event.currentTarget.setPointerCapture(event.pointerId); const fraction = hoverFraction(event); setDrag(fraction); setHover(fraction);  }} onPointerMove={(event) => { const fraction = hoverFraction(event); setHover(fraction); if (dragRef.current) setDrag(fraction);  }} onPointerUp={(event) => { if (!dragRef.current) return; dragRef.current = false; seek(hoverFraction(event) * duration); setDrag(null); event.currentTarget.releasePointerCapture(event.pointerId); }} onPointerCancel={() => { dragRef.current = false; setDrag(null); setHover(null); }} onPointerLeave={() => { if (!dragRef.current) setHover(null); }}>
+        <div className={`player-progress ${drag != null ? 'is-dragging' : ''}`} role="slider" tabIndex={0} aria-label="播放进度" aria-valuemin={0} aria-valuemax={Math.round(duration)} aria-valuenow={Math.round(displayPosition)} aria-valuetext={`${clock(displayPosition)}，共 ${clock(duration)}`} onKeyDown={(event) => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) { event.preventDefault(); event.stopPropagation(); seek(event.key === 'Home' ? 0 : event.key === 'End' ? duration : (hlsOpening.current ? requestedPosition.current : position) + (event.key === 'ArrowRight' ? 10 : -10)); } }} onPointerDown={(event) => { if (!duration) return; dragRef.current = true; event.currentTarget.setPointerCapture(event.pointerId); const fraction = hoverFraction(event); setDrag(fraction); setHover(fraction);  }} onPointerMove={(event) => { const fraction = hoverFraction(event); setHover(fraction); if (dragRef.current) setDrag(fraction);  }} onPointerUp={(event) => { if (!dragRef.current) return; dragRef.current = false; seek(hoverFraction(event) * duration); setDrag(null); event.currentTarget.releasePointerCapture(event.pointerId); }} onPointerCancel={() => { dragRef.current = false; setDrag(null); setHover(null); }} onPointerLeave={() => { if (!dragRef.current) setHover(null); }}>
           <div className="player-progress-track">{buffered.map((range, index) => <span key={index} className="player-buffered" style={{ left: `${duration ? range.from / duration * 100 : 0}%`, width: `${duration ? (range.to - range.from) / duration * 100 : 0}%` }} />)}{intro && <span className="player-intro-marker" style={{ left: `${intro.from / duration * 100}%`, width: `${(intro.to - intro.from) / duration * 100}%` }} />}<span className="player-progress-played" style={{ width: `${percentage}%` }} /><span className="player-progress-thumb" style={{ left: `${percentage}%` }} /></div>
           {hover != null && duration > 0 && <div className="player-seek-preview" style={{ left: `clamp(${showPreviewFrame ? 94 : 32}px, ${hover * 100}%, calc(100% - ${showPreviewFrame ? 94 : 32}px))` }}>{showPreviewFrame && <div className="player-seek-frame"><img key={previewUrl} src={previewUrl} alt={`${clock(previewFrame!.PositionTicks / TICKS_PER_SECOND)} 处的预览画面`} onError={() => setFailedPreview(previewUrl)} /></div>}<span>{clock(hover * duration)}</span></div>}
         </div>
         <div className="player-control-row">
-          <button className="player-icon player-toggle" title="播放 / 暂停（空格）" aria-label={playing ? '暂停' : '播放'} onClick={toggle}><Glyph name={playing ? 'pause' : 'play'} size={28} /></button>
+          <button className="player-icon player-toggle" title="播放 / 暂停（空格）" aria-label={playControlActive ? '暂停' : '播放'} onClick={toggle}><Glyph name={playControlActive ? 'pause' : 'play'} size={28} /></button>
           {iconButton('rewind', '后退 10 秒（←）', () => jump(-10), 'player-desktop')}{iconButton('forward', '快进 10 秒（→）', () => jump(10), 'player-desktop')}
           {nextEpisode && iconButton('next', '下一集', playNext, 'player-next-control')}
           <div className="player-volume player-desktop">{iconButton(muted || volume === 0 ? 'mute' : 'volume', '静音 / 取消静音（M）', toggleMute)}<input type="range" aria-label="音量" min="0" max="1" step="0.01" value={muted ? 0 : volume} onChange={(event) => setPlayerVolume(Number(event.target.value))} style={{ '--range-fill': `${(muted ? 0 : volume) * 100}%` } as CSSProperties} /></div>
